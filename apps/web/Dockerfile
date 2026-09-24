@@ -24,7 +24,7 @@ WORKDIR /app
 USER 0
 # The runtime only needs Node. Remove the base image's bundled npm tree so
 # package-manager dependencies are not shipped or scanned with the service.
-RUN find /usr -type d -path '*/node_modules/npm' -prune -exec rm -rf '{}' '+'
+RUN find / -xdev -path '*/node_modules/npm' -prune -exec rm -rf '{}' '+' 2>/dev/null || true
 COPY --from=build --chown=65532:0 /app/prod ./
 USER 65532
 EXPOSE 3000
