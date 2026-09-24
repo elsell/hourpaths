@@ -26,6 +26,11 @@ USER 0
 # package-manager dependencies are not shipped or scanned with the service.
 RUN find / -xdev -path '*/node_modules/npm' -prune -exec rm -rf '{}' '+' 2>/dev/null || true
 COPY --from=build --chown=65532:0 /app/prod ./
+# The base image also carries a few package-manager dependencies outside npm's
+# own tree. They are not needed by the service and must not ship in its image.
+RUN for package in undici tar ip-address pacote postcss-selector-parser; do \
+      find / -xdev -path "*/node_modules/${package}" ! -path '/app/prod/*' -prune -exec rm -rf '{}' '+' 2>/dev/null || true; \
+    done
 USER 65532
 EXPOSE 3000
 CMD ["node", "build"]
