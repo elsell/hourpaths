@@ -22,7 +22,9 @@ FROM registry.access.redhat.com/hi/nodejs:24.18.1-1790203435@sha256:5c2430ca1a12
 ENV NODE_ENV=production HOURPATHS_APP_ENV=production HOST=0.0.0.0 PORT=3000
 WORKDIR /app
 USER 0
-RUN npm install --global --ignore-scripts --no-audit --no-fund npm@12.1.0
+# The runtime only needs Node. Remove the base image's bundled npm tree so
+# package-manager dependencies are not shipped or scanned with the service.
+RUN find /usr /opt/app-root -type d -path '*/node_modules/npm' -prune -exec rm -rf '{}' '+'
 COPY --from=build --chown=65532:0 /app/prod ./
 USER 65532
 EXPOSE 3000
