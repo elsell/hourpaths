@@ -8,11 +8,6 @@ packages:
 
 ignoreScripts: true
 
-auditConfig:
-  ignoreGhsas:
-    - GHSA-5p2g-fcmc-qvqq
-    - GHSA-w3rx-r6r6-pgpr
-
 overrides:
   fast-uri: '3.1.5'
   'eas-cli>ajv': '8.18.0'
@@ -37,6 +32,7 @@ overrides:
   '@expo/env@2.3': '2.3.0'
   '@expo/env@2.4': '2.3.0'
   '@expo/image-utils': '0.8.14'
+  image-size: '2.0.4'
   '@expo/json-file@10.0': '10.0.16'
   '@expo/json-file@>=10.1': '10.2.0'
   '@expo/osascript': '2.6.0'

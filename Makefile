@@ -58,13 +58,11 @@ race:
 dependency-age:
 	python3 scripts/test-dependency-age.py
 	python3 scripts/check-dependency-age.py
-	python3 scripts/test-audit-advisory-allowlist.py
 
 security:
 	mkdir -p .bin
 	cd tools && go build -o ../.bin/govulncheck golang.org/x/vuln/cmd/govulncheck
 	cd apps/api && ../../.bin/govulncheck ./...
-	python3 scripts/check-audit-advisory-allowlist.py
 	pnpm audit --audit-level low
 	python3 scripts/check-ruby-vulnerabilities.py
 
