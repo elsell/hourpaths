@@ -108,7 +108,7 @@ jobs:
         working-directory: apps/mobile
         run: |
           bundle install --jobs 4 --retry 3
-          bundle exec pod install
+          bundle exec pod install --project-directory=ios
 
       - name: Install signing certificate and provisioning profile
         id: signing
