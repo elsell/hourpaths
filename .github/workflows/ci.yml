@@ -252,7 +252,7 @@ jobs:
         run: |
           ruby -e 'abort "Ruby 3.4 is required" unless RUBY_VERSION.start_with?("3.4.")'
           gem install bundler --version 2.6.9 --no-document
-          test "$(bundle --version)" = "Bundler version 2.6.9"
+          bundle _2.6.9_ --version | grep -Fq 'Bundler version 2.6.9'
           grep -Fq 'BUNDLED WITH' apps/mobile/Gemfile.lock
           grep -Fq '   2.6.9' apps/mobile/Gemfile.lock
       - name: Verify Xcode version
