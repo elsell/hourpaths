@@ -1,0 +1,29 @@
+definition user {
+  relation follower: user
+}
+definition resource {
+  relation owner: user
+  permission view = owner
+  permission update = owner
+  permission delete = owner
+}
+
+definition path {
+  relation creator: user
+  relation administrator: user
+  relation participant: user
+  relation supporter: user
+  relation followers_owner: user
+  relation public_viewer: user:*
+  permission view = creator + administrator + participant + supporter + followers_owner->follower + public_viewer
+  permission track = creator + administrator + participant
+  permission rename = creator + administrator
+  permission manage_goals = creator + administrator
+  permission manage_members = creator + administrator
+  permission manage_administrators = creator
+  permission step_down_administrator = administrator
+  permission manage_lifecycle = creator
+  permission manage_visibility = creator
+  permission transfer_ownership = creator
+  permission leave = administrator + participant + supporter
+}

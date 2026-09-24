@@ -1,0 +1,45 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"os"
+	"strconv"
+	"time"
+
+	spice "github.com/elsell/hour-paths/apps/api/internal/adapters/spicedb"
+)
+
+func main() {
+	endpoint := os.Getenv("HOURPATHS_SPICEDB_ENDPOINT")
+	token := os.Getenv("HOURPATHS_SPICEDB_SCHEMA_TOKEN")
+	insecureTransport, parseErr := strconv.ParseBool(os.Getenv("HOURPATHS_SPICEDB_INSECURE"))
+	if endpoint == "" || token == "" || parseErr != nil {
+		slog.Error("schema configuration invalid")
+		os.Exit(1)
+	}
+	authorizer, err := spice.New(endpoint, token, insecureTransport)
+	if err != nil {
+		slog.Error("schema client failed", "error", err)
+		os.Exit(1)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	for {
+		err = authorizer.WriteSchema(ctx, spice.RequiredSchema)
+		if err == nil {
+			return
+		}
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			slog.Error("schema application failed", "error", err)
+			os.Exit(1)
+		}
+		select {
+		case <-ctx.Done():
+			slog.Error("schema application failed", "error", err)
+			os.Exit(1)
+		case <-time.After(time.Second):
+		}
+	}
+}

@@ -1,0 +1,749 @@
+package app
+
+import (
+	"context"
+	"crypto/sha256"
+	"errors"
+	shared "github.com/elsell/hour-paths/apps/api/internal/app/shared"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"github.com/google/uuid"
+	"net/mail"
+	"strconv"
+	"time"
+)
+
+func newID() string { return uuid.NewString() }
+
+type App struct {
+	Auth                             ports.Authenticator
+	IdentityVerifier                 ports.IdentityTokenVerifier
+	Sessions                         ports.Sessions
+	OnboardingActivator              ports.OnboardingActivator
+	PolicyAuthority                  ports.PolicyAuthority
+	SessionTTL                       time.Duration
+	SessionAbsoluteTTL               time.Duration
+	AuthorizationMaxAttempts         int
+	AllowAccountProvisioning         bool
+	InvitedEmails                    map[string]struct{}
+	InvitationAdmins                 map[string]struct{}
+	InvitationAdminUsers             map[string]struct{}
+	Invitations                      ports.Invitations
+	AllowAccountDeactivation         bool
+	Users                            ports.Users
+	TimeZonePreferences              TimeZonePreferenceRepository
+	DuplicateAccountHints            ports.DuplicateAccountHints
+	DuplicateAccountRecoveryDeclines ports.DuplicateAccountRecoveryDeclines
+	UsernameSuggestions              ports.UsernameSuggestions
+	Authorizer                       ports.Authorizer
+	Resources                        ports.Resources
+	Audits                           ports.Audits
+	AuditRateLimiter                 ports.AuditRateLimiter
+	AuthorizationOutbox              ports.AuthorizationOutbox
+	AuthorizationBatchOutbox         ports.AuthorizationBatchOutbox
+	AuthorizationSerializer          ports.AuthorizationSerializer
+	RelationshipWriter               ports.RelationshipBatchWriter
+	PushInstallations                PushInstallationRepository
+	Clock                            ports.Clock
+	Dependencies                     []ports.HealthChecker
+	CursorSigningKey                 []byte
+	Probe                            ports.Probe
+}
+
+var ErrUnauthenticated = errors.New("unauthenticated")
+var ErrForbidden = errors.New("forbidden")
+var ErrRateLimited = errors.New("rate limited")
+
+const authorizationLease = 2 * time.Minute
+const authorizationCallTimeout = 30 * time.Second
+
+func (a App) Health(ctx context.Context) error {
+	for _, dependency := range a.Dependencies {
+		if err := dependency.Health(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func WithCorrelationID(ctx context.Context, id string) context.Context {
+	return shared.WithCorrelationID(ctx, id)
+}
+
+func correlationID(ctx context.Context) string {
+	return shared.CorrelationID(ctx)
+}
+
+func (a App) probe(ctx context.Context, name, outcome string) {
+	if a.Probe != nil {
+		a.Probe.Observe(ctx, ports.ProbeEvent{Name: name, Outcome: outcome, CorrelationID: correlationID(ctx)})
+	}
+}
+
+func (a App) CurrentUser(ctx context.Context, authorization string) (identity.User, error) {
+	u, err := a.authenticateCurrentUser(ctx, authorization)
+	if err != nil {
+		return identity.User{}, err
+	}
+	if a.AuditRateLimiter == nil || !a.AuditRateLimiter.Allow(u.ID, a.Clock.Now().UTC()) {
+		return identity.User{}, ErrRateLimited
+	}
+	if err := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.UserViewed, "user", u.ID, audit.Succeeded)); err != nil {
+		return identity.User{}, err
+	}
+	return u, nil
+}
+
+func (a App) authenticateCurrentUser(ctx context.Context, authorization string) (identity.User, error) {
+	principal, err := a.Auth.Authenticate(ctx, authorization)
+	if err != nil {
+		return identity.User{}, err
+	}
+	if principal.UserID == "" || !containsScope(principal.Scopes, "api:user") {
+		return identity.User{}, ErrUnauthenticated
+	}
+	u, err := a.Users.GetUser(ctx, principal.UserID)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
+			return identity.User{}, ErrUnauthenticated
+		}
+		return identity.User{}, err
+	}
+	return u, nil
+}
+
+type Session struct {
+	Token     string
+	ExpiresAt time.Time
+}
+
+type IdentityExchangeOutcome interface {
+	identityExchangeOutcome()
+}
+
+type ReturningUserIdentityExchange struct {
+	UserID  string
+	Session Session
+}
+
+func (ReturningUserIdentityExchange) identityExchangeOutcome() {}
+
+type DuplicateEmailRecoveryIdentityExchange struct {
+	ProvisionalUserID string
+	Session           Session
+}
+
+func (DuplicateEmailRecoveryIdentityExchange) identityExchangeOutcome() {}
+
+type OnboardingIdentityExchange struct {
+	ProvisionalUserID string
+	Session           Session
+}
+
+func (OnboardingIdentityExchange) identityExchangeOutcome() {}
+
+func (a App) ExchangeIdentityToken(ctx context.Context, token string) (IdentityExchangeOutcome, error) {
+	if a.IdentityVerifier == nil || a.Sessions == nil || a.SessionTTL < time.Minute || a.SessionTTL > 24*time.Hour || a.SessionAbsoluteTTL < a.SessionTTL || a.SessionAbsoluteTTL > 7*24*time.Hour {
+		return nil, errors.New("session dependencies are invalid")
+	}
+	claims, err := a.IdentityVerifier.Verify(ctx, token)
+	if err != nil {
+		return nil, ErrUnauthenticated
+	}
+	_, claims.InvitationAdmin = a.InvitationAdmins[claims.Issuer+"#"+claims.Subject]
+	userID := identity.UserID(claims.Issuer, claims.Subject)
+	if a.AuditRateLimiter == nil || !a.AuditRateLimiter.Allow(userID, a.Clock.Now().UTC()) {
+		return nil, ErrRateLimited
+	}
+	provisioned := a.auditEvent(ctx, userID, userID, audit.UserProvisioned, "user", userID, audit.Succeeded)
+	profileSynchronized := a.auditEvent(ctx, userID, userID, audit.UserProfileSynchronized, "user", userID, audit.Succeeded)
+	invitationConsumed := a.auditEvent(ctx, userID, userID, audit.InvitationConsumed, "invitation", normalizeEmail(claims.Email), audit.Succeeded)
+	_, invited := a.InvitedEmails[normalizeEmail(claims.Email)]
+	invited = invited && claims.EmailVerified
+	duplicateEmailMatch := false
+	if claims.EmailVerified && normalizeEmail(claims.Email) != "" {
+		hints := a.DuplicateAccountHints
+		if hints == nil {
+			hints, _ = a.Users.(ports.DuplicateAccountHints)
+		}
+		if hints == nil {
+			return nil, errors.New("duplicate account hint dependency is invalid")
+		}
+		duplicateEmailMatch, err = hints.HasActiveEmailMatch(ctx, claims)
+		if err != nil {
+			return nil, err
+		}
+	}
+	u, err := a.Users.ResolveOrCreate(ctx, claims, provisioned, profileSynchronized, invitationConsumed, a.AllowAccountProvisioning || invited || claims.InvitationAdmin)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
+			return nil, ErrUnauthenticated
+		}
+		return nil, err
+	}
+	var scopes []string
+	switch u.Status {
+	case identity.StatusActive:
+		scopes = []string{"api:user"}
+	case identity.StatusProvisional:
+		scopes = []string{"api:onboarding"}
+	default:
+		return nil, ErrUnauthenticated
+	}
+	now := a.Clock.Now().UTC()
+	expiresAt := now.Add(a.SessionTTL)
+	absoluteExpiresAt := now.Add(a.SessionAbsoluteTTL)
+	sessionEvent := a.auditEvent(ctx, u.ID, u.ID, audit.SessionCreated, "user", u.ID, audit.Succeeded)
+	identityTokenHash := sha256.Sum256([]byte(token))
+	credential, err := a.Sessions.CreateSession(ctx, u.ID, scopes, identityTokenHash[:], expiresAt, absoluteExpiresAt, sessionEvent)
+	if err != nil {
+		return nil, err
+	}
+	a.probe(ctx, "identity.session_exchanged", "succeeded")
+	session := Session{Token: credential, ExpiresAt: expiresAt}
+	if u.Status == identity.StatusProvisional {
+		if duplicateEmailMatch {
+			return DuplicateEmailRecoveryIdentityExchange{ProvisionalUserID: u.ID, Session: session}, nil
+		}
+		return OnboardingIdentityExchange{ProvisionalUserID: u.ID, Session: session}, nil
+	}
+	return ReturningUserIdentityExchange{UserID: u.ID, Session: session}, nil
+}
+
+func normalizeEmail(value string) string { return identity.NormalizeEmail(value) }
+
+func (a App) RevokeSession(ctx context.Context, authorization string) error {
+	u, err := a.sessionOwnerForRevocation(ctx, authorization)
+	if err != nil {
+		return err
+	}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.SessionRevoked, "user", u.ID, audit.Succeeded)
+	if err := a.Sessions.RevokeSession(ctx, authorization, event); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a App) sessionOwnerForRevocation(ctx context.Context, authorization string) (identity.User, error) {
+	principal, err := a.Auth.Authenticate(ctx, authorization)
+	if err != nil {
+		return identity.User{}, err
+	}
+	if principal.UserID == "" || len(principal.Scopes) != 1 {
+		return identity.User{}, ErrUnauthenticated
+	}
+	var user identity.User
+	switch principal.Scopes[0] {
+	case "api:user":
+		user, err = a.Users.GetUser(ctx, principal.UserID)
+		if err == nil && (user.ID != principal.UserID || user.Status != identity.StatusActive) {
+			return identity.User{}, ErrUnauthenticated
+		}
+	case "api:onboarding":
+		user, err = a.Users.GetProvisionalUser(ctx, principal.UserID)
+		if err == nil && (user.ID != principal.UserID || user.Status != identity.StatusProvisional) {
+			return identity.User{}, ErrUnauthenticated
+		}
+	default:
+		return identity.User{}, ErrUnauthenticated
+	}
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
+			return identity.User{}, ErrUnauthenticated
+		}
+		return identity.User{}, err
+	}
+	if a.AuditRateLimiter == nil || !a.AuditRateLimiter.Allow(user.ID, a.Clock.Now().UTC()) {
+		return identity.User{}, ErrRateLimited
+	}
+	return user, nil
+}
+
+func (a App) RefreshSession(ctx context.Context, authorization string) (Session, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return Session{}, err
+	}
+	expiresAt := a.Clock.Now().UTC().Add(a.SessionTTL)
+	revoked := a.auditEvent(ctx, u.ID, u.ID, audit.SessionRevoked, "user", u.ID, audit.Succeeded)
+	created := a.auditEvent(ctx, u.ID, u.ID, audit.SessionCreated, "user", u.ID, audit.Succeeded)
+	credential, expiresAt, err := a.Sessions.RotateSession(ctx, authorization, u.ID, []string{"api:user"}, expiresAt, revoked, created)
+	if err != nil {
+		return Session{}, err
+	}
+	a.probe(ctx, "identity.session_refreshed", "succeeded")
+	return Session{Token: credential, ExpiresAt: expiresAt}, nil
+}
+
+func (a App) DeactivateAccount(ctx context.Context, authorization string) error {
+	if !a.AllowAccountDeactivation {
+		return ErrForbidden
+	}
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return err
+	}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.UserDeactivated, "user", u.ID, audit.Succeeded)
+	if err := a.Users.DisableUser(ctx, u.ID, event); err != nil {
+		return err
+	}
+	a.probe(ctx, "identity.account_deactivated", "succeeded")
+	return nil
+}
+
+func containsScope(scopes []string, expected string) bool {
+	for _, scope := range scopes {
+		if scope == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func (a App) auditEvent(ctx context.Context, owner, actor string, action audit.Action, targetType, targetID string, outcome audit.Outcome) audit.Event {
+	return shared.NewAuditEvent(ctx, a.Clock, owner, actor, action, targetType, targetID, outcome)
+}
+
+func (a App) appendDenial(ctx context.Context, actor, domain, id string) error {
+	return a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, actor, actor, audit.ResourceAccessDenied, domain, id, audit.Denied))
+}
+
+func (a App) currentUserForAuditedOperation(ctx context.Context, authorization string) (identity.User, error) {
+	u, err := a.authenticateCurrentUser(ctx, authorization)
+	if err != nil {
+		return identity.User{}, err
+	}
+	if a.AuditRateLimiter == nil || !a.AuditRateLimiter.Allow(u.ID, a.Clock.Now().UTC()) {
+		return identity.User{}, ErrRateLimited
+	}
+	return u, nil
+}
+func (a App) CreateResource(ctx context.Context, authorization, domain, name, idempotencyKey string) (ports.Resource, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	r := ports.Resource{ID: newID(), Domain: domain, OwnerUserID: u.ID, Name: name, CreatedAt: a.Clock.Now().UTC()}
+	if len(idempotencyKey) < 16 || len(idempotencyKey) > 128 || !printableASCII(idempotencyKey) {
+		return ports.Resource{}, ports.ErrInvalidArgument
+	}
+	digest := sha256.Sum256([]byte(domain + "\x00" + name))
+	worker := newID()
+	change := ports.AuthorizationChange{ID: newID(), ResourceType: "resource", ResourceID: domain + "/" + r.ID, Relation: "owner", SubjectType: "user", SubjectID: u.ID, OwnerUserID: u.ID, ActorUserID: u.ID, Operation: ports.AuthorizationTouch, LockedBy: worker, Lease: authorizationLease}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.ResourceCreated, domain, r.ID, audit.Succeeded)
+	r, replayed, err := a.Resources.CreateResource(ctx, r, change, event, ports.Idempotency{PrincipalID: u.ID, Operation: "resource.create:" + domain, Key: idempotencyKey, RequestHash: digest[:]})
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	if replayed {
+		pending, claimErr := a.AuthorizationOutbox.ClaimAuthorizationChangeForResource(ctx, "resource", domain+"/"+r.ID, worker, authorizationLease)
+		if claimErr == nil {
+			if err := a.reconcileClaimedAuthorizationChange(ctx, pending, worker); err != nil {
+				return ports.Resource{}, err
+			}
+		} else if !errors.Is(claimErr, ports.ErrNotFound) {
+			return ports.Resource{}, claimErr
+		}
+		a.probe(ctx, "resource.create_replayed", "succeeded")
+		return r, nil
+	}
+	if err = a.reconcileClaimedAuthorizationChange(ctx, change, worker); err != nil {
+		return ports.Resource{}, err
+	}
+	a.probe(ctx, "resource.created", "succeeded")
+	return r, nil
+}
+
+func printableASCII(value string) bool {
+	for i := 0; i < len(value); i++ {
+		if value[i] < 0x20 || value[i] > 0x7e {
+			return false
+		}
+	}
+	return true
+}
+
+type ResourcePage struct {
+	Resources  []ports.Resource
+	NextCursor string
+}
+type cursorPayload = shared.CursorPayload
+
+func (a App) ListResources(ctx context.Context, authorization, domain, cursor string, limit int) (ResourcePage, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return ResourcePage{}, err
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	if limit < 1 || limit > 100 {
+		return ResourcePage{}, ports.ErrInvalidArgument
+	}
+	request := ports.PageRequest{Limit: limit, Snapshot: a.Clock.Now().UTC()}
+	if cursor != "" {
+		payload, decodeErr := a.decodeCursor(cursor)
+		if decodeErr != nil || payload.Owner != u.ID || payload.Domain != domain {
+			return ResourcePage{}, ports.ErrInvalidArgument
+		}
+		request.AfterID, request.AfterCreated, request.Snapshot = payload.AfterID, payload.AfterCreated, payload.Snapshot
+	}
+	page, err := a.Resources.ListResources(ctx, domain, u.ID, request)
+	if err != nil {
+		return ResourcePage{}, err
+	}
+	if err = a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceListed, domain, domain, audit.Succeeded)); err != nil {
+		return ResourcePage{}, err
+	}
+	result := ResourcePage{Resources: page.Resources}
+	if page.HasMore && len(page.Resources) > 0 {
+		last := page.Resources[len(page.Resources)-1]
+		result.NextCursor, err = a.encodeCursor(cursorPayload{Version: 1, Owner: u.ID, Domain: domain, AfterID: last.ID, AfterCreated: last.CreatedAt, Snapshot: request.Snapshot})
+		if err != nil {
+			return ResourcePage{}, err
+		}
+	}
+	return result, nil
+}
+func (a App) encodeCursor(payload cursorPayload) (string, error) {
+	return shared.EncodeCursor(a.CursorSigningKey, payload)
+}
+func (a App) decodeCursor(value string) (cursorPayload, error) {
+	return shared.DecodeCursor(a.CursorSigningKey, value)
+}
+func (a App) GetResource(ctx context.Context, authorization, domain, id string) (ports.Resource, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	ok, err := a.Authorizer.Check(ctx, "resource", domain+"/"+id, "view", u.ID)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	if !ok {
+		if auditErr := a.appendDenial(ctx, u.ID, domain, id); auditErr != nil {
+			return ports.Resource{}, auditErr
+		}
+		return ports.Resource{}, ErrForbidden
+	}
+	r, err := a.Resources.GetResource(ctx, domain, id)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	if err = a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, r.OwnerUserID, u.ID, audit.ResourceViewed, domain, id, audit.Succeeded)); err != nil {
+		return ports.Resource{}, err
+	}
+	return r, nil
+}
+func (a App) UpdateResource(ctx context.Context, authorization, domain, id, name string) (ports.Resource, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	ok, err := a.Authorizer.Check(ctx, "resource", domain+"/"+id, "update", u.ID)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	if !ok {
+		if auditErr := a.appendDenial(ctx, u.ID, domain, id); auditErr != nil {
+			return ports.Resource{}, auditErr
+		}
+		return ports.Resource{}, ErrForbidden
+	}
+	existing, err := a.Resources.GetResource(ctx, domain, id)
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	event := a.auditEvent(ctx, existing.OwnerUserID, u.ID, audit.ResourceUpdated, domain, id, audit.Succeeded)
+	return a.Resources.UpdateResource(ctx, domain, id, name, event)
+}
+func (a App) DeleteResource(ctx context.Context, authorization, domain, id string) error {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return err
+	}
+	ok, err := a.Authorizer.Check(ctx, "resource", domain+"/"+id, "delete", u.ID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		if auditErr := a.appendDenial(ctx, u.ID, domain, id); auditErr != nil {
+			return auditErr
+		}
+		return ErrForbidden
+	}
+	existing, err := a.Resources.GetResource(ctx, domain, id)
+	if err != nil {
+		return err
+	}
+	worker := newID()
+	change := ports.AuthorizationChange{ID: newID(), ResourceType: "resource", ResourceID: domain + "/" + id, Relation: "owner", SubjectType: "user", SubjectID: u.ID, OwnerUserID: u.ID, ActorUserID: u.ID, Operation: ports.AuthorizationDelete, LockedBy: worker, Lease: authorizationLease}
+	event := a.auditEvent(ctx, existing.OwnerUserID, u.ID, audit.ResourceDeleted, domain, id, audit.Succeeded)
+	if err = a.Resources.DeleteResource(ctx, domain, id, change, event); err != nil {
+		return err
+	}
+	return a.reconcileClaimedAuthorizationChange(ctx, change, worker)
+}
+
+type AuditPage struct {
+	Events     []audit.Event
+	NextCursor string
+}
+
+func (a App) ListAuditEvents(ctx context.Context, authorization, cursor string, limit int) (AuditPage, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return AuditPage{}, err
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	if limit < 1 || limit > 100 {
+		return AuditPage{}, ports.ErrInvalidArgument
+	}
+	request := ports.PageRequest{Limit: limit, Snapshot: a.Clock.Now().UTC()}
+	if cursor != "" {
+		payload, decodeErr := a.decodeCursor(cursor)
+		if decodeErr != nil || payload.Owner != u.ID || payload.Domain != "audit" {
+			return AuditPage{}, ports.ErrInvalidArgument
+		}
+		request.AfterID, request.AfterCreated, request.Snapshot = payload.AfterID, payload.AfterCreated, payload.Snapshot
+	}
+	page, err := a.Audits.ListAuditEvents(ctx, u.ID, request)
+	if err != nil {
+		return AuditPage{}, err
+	}
+	if err := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceListed, "audit", u.ID, audit.Succeeded)); err != nil {
+		return AuditPage{}, err
+	}
+	result := AuditPage{Events: page.Events}
+	if page.HasMore && len(page.Events) > 0 {
+		last := page.Events[len(page.Events)-1]
+		result.NextCursor, err = a.encodeCursor(cursorPayload{Version: 1, Owner: u.ID, Domain: "audit", AfterID: last.ID, AfterCreated: last.OccurredAt, Snapshot: request.Snapshot})
+		if err != nil {
+			return AuditPage{}, err
+		}
+	}
+	return result, nil
+}
+
+type InvitationPage struct {
+	Invitations []identity.Invitation
+	NextCursor  string
+}
+
+func (a App) CreateInvitation(ctx context.Context, authorization, email, idempotencyKey string, validDays int) (identity.Invitation, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return identity.Invitation{}, err
+	}
+	if _, authorized := a.InvitationAdminUsers[u.ID]; !authorized {
+		if auditErr := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "invitation", "create", audit.Denied)); auditErr != nil {
+			return identity.Invitation{}, auditErr
+		}
+		return identity.Invitation{}, ErrForbidden
+	}
+	email = normalizeEmail(email)
+	address, parseErr := mail.ParseAddress(email)
+	if parseErr != nil || address.Address != email || address.Name != "" || validDays < 1 || validDays > 30 || len(idempotencyKey) < 16 || len(idempotencyKey) > 128 || !printableASCII(idempotencyKey) {
+		return identity.Invitation{}, ports.ErrInvalidArgument
+	}
+	now := a.Clock.Now().UTC()
+	invitation := identity.Invitation{ID: newID(), Email: email, CreatedByUserID: u.ID, CreatedAt: now, ExpiresAt: now.Add(time.Duration(validDays) * 24 * time.Hour)}
+	digest := sha256.Sum256([]byte(email + "\x00" + strconv.Itoa(validDays)))
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.InvitationCreated, "invitation", invitation.ID, audit.Succeeded)
+	created, _, err := a.Invitations.CreateInvitation(ctx, invitation, ports.Idempotency{PrincipalID: u.ID, Operation: "invitation.create", Key: idempotencyKey, RequestHash: digest[:]}, event)
+	if err == nil {
+		a.probe(ctx, "invitation.created", "succeeded")
+	}
+	return created, err
+}
+
+func (a App) ListInvitations(ctx context.Context, authorization, cursor string, limit int) (InvitationPage, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return InvitationPage{}, err
+	}
+	if _, authorized := a.InvitationAdminUsers[u.ID]; !authorized {
+		if auditErr := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "invitation", "list", audit.Denied)); auditErr != nil {
+			return InvitationPage{}, auditErr
+		}
+		return InvitationPage{}, ErrForbidden
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	if limit < 1 || limit > 100 {
+		return InvitationPage{}, ports.ErrInvalidArgument
+	}
+	request := ports.PageRequest{Limit: limit, Snapshot: a.Clock.Now().UTC()}
+	if cursor != "" {
+		payload, decodeErr := a.decodeCursor(cursor)
+		if decodeErr != nil || payload.Owner != u.ID || payload.Domain != "invitations" {
+			return InvitationPage{}, ports.ErrInvalidArgument
+		}
+		request.AfterID, request.AfterCreated, request.Snapshot = payload.AfterID, payload.AfterCreated, payload.Snapshot
+	}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.InvitationListed, "invitation", u.ID, audit.Succeeded)
+	page, err := a.Invitations.ListInvitations(ctx, u.ID, request, event)
+	if err != nil {
+		return InvitationPage{}, err
+	}
+	result := InvitationPage{Invitations: page.Invitations}
+	if page.HasMore && len(page.Invitations) > 0 {
+		last := page.Invitations[len(page.Invitations)-1]
+		result.NextCursor, err = a.encodeCursor(cursorPayload{Version: 1, Owner: u.ID, Domain: "invitations", AfterID: last.ID, AfterCreated: last.CreatedAt, Snapshot: request.Snapshot})
+	}
+	return result, err
+}
+
+func (a App) RevokeInvitation(ctx context.Context, authorization, id string) error {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return err
+	}
+	if _, authorized := a.InvitationAdminUsers[u.ID]; !authorized {
+		if auditErr := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "invitation", id, audit.Denied)); auditErr != nil {
+			return auditErr
+		}
+		return ErrForbidden
+	}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.InvitationRevoked, "invitation", id, audit.Succeeded)
+	if err := a.Invitations.RevokeInvitation(ctx, u.ID, id, event); err != nil {
+		return err
+	}
+	a.probe(ctx, "invitation.revoked", "succeeded")
+	return nil
+}
+
+func (a App) ReconcileAuthorization(ctx context.Context, worker string, limit int) error {
+	var batchErr error
+	if a.AuthorizationBatchOutbox != nil {
+		batchErr = a.ReconcileAuthorizationBatches(ctx, worker, limit)
+	}
+	changes, err := a.AuthorizationOutbox.ClaimAuthorizationChanges(ctx, worker, authorizationLease, limit)
+	if err != nil {
+		return errors.Join(batchErr, err)
+	}
+	var failures []error
+	for _, c := range changes {
+		if err := a.reconcileClaimedAuthorizationChange(ctx, c, worker); err != nil {
+			failures = append(failures, err)
+		}
+	}
+	return errors.Join(batchErr, errors.Join(failures...))
+}
+func (a App) ReconcileAuthorizationChange(ctx context.Context, id, worker string) error {
+	change, err := a.AuthorizationOutbox.ClaimAuthorizationChange(ctx, id, worker, authorizationLease)
+	if err != nil {
+		return err
+	}
+	return a.reconcileClaimedAuthorizationChange(ctx, change, worker)
+}
+
+type AuthorizationDeadLetterPage struct {
+	Items      []ports.AuthorizationDeadLetter
+	NextCursor string
+}
+
+func (a App) ListAuthorizationDeadLetters(ctx context.Context, authorization, cursor string, limit int) (AuthorizationDeadLetterPage, error) {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return AuthorizationDeadLetterPage{}, err
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	if limit < 1 || limit > 100 {
+		return AuthorizationDeadLetterPage{}, ports.ErrInvalidArgument
+	}
+	request := ports.PageRequest{Limit: limit, Snapshot: a.Clock.Now().UTC()}
+	if cursor != "" {
+		payload, decodeErr := a.decodeCursor(cursor)
+		if decodeErr != nil || payload.Owner != u.ID || payload.Domain != "authorization_dead_letters" {
+			return AuthorizationDeadLetterPage{}, ports.ErrInvalidArgument
+		}
+		request.AfterID, request.AfterCreated, request.Snapshot = payload.AfterID, payload.AfterCreated, payload.Snapshot
+	}
+	page, err := a.AuthorizationOutbox.ListAuthorizationDeadLetters(ctx, u.ID, request)
+	if err != nil {
+		return AuthorizationDeadLetterPage{}, err
+	}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.AuthorizationDeadLettersListed, "authorization_dead_letters", u.ID, audit.Succeeded)
+	if err := a.Audits.AppendAuditEvent(ctx, event); err != nil {
+		return AuthorizationDeadLetterPage{}, err
+	}
+	result := AuthorizationDeadLetterPage{Items: page.Items}
+	if page.HasMore && len(page.Items) > 0 {
+		last := page.Items[len(page.Items)-1]
+		result.NextCursor, err = a.encodeCursor(cursorPayload{Version: 1, Owner: u.ID, Domain: "authorization_dead_letters", AfterID: last.ID, AfterCreated: last.DeadLetteredAt, Snapshot: request.Snapshot})
+		if err != nil {
+			return AuthorizationDeadLetterPage{}, err
+		}
+	}
+	return result, nil
+}
+
+func (a App) RequeueAuthorizationDeadLetter(ctx context.Context, authorization, id string) error {
+	u, err := a.currentUserForAuditedOperation(ctx, authorization)
+	if err != nil {
+		return err
+	}
+	event := a.auditEvent(ctx, u.ID, u.ID, audit.AuthorizationDeadLetterRequeued, "authorization_change", id, audit.Succeeded)
+	worker := newID()
+	change, err := a.AuthorizationOutbox.RequeueAuthorizationDeadLetter(ctx, id, u.ID, worker, authorizationLease, event)
+	if err != nil {
+		if errors.Is(err, ports.ErrNotFound) {
+			denial := a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "authorization_change", id, audit.Denied)
+			if auditErr := a.Audits.AppendAuditEvent(ctx, denial); auditErr != nil {
+				return auditErr
+			}
+		}
+		return err
+	}
+	a.probe(ctx, "authorization.dead_letter_requeued", "succeeded")
+	return a.reconcileClaimedAuthorizationChange(ctx, change, worker)
+}
+func (a App) reconcileClaimedAuthorizationChange(ctx context.Context, change ports.AuthorizationChange, worker string) error {
+	if a.AuthorizationSerializer == nil {
+		return errors.New("authorization serializer is required")
+	}
+	if a.Audits == nil || a.Clock == nil {
+		return errors.New("audit dependencies are required")
+	}
+	var operationErr error
+	err := a.AuthorizationSerializer.WithinResource(ctx, change.ResourceType, change.ResourceID, func(locked context.Context) error {
+		if err := a.AuthorizationOutbox.RenewAuthorizationChange(locked, change.ID, worker, authorizationLease); err != nil {
+			return err
+		}
+		callContext, cancel := context.WithTimeout(locked, authorizationCallTimeout)
+		defer cancel()
+		switch change.Operation {
+		case ports.AuthorizationTouch:
+			operationErr = a.Authorizer.WriteRelationship(callContext, change.ResourceType, change.ResourceID, change.Relation, change.SubjectType, change.SubjectID)
+		case ports.AuthorizationDelete:
+			operationErr = a.Authorizer.DeleteRelationship(callContext, change.ResourceType, change.ResourceID, change.Relation, change.SubjectType, change.SubjectID)
+		default:
+			operationErr = errors.New("unsupported authorization operation")
+		}
+		if operationErr != nil {
+			auditErr := a.Audits.AppendAuditEvent(locked, a.auditEvent(locked, change.OwnerUserID, change.ActorUserID, audit.AuthorizationFailed, change.ResourceType, change.ResourceID, audit.Failed))
+			return errors.Join(operationErr, auditErr)
+		}
+		event := a.auditEvent(locked, change.OwnerUserID, change.ActorUserID, audit.AuthorizationApplied, change.ResourceType, change.ResourceID, audit.Succeeded)
+		return a.AuthorizationOutbox.CompleteAuthorizationChangeWithAudit(locked, change.ID, worker, event)
+	})
+	if operationErr != nil {
+		maxAttempts := a.AuthorizationMaxAttempts
+		if maxAttempts < 1 {
+			maxAttempts = 5
+		}
+		deadLettered, failErr := a.AuthorizationOutbox.FailAuthorizationChange(ctx, change.ID, worker, maxAttempts, "dependency_failure")
+		if deadLettered {
+			a.probe(ctx, "authorization.dead_lettered", "failed")
+		}
+		return errors.Join(err, failErr)
+	}
+	return err
+}

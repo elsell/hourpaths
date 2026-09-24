@@ -1,0 +1,786 @@
+package gormstore
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/dbmigrations"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	"strings"
+	"time"
+)
+
+type Store struct{ DB *gorm.DB }
+type userModel struct {
+	ID                    string `gorm:"primaryKey"`
+	Email, DisplayName    string
+	ProviderEmailVerified bool
+	Username              *string
+	ProfileVisibility     *identity.ProfileVisibility
+	Description           *string
+	ProfilePictureURL     *string
+	Status                identity.Status `gorm:"not null;default:active"`
+	InvitationAdmin       bool
+	CreatedAt, UpdatedAt  time.Time
+}
+type identityModel struct {
+	Issuer  string `gorm:"primaryKey"`
+	Subject string `gorm:"primaryKey"`
+	UserID  string `gorm:"uniqueIndex"`
+}
+type sessionModel struct {
+	TokenHash         []byte `gorm:"primaryKey"`
+	IdentityTokenHash []byte `gorm:"uniqueIndex"`
+	UserID            string `gorm:"index;not null"`
+	Scopes            string `gorm:"not null"`
+	ExpiresAt         time.Time
+	AbsoluteExpiresAt time.Time
+	RevokedAt         *time.Time
+	CreatedAt         time.Time
+}
+type resourceModel struct {
+	ID          string    `gorm:"primaryKey"`
+	Domain      string    `gorm:"index;not null;default:example"`
+	OwnerUserID string    `gorm:"index;not null"`
+	Name        string    `gorm:"not null"`
+	CreatedAt   time.Time `gorm:"not null"`
+}
+type idempotencyModel struct {
+	PrincipalID string `gorm:"primaryKey"`
+	Operation   string `gorm:"primaryKey"`
+	Key         string `gorm:"primaryKey"`
+	RequestHash []byte
+	ResourceID  string
+	CreatedAt   time.Time
+}
+type authorizationOutboxModel struct {
+	ID                                                         string `gorm:"primaryKey"`
+	ResourceType, ResourceID, Relation, SubjectType, SubjectID string
+	OwnerUserID, ActorUserID                                   string
+	Operation                                                  ports.AuthorizationOperation `gorm:"not null;default:touch"`
+	Attempts                                                   int
+	LockedBy                                                   string
+	LockedUntil, CompletedAt, DeadLetteredAt                   *time.Time
+	FailureCode                                                string
+	CreatedAt                                                  time.Time
+}
+type authorizationResourceLockModel struct {
+	ResourceType string `gorm:"primaryKey"`
+	ResourceID   string `gorm:"primaryKey"`
+}
+type schemaMigrationModel struct {
+	Version uint
+	Dirty   bool
+}
+
+func Open(driver, dsn string) (*Store, error) {
+	if driver != "postgres" {
+		return nil, fmt.Errorf("unsupported database driver %q", driver)
+	}
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{TranslateError: true})
+	if err != nil {
+		return nil, err
+	}
+	return &Store{DB: db}, nil
+}
+func (s *Store) ConfigurePool(maxOpen, maxIdle int, maxLifetime, maxIdleTime time.Duration) error {
+	if maxOpen < 1 || maxIdle < 0 || maxIdle > maxOpen || maxLifetime <= 0 || maxIdleTime <= 0 {
+		return errors.New("invalid database pool configuration")
+	}
+	db, err := s.DB.DB()
+	if err != nil {
+		return err
+	}
+	db.SetMaxOpenConns(maxOpen)
+	db.SetMaxIdleConns(maxIdle)
+	db.SetConnMaxLifetime(maxLifetime)
+	db.SetConnMaxIdleTime(maxIdleTime)
+	return nil
+}
+func (s *Store) Health(ctx context.Context) error {
+	db, err := s.DB.DB()
+	if err != nil {
+		return err
+	}
+	if err := db.PingContext(ctx); err != nil {
+		return err
+	}
+	var migrations []schemaMigrationModel
+	if err := s.DB.WithContext(ctx).Table("schema_migrations").Limit(2).Find(&migrations).Error; err != nil {
+		return fmt.Errorf("read migration ledger: %w", err)
+	}
+	if len(migrations) != 1 {
+		return fmt.Errorf("database migration ledger must contain exactly one row")
+	}
+	migration := migrations[0]
+	if migration.Dirty || migration.Version != dbmigrations.LatestVersion {
+		return fmt.Errorf("database migration ledger is not current")
+	}
+	return nil
+}
+func (s *Store) CreateResource(ctx context.Context, r ports.Resource, c ports.AuthorizationChange, event audit.Event, idempotency ports.Idempotency) (ports.Resource, bool, error) {
+	if c.Lease <= 0 {
+		return ports.Resource{}, false, errors.New("authorization lease must be positive")
+	}
+	if !validMutationAudit(event, audit.ResourceCreated, r.Domain, r.ID, r.OwnerUserID) || event.ActorUserID != r.OwnerUserID || idempotency.PrincipalID != r.OwnerUserID || len(idempotency.RequestHash) != 32 || idempotency.Key == "" {
+		return ports.Resource{}, false, ports.ErrInvalidArgument
+	}
+	var result ports.Resource
+	replayed := false
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		reservation := idempotencyModel{PrincipalID: idempotency.PrincipalID, Operation: idempotency.Operation, Key: idempotency.Key, RequestHash: append([]byte(nil), idempotency.RequestHash...), ResourceID: r.ID}
+		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&reservation)
+		if created.Error != nil {
+			return created.Error
+		}
+		if created.RowsAffected == 0 {
+			var existing idempotencyModel
+			if err := tx.Where("principal_id = ? AND operation = ? AND key = ?", idempotency.PrincipalID, idempotency.Operation, idempotency.Key).First(&existing).Error; err != nil {
+				return err
+			}
+			if string(existing.RequestHash) != string(idempotency.RequestHash) {
+				return ports.ErrIdempotencyConflict
+			}
+			var row resourceModel
+			if err := tx.Where("domain = ? AND id = ? AND owner_user_id = ?", r.Domain, existing.ResourceID, r.OwnerUserID).First(&row).Error; err != nil {
+				return err
+			}
+			result = ports.Resource{ID: row.ID, Domain: row.Domain, OwnerUserID: row.OwnerUserID, Name: row.Name, CreatedAt: row.CreatedAt}
+			replayed = true
+			return nil
+		}
+		if err := tx.Create(&resourceModel{ID: r.ID, Domain: r.Domain, OwnerUserID: r.OwnerUserID, Name: r.Name, CreatedAt: r.CreatedAt}).Error; err != nil {
+			return err
+		}
+		row := authorizationOutboxModel{ID: c.ID, ResourceType: c.ResourceType, ResourceID: c.ResourceID, Relation: c.Relation, SubjectType: c.SubjectType, SubjectID: c.SubjectID, OwnerUserID: c.OwnerUserID, ActorUserID: c.ActorUserID, Operation: c.Operation, LockedBy: c.LockedBy}
+		if err := tx.Create(&row).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&row).Update("locked_until", leaseExpiry(c.Lease.Milliseconds())).Error; err != nil {
+			return err
+		}
+		if err := appendAuditEvent(tx, event); err != nil {
+			return err
+		}
+		result = r
+		return nil
+	})
+	return result, replayed, err
+}
+func (s *Store) ListResources(ctx context.Context, domain, owner string, page ports.PageRequest) (ports.ResourcePage, error) {
+	query := s.DB.WithContext(ctx).Where("domain = ? AND owner_user_id = ? AND created_at <= ?", domain, owner, page.Snapshot)
+	if page.AfterID != "" {
+		query = query.Where("created_at > ? OR (created_at = ? AND id > ?)", page.AfterCreated, page.AfterCreated, page.AfterID)
+	}
+	var rows []resourceModel
+	if err := query.Order("created_at ASC, id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
+		return ports.ResourcePage{}, err
+	}
+	hasMore := len(rows) > page.Limit
+	if hasMore {
+		rows = rows[:page.Limit]
+	}
+	out := make([]ports.Resource, len(rows))
+	for i, r := range rows {
+		out[i] = ports.Resource{ID: r.ID, Domain: r.Domain, OwnerUserID: r.OwnerUserID, Name: r.Name, CreatedAt: r.CreatedAt}
+	}
+	return ports.ResourcePage{Resources: out, HasMore: hasMore}, nil
+}
+func (s *Store) GetResource(ctx context.Context, domain, id string) (ports.Resource, error) {
+	var r resourceModel
+	if err := s.DB.WithContext(ctx).Where("domain = ? AND id = ?", domain, id).First(&r).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return ports.Resource{}, ports.ErrNotFound
+		}
+		return ports.Resource{}, err
+	}
+	return ports.Resource{ID: r.ID, Domain: r.Domain, OwnerUserID: r.OwnerUserID, Name: r.Name, CreatedAt: r.CreatedAt}, nil
+}
+func (s *Store) UpdateResource(ctx context.Context, domain, id, name string, event audit.Event) (ports.Resource, error) {
+	var row resourceModel
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("domain = ? AND id = ?", domain, id).First(&row).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return ports.ErrNotFound
+			}
+			return err
+		}
+		if !validMutationAudit(event, audit.ResourceUpdated, domain, id, row.OwnerUserID) {
+			return ports.ErrInvalidArgument
+		}
+		result := tx.Model(&resourceModel{}).Where("domain = ? AND id = ?", domain, id).Update("name", name)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		if err := appendAuditEvent(tx, event); err != nil {
+			return err
+		}
+		return tx.Where("domain = ? AND id = ?", domain, id).First(&row).Error
+	})
+	if err != nil {
+		return ports.Resource{}, err
+	}
+	return ports.Resource{ID: row.ID, Domain: row.Domain, OwnerUserID: row.OwnerUserID, Name: row.Name, CreatedAt: row.CreatedAt}, nil
+}
+func (s *Store) DeleteResource(ctx context.Context, domain, id string, c ports.AuthorizationChange, event audit.Event) error {
+	if c.Lease <= 0 {
+		return errors.New("authorization lease must be positive")
+	}
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var existing resourceModel
+		if err := tx.Where("domain = ? AND id = ?", domain, id).First(&existing).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return ports.ErrNotFound
+			}
+			return err
+		}
+		if !validMutationAudit(event, audit.ResourceDeleted, domain, id, existing.OwnerUserID) {
+			return ports.ErrInvalidArgument
+		}
+		result := tx.Where("domain = ? AND id = ?", domain, id).Delete(&resourceModel{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		row := authorizationOutboxModel{ID: c.ID, ResourceType: c.ResourceType, ResourceID: c.ResourceID, Relation: c.Relation, SubjectType: c.SubjectType, SubjectID: c.SubjectID, OwnerUserID: c.OwnerUserID, ActorUserID: c.ActorUserID, Operation: c.Operation, LockedBy: c.LockedBy}
+		if err := tx.Create(&row).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&row).Update("locked_until", leaseExpiry(c.Lease.Milliseconds())).Error; err != nil {
+			return err
+		}
+		return appendAuditEvent(tx, event)
+	})
+}
+func leaseExpiry(milliseconds int64) clause.Expr {
+	return gorm.Expr("CURRENT_TIMESTAMP + (? * INTERVAL '1 millisecond')", milliseconds)
+}
+func (s *Store) ClaimAuthorizationChanges(ctx context.Context, worker string, lease time.Duration, limit int) ([]ports.AuthorizationChange, error) {
+	if lease <= 0 {
+		return nil, errors.New("authorization lease must be positive")
+	}
+	var rows []authorizationOutboxModel
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		earlier := tx.Model(&authorizationOutboxModel{}).Select("1").Where("authorization_outbox_models.resource_type = candidate.resource_type AND authorization_outbox_models.resource_id = candidate.resource_id AND authorization_outbox_models.completed_at IS NULL AND (authorization_outbox_models.created_at < candidate.created_at OR (authorization_outbox_models.created_at = candidate.created_at AND authorization_outbox_models.id < candidate.id))")
+		earlierBatch := tx.Table("authorization_batch_outbox_models").Select("1").Where("authorization_batch_outbox_models.resource_type = candidate.resource_type AND authorization_batch_outbox_models.resource_id = candidate.resource_id AND authorization_batch_outbox_models.completed_at IS NULL AND (authorization_batch_outbox_models.created_at < candidate.created_at OR (authorization_batch_outbox_models.created_at = candidate.created_at AND authorization_batch_outbox_models.id < candidate.id))")
+		if err := tx.Table("authorization_outbox_models AS candidate").Where("candidate.completed_at IS NULL AND candidate.dead_lettered_at IS NULL AND (candidate.locked_until IS NULL OR candidate.locked_until <= CURRENT_TIMESTAMP)").Where("NOT EXISTS (?)", earlier).Where("NOT EXISTS (?)", earlierBatch).Order("candidate.created_at ASC, candidate.id ASC").Limit(limit).Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).Find(&rows).Error; err != nil {
+			return err
+		}
+		if len(rows) == 0 {
+			return nil
+		}
+		ids := make([]string, len(rows))
+		for i := range rows {
+			ids[i] = rows[i].ID
+		}
+		if err := tx.Model(&authorizationOutboxModel{}).Where("id IN ?", ids).Updates(map[string]any{"locked_by": worker, "locked_until": leaseExpiry(lease.Milliseconds())}).Error; err != nil {
+			return err
+		}
+		return tx.Where("id IN ?", ids).Order("created_at ASC, id ASC").Find(&rows).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ports.AuthorizationChange, len(rows))
+	for i, r := range rows {
+		out[i] = authorizationChange(r)
+	}
+	return out, nil
+}
+func (s *Store) ClaimAuthorizationChange(ctx context.Context, id, worker string, lease time.Duration) (ports.AuthorizationChange, error) {
+	if lease <= 0 {
+		return ports.AuthorizationChange{}, errors.New("authorization lease must be positive")
+	}
+	var row authorizationOutboxModel
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		candidate := tx.Where("id = ? AND completed_at IS NULL AND dead_lettered_at IS NULL AND (locked_until IS NULL OR locked_until <= CURRENT_TIMESTAMP)", id).Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).First(&row)
+		if candidate.Error != nil {
+			if candidate.Error == gorm.ErrRecordNotFound {
+				return ports.ErrNotFound
+			}
+			return candidate.Error
+		}
+		var earlier int64
+		if err := tx.Model(&authorizationOutboxModel{}).Where("resource_type = ? AND resource_id = ? AND completed_at IS NULL AND (created_at < ? OR (created_at = ? AND id < ?))", row.ResourceType, row.ResourceID, row.CreatedAt, row.CreatedAt, row.ID).Count(&earlier).Error; err != nil {
+			return err
+		}
+		if earlier > 0 {
+			return ports.ErrNotFound
+		}
+		if err := tx.Table("authorization_batch_outbox_models").Where("resource_type = ? AND resource_id = ? AND completed_at IS NULL AND (created_at < ? OR (created_at = ? AND id < ?))", row.ResourceType, row.ResourceID, row.CreatedAt, row.CreatedAt, row.ID).Count(&earlier).Error; err != nil {
+			return err
+		}
+		if earlier > 0 {
+			return ports.ErrNotFound
+		}
+		result := tx.Model(&authorizationOutboxModel{}).Where("id = ? AND completed_at IS NULL", id).Updates(map[string]any{"locked_by": worker, "locked_until": leaseExpiry(lease.Milliseconds())})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		return tx.Where("id = ?", id).First(&row).Error
+	})
+	if err != nil {
+		return ports.AuthorizationChange{}, err
+	}
+	return authorizationChange(row), nil
+}
+func (s *Store) ClaimAuthorizationChangeForResource(ctx context.Context, resourceType, resourceID, worker string, lease time.Duration) (ports.AuthorizationChange, error) {
+	if lease <= 0 || resourceType == "" || resourceID == "" || worker == "" {
+		return ports.AuthorizationChange{}, ports.ErrInvalidArgument
+	}
+	var row authorizationOutboxModel
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("resource_type = ? AND resource_id = ? AND completed_at IS NULL", resourceType, resourceID).Order("created_at ASC, id ASC").Clauses(clause.Locking{Strength: "UPDATE"}).First(&row)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return ports.ErrNotFound
+		}
+		if result.Error != nil {
+			return result.Error
+		}
+		if row.DeadLetteredAt != nil {
+			return ports.ErrAuthorizationDeadLettered
+		}
+		var earlierBatch int64
+		if err := tx.Table("authorization_batch_outbox_models").Where("resource_type = ? AND resource_id = ? AND completed_at IS NULL AND (created_at < ? OR (created_at = ? AND id < ?))", row.ResourceType, row.ResourceID, row.CreatedAt, row.CreatedAt, row.ID).Count(&earlierBatch).Error; err != nil {
+			return err
+		}
+		if earlierBatch > 0 {
+			return ports.ErrAuthorizationPending
+		}
+		claimed := tx.Model(&authorizationOutboxModel{}).Where("id = ? AND completed_at IS NULL AND dead_lettered_at IS NULL AND ((locked_by = ? AND locked_until > CURRENT_TIMESTAMP) OR locked_until IS NULL OR locked_until <= CURRENT_TIMESTAMP)", row.ID, worker).Updates(map[string]any{"locked_by": worker, "locked_until": leaseExpiry(lease.Milliseconds())})
+		if claimed.Error != nil {
+			return claimed.Error
+		}
+		if claimed.RowsAffected != 1 {
+			return ports.ErrAuthorizationPending
+		}
+		return tx.Where("id = ?", row.ID).First(&row).Error
+	})
+	if err != nil {
+		return ports.AuthorizationChange{}, err
+	}
+	return claimedAuthorizationChange(row, lease), nil
+}
+func (s *Store) RenewAuthorizationChange(ctx context.Context, id, worker string, lease time.Duration) error {
+	if lease <= 0 {
+		return errors.New("authorization lease must be positive")
+	}
+	result := s.DB.WithContext(ctx).Model(&authorizationOutboxModel{}).Where("id = ? AND locked_by = ? AND locked_until > CURRENT_TIMESTAMP AND completed_at IS NULL", id, worker).Update("locked_until", leaseExpiry(lease.Milliseconds()))
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		return ports.ErrNotFound
+	}
+	return nil
+}
+func authorizationChange(row authorizationOutboxModel) ports.AuthorizationChange {
+	change := ports.AuthorizationChange{ID: row.ID, ResourceType: row.ResourceType, ResourceID: row.ResourceID, Relation: row.Relation, SubjectType: row.SubjectType, SubjectID: row.SubjectID, OwnerUserID: row.OwnerUserID, ActorUserID: row.ActorUserID, Operation: row.Operation, Attempts: row.Attempts, LockedBy: row.LockedBy}
+	if row.LockedUntil != nil {
+		change.LockedUntil = *row.LockedUntil
+	}
+	return change
+}
+
+func claimedAuthorizationChange(row authorizationOutboxModel, lease time.Duration) ports.AuthorizationChange {
+	change := authorizationChange(row)
+	change.Lease = lease
+	return change
+}
+func (s *Store) CompleteAuthorizationChangeWithAudit(ctx context.Context, id, worker string, event audit.Event) error {
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row authorizationOutboxModel
+		if err := tx.Where("id = ? AND locked_by = ? AND locked_until > CURRENT_TIMESTAMP AND completed_at IS NULL", id, worker).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ports.ErrNotFound
+			}
+			return err
+		}
+		if !validMutationAudit(event, audit.AuthorizationApplied, row.ResourceType, row.ResourceID, row.OwnerUserID) || event.ActorUserID != row.ActorUserID {
+			return ports.ErrInvalidArgument
+		}
+		result := tx.Model(&authorizationOutboxModel{}).Where("id = ? AND locked_by = ? AND locked_until > CURRENT_TIMESTAMP AND completed_at IS NULL", id, worker).Updates(map[string]any{"completed_at": gorm.Expr("CURRENT_TIMESTAMP"), "locked_by": "", "locked_until": nil})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		return appendAuditEvent(tx, event)
+	})
+}
+func (s *Store) FailAuthorizationChange(ctx context.Context, id, worker string, maxAttempts int, failureCode string) (bool, error) {
+	if maxAttempts < 1 || failureCode != "dependency_failure" {
+		return false, ports.ErrInvalidArgument
+	}
+	updates := map[string]any{"attempts": gorm.Expr("attempts + 1"), "locked_by": "", "locked_until": nil, "failure_code": failureCode, "dead_lettered_at": gorm.Expr("CASE WHEN attempts + 1 >= ? THEN CURRENT_TIMESTAMP ELSE NULL END", maxAttempts)}
+	result := s.DB.WithContext(ctx).Model(&authorizationOutboxModel{}).Where("id = ? AND locked_by = ? AND locked_until > CURRENT_TIMESTAMP AND completed_at IS NULL AND dead_lettered_at IS NULL", id, worker).Updates(updates)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected != 1 {
+		return false, ports.ErrNotFound
+	}
+	var row authorizationOutboxModel
+	if err := s.DB.WithContext(ctx).Where("id = ?", id).First(&row).Error; err != nil {
+		return false, err
+	}
+	return row.DeadLetteredAt != nil, nil
+}
+
+func (s *Store) ListAuthorizationDeadLetters(ctx context.Context, ownerUserID string, page ports.PageRequest) (ports.AuthorizationDeadLetterPage, error) {
+	if ownerUserID == "" || page.Limit < 1 || page.Limit > 100 || page.Snapshot.IsZero() {
+		return ports.AuthorizationDeadLetterPage{}, ports.ErrInvalidArgument
+	}
+	query := s.DB.WithContext(ctx).Where("owner_user_id = ? AND dead_lettered_at IS NOT NULL AND dead_lettered_at <= ? AND completed_at IS NULL", ownerUserID, page.Snapshot)
+	if page.AfterID != "" {
+		query = query.Where("dead_lettered_at < ? OR (dead_lettered_at = ? AND id > ?)", page.AfterCreated, page.AfterCreated, page.AfterID)
+	}
+	var rows []authorizationOutboxModel
+	if err := query.Order("dead_lettered_at DESC, id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
+		return ports.AuthorizationDeadLetterPage{}, err
+	}
+	hasMore := len(rows) > page.Limit
+	if hasMore {
+		rows = rows[:page.Limit]
+	}
+	out := make([]ports.AuthorizationDeadLetter, len(rows))
+	for i, row := range rows {
+		out[i] = ports.AuthorizationDeadLetter{ID: row.ID, ResourceType: row.ResourceType, ResourceID: row.ResourceID, Relation: row.Relation, SubjectType: row.SubjectType, SubjectID: row.SubjectID, OwnerUserID: row.OwnerUserID, ActorUserID: row.ActorUserID, Operation: row.Operation, Attempts: row.Attempts, FailureCode: row.FailureCode, DeadLetteredAt: *row.DeadLetteredAt}
+	}
+	return ports.AuthorizationDeadLetterPage{Items: out, HasMore: hasMore}, nil
+}
+
+func (s *Store) RequeueAuthorizationDeadLetter(ctx context.Context, id, ownerUserID, worker string, lease time.Duration, event audit.Event) (ports.AuthorizationChange, error) {
+	if worker == "" || lease <= 0 || !validMutationAudit(event, audit.AuthorizationDeadLetterRequeued, "authorization_change", id, ownerUserID) || event.ActorUserID != ownerUserID {
+		return ports.AuthorizationChange{}, ports.ErrInvalidArgument
+	}
+	var row authorizationOutboxModel
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("id = ? AND owner_user_id = ? AND dead_lettered_at IS NOT NULL AND completed_at IS NULL", id, ownerUserID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return ports.ErrNotFound
+		}
+		if result.Error != nil {
+			return result.Error
+		}
+		if err := tx.Model(&authorizationOutboxModel{}).Where("id = ?", id).Updates(map[string]any{"attempts": 0, "dead_lettered_at": nil, "failure_code": "", "locked_by": worker, "locked_until": leaseExpiry(lease.Milliseconds())}).Error; err != nil {
+			return err
+		}
+		if err := appendAuditEvent(tx, event); err != nil {
+			return err
+		}
+		return tx.Where("id = ?", id).First(&row).Error
+	})
+	if err != nil {
+		return ports.AuthorizationChange{}, err
+	}
+	return authorizationChange(row), nil
+}
+
+func (s *Store) WithinResource(ctx context.Context, resourceType, resourceID string, fn func(context.Context) error) error {
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		key := authorizationResourceLockModel{ResourceType: resourceType, ResourceID: resourceID}
+		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&key).Error; err != nil {
+			return err
+		}
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("resource_type = ? AND resource_id = ?", resourceType, resourceID).First(&key).Error; err != nil {
+			return err
+		}
+		return fn(ctx)
+	})
+}
+
+func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event, profileEvent, invitationEvent audit.Event, allowCreate bool) (identity.User, error) {
+	userID := identity.UserID(claims.Issuer, claims.Subject)
+	if !validMutationAudit(event, audit.UserProvisioned, "user", userID, userID) || event.ActorUserID != userID || !validMutationAudit(profileEvent, audit.UserProfileSynchronized, "user", userID, userID) || profileEvent.ActorUserID != userID {
+		return identity.User{}, ports.ErrInvalidArgument
+	}
+	var found identityModel
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("issuer = ? AND subject = ?", claims.Issuer, claims.Subject).First(&found)
+		if result.Error == nil {
+			var existing userModel
+			if err := tx.Where("id = ?", found.UserID).First(&existing).Error; err != nil {
+				return err
+			}
+			normalizedEmail := existing.Email
+			providerEmailVerified := existing.ProviderEmailVerified
+			if incomingEmail := trustedProviderEmail(claims); incomingEmail != "" {
+				normalizedEmail = incomingEmail
+				providerEmailVerified = true
+			}
+			switch existing.Status {
+			case identity.StatusProvisional:
+				if existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.DisplayName == claims.DisplayName && existing.InvitationAdmin == claims.InvitationAdmin {
+					return nil
+				}
+				updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", found.UserID, identity.StatusProvisional).Updates(map[string]any{"email": normalizedEmail, "provider_email_verified": providerEmailVerified, "display_name": claims.DisplayName, "invitation_admin": claims.InvitationAdmin})
+				if updated.Error != nil {
+					return updated.Error
+				}
+				if updated.RowsAffected != 1 {
+					return ports.ErrNotFound
+				}
+				return appendAuditEvent(tx, profileEvent)
+			case identity.StatusActive:
+				if existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.InvitationAdmin == claims.InvitationAdmin {
+					return nil
+				}
+				updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", found.UserID, identity.StatusActive).Updates(map[string]any{"email": normalizedEmail, "provider_email_verified": providerEmailVerified, "invitation_admin": claims.InvitationAdmin})
+				if updated.Error != nil {
+					return updated.Error
+				}
+				if updated.RowsAffected != 1 {
+					return ports.ErrNotFound
+				}
+				return appendAuditEvent(tx, profileEvent)
+			default:
+				return ports.ErrNotFound
+			}
+		}
+		if result.Error != gorm.ErrRecordNotFound {
+			return result.Error
+		}
+		var claimedInvitation invitationModel
+		if claims.EmailVerified {
+			var err error
+			claimedInvitation, err = activeInvitation(tx, normalizeEmail(claims.Email), event.OccurredAt)
+			if err != nil && (!allowCreate || !errors.Is(err, ports.ErrNotFound)) {
+				return err
+			}
+			if err == nil && (!validMutationAudit(invitationEvent, audit.InvitationConsumed, "invitation", normalizeEmail(claims.Email), userID) || invitationEvent.ActorUserID != userID) {
+				return ports.ErrInvalidArgument
+			}
+		} else if !allowCreate {
+			return ports.ErrNotFound
+		}
+		providerEmail := trustedProviderEmail(claims)
+		u := userModel{ID: userID, Email: providerEmail, ProviderEmailVerified: providerEmail != "", DisplayName: claims.DisplayName, Status: identity.StatusProvisional, InvitationAdmin: claims.InvitationAdmin}
+		createdUser := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&u)
+		if createdUser.Error != nil {
+			return createdUser.Error
+		}
+		if createdUser.RowsAffected != 1 {
+			var existing userModel
+			if err := tx.Where("id = ?", userID).First(&existing).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return ports.ErrNotFound
+				}
+				return err
+			}
+		}
+		candidate := identityModel{Issuer: claims.Issuer, Subject: claims.Subject, UserID: userID}
+		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
+		if created.Error != nil {
+			return created.Error
+		}
+		if created.RowsAffected == 1 {
+			if err := appendAuditEvent(tx, event); err != nil {
+				return err
+			}
+			if claimedInvitation.ID != "" {
+				consumed := tx.Model(&invitationModel{}).Where("id = ? AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at > ?", claimedInvitation.ID, invitationEvent.OccurredAt).Updates(map[string]any{"consumed_by_user_id": userID, "consumed_at": invitationEvent.OccurredAt})
+				if consumed.Error != nil {
+					return consumed.Error
+				}
+				if consumed.RowsAffected != 1 {
+					return ports.ErrNotFound
+				}
+				if err := appendAuditEvent(tx, invitationEvent); err != nil {
+					return err
+				}
+			}
+		}
+		return tx.Where("issuer = ? AND subject = ?", claims.Issuer, claims.Subject).First(&found).Error
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identity.User{}, ports.ErrNotFound
+		}
+		return identity.User{}, err
+	}
+	var u userModel
+	if err := s.DB.WithContext(ctx).First(&u, "id = ?", found.UserID).Error; err != nil {
+		return identity.User{}, err
+	}
+	if u.Status != identity.StatusProvisional && u.Status != identity.StatusActive {
+		return identity.User{}, ports.ErrNotFound
+	}
+	return identityUserFromModel(u), nil
+}
+
+func normalizeEmail(value string) string { return identity.NormalizeEmail(value) }
+
+func trustedProviderEmail(claims ports.Claims) string {
+	if !claims.EmailVerified {
+		return ""
+	}
+	return normalizeEmail(claims.Email)
+}
+
+func identityUserFromModel(user userModel) identity.User {
+	email := ""
+	if user.ProviderEmailVerified {
+		email = user.Email
+	}
+	visibility := identity.ProfileVisibility("")
+	if user.ProfileVisibility != nil {
+		visibility = *user.ProfileVisibility
+	}
+	return identity.User{ID: user.ID, Email: email, DisplayName: user.DisplayName, Status: user.Status, InvitationAdmin: user.InvitationAdmin, ProfileVisibility: visibility, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt}
+}
+
+func (s *Store) GetUser(ctx context.Context, id string) (identity.User, error) {
+	var u userModel
+	if err := s.DB.WithContext(ctx).Where("id = ? AND status = ?", id, identity.StatusActive).First(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identity.User{}, ports.ErrNotFound
+		}
+		return identity.User{}, err
+	}
+	return identityUserFromModel(u), nil
+}
+
+func (s *Store) GetProvisionalUser(ctx context.Context, id string) (identity.User, error) {
+	var u userModel
+	if err := s.DB.WithContext(ctx).Where("id = ? AND status = ?", id, identity.StatusProvisional).First(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return identity.User{}, ports.ErrNotFound
+		}
+		return identity.User{}, err
+	}
+	return identityUserFromModel(u), nil
+}
+
+func (s *Store) DisableUser(ctx context.Context, id string, event audit.Event) error {
+	if !validMutationAudit(event, audit.UserDeactivated, "user", id, id) || event.ActorUserID != id {
+		return ports.ErrInvalidArgument
+	}
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&userModel{}).Where("id = ? AND status = ?", id, identity.StatusActive).Update("status", identity.StatusDisabled)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		if err := tx.Model(&sessionModel{}).Where("user_id = ? AND revoked_at IS NULL", id).Update("revoked_at", event.OccurredAt).Error; err != nil {
+			return err
+		}
+		return appendAuditEvent(tx, event)
+	})
+}
+
+func (s *Store) SaveSession(ctx context.Context, record ports.SessionRecord, event audit.Event) error {
+	if len(record.TokenHash) != 32 || len(record.IdentityTokenHash) != 32 || record.UserID == "" || len(record.Scopes) != 1 || !accountLifecycleScope(record.Scopes[0]) || record.ExpiresAt.IsZero() || record.AbsoluteExpiresAt.Before(record.ExpiresAt) || !validMutationAudit(event, audit.SessionCreated, "user", record.UserID, record.UserID) || event.ActorUserID != record.UserID {
+		return ports.ErrInvalidArgument
+	}
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var account userModel
+		if err := tx.Select("status").Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", record.UserID).First(&account).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ports.ErrInvalidArgument
+			}
+			return err
+		}
+		if !sessionScopeMatchesStatus(account.Status, record.Scopes[0]) {
+			return ports.ErrInvalidArgument
+		}
+		if err := tx.Create(&sessionModel{TokenHash: append([]byte(nil), record.TokenHash...), IdentityTokenHash: append([]byte(nil), record.IdentityTokenHash...), UserID: record.UserID, Scopes: strings.Join(record.Scopes, " "), ExpiresAt: record.ExpiresAt, AbsoluteExpiresAt: record.AbsoluteExpiresAt}).Error; err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return ports.ErrInvalidCredential
+			}
+			return err
+		}
+		return appendAuditEvent(tx, event)
+	})
+}
+
+func (s *Store) ResolveSession(ctx context.Context, hash []byte, now time.Time) (ports.Principal, error) {
+	var row sessionModel
+	err := s.DB.WithContext(ctx).Joins("JOIN user_models ON user_models.id = session_models.user_id").Where(
+		"session_models.token_hash = ? AND session_models.revoked_at IS NULL AND session_models.expires_at > ? AND ((user_models.status = ? AND session_models.scopes = ?) OR (user_models.status = ? AND session_models.scopes = ?))",
+		hash, now, identity.StatusProvisional, "api:onboarding", identity.StatusActive, "api:user",
+	).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ports.Principal{}, ports.ErrNotFound
+	}
+	if err != nil {
+		return ports.Principal{}, err
+	}
+	return ports.Principal{UserID: row.UserID, Scopes: strings.Fields(row.Scopes)}, nil
+}
+
+func accountLifecycleScope(scope string) bool {
+	return scope == "api:onboarding" || scope == "api:user"
+}
+
+func sessionScopeMatchesStatus(status identity.Status, scope string) bool {
+	return status == identity.StatusProvisional && scope == "api:onboarding" || status == identity.StatusActive && scope == "api:user"
+}
+
+func (s *Store) RevokeSessionHash(ctx context.Context, hash []byte, now time.Time, event audit.Event) error {
+	if len(hash) != 32 || !validMutationAudit(event, audit.SessionRevoked, "user", event.OwnerUserID, event.OwnerUserID) || event.ActorUserID != event.OwnerUserID {
+		return ports.ErrInvalidArgument
+	}
+	return s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&sessionModel{}).Where("token_hash = ? AND user_id = ? AND revoked_at IS NULL", hash, event.OwnerUserID).Update("revoked_at", now)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		return appendAuditEvent(tx, event)
+	})
+}
+
+func (s *Store) RotateSessionHash(ctx context.Context, oldHash []byte, now time.Time, record ports.SessionRecord, revoked, created audit.Event) (time.Time, error) {
+	if len(oldHash) != 32 || len(record.TokenHash) != 32 || record.UserID == "" || len(record.Scopes) != 1 || record.Scopes[0] != "api:user" || !record.ExpiresAt.After(now) ||
+		!validMutationAudit(revoked, audit.SessionRevoked, "user", record.UserID, record.UserID) || revoked.ActorUserID != record.UserID ||
+		!validMutationAudit(created, audit.SessionCreated, "user", record.UserID, record.UserID) || created.ActorUserID != record.UserID {
+		return time.Time{}, ports.ErrInvalidArgument
+	}
+	actualExpiresAt := record.ExpiresAt
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var old sessionModel
+		if err := tx.Where("token_hash = ? AND user_id = ? AND revoked_at IS NULL AND expires_at > ? AND absolute_expires_at > ?", oldHash, record.UserID, now, now).Clauses(clause.Locking{Strength: "UPDATE"}).First(&old).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ports.ErrNotFound
+			}
+			return err
+		}
+		if actualExpiresAt.After(old.AbsoluteExpiresAt) {
+			actualExpiresAt = old.AbsoluteExpiresAt
+		}
+		result := tx.Model(&sessionModel{}).Where("token_hash = ? AND user_id = ? AND revoked_at IS NULL", oldHash, record.UserID).Update("revoked_at", now)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return ports.ErrNotFound
+		}
+		if err := tx.Create(&sessionModel{TokenHash: append([]byte(nil), record.TokenHash...), UserID: record.UserID, Scopes: strings.Join(record.Scopes, " "), ExpiresAt: actualExpiresAt, AbsoluteExpiresAt: old.AbsoluteExpiresAt}).Error; err != nil {
+			return err
+		}
+		if err := appendAuditEvent(tx, revoked); err != nil {
+			return err
+		}
+		return appendAuditEvent(tx, created)
+	})
+	return actualExpiresAt, err
+}

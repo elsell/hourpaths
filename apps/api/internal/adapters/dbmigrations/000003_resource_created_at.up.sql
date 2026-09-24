@@ -1,0 +1,1 @@
+-- No-op: this project was generated without the example resource slice.

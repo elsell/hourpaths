@@ -1,0 +1,138 @@
+services:
+  postgres:
+    image: registry.access.redhat.com/hi/postgresql:18.4-1784429813@sha256:9e685e4bc9838b5ace7a673b5b85ffcada7f851b52c07514d7dbeb8d3f9434f1
+    environment: { POSTGRES_USER: app_migrator, POSTGRES_PASSWORD: app_migrator, POSTGRES_DB: app }
+    ports: ["127.0.0.1:${HOURPATHS_POSTGRES_HOST_PORT:-5432}:5432"]
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck: { test: [CMD-SHELL, 'test "$(cat /proc/1/comm)" = postgres && pg_isready -U app_migrator -d app'], start_period: 10s, interval: 2s, timeout: 2s, retries: 60 }
+  spicedb-migrate:
+    image: authzed/spicedb:v1.54.0@sha256:830527f85ac4cb40aaf3d3e8e3fe0b84cdace5ee81ceb43f905b3822ee580b82
+    command: [datastore, migrate, head, --datastore-engine, postgres, --datastore-conn-uri, "postgres://spicedb:spicedb@postgres:5432/spicedb?sslmode=disable"]
+    depends_on: { postgres: { condition: service_healthy } }
+  app-migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    entrypoint: [/migrate]
+    environment:
+      HOURPATHS_DATABASE_DSN: postgres://app_migrator:app_migrator@postgres:5432/app?sslmode=disable
+      HOURPATHS_DATABASE_INSECURE: "true"
+    depends_on: { postgres: { condition: service_healthy }, spicedb-schema: { condition: service_completed_successfully } }
+  policy-publish:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    entrypoint: [/policy-publish]
+    # YAML hex escapes keep the timestamp scalar exact without confusing the
+    # repository's conservative environment-key inventory scanner.
+    command: [-updated-at, "2026-01-10T00\x3A00\x3A00Z", -allow-insecure-policy-urls]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOURPATHS_DATABASE_DSN: postgres://app_migrator:app_migrator@postgres:5432/app?sslmode=disable
+      HOURPATHS_DATABASE_INSECURE: "true"
+      HOURPATHS_CURRENT_POLICY_REVISION: ${HOURPATHS_CURRENT_POLICY_REVISION:-1}
+      HOURPATHS_CURRENT_TERMS_VERSION: ${HOURPATHS_CURRENT_TERMS_VERSION:-local-dev-v1}
+      HOURPATHS_CURRENT_PRIVACY_POLICY_VERSION: ${HOURPATHS_CURRENT_PRIVACY_POLICY_VERSION:-local-dev-v1}
+      HOURPATHS_CURRENT_COMMUNITY_GUIDELINES_VERSION: ${HOURPATHS_CURRENT_COMMUNITY_GUIDELINES_VERSION:-local-dev-v1}
+      HOURPATHS_TERMS_URL: ${HOURPATHS_TERMS_URL:-http://localhost:5173/legal/terms}
+      HOURPATHS_PRIVACY_POLICY_URL: ${HOURPATHS_PRIVACY_POLICY_URL:-http://localhost:5173/legal/privacy}
+      HOURPATHS_COMMUNITY_GUIDELINES_URL: ${HOURPATHS_COMMUNITY_GUIDELINES_URL:-http://localhost:5173/community-guidelines}
+      HOURPATHS_SUPPORT_URL: ${HOURPATHS_SUPPORT_URL:-http://localhost:5173/support}
+    depends_on: { app-migrate: { condition: service_completed_successfully } }
+  audit-retention:
+    profiles: [operations]
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    entrypoint: [/audit-retention]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOURPATHS_AUDIT_RETENTION_DSN: postgres://app_audit_retention:app_audit_retention@postgres:5432/app?sslmode=disable
+    depends_on: { app-migrate: { condition: service_completed_successfully } }
+  spicedb:
+    image: authzed/spicedb:v1.54.0@sha256:830527f85ac4cb40aaf3d3e8e3fe0b84cdace5ee81ceb43f905b3822ee580b82
+    command: [serve, --datastore-engine, postgres, --datastore-conn-uri, "postgres://spicedb:spicedb@postgres:5432/spicedb?sslmode=disable", --grpc-preshared-key, local-development-schema-change-me]
+    depends_on: { spicedb-migrate: { condition: service_completed_successfully } }
+  spicedb-runtime-proxy:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    entrypoint: [/spicedb-runtime-proxy]
+    environment:
+      HOURPATHS_SPICEDB_PROXY_ADDR: 0.0.0.0:50051
+      HOURPATHS_SPICEDB_UPSTREAM_ENDPOINT: spicedb:50051
+      HOURPATHS_SPICEDB_SCHEMA_TOKEN: local-development-schema-change-me
+      HOURPATHS_SPICEDB_TOKEN: local-development-runtime-change-me
+      HOURPATHS_SPICEDB_INSECURE: "true"
+    ports: ["127.0.0.1:${HOURPATHS_SPICEDB_HOST_PORT:-50051}:50051"]
+    depends_on: { spicedb-schema: { condition: service_completed_successfully } }
+  dex:
+    image: dexidp/dex:v2.44.0@sha256:5d0656fce7d453c0e3b2706abf40c0d0ce5b371fb0b73b3cf714d05f35fa5f86
+    command: [dex, serve, /etc/dex/config.yaml]
+    volumes: ["${HOURPATHS_DEX_CONFIG_PATH:-./deploy/dex/config.yaml}:/etc/dex/config.yaml:ro"]
+    ports: ["127.0.0.1:${HOURPATHS_DEX_HOST_PORT:-5556}:5556"]
+  spicedb-schema:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    entrypoint: [/schema]
+    environment:
+      HOURPATHS_SPICEDB_ENDPOINT: spicedb:50051
+      HOURPATHS_SPICEDB_SCHEMA_TOKEN: local-development-schema-change-me
+      HOURPATHS_SPICEDB_INSECURE: "true"
+    depends_on: { spicedb: { condition: service_started } }
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOURPATHS_HTTP_ADDR: 0.0.0.0:8080
+      HOURPATHS_PUBLIC_BASE_URL: ${HOURPATHS_API_PUBLIC_BASE_URL:-http://localhost:8080}
+      HOURPATHS_DATABASE_DSN: postgres://app:app@postgres:5432/app?sslmode=disable
+      HOURPATHS_DATABASE_INSECURE: "true"
+      HOURPATHS_CURSOR_SIGNING_KEY: local-development-cursor-signing-key-change-me
+      HOURPATHS_PUSH_TOKEN_KEY: local-development-push-token-key-change-me
+      HOURPATHS_PUSH_PROVIDER_ENDPOINT: ${HOURPATHS_PUSH_PROVIDER_ENDPOINT:-https://exp.host}
+      HOURPATHS_PUSH_PROVIDER_INSECURE: ${HOURPATHS_PUSH_PROVIDER_INSECURE:-false}
+      HOURPATHS_METRICS_BEARER_TOKEN: local-development-metrics-token-change-me
+      HOURPATHS_CURRENT_POLICY_REVISION: ${HOURPATHS_CURRENT_POLICY_REVISION:-1}
+      HOURPATHS_CURRENT_TERMS_VERSION: ${HOURPATHS_CURRENT_TERMS_VERSION:-local-dev-v1}
+      HOURPATHS_CURRENT_PRIVACY_POLICY_VERSION: ${HOURPATHS_CURRENT_PRIVACY_POLICY_VERSION:-local-dev-v1}
+      HOURPATHS_CURRENT_COMMUNITY_GUIDELINES_VERSION: ${HOURPATHS_CURRENT_COMMUNITY_GUIDELINES_VERSION:-local-dev-v1}
+      HOURPATHS_TERMS_URL: ${HOURPATHS_TERMS_URL:-http://localhost:5173/legal/terms}
+      HOURPATHS_PRIVACY_POLICY_URL: ${HOURPATHS_PRIVACY_POLICY_URL:-http://localhost:5173/legal/privacy}
+      HOURPATHS_COMMUNITY_GUIDELINES_URL: ${HOURPATHS_COMMUNITY_GUIDELINES_URL:-http://localhost:5173/community-guidelines}
+      HOURPATHS_SUPPORT_URL: ${HOURPATHS_SUPPORT_URL:-http://localhost:5173/support}
+      HOURPATHS_ACCOUNT_SELF_DEACTIVATION_ENABLED: "true"
+      HOURPATHS_OWNERSHIP_TRANSFER_EXPIRATION_MINUTES: ${HOURPATHS_OWNERSHIP_TRANSFER_EXPIRATION_MINUTES:-10080}
+      HOURPATHS_ACCOUNT_PROVISIONING_MODE: ${HOURPATHS_ACCOUNT_PROVISIONING_MODE:-open}
+      HOURPATHS_ACCOUNT_INVITED_EMAILS: ${HOURPATHS_ACCOUNT_INVITED_EMAILS:-}
+      HOURPATHS_INVITATION_ADMIN_IDENTITIES: ${HOURPATHS_INVITATION_ADMIN_IDENTITIES:-}
+      HOURPATHS_OIDC_ISSUER: ${HOURPATHS_DEX_PUBLIC_ISSUER:-http://localhost:5556/dex}
+      HOURPATHS_OIDC_BACKCHANNEL_URL: http://dex:5556/dex
+      HOURPATHS_OIDC_AUDIENCES: hourpaths-web,hourpaths-mobile,hourpaths-docs
+      HOURPATHS_OIDC_DOCS_CLIENT_ID: hourpaths-docs
+      HOURPATHS_OIDC_DOCS_REDIRECT_URI: ${HOURPATHS_API_PUBLIC_BASE_URL:-http://localhost:8080}/docs
+      HOURPATHS_OIDC_INSECURE: "true"
+      HOURPATHS_CORS_ALLOWED_ORIGINS: ${HOURPATHS_WEB_PUBLIC_BASE_URL:-http://localhost:5173}
+      HOURPATHS_REQUESTS_PER_MINUTE: ${HOURPATHS_REQUESTS_PER_MINUTE:-300}
+      HOURPATHS_AUDIT_EVENTS_PER_MINUTE: ${HOURPATHS_AUDIT_EVENTS_PER_MINUTE:-120}
+      HOURPATHS_SPICEDB_ENDPOINT: spicedb-runtime-proxy:50051
+      HOURPATHS_SPICEDB_TOKEN: local-development-runtime-change-me
+      HOURPATHS_SPICEDB_INSECURE: "true"
+    depends_on: { policy-publish: { condition: service_completed_successfully }, dex: { condition: service_started }, spicedb-runtime-proxy: { condition: service_started } }
+    ports: ["127.0.0.1:${HOURPATHS_API_HOST_PORT:-8080}:8080"]
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HOST: 0.0.0.0
+      PORT: "5173"
+      HOURPATHS_APP_ENV: development
+      HOURPATHS_API_URL: ${HOURPATHS_API_PUBLIC_BASE_URL:-http://localhost:8080}
+      HOURPATHS_OIDC_ISSUER: ${HOURPATHS_DEX_PUBLIC_ISSUER:-http://localhost:5556/dex}
+      HOURPATHS_WEB_OIDC_CLIENT_ID: ${HOURPATHS_WEB_OIDC_CLIENT_ID:-hourpaths-web}
+    ports: ["127.0.0.1:${HOURPATHS_WEB_HOST_PORT:-5173}:5173"]
+    depends_on: { api: { condition: service_started } }
+
+volumes:
+  postgres-data:

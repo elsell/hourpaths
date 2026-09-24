@@ -1,0 +1,177 @@
+package ports
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"time"
+)
+
+var ErrNotFound = errors.New("not found")
+var ErrInvalidArgument = errors.New("invalid argument")
+var ErrConflict = errors.New("conflict")
+var ErrUsernameUnavailable = fmt.Errorf("username unavailable: %w", ErrConflict)
+var ErrPolicySetChanged = errors.New("policy set changed")
+var ErrIdempotencyConflict = errors.New("idempotency conflict")
+var ErrAuthorizationPending = errors.New("authorization pending")
+var ErrAuthorizationDeadLettered = errors.New("authorization dead lettered")
+var ErrAuthorizationPolicyNotConfigured = errors.New("authorization policy not configured")
+var ErrInvalidCredential = errors.New("invalid credential")
+var ErrUnavailable = errors.New("unavailable")
+
+type Claims struct {
+	Issuer, Subject, Email, DisplayName string
+	EmailVerified                       bool
+	InvitationAdmin                     bool
+}
+type Principal struct {
+	UserID string
+	Scopes []string
+}
+type IdentityTokenVerifier interface {
+	Verify(context.Context, string) (Claims, error)
+}
+type Authenticator interface {
+	Authenticate(context.Context, string) (Principal, error)
+}
+type Users interface {
+	ResolveOrCreate(context.Context, Claims, audit.Event, audit.Event, audit.Event, bool) (identity.User, error)
+	GetUser(context.Context, string) (identity.User, error)
+	GetProvisionalUser(context.Context, string) (identity.User, error)
+	DisableUser(context.Context, string, audit.Event) error
+}
+type DuplicateAccountHints interface {
+	HasActiveEmailMatch(context.Context, Claims) (bool, error)
+}
+type DuplicateAccountRecoveryDeclines interface {
+	DeclineDuplicateEmailRecovery(context.Context, string, audit.Event) error
+}
+type UsernameSuggestions interface {
+	SuggestAvailableUsername(context.Context, string) (string, error)
+}
+type Invitations interface {
+	CreateInvitation(context.Context, identity.Invitation, Idempotency, audit.Event) (identity.Invitation, bool, error)
+	ListInvitations(context.Context, string, PageRequest, audit.Event) (identity.InvitationPage, error)
+	RevokeInvitation(context.Context, string, string, audit.Event) error
+}
+type Sessions interface {
+	CreateSession(context.Context, string, []string, []byte, time.Time, time.Time, audit.Event) (string, error)
+	RotateSession(context.Context, string, string, []string, time.Time, audit.Event, audit.Event) (string, time.Time, error)
+	RevokeSession(context.Context, string, audit.Event) error
+}
+type OnboardingActivator interface {
+	ActivateOnboarding(context.Context, string, identity.OnboardingActivation, time.Time, audit.Event, audit.Event, audit.Event) (string, time.Time, error)
+}
+type SessionRecord struct {
+	TokenHash         []byte
+	IdentityTokenHash []byte
+	UserID            string
+	Scopes            []string
+	ExpiresAt         time.Time
+	AbsoluteExpiresAt time.Time
+}
+type SessionRepository interface {
+	SaveSession(context.Context, SessionRecord, audit.Event) error
+	RotateSessionHash(context.Context, []byte, time.Time, SessionRecord, audit.Event, audit.Event) (time.Time, error)
+	ResolveSession(context.Context, []byte, time.Time) (Principal, error)
+	RevokeSessionHash(context.Context, []byte, time.Time, audit.Event) error
+}
+type OnboardingActivationRepository interface {
+	ActivateOnboarding(context.Context, identity.OnboardingActivation, []byte, time.Time, SessionRecord, audit.Event, audit.Event, audit.Event) (time.Time, error)
+}
+type Authorizer interface {
+	WriteRelationship(context.Context, string, string, string, string, string) error
+	DeleteRelationship(context.Context, string, string, string, string, string) error
+	Check(context.Context, string, string, string, string) (bool, error)
+}
+type Resource struct {
+	ID, Domain, OwnerUserID, Name string
+	CreatedAt                     time.Time
+}
+type PageRequest struct {
+	AfterID      string
+	AfterCreated time.Time
+	Snapshot     time.Time
+	Limit        int
+}
+type ResourcePage struct {
+	Resources []Resource
+	HasMore   bool
+}
+type Idempotency struct {
+	PrincipalID, Operation, Key string
+	RequestHash                 []byte
+}
+type AuthorizationOperation string
+
+const (
+	AuthorizationTouch  AuthorizationOperation = "touch"
+	AuthorizationDelete AuthorizationOperation = "delete"
+)
+
+type AuthorizationChange struct {
+	ID, ResourceType, ResourceID, Relation, SubjectType, SubjectID string
+	OwnerUserID, ActorUserID                                       string
+	Operation                                                      AuthorizationOperation
+	Attempts                                                       int
+	LockedBy                                                       string
+	LockedUntil                                                    time.Time
+	Lease                                                          time.Duration
+}
+type RelationshipUpdate struct {
+	ResourceType, ResourceID, Relation, SubjectType, SubjectID string
+	Operation                                                  AuthorizationOperation
+}
+type RelationshipBatchWriter interface {
+	WriteRelationships(context.Context, []RelationshipUpdate) error
+}
+type AuthorizationDeadLetter struct {
+	ID, ResourceType, ResourceID, Relation, SubjectType, SubjectID, FailureCode string
+	OwnerUserID, ActorUserID                                                    string
+	Operation                                                                   AuthorizationOperation
+	Attempts                                                                    int
+	DeadLetteredAt                                                              time.Time
+}
+type AuthorizationDeadLetterPage struct {
+	Items   []AuthorizationDeadLetter
+	HasMore bool
+}
+type Resources interface {
+	CreateResource(context.Context, Resource, AuthorizationChange, audit.Event, Idempotency) (Resource, bool, error)
+	ListResources(context.Context, string, string, PageRequest) (ResourcePage, error)
+	GetResource(context.Context, string, string) (Resource, error)
+	UpdateResource(context.Context, string, string, string, audit.Event) (Resource, error)
+	DeleteResource(context.Context, string, string, AuthorizationChange, audit.Event) error
+}
+type Audits interface {
+	AppendAuditEvent(context.Context, audit.Event) error
+	ListAuditEvents(context.Context, string, PageRequest) (audit.Page, error)
+}
+type AuditRateLimiter interface {
+	Allow(string, time.Time) bool
+}
+type Clock interface{ Now() time.Time }
+type ProbeEvent struct {
+	Name, Outcome, CorrelationID, TraceID, Method, Path string
+	Status                                              int
+	Duration                                            time.Duration
+}
+type Probe interface {
+	Observe(context.Context, ProbeEvent)
+}
+type HealthChecker interface{ Health(context.Context) error }
+type AuthorizationSerializer interface {
+	WithinResource(context.Context, string, string, func(context.Context) error) error
+}
+type AuthorizationOutbox interface {
+	ClaimAuthorizationChanges(context.Context, string, time.Duration, int) ([]AuthorizationChange, error)
+	ClaimAuthorizationChange(context.Context, string, string, time.Duration) (AuthorizationChange, error)
+	ClaimAuthorizationChangeForResource(context.Context, string, string, string, time.Duration) (AuthorizationChange, error)
+	RenewAuthorizationChange(context.Context, string, string, time.Duration) error
+	CompleteAuthorizationChangeWithAudit(context.Context, string, string, audit.Event) error
+	FailAuthorizationChange(context.Context, string, string, int, string) (bool, error)
+	ListAuthorizationDeadLetters(context.Context, string, PageRequest) (AuthorizationDeadLetterPage, error)
+	RequeueAuthorizationDeadLetter(context.Context, string, string, string, time.Duration, audit.Event) (AuthorizationChange, error)
+}

@@ -1,0 +1,39 @@
+package identity
+
+import (
+	"github.com/google/uuid"
+	"time"
+)
+
+type User struct {
+	ID, Email, DisplayName string
+	Status                 Status
+	InvitationAdmin        bool
+	ProfileVisibility      ProfileVisibility
+	CreatedAt, UpdatedAt   time.Time
+}
+type Invitation struct {
+	ID, Email, CreatedByUserID, ConsumedByUserID, RevokedByUserID string
+	CreatedAt, ExpiresAt, ConsumedAt, RevokedAt                   time.Time
+}
+type InvitationPage struct {
+	Invitations []Invitation
+	HasMore     bool
+}
+type ExternalIdentity struct{ UserID, Issuer, Subject string }
+
+type Status string
+
+const (
+	StatusProvisional Status = "provisional"
+	StatusActive      Status = "active"
+	StatusDisabled    Status = "disabled"
+)
+
+func (u User) HasFullApplicationAccess() bool {
+	return u.Status == StatusActive
+}
+
+func UserID(issuer, subject string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte(issuer+"\x00"+subject)).String()
+}

@@ -1,0 +1,144 @@
+package oidcauth
+
+import (
+	"context"
+	"errors"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+type Verifier struct {
+	verifier                   *oidc.IDTokenVerifier
+	audiences                  map[string]struct{}
+	authorizationURL, tokenURL string
+}
+
+type backchannelTransport struct {
+	base        http.RoundTripper
+	issuer      *url.URL
+	backchannel *url.URL
+}
+
+func (t backchannelTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	if request.URL.Scheme != t.issuer.Scheme || request.URL.Host != t.issuer.Host {
+		return t.base.RoundTrip(request)
+	}
+	clone := request.Clone(request.Context())
+	clone.URL.Scheme = t.backchannel.Scheme
+	clone.URL.Host = t.backchannel.Host
+	return t.base.RoundTrip(clone)
+}
+
+func New(ctx context.Context, issuer, backchannel string, audiences []string, insecure bool) (*Verifier, error) {
+	var publicURL, backchannelURL *url.URL
+	if backchannel != "" && backchannel != issuer {
+		var publicErr, backchannelErr error
+		publicURL, publicErr = url.Parse(issuer)
+		backchannelURL, backchannelErr = url.Parse(backchannel)
+		if publicErr != nil || backchannelErr != nil || publicURL.Host == "" || backchannelURL.Host == "" || publicURL.Path != backchannelURL.Path || validateEndpoint(backchannel, insecure) != nil {
+			return nil, errors.New("unsafe OIDC backchannel endpoint")
+		}
+		ctx = oidc.ClientContext(ctx, &http.Client{Transport: backchannelTransport{base: http.DefaultTransport, issuer: publicURL, backchannel: backchannelURL}, Timeout: 10 * time.Second})
+	}
+	provider, err := oidc.NewProvider(ctx, issuer)
+	if err != nil {
+		return nil, err
+	}
+	allowed := make(map[string]struct{}, len(audiences))
+	for _, audience := range audiences {
+		allowed[audience] = struct{}{}
+	}
+	endpoint := provider.Endpoint()
+	if err := validateEndpoint(endpoint.AuthURL, insecure); err != nil {
+		return nil, errors.New("unsafe OIDC authorization endpoint")
+	}
+	if err := validateEndpoint(endpoint.TokenURL, insecure); err != nil {
+		return nil, errors.New("unsafe OIDC token endpoint")
+	}
+	tokenURL := endpoint.TokenURL
+	if backchannelURL != nil {
+		tokenURL, err = rewriteBackchannelEndpoint(endpoint.TokenURL, publicURL, backchannelURL, insecure)
+		if err != nil {
+			return nil, errors.New("unsafe OIDC token endpoint origin")
+		}
+	}
+	return &Verifier{verifier: provider.Verifier(&oidc.Config{SkipClientIDCheck: true}), audiences: allowed, authorizationURL: endpoint.AuthURL, tokenURL: tokenURL}, nil
+}
+func (a *Verifier) Endpoints() (string, string) { return a.authorizationURL, a.tokenURL }
+
+func rewriteBackchannelEndpoint(raw string, publicIssuer, backchannel *url.URL, insecure bool) (string, error) {
+	endpoint, err := url.Parse(raw)
+	if err != nil || endpoint.Scheme != publicIssuer.Scheme || endpoint.Host != publicIssuer.Host {
+		return "", errors.New("endpoint origin does not match public issuer")
+	}
+	rewritten := *endpoint
+	rewritten.Scheme = backchannel.Scheme
+	rewritten.Host = backchannel.Host
+	if err := validateEndpoint(rewritten.String(), insecure); err != nil {
+		return "", err
+	}
+	return rewritten.String(), nil
+}
+
+func (a *Verifier) Verify(ctx context.Context, serialized string) (ports.Claims, error) {
+	if strings.TrimSpace(serialized) == "" || strings.ContainsAny(serialized, " \t\r\n") {
+		return ports.Claims{}, errors.New("invalid identity token")
+	}
+	token, err := a.verifier.Verify(ctx, serialized)
+	if err != nil {
+		return ports.Claims{}, errors.New("invalid bearer token")
+	}
+	accepted := false
+	for _, audience := range token.Audience {
+		if _, ok := a.audiences[audience]; ok {
+			accepted = true
+			break
+		}
+	}
+	if !accepted {
+		return ports.Claims{}, errors.New("invalid bearer token")
+	}
+	var raw struct {
+		Email, Name     string
+		EmailVerified   bool   `json:"email_verified"`
+		AuthorizedParty string `json:"azp"`
+	}
+	if err := token.Claims(&raw); err != nil {
+		return ports.Claims{}, errors.New("invalid claims")
+	}
+	if len(token.Audience) > 1 && raw.AuthorizedParty == "" {
+		return ports.Claims{}, errors.New("invalid bearer token")
+	}
+	if raw.AuthorizedParty != "" {
+		if _, ok := a.audiences[raw.AuthorizedParty]; !ok || !contains(token.Audience, raw.AuthorizedParty) {
+			return ports.Claims{}, errors.New("invalid bearer token")
+		}
+	}
+	if token.Subject == "" {
+		return ports.Claims{}, errors.New("missing subject")
+	}
+	return ports.Claims{Issuer: token.Issuer, Subject: token.Subject, Email: raw.Email, DisplayName: raw.Name, EmailVerified: raw.EmailVerified}, nil
+}
+func contains(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
+func validateEndpoint(raw string, insecure bool) error {
+	endpoint, err := url.Parse(raw)
+	if err != nil || endpoint.Host == "" || endpoint.User != nil || endpoint.Fragment != "" {
+		return errors.New("endpoint must be an absolute URL without credentials or fragment")
+	}
+	if endpoint.Scheme != "https" && !(insecure && endpoint.Scheme == "http") {
+		return errors.New("endpoint must use HTTPS unless insecure mode is enabled")
+	}
+	return nil
+}

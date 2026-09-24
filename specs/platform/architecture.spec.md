@@ -1,0 +1,297 @@
+# Platform Architecture Specification
+
+## Structure
+
+The API uses hexagonal architecture. Domain packages contain business concepts;
+application packages coordinate use cases; ports describe required capabilities;
+adapters implement transport, persistence, identity, authorization, and telemetry;
+bootstrap composes adapters and owns lifecycle.
+
+Added domains are composed through generated dependency injection rather than
+package globals. Their application service receives authentication,
+authorization, persistence, audit, clock, observability, ID generation,
+authorization outbox, per-resource serializer, authorization-worker, and
+cursor-signing capabilities through a typed `Dependencies` value. The generated registry constructs the dedicated
+repository and registers the domain route adapter for runtime and OpenAPI use.
+
+Generation does not invent a domain authorization policy. Until the developer
+implements that policy, every generated operation authenticates the application
+session and then returns a typed policy-not-configured error. This placeholder is
+fail-closed: unauthenticated and malformed credentials return 401, while a valid
+principal receives 503 and no repository or SpiceDB operation runs.
+`ErrInvalidCredential` remains typed through the application boundary and maps
+to `401 invalid_credential`; an absent authenticated principal maps separately
+to `401 unauthenticated`. Authentication dependency and context errors retain
+their original classification and cannot trick clients into discarding a
+legitimate session.
+
+## Baseline stack
+
+The checked-in local cursor-signing and metrics-token sentinel values are valid
+only when database, OIDC, and SpiceDB insecure modes are all explicitly enabled.
+Any secure deployment fails startup until both known values are replaced.
+
+`apps/api/internal/adapters/spicedb/schema.zed` is the sole authorization-schema
+artifact and is embedded by the SpiceDB adapter for both schema application and
+readiness comparison. Authorization outbox changes carry relation, subject,
+resource owner, and initiating actor independently so non-owner sharing never
+misattributes audit history. Outbox completion validates audit ownership and
+attribution against those explicit owner and actor fields, never against the
+relationship subject.
+
+- Go API with Huma-generated OpenAPI.
+- PostgreSQL with GORM and versioned migrations.
+- OIDC authentication with immutable issuer/subject identity mapping.
+- SpiceDB authorization behind a project-owned port.
+- TypeScript contracts generated with pinned `openapi-typescript` and consumed
+  using pinned `openapi-fetch`.
+  Every web and mobile `/v1` interaction must pass through a shared adapter that
+  consumes that generated contract; presentation code must not issue raw `/v1`
+  requests. The authenticated transport must consult the application-session
+  credential provider for every request. A current credential must replace any
+  caller-supplied `Authorization` value, while an absent credential must remove
+  that value so callers cannot bypass the provider with a stale bearer. Provider
+  failure must occur before any network request. The adapter must preserve the
+  method, body, content type, idempotency key, and every future header serialized
+  by the generated contract.
+
+Production authentication uses one fixed HourPaths-owned OIDC broker issuer;
+Google and Apple are upstream identity providers rather than separately trusted
+application issuers. Web, mobile, documentation, and API configuration must name
+the same broker authority, with distinct public authorization-code clients using
+S256 PKCE. The broker-hosted chooser presents both supported providers. Dex
+remains a local-development and CI adapter only.
+
+The broker must not automatically link upstream identities by email. It must
+issue stable, non-reassigned, provider-distinct subjects that remain identical
+for the same upstream identity across every HourPaths client. Email and profile
+claims must not be used to infer or prove identity linkage. Broker connector
+secrets and Apple signing material stay in deployment-owned external secret
+management; they never enter public clients, HourPaths runtime configuration,
+images, logs, or the repository. Changing the production broker issuer is an
+identity-data migration, not a routine endpoint configuration change.
+
+Identity-provider SDKs must be confined to exact, reviewed provider adapters:
+`apps/web/src/lib/provider-auth.ts` for browser OIDC and
+`apps/mobile/src/provider-auth.ts` for Expo AuthSession. Presentation modules
+must consume only the adapters' application-level commands and primitive state;
+they must not import, re-export, alias, return, or otherwise expose provider SDK
+objects. The mobile response classifier is part of this security boundary:
+resolved provider `error` responses must surface a failed sign-in, while explicit
+`cancel` and `dismiss` responses must reset quietly and must not exchange a token.
+The exact provider adapters and classifier must be pinned by a checked manifest;
+missing, extra, malformed, or digest-mismatched entries must fail closed.
+
+Shared request-rate state has a hard configured principal bound. Expired state
+may be removed, but capacity pressure never evicts an active principal: a new
+unknown source fails closed until capacity becomes stale. Source identity uses
+the direct peer by default. Forwarded client addresses are honored only when
+the immediate peer and every skipped proxy hop match explicitly configured
+trusted proxy CIDRs; untrusted or malformed forwarding headers are ignored.
+- Separate SvelteKit web and Expo React Native applications.
+- A framework-independent `packages/client-core` package supplies session state,
+  transport-failure classification, retry decisions, clocks, and identifiers to
+  web and mobile adapters. It contains no Svelte or React Native dependencies and
+  does not collapse the clients' separate presentation models.
+- Mobile cold-launch restoration reads secure storage independently of OIDC
+  discovery. Provider discovery gates only new interactive sign-in and code
+  exchange; a valid stored credential can enter authenticated-offline state when
+  both discovery and the application API are unavailable. Provider discovery
+  network failures must remain controlled adapter state and must not produce an
+  unhandled promise rejection.
+- A shared typed internationalization package consumed by both clients. English
+  is the safe fallback and the generated baseline also contains a complete
+Spanish catalog. Browser/device locale negotiation selects only explicitly
+supported locales; unsupported and malformed locale values fall back safely.
+Locale negotiation must remain functional on supported client runtimes that
+provide canonical locale tags but do not implement the optional `Intl.Locale`
+constructor.
+Server-rendered web responses honor `Accept-Language` quality values, exclude
+zero-quality languages, and emit `Vary: Accept-Language` so caches cannot mix
+localized representations.
+
+Internationalization is a presentation-layer invariant. All client-visible copy,
+including errors and accessibility labels, comes from locale catalogs. Catalogs
+must have identical keys, interpolation parameters, and plural forms. The shared
+adapter owns interpolation and locale-aware plural, number, date, and time rules.
+API and domain layers expose stable error codes and structured values rather than
+pre-localized presentation sentences.
+Every HTTP failure boundary includes a stable `code`: Huma operation and
+validation problems use the project-owned RFC 9457 model; health, routing, and
+CORS failures use the same model; and OIDC relay failures retain OAuth-compatible
+fields while adding the stable code.
+Configured browser origins must receive successful preflight authorization for
+every generated API method, including `PATCH`, so browser presentation routes
+cannot expose a mutation that the API transport boundary prevents from running.
+Distinct application failures that share an HTTP status must retain distinct
+stable codes, including idempotency conflict and authorization delivery states.
+Generic and idempotency conflicts must expose `conflict` and
+`idempotency_conflict` respectively. Authorization pending, dead-lettered, and
+unconfigured-policy failures must remain distinct from generic unavailability.
+Concealed authorization denial and resource absence must remain byte-identical
+`not_found` responses, while infrastructure failures expose only
+`internal_error` without implementation detail.
+Shared client-core code may map only known codes to typed presentation errors;
+unknown, absent, malformed, non-JSON, and hostile problem bodies must produce a
+safe generic error. The response status remains authoritative for credential
+discard and retry decisions: an untrusted problem code must never turn a 5xx
+response into authentication rejection or make a non-retryable response retry.
+Clients must localize the typed error through the shared catalogs and must never
+render the server-provided problem title or detail as presentation copy.
+
+Audit is a first-class application port and append-only persistence model, not
+HTTP access logging. User provisioning and every authenticated domain list,
+detail read, command, and denied authorization decision emit a structured event
+with immutable ID, owner, actor, action, target, outcome, correlation ID, and
+UTC occurrence time. A successful business mutation and its audit event commit
+in one PostgreSQL transaction. If the audit write fails, the mutation fails.
+Read and denial events must be durably appended before their response is
+returned. Health checks, documentation assets, and unauthenticated malformed
+traffic are excluded because they do not have a trustworthy application actor.
+Audit-history listing is also excluded because recursively auditing observation
+would mutate the stream and prevent stable traversal.
+
+Audit history uses the same signed, principal-bound keyset pagination guarantees
+as other collections. A user may see events they performed and events affecting
+resources they own. Audit records have no update or delete application port, and
+PostgreSQL rejects direct row updates and deletes. Retention or export must be a
+separately specified privileged lifecycle rather than ordinary CRUD.
+PostgreSQL also rejects audit truncation. Runtime and migration database roles
+are distinct; the runtime role may select and insert audit records but cannot
+update, delete, truncate, change schema, or mutate the migration ledger.
+Authenticated operations that generate audit writes pass through a bounded
+per-principal limiter, including identity exchange/profile synchronization and
+session revocation. The PostgreSQL-coordinated enforcement tier preserves the
+configured limit across replicas; operators also configure audit-write-rate and
+database-capacity alerts.
+Every `/v1` interaction also passes through a separately configurable bounded
+source limiter before transport decoding. Health checks are not counted against
+the application budget. The default adapter coordinates fixed windows through
+PostgreSQL so adding API replicas cannot multiply either limit. An in-process
+implementation is retained only as an injected test or explicitly selected
+single-process development adapter.
+
+All runtime configuration is environment-backed and validated at startup.
+Infrastructure dependencies are replaceable adapters.
+Shared PostgreSQL rate-limit windows map the database's complete `(scope,
+principal_hash)` identity and every update must affect exactly one row. An
+incomplete ORM identity must fail closed without becoming an unscoped update or
+an accidental global denial.
+Observability uses a typed injected probe port with fan-out to structured JSON
+logging, a bounded authenticated Prometheus registry, and optional environment-
+configured OTLP/HTTP trace and metric exporters. The OpenTelemetry adapter uses
+real W3C trace context and records domain probes as span events and metrics;
+exporter shutdown flushes within a bounded deadline. Access events include method, route,
+status, duration, correlation ID, and trace ID, but never credentials, query
+values, or bodies. The metrics endpoint uses a dedicated bearer credential.
+Readiness executes bounded checks through injected PostgreSQL and SpiceDB health
+ports and returns unavailable whenever either security dependency cannot be reached,
+the database migration ledger is dirty or behind the generated migration set, or
+SpiceDB does not contain the exact generated authorization schema.
+Collection APIs use versioned, HMAC-authenticated keyset cursors rather than
+offsets. A cursor is bound to its principal and domain and carries a first-page
+snapshot boundary plus the last immutable `(created_at, id)` key. Pages default
+to 50 entries, accept at most 100, fetch one extra row to determine continuation,
+and exclude inserts after traversal began. Malformed, forged, cross-principal,
+cross-domain, and out-of-range cursors are client errors.
+List envelopes always encode `data` as a JSON array, including `[]` for an empty
+page; generated clients never receive `null` for a collection contract.
+Successful REST resource and invitation creation returns `201 Created` and the
+created representation. Credential exchange and command-style POST operations
+retain their protocol-appropriate status instead of being treated as resources.
+First-party container build and runtime stages use Red Hat Hardened Images for
+the Go builder, static API runtime, Node.js builder and runtime, and PostgreSQL.
+Every Hardened Image is pinned to an immutable release tag and multi-platform
+manifest digest. SpiceDB and Dex retain reviewed upstream images because the
+catalog does not supply compatible components. The baseline does not claim FIPS
+compliance merely because catalog variants exist; that requires separately
+specified end-to-end cryptographic and deployment validation.
+The unprivileged Node builder writes dependencies, build output, and deploy
+artifacts only beneath its owned application workspace or writable temporary
+directories; container assembly does not rely on root-owned output paths.
+
+The separately deployed web image reads its API and OIDC public settings from
+runtime environment variables for every authentication and API adapter; it does
+not bake one API endpoint into the production bundle. Its image defaults to a
+production deployment environment and rejects missing, insecure, credentialed,
+local, query-bearing, or fragment-bearing API and issuer URLs plus a missing OIDC
+client ID before starting the server. Local Compose explicitly selects the
+development environment and supplies loopback configuration.
+Its production Content Security Policy preserves SvelteKit-managed nonces for
+framework bootstrap scripts while restricting all default sources. Runtime API
+and OIDC origins may extend only `connect-src`; handwritten CSP headers must not
+disable hydration or require `unsafe-inline` script execution.
+The public HTTP server sets bounded header, request, response, idle, and shutdown
+timeouts plus a bounded maximum header size so slow or oversized clients cannot
+hold resources indefinitely.
+API responses disable MIME sniffing and sensitive response caching. Request
+bodies are capped before transport decoding, and rejected oversized payloads do
+not reach application services.
+
+Database schema changes are ordered, immutable `golang-migrate` SQL migrations
+recorded in the database migration ledger. A separate one-shot migration command
+applies them before API replicas start. The long-running API must validate and use
+the resulting schema; it must never create, alter, or migrate schema at startup.
+
+Local Compose uses durable named PostgreSQL storage. SpiceDB uses its PostgreSQL
+datastore rather than the ephemeral testing server, runs its datastore migration
+as an explicit one-shot dependency, and authenticates API gRPC requests even on
+the explicitly plaintext loopback development transport. Resource and relationship
+state must remain aligned across complete stack restarts.
+PostgreSQL health remains false while its image entrypoint runs the temporary
+initialization server. Dependent migrations start only after the final PostgreSQL
+process is PID 1 and accepts connections, including on a brand-new volume.
+Compose runs the same non-root hardened Node adapter-node web image used for
+production. Its
+build consumes the frozen workspace lockfile and deploys production
+dependencies, so local acceptance exercises the deployable artifact.
+Local Compose uses ordinary bridge networking and binds every published port to
+`127.0.0.1`; host networking is not a prerequisite. OIDC discovery and key
+retrieval may use a separately validated internal backchannel base URL while
+signature, issuer, and audience validation continue to use the browser-visible
+issuer. None of these services accepts LAN connections despite reviewed
+development credentials. Compose loads `.env` for policy configuration and
+overrides only topology-specific bind addresses and internal service endpoints.
+The deterministic, explicitly invoked remote-device development runtime is the
+sole exception to the loopback publication rule: it may generate an untracked
+Compose override that publishes the API, Dex, and optional web client on a
+declared LAN host so physical mobile devices can exercise the current exact
+commit. It must keep PostgreSQL and the SpiceDB runtime-capability proxy
+loopback-only, preserve a stable Compose project and PostgreSQL volume, refuse
+to replace unrelated port owners, configure Dex discovery with the LAN-visible
+issuer, run migration and policy/schema dependencies, and publish the runtime
+only after readiness and live OpenAPI path-set checks pass.
+The host-published SpiceDB port belongs to a typed runtime-capability proxy, not
+the upstream SpiceDB server. Its bearer credential is unable to invoke schema
+mutation RPCs.
+
+`make dev` starts the stateful infrastructure in containers and runs the Go API
+and SvelteKit development server on the host with hot reload and clean signal
+handling. Production-like Compose continues to run the same non-root API and web
+images used by release acceptance.
+
+Authorization schema application is a separate, one-shot bootstrap operation.
+The long-running API process never writes authorization policy during startup and
+does not require schema-administration behavior. Deployment must run the schema
+job before API replicas start and may provide it distinct credentials.
+
+Authorization relationship changes use a transactional outbox. Workers claim
+bounded batches with an owner token and expiring lease before contacting SpiceDB.
+PostgreSQL serializes same-resource producers and assigns their monotonic order;
+API-replica clocks must not determine whether TOUCH precedes DELETE. Dead-letter
+listing and recovery belong to the recorded resource owner, never merely to the
+relationship subject.
+Only the lease owner may complete or fail a claim. This prevents concurrent API
+replicas from processing the same change while allowing abandoned work to recover.
+Workers renew the claim only after obtaining the per-resource serializer and
+must not contact SpiceDB when renewal proves that their lease is stale.
+PostgreSQL is the sole time authority for authorization outbox leases so clock
+skew between API replicas cannot steal, extend, or complete another claim.
+Create responses are not successful until their owner relationship has been
+written; durable pending work remains retryable when SpiceDB is unavailable.
+Authorization transitions that require multiple relationship changes to preserve
+an invariant must persist those changes as one outbox batch in the same database
+transaction as the domain mutation. A worker must send the complete persisted
+batch in one SpiceDB write, must never deliver its members independently, and
+must leave an abandoned or failed batch retryable under the same lease and
+per-resource serialization rules as a single relationship change.

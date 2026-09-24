@@ -1,0 +1,29 @@
+services:
+  push-provider:
+    profiles: [acceptance]
+    image: registry.access.redhat.com/hi/nodejs:24.18.0-1784114937@sha256:c0fd66cf088af1c6f122bcdbbf5d701ffea303fe84ebb23575ac75edde625113
+    user: "${MAKE_APP_UID:?acceptance UID is required}:${MAKE_APP_GID:?acceptance GID is required}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp]
+    command: [node, /opt/hourpaths/fake-expo-push-provider.mjs, --port, "19090", --log, /evidence/requests.jsonl]
+    volumes:
+      - ./scripts/fake-expo-push-provider.mjs:/opt/hourpaths/fake-expo-push-provider.mjs:ro
+      - ${HOURPATHS_PUSH_PROVIDER_LOG_PATH:?push-provider evidence path is required}:/evidence/requests.jsonl
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch("http://localhost:19090/--/api/v2/push/getReceipts",{method:"POST",headers:{"content-type":"application/json"},body:'{"ids":["acceptance-health"]}'}).then(response=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))
+      start_period: 2s
+      interval: 1s
+      timeout: 2s
+      retries: 20
+  api:
+    environment:
+      HOURPATHS_PUSH_PROVIDER_ENDPOINT: http://push-provider:19090
+      HOURPATHS_PUSH_PROVIDER_INSECURE: "true"
+    depends_on:
+      push-provider: { condition: service_healthy }
