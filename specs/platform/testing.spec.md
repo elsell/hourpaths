@@ -247,11 +247,11 @@ compensating verification includes frozen-lock installation, package audit,
 dependency-age verification, mobile bundle validation, clean prebuild, and
 hosted native compilation. The dependency must not return to the vulnerable
 1.2.1 resolution.
-The patched `fast-uri` 3.1.5 release has an exact, reviewed age exception because
-it removes GHSA-7p8r-x3mc-p8w7 from AJV dependency paths before the standard
-fourteen-day observation window closes. Compensating verification includes an
-exact workspace override, frozen-lock installation, a clean package audit,
-dependency-age tests, and the full CI gate.
+The patched `fast-uri` 3.1.6 release has an exact, reviewed age exception because
+it removes the current fast-uri SSRF and host-confusion advisories from AJV
+dependency paths. Compensating verification includes an exact workspace override,
+frozen-lock installation, a clean package audit, dependency-age tests, and the
+full CI gate.
 The patched `brace-expansion` 5.0.9, `postcss` 8.5.23, and `tar` 7.5.21
 releases have exact, reviewed age exceptions because they clear current
 security advisories before the standard fourteen-day observation window closes.
@@ -260,11 +260,11 @@ compatibility through a deterministic patch. Compensating verification includes
 exact overrides, frozen-lock installation, a clean package audit, old and new
 minimatch probes, web and mobile checks, React Native code generation, CocoaPods
 installation, exact EAS CLI startup, and native compilation.
-The patched `js-yaml` 3.15.1 and 4.3.1 releases remove
-GHSA-5p4m-2wfm-xmqj from Expo and Jest tooling paths. They have exact, reviewed
-age exceptions because the security fix is required before the standard
-fourteen-day observation window closes. Verification includes exact major-scoped
-overrides, a structural lockfile regression check, the dependency-age gate,
+The patched `js-yaml` 3.15.2 and 4.3.2 releases remove current js-yaml advisories
+from Expo and Jest tooling paths. They have exact, reviewed age exceptions because
+the security fix is required before the standard fourteen-day observation window
+closes. Verification includes exact major-scoped overrides, a structural lockfile
+regression check, the dependency-age gate,
 frozen-lock installation, a clean package audit, workspace tests and builds,
 Expo Doctor, and native compilation.
 The patched `@sveltejs/kit` 2.70.2 release has an exact, reviewed age exception

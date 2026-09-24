@@ -23,11 +23,11 @@ def main():
     module = load_module()
     workspace = (ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
     lockfile = (ROOT / "pnpm-lock.yaml").read_text(encoding="utf-8")
-    assert "  'js-yaml@3': '3.15.1'\n" in workspace
-    assert "  'js-yaml@4': '4.3.1'\n" in workspace
+    assert "  'js-yaml@3': '3.15.2'\n" in workspace
+    assert "  'js-yaml@4': '4.3.2'\n" in workspace
     assert "@redocly/openapi-core>js-yaml" not in workspace
-    assert "  js-yaml@3.15.1:\n" in lockfile
-    assert "  js-yaml@4.3.1:\n" in lockfile
+    assert "  js-yaml@3.15.2:\n" in lockfile
+    assert "  js-yaml@4.3.2:\n" in lockfile
     assert "  js-yaml@3.15.0:\n" not in lockfile
     assert "  js-yaml@4.3.0:\n" not in lockfile
     with tempfile.TemporaryDirectory() as tmp:
@@ -126,10 +126,10 @@ def main():
     repository_allowlist, failures = module.load_allowlist(ROOT)
     assert not failures, failures
     required_security_exceptions = {
-        ("npm", "fast-uri", "3.1.5"),
+        ("npm", "fast-uri", "3.1.6"),
         ("npm", "brace-expansion", "5.0.9"),
-        ("npm", "js-yaml", "3.15.1"),
-        ("npm", "js-yaml", "4.3.1"),
+        ("npm", "js-yaml", "3.15.2"),
+        ("npm", "js-yaml", "4.3.2"),
         ("npm", "postcss", "8.5.23"),
         ("npm", "tar", "7.5.21"),
         ("go", "google.golang.org/grpc", "v1.82.1"),
