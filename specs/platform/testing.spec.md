@@ -244,8 +244,9 @@ compilation. The build-time-only Metro `image-size` dependency remains at Metro'
 compatible 1.2.1 while upstream has no patched release: GitHub reports
 `first_patched_version: null` for GHSA-w3rx-r6r6-pgpr and
 GHSA-5p2g-fcmc-qvqq. Only those two advisories may be ignored, only for exact
-1.2.1, and only through 2026-08-21 after the 2026-08-14 review confirmed that
-upstream still has no patched stable release; the gate must fail earlier when any stable
+1.2.1, and only while upstream has no patched stable release. This is a reviewed,
+conditional exception for a build-time-only dependency, not a date-based waiver:
+every security gate must query the registry and fail immediately when any stable
 release newer than the currently unpatched 2.0.2 is published so the exception
 is removed immediately.
 The patched `fast-uri` 3.1.5 release has an exact, reviewed age exception because

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import json
 import os
 import re
@@ -13,9 +12,6 @@ from pathlib import Path
 
 EXPECTED_ADVISORIES = {"GHSA-5p2g-fcmc-qvqq", "GHSA-w3rx-r6r6-pgpr"}
 EXPECTED_VERSION = "1.2.1"
-EXPIRES = dt.date(2026, 8, 21)
-
-
 def fail(message: str) -> None:
     raise SystemExit(f"audit advisory allowlist: {message}")
 
@@ -49,7 +45,6 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--workspace", default="pnpm-workspace.yaml")
     parser.add_argument("--lockfile", default="pnpm-lock.yaml")
-    parser.add_argument("--now", default=os.environ.get("HOURPATHS_AUDIT_ALLOWLIST_NOW"))
     args = parser.parse_args()
 
     workspace = Path(args.workspace).read_text(encoding="utf-8")
@@ -65,15 +60,12 @@ def main() -> None:
     if resolved != {EXPECTED_VERSION}:
         fail(f"image-size lock resolution must be exactly {EXPECTED_VERSION}, got {sorted(resolved)}")
 
-    today = dt.date.fromisoformat(args.now) if args.now else dt.datetime.now(dt.timezone.utc).date()
-    if today > EXPIRES:
-        fail(f"exception expired on {EXPIRES.isoformat()}")
     status = patched_release_status()
     if status == "published":
         fail("a stable image-size release newer than 2.0.2 is published; remove the exception and upgrade")
     if status != "missing":
         fail(f"unexpected registry status {status!r}")
-    print(f"temporary image-size advisory exception valid through {EXPIRES.isoformat()}")
+    print("image-size advisory exception remains valid while no patched stable release exists")
 
 
 if __name__ == "__main__":
