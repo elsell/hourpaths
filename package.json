@@ -10,6 +10,6 @@
     "generate": "pnpm --dir packages/api-client generate"
   },
   "devDependencies": {
-    "playwright": "1.61.1"
+    "playwright": "1.63.0"
   }
 }

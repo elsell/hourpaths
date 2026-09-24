@@ -3,6 +3,6 @@
   "private": true,
   "license": "Apache-2.0",
   "dependencies": {
-    "eas-cli": "21.0.2"
+    "eas-cli": "24.7.0"
   }
 }
