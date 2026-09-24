@@ -24,8 +24,9 @@ rejects every old session and later OIDC exchange.
 
 Pre-commit and CI run Go formatting and tests, structural checks, OpenAPI/client
 drift checks, TypeScript checks, and production builds. Dependencies, CI actions,
-toolchains, and images are pinned. Generated projects must pass checks immediately
-after bootstrap without manual source edits.
+toolchains, and images are pinned. The Go toolchain is pinned to 1.26.6 because
+the earlier 1.25.13 standard library was affected by CVE-2026-46600. Generated
+projects must pass checks immediately after bootstrap without manual source edits.
 Git hooks must clear hook-owned Git directory, worktree, index, and prefix
 overrides before tests create nested fixture repositories; fixture commits must
 never pollute or replace the caller's staged index.

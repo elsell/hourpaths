@@ -1,6 +1,6 @@
 module github.com/elsell/hour-paths/apps/api
 
-go 1.25.13
+go 1.26.6
 
 require (
 	github.com/authzed/authzed-go v1.10.0

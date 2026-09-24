@@ -24,7 +24,7 @@ OTLP/HTTP trace and metric export is configured with the `OTEL_*` variables in
 
 ## Start locally
 
-Install Go 1.25.13, Node 22.17.0, pnpm 11.0.7, Python 3, Make, Git, and Docker
+Install Go 1.26.6, Node 22.17.0, pnpm 11.0.7, Python 3, Make, Git, and Docker
 Compose. Run `make-app doctor` before generation to check them together.
 
 ```sh
