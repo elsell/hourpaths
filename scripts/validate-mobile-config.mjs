@@ -5,7 +5,8 @@ const config = JSON.parse(await readFile(new URL('../apps/mobile/app.json', impo
 const eas = JSON.parse(await readFile(new URL('../apps/mobile/eas.json', import.meta.url)));
 const app = config.expo;
 assert.match(app.scheme, /^[a-z][a-z0-9]*$/, 'mobile callback scheme must be a safe native identifier');
-assert.equal(app.ios.bundleIdentifier, `${app.ios.bundleIdentifier.slice(0, -app.scheme.length)}${app.scheme}`);
+assert.match(app.ios.bundleIdentifier, /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+$/i, 'iOS bundle identifier must be an explicit reverse-DNS identifier');
+assert.match(app.android.package, /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+$/i, 'Android package must be an explicit reverse-DNS identifier');
 assert.equal(app.android.package, app.ios.bundleIdentifier, 'iOS and Android identifiers must share the rendered application identity');
 assert.match(app.version, /^\d+\.\d+\.\d+$/, 'application version must be semantic');
 assert.match(app.ios.buildNumber, /^\d+$/, 'iOS build number must be numeric');

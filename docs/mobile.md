@@ -44,9 +44,10 @@ HOURPATHS_EXPO_PROJECT_ID=<your-expo-project-uuid>
   credentials on an untrusted network.
 
 Register `hourpaths://callback` on the provider's public native client.
-Validation proves this scheme, the iOS bundle identifier, and Android package
-share the same generated native identity. When changing a LAN issuer, change the
-provider issuer and API issuer together. Plain HTTP is development-only.
+The checked native identifiers are explicit and must match the Apple/Android
+store records; the current application identifier is `com.hourpaths.mobile`.
+When changing a LAN issuer, change the provider issuer and API issuer together.
+Plain HTTP is development-only.
 
 ## What each check proves
 
@@ -100,16 +101,35 @@ uses GitHub's `macos-26` runner to satisfy Expo SDK 55's Xcode 26 requirement.
 
 The production profile selects the EAS environment named `production`. Configure
 `HOURPATHS_API_URL`, `HOURPATHS_OIDC_ISSUER`, and
-`HOURPATHS_MOBILE_OIDC_CLIENT_ID`, and `HOURPATHS_EXPO_PROJECT_ID` in that EAS
-environment before building. They are public application configuration, not
-secrets, but the API and issuer must use HTTPS. The generated application sets
-`HOURPATHS_APP_ENV=production` in the
-profile and deliberately fails bundling if any production endpoint is absent;
-it cannot silently fall back to localhost.
+`HOURPATHS_MOBILE_OIDC_CLIENT_ID` in that EAS environment before using the EAS
+path. `HOURPATHS_EXPO_PROJECT_ID` is only needed when Expo push notifications or
+EAS project linking is enabled; the native TestFlight workflow may omit it and
+will build an app with push registration disabled. These are public application
+configuration values, not secrets, but the API and issuer must use HTTPS. The
+generated application sets `HOURPATHS_APP_ENV=production` and deliberately
+fails bundling if either production endpoint is absent; it cannot silently fall
+back to localhost.
 
-The server release workflow publishes only server artifacts. TestFlight signing,
-upload, and App Store publication remain a separate protected workflow to be
-added later; this repository contains no Apple signing credentials.
+The server release workflow publishes only server artifacts. The protected
+`TestFlight` workflow below performs the native archive and upload on a GitHub
+hosted macOS runner; signing credentials remain outside the repository.
+
+### TestFlight workflow inputs
+
+The workflow is manual and uses the GitHub `testflight` environment. Add these
+environment secrets/variables before running it:
+
+- secrets: `APPLE_DISTRIBUTION_P12_BASE64`, `APPLE_DISTRIBUTION_P12_PASSWORD`,
+  `APPLE_PROVISIONING_PROFILE_BASE64`, `ASC_API_KEY_P8_BASE64`
+- variables: `APPLE_TEAM_ID`, `APPLE_PROVISIONING_PROFILE_NAME`,
+  `ASC_API_KEY_ID`, and `ASC_API_ISSUER_ID`
+
+The App Store Connect key must be an active App Store Connect API key, not a
+Sign in with Apple key. The provisioning profile must target
+`com.hourpaths.mobile` and the distribution certificate's private key must be
+included in the `.p12`. The workflow uses the production endpoints
+`https://api.hourpaths.com` and `https://login.hourpaths.com/oidc` and the
+public Logto client ID `hourpaths-mobile`.
 
 ## Session behavior
 

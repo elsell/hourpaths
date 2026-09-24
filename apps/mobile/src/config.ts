@@ -25,8 +25,5 @@ export function loadMobileConfig(extra: unknown): MobileRuntimeConfig {
   ) {
     throw new Error('HOURPATHS_PUSH_PROJECT_ID');
   }
-  if (client.environment === 'production' && pushProjectId === null) {
-    throw new Error('HOURPATHS_PUSH_PROJECT_ID');
-  }
   return { ...client, pushProjectId };
 }

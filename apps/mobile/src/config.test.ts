@@ -17,11 +17,14 @@ test('mobile configuration accepts validated Expo extra', () => {
   assert.deepEqual(loadMobileConfig(production), production.hourpaths);
 });
 
-test('mobile production configuration requires a valid Expo push project identity', () => {
+test('mobile production configuration may defer push provider configuration', () => {
   for (const pushProjectId of [undefined, null, '', 'project', 7]) {
-    assert.throws(() => loadMobileConfig({
-      hourpaths: { ...production.hourpaths, pushProjectId },
-    }));
+    const extra = { hourpaths: { ...production.hourpaths, pushProjectId } };
+    if (pushProjectId === undefined || pushProjectId === null) {
+      assert.equal(loadMobileConfig(extra).pushProjectId, null);
+    } else {
+      assert.throws(() => loadMobileConfig(extra));
+    }
   }
 });
 
