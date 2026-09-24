@@ -1,0 +1,662 @@
+package httpserver
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/elsell/hour-paths/apps/api/internal/app"
+	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+)
+
+type failingHealth struct{}
+
+func (failingHealth) Health(context.Context) error { return errors.New("dependency unavailable") }
+
+type deadlineHealth struct{ deadline time.Time }
+
+func (h *deadlineHealth) Health(ctx context.Context) error {
+	h.deadline, _ = ctx.Deadline()
+	return nil
+}
+
+type docsVerifier struct{}
+
+func (docsVerifier) Verify(context.Context, string) (ports.Claims, error) {
+	return ports.Claims{Issuer: "issuer", Subject: "subject"}, nil
+}
+
+type rejectedIdentityVerifier struct{}
+
+func (rejectedIdentityVerifier) Verify(context.Context, string) (ports.Claims, error) {
+	return ports.Claims{}, ports.ErrInvalidCredential
+}
+
+type docsSessions struct{}
+
+func (docsSessions) CreateSession(context.Context, string, []string, []byte, time.Time, time.Time, audit.Event) (string, error) {
+	return "application-session", nil
+}
+func (docsSessions) RotateSession(_ context.Context, _, _ string, _ []string, expiresAt time.Time, _, _ audit.Event) (string, time.Time, error) {
+	return "rotated-application-session", expiresAt, nil
+}
+func (docsSessions) RevokeSession(context.Context, string, audit.Event) error { return nil }
+
+type docsUsers struct{}
+
+func (docsUsers) ResolveOrCreate(_ context.Context, claims ports.Claims, _, _, _ audit.Event, _ bool) (identity.User, error) {
+	return identity.User{ID: identity.UserID(claims.Issuer, claims.Subject), Status: identity.StatusActive}, nil
+}
+func (docsUsers) GetUser(context.Context, string) (identity.User, error) { return identity.User{}, nil }
+func (docsUsers) GetProvisionalUser(context.Context, string) (identity.User, error) {
+	return identity.User{}, nil
+}
+func (docsUsers) DisableUser(context.Context, string, audit.Event) error { return nil }
+
+type recoveryUsers struct{}
+
+func (recoveryUsers) ResolveOrCreate(_ context.Context, claims ports.Claims, _, _, _ audit.Event, _ bool) (identity.User, error) {
+	return identity.User{ID: identity.UserID(claims.Issuer, claims.Subject), Email: claims.Email, Status: identity.StatusProvisional}, nil
+}
+func (recoveryUsers) GetUser(context.Context, string) (identity.User, error) {
+	return identity.User{}, ports.ErrNotFound
+}
+func (recoveryUsers) GetProvisionalUser(context.Context, string) (identity.User, error) {
+	return identity.User{}, ports.ErrNotFound
+}
+func (recoveryUsers) DisableUser(context.Context, string, audit.Event) error { return nil }
+
+type staticRecoveryHints bool
+
+func (h staticRecoveryHints) HasActiveEmailMatch(context.Context, ports.Claims) (bool, error) {
+	return bool(h), nil
+}
+
+type docsClock struct{ now time.Time }
+
+func (c docsClock) Now() time.Time { return c.now }
+
+type denyLimiter struct{}
+
+func (denyLimiter) Allow(string, time.Time) bool { return false }
+
+type sourceLimiter struct{ source string }
+
+func (l *sourceLimiter) Allow(source string, _ time.Time) bool { l.source = source; return true }
+func docsApp() app.App {
+	now := time.Now().UTC()
+	return app.App{IdentityVerifier: docsVerifier{}, Sessions: docsSessions{}, SessionTTL: time.Hour, SessionAbsoluteTTL: 12 * time.Hour, AllowAccountProvisioning: true, Users: docsUsers{}, Clock: docsClock{now}, AuditRateLimiter: docsLimiter{}}
+}
+
+type docsLimiter struct{}
+
+func (docsLimiter) Allow(string, time.Time) bool { return true }
+func TestCORSAllowsConfiguredOrigin(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
+	request := httptest.NewRequest(http.MethodOptions, "/v1/examples", nil)
+	request.Header.Set("Origin", "https://app.example")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("got %d", response.Code)
+	}
+	if got := response.Header().Get("Access-Control-Allow-Origin"); got != "https://app.example" {
+		t.Fatalf("unexpected origin %q", got)
+	}
+}
+func TestCORSPreflightAllowsGeneratedPatchRoutes(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
+	request := httptest.NewRequest(http.MethodOptions, "/v1/notifications/notification-1", nil)
+	request.Header.Set("Origin", "https://app.example")
+	request.Header.Set("Access-Control-Request-Method", http.MethodPatch)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("got %d", response.Code)
+	}
+	if got := response.Header().Get("Access-Control-Allow-Methods"); !strings.Contains(got, http.MethodPatch) {
+		t.Fatalf("generated PATCH route denied by CORS methods %q", got)
+	}
+}
+func TestRateLimitedResponsesKeepSecurityAndCorrelationMiddleware(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{RequestRateLimiter: denyLimiter{}, Clock: docsClock{now: time.Now()}})
+	request := httptest.NewRequest(http.MethodGet, "/v1/examples", nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusTooManyRequests || response.Header().Get("X-Request-ID") == "" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("rate-limited response bypassed middleware: status=%d headers=%v", response.Code, response.Header())
+	}
+}
+func TestDocsRelayUsesSharedRequestLimiter(t *testing.T) {
+	handler, _ := New(app.App{}, nil, Options{RequestRateLimiter: denyLimiter{}, Clock: docsClock{now: time.Now()}})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/oidc/token", nil))
+	if response.Code != http.StatusTooManyRequests || response.Header().Get("Content-Type") != "application/json" || !strings.Contains(response.Body.String(), `"error":"rate_limited"`) || !strings.Contains(response.Body.String(), `"code":"rate_limited"`) {
+		t.Fatalf("docs token relay limiter violated OAuth error contract: status=%d content-type=%q body=%s", response.Code, response.Header().Get("Content-Type"), response.Body.String())
+	}
+}
+func TestForwardedSourceRequiresExplicitTrustedProxy(t *testing.T) {
+	for _, test := range []struct {
+		name, remote string
+		trusted      []string
+		want         string
+	}{
+		{"untrusted spoof ignored", "198.51.100.10:1234", nil, "198.51.100.10"},
+		{"trusted proxy extracts client", "10.0.0.2:1234", []string{"10.0.0.0/8"}, "198.51.100.20"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			limiter := &sourceLimiter{}
+			handler, _ := New(app.App{}, nil, Options{RequestRateLimiter: limiter, Clock: docsClock{now: time.Now()}, TrustedProxyCIDRs: test.trusted})
+			request := httptest.NewRequest(http.MethodGet, "/v1/unknown", nil)
+			request.RemoteAddr = test.remote
+			request.Header.Set("X-Forwarded-For", "198.51.100.20")
+			handler.ServeHTTP(httptest.NewRecorder(), request)
+			if limiter.source != test.want {
+				t.Fatalf("source=%q want=%q", limiter.source, test.want)
+			}
+		})
+	}
+}
+func TestDocsExchangeErrorsPreserveSecurityClassification(t *testing.T) {
+	for _, test := range []struct {
+		err    error
+		status int
+	}{
+		{app.ErrUnauthenticated, http.StatusUnauthorized}, {app.ErrForbidden, http.StatusForbidden},
+		{app.ErrRateLimited, http.StatusTooManyRequests}, {errors.New("database unavailable"), http.StatusServiceUnavailable},
+	} {
+		status, _, _ := docsExchangeError(test.err)
+		if status != test.status {
+			t.Fatalf("%v classified as %d want %d", test.err, status, test.status)
+		}
+	}
+}
+
+func TestPublicSessionExchangeUsesGeneratedStableErrorContract(t *testing.T) {
+	application := docsApp()
+	application.IdentityVerifier = rejectedIdentityVerifier{}
+	handler, _ := New(application, nil, Options{DisableDocs: true})
+	request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(`{"identityToken":"rejected"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized || !strings.Contains(response.Body.String(), `"code":"unauthenticated"`) {
+		t.Fatalf("session exchange returned status=%d body=%s", response.Code, response.Body.String())
+	}
+
+	for _, test := range []struct {
+		err    error
+		status int
+		code   string
+	}{
+		{app.ErrUnauthenticated, http.StatusUnauthorized, "unauthenticated"},
+		{ports.ErrInvalidCredential, http.StatusUnauthorized, "invalid_credential"},
+		{app.ErrForbidden, http.StatusForbidden, "forbidden"},
+		{ports.ErrInvalidArgument, http.StatusBadRequest, "bad_request"},
+		{errors.New("identity dependency unavailable"), http.StatusInternalServerError, "internal_error"},
+	} {
+		mapped, ok := mapSessionExchangeError(test.err).(*APIError)
+		if !ok || mapped.Status != test.status || mapped.Code != test.code {
+			t.Fatalf("exchange error %v mapped to %#v, want status=%d code=%s", test.err, mapped, test.status, test.code)
+		}
+	}
+}
+
+func TestSessionExchangeExposesNonDisclosingRecoveryContinuation(t *testing.T) {
+	application := docsApp()
+	application.IdentityVerifier = fixedClaimsVerifier{claims: ports.Claims{
+		Issuer: "https://new-provider.example", Subject: "new-subject",
+		Email: "matched-private@example.com", EmailVerified: true,
+	}}
+	application.Users = recoveryUsers{}
+	application.DuplicateAccountHints = staticRecoveryHints(true)
+	handler, _ := New(application, nil, Options{DisableDocs: true})
+	request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(`{"identityToken":"verified-new-provider-token"}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	body := response.Body.String()
+	if response.Code != http.StatusOK {
+		t.Fatalf("recovery exchange status = %d body=%s", response.Code, body)
+	}
+	if !strings.Contains(body, `"nextAction":"duplicate_email_recovery"`) || !strings.Contains(body, `"token":"application-session"`) {
+		t.Fatalf("recovery exchange omitted restricted continuation contract: %s", body)
+	}
+	for _, privateValue := range []string{"matched-private@example.com", "existing-active-user", "matchedUser", "matchCount"} {
+		if strings.Contains(body, privateValue) {
+			t.Fatalf("recovery exchange disclosed %q: %s", privateValue, body)
+		}
+	}
+}
+
+type fixedClaimsVerifier struct{ claims ports.Claims }
+
+func (v fixedClaimsVerifier) Verify(context.Context, string) (ports.Claims, error) {
+	return v.claims, nil
+}
+
+func TestSessionExchangeNextActionMatchesIdentityLifecycle(t *testing.T) {
+	tests := []struct {
+		name       string
+		users      ports.Users
+		wantAction string
+	}{
+		{name: "returning active user", users: docsUsers{}, wantAction: "home"},
+		{name: "new provisional user", users: recoveryUsers{}, wantAction: "onboarding"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			application := docsApp()
+			application.IdentityVerifier = fixedClaimsVerifier{claims: ports.Claims{Issuer: "issuer", Subject: test.name, Email: test.name + "@example.com", EmailVerified: true}}
+			application.Users = test.users
+			application.DuplicateAccountHints = staticRecoveryHints(false)
+			handler, _ := New(application, nil, Options{DisableDocs: true})
+			request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(`{"identityToken":"verified-provider-token"}`))
+			request.Header.Set("Content-Type", "application/json")
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"nextAction":"`+test.wantAction+`"`) {
+				t.Fatalf("session action status=%d body=%s want=%s", response.Code, response.Body.String(), test.wantAction)
+			}
+		})
+	}
+}
+func TestEmptyResourceListEncodesAsArray(t *testing.T) {
+	out := resourceListOutput(app.ResourcePage{})
+	body, err := json.Marshal(out.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), `"data":[]`) {
+		t.Fatalf("empty list violated array contract: %s", body)
+	}
+}
+func TestCORSRejectsUnknownOrigin(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
+	request := httptest.NewRequest(http.MethodOptions, "/v1/examples", nil)
+	request.Header.Set("Origin", "https://evil.example")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("got %d", response.Code)
+	}
+}
+func TestOpenAPIUsesConfiguredOIDCPKCE(t *testing.T) {
+	_, api := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCAuthorizationURL: "https://login.example/authorize", OIDCTokenURL: "https://login.example/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	scheme := api.OpenAPI().Components.SecuritySchemes["oidc"]
+	flow := scheme.Flows.AuthorizationCode
+	if scheme.Type != "oauth2" || flow.AuthorizationURL != "https://login.example/authorize" || flow.TokenURL != "https://api.example/oidc/token" {
+		t.Fatalf("unexpected docs OIDC flow: %+v", scheme)
+	}
+	if flow.Extensions["x-scalar-client-id"] != "app-docs" || flow.Extensions["x-usePkce"] != "SHA-256" || flow.Extensions["x-scalar-redirect-uri"] != "https://api.example/docs" {
+		t.Fatalf("interactive docs OIDC is not configured securely: %+v", flow.Extensions)
+	}
+}
+func TestOpenAPICollectionAndIdempotencyContractsAreStrict(t *testing.T) {
+	_, api := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	for _, name := range []string{"ResourceListOutputBody", "AuditListOutputBody", "AuthorizationDeadLetterListOutputBody"} {
+		schema := api.OpenAPI().Components.Schemas.Map()[name]
+		data := schema.Properties["data"]
+		if data.Type != huma.TypeArray || data.Nullable {
+			t.Fatalf("%s data must be a non-null array: %+v", name, data)
+		}
+	}
+	parameters := api.OpenAPI().Paths["/v1/examples"].Post.Parameters
+	found := false
+	for _, parameter := range parameters {
+		if parameter.Name == "Idempotency-Key" {
+			found = parameter.Required && parameter.Schema.MinLength != nil && *parameter.Schema.MinLength == 16 && parameter.Schema.MaxLength != nil && *parameter.Schema.MaxLength == 128
+		}
+	}
+	if !found {
+		t.Fatal("create operation does not require a bounded Idempotency-Key")
+	}
+	if api.OpenAPI().Paths["/v1/examples"].Post.DefaultStatus != http.StatusCreated {
+		t.Fatal("resource creation must return 201 Created")
+	}
+}
+func TestDocsCSPRestrictsOIDCToSameOriginRelay(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/docs", nil))
+	csp := response.Header().Get("Content-Security-Policy")
+	if !strings.Contains(csp, "connect-src 'self'") || strings.Contains(csp, "https://id.example") {
+		t.Fatalf("docs CSP does not isolate OIDC connectivity: %q", csp)
+	}
+	if !strings.Contains(response.Body.String(), "integrity=\"sha384-") {
+		t.Fatal("docs Scalar asset must use subresource integrity")
+	}
+	if !strings.Contains(response.Body.String(), `"selectedScopes":["openid","profile","email"]`) {
+		t.Fatal("docs must preselect the OIDC scopes required to receive an ID token")
+	}
+}
+func TestDocsSelfHostsPinnedScalarRuntime(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+
+	docs := httptest.NewRecorder()
+	handler.ServeHTTP(docs, httptest.NewRequest(http.MethodGet, "/docs", nil))
+	if strings.Contains(docs.Body.String(), "unpkg.com") || !strings.Contains(docs.Body.String(), `src="/docs/assets/scalar-api-reference-1.44.20.js"`) {
+		t.Fatalf("docs must load the pinned Scalar runtime from the API origin: %s", docs.Body.String())
+	}
+	if csp := docs.Header().Get("Content-Security-Policy"); strings.Contains(csp, "unpkg.com") || !strings.Contains(csp, "script-src 'self' 'unsafe-eval'") {
+		t.Fatalf("docs script policy must allow only its own pinned runtime: %q", csp)
+	}
+
+	asset := httptest.NewRecorder()
+	handler.ServeHTTP(asset, httptest.NewRequest(http.MethodGet, "/docs/assets/scalar-api-reference-1.44.20.js", nil))
+	if asset.Code != http.StatusOK || asset.Header().Get("Content-Type") != "text/javascript; charset=utf-8" {
+		t.Fatalf("self-hosted Scalar runtime unavailable: status=%d content-type=%q", asset.Code, asset.Header().Get("Content-Type"))
+	}
+	if len(asset.Body.Bytes()) != 3544608 {
+		t.Fatalf("self-hosted Scalar runtime size drifted: %d", len(asset.Body.Bytes()))
+	}
+	if got := fmt.Sprintf("%x", sha256.Sum256(asset.Body.Bytes())); got != "f349c815d31be09d11e386726da989e3af50c2f1885910764b51f5b0fae9e28e" {
+		t.Fatalf("self-hosted Scalar runtime digest drifted: %s", got)
+	}
+	if scalarBrowserRuntimeVersion != "1.44.20" || scalarBrowserRuntimeSize != 3544608 || !strings.Contains(asset.Body.String()[:400], "@scalar/api-reference 1.44.20") {
+		t.Fatal("self-hosted Scalar runtime version metadata drifted")
+	}
+
+	license := httptest.NewRecorder()
+	handler.ServeHTTP(license, httptest.NewRequest(http.MethodGet, "/docs/assets/scalar-api-reference-LICENSE.txt", nil))
+	if license.Code != http.StatusOK || !strings.Contains(license.Body.String(), "Copyright (c) 2023-present Scalar") || !strings.Contains(license.Body.String(), "MIT License") {
+		t.Fatalf("self-hosted Scalar attribution unavailable: status=%d body=%q", license.Code, license.Body.String())
+	}
+}
+func TestDocsOIDCRelayRewritesOnlyTokenEndpoint(t *testing.T) {
+	upstreamForm := make(chan url.Values, 1)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/dex/.well-known/openid-configuration" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"issuer": "issuer", "authorization_endpoint": "https://login.example/auth", "token_endpoint": "https://login.example/token"})
+			return
+		}
+		if r.URL.Path == "/dex/token" {
+			if authorization := r.Header.Get("Authorization"); authorization != "" {
+				t.Errorf("token relay forwarded caller authorization header: %q", authorization)
+			}
+			if err := r.ParseForm(); err != nil {
+				t.Error(err)
+			}
+			upstreamForm <- r.PostForm
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"access_token":"opaque","id_token":"signed"}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer upstream.Close()
+	handler, _ := New(docsApp(), []string{"example"}, Options{OIDCIssuer: "http://localhost:5556/dex", OIDCDiscoveryURL: upstream.URL + "/dex", OIDCAuthorizationURL: "https://login.example/auth", OIDCTokenURL: upstream.URL + "/dex/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	discovery := httptest.NewRecorder()
+	handler.ServeHTTP(discovery, httptest.NewRequest(http.MethodGet, "/oidc/.well-known/openid-configuration", nil))
+	var document map[string]any
+	if err := json.Unmarshal(discovery.Body.Bytes(), &document); err != nil {
+		t.Fatal(err)
+	}
+	if document["token_endpoint"] != "https://api.example/oidc/token" || document["authorization_endpoint"] != "https://login.example/auth" {
+		t.Fatalf("unexpected relay discovery: %+v", document)
+	}
+	token := httptest.NewRecorder()
+	wantForm := "grant_type=authorization_code&code=abc&code_verifier=verifier&client_id=attacker&redirect_uri=https%3A%2F%2Fevil.example%2Fcallback"
+	request := httptest.NewRequest(http.MethodPost, "/oidc/token", strings.NewReader(wantForm))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	request.SetBasicAuth("app-docs", "")
+	handler.ServeHTTP(token, request)
+	var tokens map[string]any
+	if json.Unmarshal(token.Body.Bytes(), &tokens) != nil || token.Code != http.StatusOK || tokens["access_token"] != "application-session" || tokens["id_token"] != nil || tokens["refresh_token"] != nil {
+		t.Fatalf("token relay did not replace provider credentials with an application session: %d %s", token.Code, token.Body.String())
+	}
+	form := <-upstreamForm
+	for key, want := range map[string]string{"grant_type": "authorization_code", "code": "abc", "code_verifier": "verifier", "client_id": "app-docs", "redirect_uri": "https://api.example/docs"} {
+		if form.Get(key) != want {
+			t.Fatalf("token relay changed %s: got %q, want %q", key, form.Get(key), want)
+		}
+	}
+}
+func TestDocsOIDCRelaysNeverFollowUpstreamRedirects(t *testing.T) {
+	attackerRequests := make(chan *http.Request, 1)
+	attacker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attackerRequests <- r
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer attacker.Close()
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, attacker.URL+"/capture", http.StatusTemporaryRedirect)
+	}))
+	defer upstream.Close()
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: upstream.URL, OIDCTokenURL: upstream.URL + "/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+
+	for _, request := range []*http.Request{
+		httptest.NewRequest(http.MethodGet, "/oidc/.well-known/openid-configuration", nil),
+		httptest.NewRequest(http.MethodPost, "/oidc/token", strings.NewReader("grant_type=authorization_code&code=secret&code_verifier=pkce-secret")),
+	} {
+		if request.Method == http.MethodPost {
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusBadGateway {
+			t.Fatalf("redirecting relay returned %d, want 502", response.Code)
+		}
+	}
+	select {
+	case request := <-attackerRequests:
+		t.Fatalf("OIDC relay followed redirect to attacker: %s", request.URL)
+	default:
+	}
+}
+func TestDocsOIDCTokenRelayRejectsNonPKCEAndAlternateGrants(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCTokenURL: "https://id.example/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	for _, form := range []string{
+		"grant_type=refresh_token&refresh_token=secret",
+		"grant_type=authorization_code&code=secret",
+		"grant_type=authorization_code&code_verifier=verifier",
+	} {
+		request := httptest.NewRequest(http.MethodPost, "/oidc/token", strings.NewReader(form))
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("unsafe token exchange %q returned %d", form, response.Code)
+		}
+	}
+}
+func TestErrorMappingDoesNotMislabelInfrastructureFailures(t *testing.T) {
+	tests := []struct {
+		name    string
+		err     error
+		conceal bool
+		status  int
+	}{{"authentication", app.ErrUnauthenticated, false, http.StatusUnauthorized}, {"explicit denial", app.ErrForbidden, false, http.StatusForbidden}, {"concealed denial", app.ErrForbidden, true, http.StatusNotFound}, {"authorization dependency", errors.New("spicedb unavailable"), true, http.StatusInternalServerError}, {"persistence", errors.New("database unavailable"), false, http.StatusInternalServerError}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mapped := mapError(test.err, test.conceal)
+			statusErr, ok := mapped.(huma.StatusError)
+			if !ok || statusErr.GetStatus() != test.status {
+				t.Fatalf("got %#v, want status %d", mapped, test.status)
+			}
+		})
+	}
+}
+func TestErrorsExposeStableMachineReadableCodes(t *testing.T) {
+	tests := []struct {
+		name    string
+		err     error
+		conceal bool
+		status  int
+		code    string
+	}{
+		{"missing principal", app.ErrUnauthenticated, false, http.StatusUnauthorized, "unauthenticated"},
+		{"invalid credential", ports.ErrInvalidCredential, false, http.StatusUnauthorized, "invalid_credential"},
+		{"invalid input", ports.ErrInvalidArgument, false, http.StatusBadRequest, "bad_request"},
+		{"generic conflict", ports.ErrConflict, false, http.StatusConflict, "conflict"},
+		{"username unavailable", ports.ErrUsernameUnavailable, false, http.StatusConflict, "username_unavailable"},
+		{"policy set changed", ports.ErrPolicySetChanged, false, http.StatusConflict, "policy_set_changed"},
+		{"idempotency conflict", ports.ErrIdempotencyConflict, false, http.StatusConflict, "idempotency_conflict"},
+		{"block review required", socialapp.ErrBlockReviewRequired, false, http.StatusConflict, "block_review_required"},
+		{"rate limited", app.ErrRateLimited, false, http.StatusTooManyRequests, "rate_limited"},
+		{"authorization pending", ports.ErrAuthorizationPending, false, http.StatusServiceUnavailable, "authorization_pending"},
+		{"authorization dead lettered", ports.ErrAuthorizationDeadLettered, false, http.StatusServiceUnavailable, "authorization_dead_lettered"},
+		{"authorization policy not configured", ports.ErrAuthorizationPolicyNotConfigured, false, http.StatusServiceUnavailable, "authorization_policy_not_configured"},
+		{"explicit denial", app.ErrForbidden, false, http.StatusForbidden, "forbidden"},
+		{"concealed denial", app.ErrForbidden, true, http.StatusNotFound, "not_found"},
+		{"concealed absence", ports.ErrNotFound, true, http.StatusNotFound, "not_found"},
+		{"visible absence", ports.ErrNotFound, false, http.StatusNotFound, "not_found"},
+		{"wrapped typed failure", errors.Join(errors.New("operation failed"), ports.ErrAuthorizationPending), false, http.StatusServiceUnavailable, "authorization_pending"},
+		{"infrastructure failure", errors.New("database unavailable"), false, http.StatusInternalServerError, "internal_error"},
+		{"concealed infrastructure failure", errors.New("spicedb unavailable"), true, http.StatusInternalServerError, "internal_error"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mapped, ok := mapError(test.err, test.conceal).(*APIError)
+			if !ok || mapped.Status != test.status || mapped.Code != test.code {
+				t.Fatalf("got %#v, want status %d code %q", mapped, test.status, test.code)
+			}
+		})
+	}
+	genericUnavailable, ok := newAPIError(http.StatusServiceUnavailable, "service unavailable").(*APIError)
+	if !ok || genericUnavailable.Code != "unavailable" {
+		t.Fatalf("generic unavailable response was reclassified: %#v", genericUnavailable)
+	}
+	concealedDenial, err := json.Marshal(mapError(app.ErrForbidden, true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	concealedAbsence, err := json.Marshal(mapError(ports.ErrNotFound, true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(concealedDenial) != string(concealedAbsence) {
+		t.Fatalf("concealed denial leaks resource existence: denial=%s absence=%s", concealedDenial, concealedAbsence)
+	}
+	infrastructure, err := json.Marshal(mapError(errors.New("database unavailable: secret topology"), false))
+	if err != nil || strings.Contains(string(infrastructure), "database") || strings.Contains(string(infrastructure), "topology") {
+		t.Fatalf("infrastructure response leaked implementation detail: err=%v body=%s", err, infrastructure)
+	}
+}
+func TestHumaValidationErrorsExposeCodeInWireContract(t *testing.T) {
+	handler, api := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	request := httptest.NewRequest(http.MethodPost, "/v1/examples", strings.NewReader(`{"name":""}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("got status %d: %s", response.Code, response.Body.String())
+	}
+	var problem struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &problem); err != nil || problem.Code != "validation_failed" {
+		t.Fatalf("validation error lacks stable code: %v %s", err, response.Body.String())
+	}
+	openapi, err := json.Marshal(api.OpenAPI())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(openapi), `"code"`) {
+		t.Fatal("OpenAPI error contract does not expose code")
+	}
+	codeSchema := api.OpenAPI().Components.Schemas.Map()["APIError"].Properties["code"]
+	exposedCodes := map[string]bool{}
+	for _, value := range codeSchema.Enum {
+		if code, ok := value.(string); ok {
+			exposedCodes[code] = true
+		}
+	}
+	for _, code := range []string{"unauthenticated", "invalid_credential", "conflict", "idempotency_conflict", "authorization_pending", "authorization_dead_lettered", "authorization_policy_not_configured", "unavailable", "internal_error", "not_found"} {
+		if !exposedCodes[code] {
+			t.Errorf("OpenAPI error-code contract omits %q: %#v", code, codeSchema.Enum)
+		}
+	}
+}
+func TestAuxiliaryHTTPFailuresExposeStableCodes(t *testing.T) {
+	tests := []struct {
+		name    string
+		handler http.Handler
+		request *http.Request
+		status  int
+		code    string
+	}{
+		{"health", mustHandler(New(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodGet, "/healthz", nil), http.StatusServiceUnavailable, "unavailable"},
+		{"unknown route", mustHandler(New(app.App{}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodGet, "/does-not-exist", nil), http.StatusNotFound, "not_found"},
+		{"CORS preflight", mustHandler(New(app.App{}, []string{"example"}, Options{CORSAllowedOrigins: []string{"https://app.example"}})), func() *http.Request {
+			request := httptest.NewRequest(http.MethodOptions, "/v1/examples", nil)
+			request.Header.Set("Origin", "https://evil.example")
+			return request
+		}(), http.StatusForbidden, "forbidden"},
+		{"OIDC token relay", mustHandler(New(app.App{}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodPost, "/oidc/token", nil), http.StatusBadRequest, "invalid_token_exchange"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			test.handler.ServeHTTP(response, test.request)
+			var body struct {
+				Code string `json:"code"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil || response.Code != test.status || body.Code != test.code {
+				t.Fatalf("got %d code=%q err=%v body=%s", response.Code, body.Code, err, response.Body.String())
+			}
+		})
+	}
+}
+func mustHandler(handler http.Handler, _ huma.API) http.Handler { return handler }
+func TestSecurityHeadersAreApplied(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	for key, want := range map[string]string{"X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"} {
+		if got := response.Header().Get(key); got != want {
+			t.Errorf("%s=%q, want %q", key, got, want)
+		}
+	}
+}
+func TestHealthFailsWhenSecurityDependencyIsUnavailable(t *testing.T) {
+	handler, _ := New(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("got %d", response.Code)
+	}
+}
+func TestLivenessDoesNotDependOnExternalServicesAndReadinessDoes(t *testing.T) {
+	handler, _ := New(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{})
+	for path, want := range map[string]int{"/livez": http.StatusNoContent, "/readyz": http.StatusServiceUnavailable} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != want {
+			t.Errorf("%s status=%d want=%d", path, response.Code, want)
+		}
+	}
+}
+func TestScalarDocumentationCanBeDisabled(t *testing.T) {
+	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", DisableDocs: true})
+	for _, path := range []string{"/docs", scalarBrowserRuntimePath, scalarLicensePath, "/oidc/.well-known/openid-configuration", "/oidc/token"} {
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusNotFound {
+			t.Errorf("disabled docs path %s returned %d", path, response.Code)
+		}
+	}
+}
+func TestHealthBoundsDependencyChecks(t *testing.T) {
+	dependency := &deadlineHealth{}
+	before := time.Now()
+	handler, _ := New(app.App{Dependencies: []ports.HealthChecker{dependency}}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	if response.Code != http.StatusNoContent || dependency.deadline.IsZero() || dependency.deadline.After(before.Add(3*time.Second)) {
+		t.Fatalf("health dependency did not receive bounded context: status=%d deadline=%v", response.Code, dependency.deadline)
+	}
+}

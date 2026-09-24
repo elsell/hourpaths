@@ -1,0 +1,237 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      acceptance: ${{ steps.classify.outputs.acceptance }}
+      api_image: ${{ steps.classify.outputs.api_image }}
+      web_image: ${{ steps.classify.outputs.web_image }}
+      native: ${{ steps.classify.outputs.native }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with: { fetch-depth: 0 }
+      - name: Test the CI dependency map
+        run: python3 scripts/test_ci_changes.py
+      - id: classify
+        name: Classify changed paths
+        run: |
+          python3 scripts/ci_changes.py \
+            --event-name "$EVENT_NAME" \
+            --ref "$REF" \
+            --before "$BEFORE" \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BEFORE: ${{ github.event.before || '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Report routing decision
+        run: echo "$ROUTING_REASON"
+        env:
+          ROUTING_REASON: ${{ steps.classify.outputs.reason }}
+  verify:
+    needs: changes
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CGO_ENABLED: "1"
+    steps:
+      - id: routing
+        name: Require valid CI routing
+        run: |
+          if [[ "$CHANGES_RESULT" != success ]]; then exit 1; fi
+          for value in "$ACCEPTANCE" "$API_IMAGE" "$WEB_IMAGE" "$NATIVE"; do
+            case "$value" in true|false) ;; *) exit 1 ;; esac
+          done
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          ACCEPTANCE: ${{ needs.changes.outputs.acceptance }}
+          API_IMAGE: ${{ needs.changes.outputs.api_image }}
+          WEB_IMAGE: ${{ needs.changes.outputs.web_image }}
+          NATIVE: ${{ needs.changes.outputs.native }}
+      - name: Isolate pnpm store for this job
+        run: echo "PNPM_CONFIG_STORE_DIR=${RUNNER_TEMP}/pnpm-store-${GITHUB_RUN_ID}-${GITHUB_JOB}-${GITHUB_RUN_ATTEMPT}" >> "${GITHUB_ENV}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: steps.routing.outcome == 'success'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.routing.outcome == 'success'
+        with:
+          go-version-file: go.work
+          cache-dependency-path: apps/api/go.sum
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: steps.routing.outcome == 'success'
+        with:
+          version: 11.0.7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.routing.outcome == 'success'
+        with:
+          node-version: 22.17.0
+      - name: Verify pnpm store isolation
+        if: steps.routing.outcome == 'success'
+        run: test "$(pnpm store path --silent)" = "${PNPM_CONFIG_STORE_DIR}/v11"
+      - if: steps.routing.outcome == 'success'
+        run: pnpm install --frozen-lockfile
+      - if: steps.routing.outcome == 'success'
+        run: make verify
+      - name: Build API production image
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.api_image == 'true'
+        run: docker build --file apps/api/Dockerfile --tag generated-api:test .
+      - name: Build web production image
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.web_image == 'true'
+        run: docker build --file apps/web/Dockerfile --tag generated-web:test .
+      - name: Report skipped production images
+        if: steps.routing.outcome == 'success' && (needs.changes.outputs.api_image != 'true' || needs.changes.outputs.web_image != 'true')
+        run: echo "Unaffected production image builds were skipped; make verify still ran in full."
+  acceptance:
+    needs: changes
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - id: routing
+        name: Require valid CI routing
+        run: |
+          if [[ "$CHANGES_RESULT" != success ]]; then exit 1; fi
+          for value in "$ACCEPTANCE" "$API_IMAGE" "$WEB_IMAGE" "$NATIVE"; do
+            case "$value" in true|false) ;; *) exit 1 ;; esac
+          done
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          ACCEPTANCE: ${{ needs.changes.outputs.acceptance }}
+          API_IMAGE: ${{ needs.changes.outputs.api_image }}
+          WEB_IMAGE: ${{ needs.changes.outputs.web_image }}
+          NATIVE: ${{ needs.changes.outputs.native }}
+      - name: Isolate pnpm store for this job
+        run: echo "PNPM_CONFIG_STORE_DIR=${RUNNER_TEMP}/pnpm-store-${GITHUB_RUN_ID}-${GITHUB_JOB}-${GITHUB_RUN_ATTEMPT}" >> "${GITHUB_ENV}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+        with:
+          go-version-file: go.work
+          cache-dependency-path: apps/api/go.sum
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+        with:
+          version: 11.0.7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+        with:
+          node-version: 22.17.0
+      - name: Verify pnpm store isolation
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+        run: test "$(pnpm store path --silent)" = "${PNPM_CONFIG_STORE_DIR}/v11"
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance == 'true'
+        run: make acceptance
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.acceptance != 'true'
+        run: echo "Live acceptance is unaffected by this diff; stable acceptance check passed."
+  android-native:
+    needs: changes
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - id: routing
+        name: Require valid CI routing
+        run: |
+          if [[ "$CHANGES_RESULT" != success ]]; then exit 1; fi
+          for value in "$ACCEPTANCE" "$API_IMAGE" "$WEB_IMAGE" "$NATIVE"; do
+            case "$value" in true|false) ;; *) exit 1 ;; esac
+          done
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          ACCEPTANCE: ${{ needs.changes.outputs.acceptance }}
+          API_IMAGE: ${{ needs.changes.outputs.api_image }}
+          WEB_IMAGE: ${{ needs.changes.outputs.web_image }}
+          NATIVE: ${{ needs.changes.outputs.native }}
+      - name: Isolate pnpm store for this job
+        run: echo "PNPM_CONFIG_STORE_DIR=${RUNNER_TEMP}/pnpm-store-${GITHUB_RUN_ID}-${GITHUB_JOB}-${GITHUB_RUN_ATTEMPT}" >> "${GITHUB_ENV}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        with: { version: 11.0.7 }
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        with: { node-version: 22.17.0 }
+      - name: Verify pnpm store isolation
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: test "$(pnpm store path --silent)" = "${PNPM_CONFIG_STORE_DIR}/v11"
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        with: { distribution: temurin, java-version: "17.0.15+6" }
+      - name: Verify hosted Android toolchain
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: ./scripts/check-hosted-android-toolchain.sh
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: pnpm --dir apps/mobile mobile:doctor # runs pinned expo-doctor
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: pnpm --dir apps/mobile mobile:compat
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: pnpm --dir apps/mobile mobile:prebuild
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: cd apps/mobile/android && ./gradlew assembleDebug
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native != 'true'
+        run: echo "Android native inputs are unaffected; stable android-native check passed."
+  ios-native:
+    needs: changes
+    if: always()
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - id: routing
+        name: Require valid CI routing
+        run: |
+          if [[ "$CHANGES_RESULT" != success ]]; then exit 1; fi
+          for value in "$ACCEPTANCE" "$API_IMAGE" "$WEB_IMAGE" "$NATIVE"; do
+            case "$value" in true|false) ;; *) exit 1 ;; esac
+          done
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          ACCEPTANCE: ${{ needs.changes.outputs.acceptance }}
+          API_IMAGE: ${{ needs.changes.outputs.api_image }}
+          WEB_IMAGE: ${{ needs.changes.outputs.web_image }}
+          NATIVE: ${{ needs.changes.outputs.native }}
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: steps.routing.outcome == 'success'
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        with: { version: 11.0.7 }
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        with: { node-version: 22.17.0 }
+      - uses: ruby/setup-ruby@e5517072e87f198d9533967ae13d97c11b604005 # v1.99.0
+        if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        with:
+          ruby-version: '3.2.9'
+          bundler: '2.6.9'
+      - name: Verify Xcode version
+        if: steps.routing.outcome == 'success'
+        run: xcodebuild -version | grep -E '^Xcode 26(\.|$)'
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native == 'true'
+        name: Build iOS simulator application
+        run: make mobile-build-ios
+      - if: steps.routing.outcome == 'success' && needs.changes.outputs.native != 'true'
+        name: Report skipped iOS native build
+        run: echo "iOS native inputs are unaffected; stable ios-native check passed on macOS."

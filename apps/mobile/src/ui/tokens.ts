@@ -1,0 +1,72 @@
+export const mobileTheme = {
+  colors: {
+    background: '#141414',
+    surface: '#202020',
+    surfaceRaised: '#2A2A2A',
+    surfacePressed: '#353535',
+    text: '#F8F5EC',
+    textMuted: '#C9C3B7',
+    accent: '#FFD84D',
+    accentPressed: '#F2C230',
+    accentText: '#141414',
+    border: '#767676',
+    progressTrack: '#767676',
+    error: '#FF8A80',
+    errorSurface: '#3B2424',
+    offlineSurface: '#332F1F',
+    focus: '#FFEA70',
+  },
+  spacing: {
+    xxs: 4,
+    xs: 8,
+    sm: 12,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 40,
+  },
+  radii: {
+    sm: 8,
+    md: 12,
+    lg: 20,
+    pill: 999,
+  },
+  sizes: {
+    minimumTouchTarget: 48,
+    pathTrackingRow: 132,
+    progressTrack: 8,
+    border: 1,
+  },
+  typography: {
+    title: {
+      fontSize: 32,
+      fontWeight: '700',
+      lineHeight: 38,
+    },
+    heading: {
+      fontSize: 24,
+      fontWeight: '700',
+      lineHeight: 30,
+    },
+    subheading: {
+      fontSize: 20,
+      fontWeight: '600',
+      lineHeight: 26,
+    },
+    body: {
+      fontSize: 17,
+      fontWeight: '400',
+      lineHeight: 24,
+    },
+    caption: {
+      fontSize: 13,
+      fontWeight: '500',
+      lineHeight: 18,
+    },
+    button: {
+      fontSize: 17,
+      fontWeight: '700',
+      lineHeight: 22,
+    },
+  },
+} as const;

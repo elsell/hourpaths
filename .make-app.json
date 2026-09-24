@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 4,
+  "generatorVersion": "v0.4.1",
+  "name": "HourPaths",
+  "slug": "hourpaths",
+  "bundlePrefix": "com.elsell",
+  "module": "github.com/elsell/hour-paths",
+  "domains": [
+    {
+      "name": "path",
+      "plural": "paths",
+      "fields": "name:string,visibility:string"
+    }
+  ]
+}

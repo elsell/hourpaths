@@ -1,0 +1,133 @@
+package httpserver
+
+import (
+	"context"
+	"encoding/json"
+	"github.com/elsell/hour-paths/apps/api/internal/app"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+)
+
+type invitationAuthenticator struct {
+	principal ports.Principal
+	err       error
+}
+
+func (a invitationAuthenticator) Authenticate(context.Context, string) (ports.Principal, error) {
+	return a.principal, a.err
+}
+
+type invitationUsers struct{ user identity.User }
+
+func (u invitationUsers) ResolveOrCreate(context.Context, ports.Claims, audit.Event, audit.Event, audit.Event, bool) (identity.User, error) {
+	return u.user, nil
+}
+func (u invitationUsers) GetUser(context.Context, string) (identity.User, error) { return u.user, nil }
+func (u invitationUsers) GetProvisionalUser(context.Context, string) (identity.User, error) {
+	return identity.User{}, ports.ErrNotFound
+}
+func (invitationUsers) DisableUser(context.Context, string, audit.Event) error { return nil }
+
+type invitationRepository struct{ created *identity.Invitation }
+
+func (r invitationRepository) CreateInvitation(_ context.Context, value identity.Invitation, _ ports.Idempotency, _ audit.Event) (identity.Invitation, bool, error) {
+	if r.created != nil {
+		*r.created = value
+	}
+	return value, false, nil
+}
+func (invitationRepository) ListInvitations(context.Context, string, ports.PageRequest, audit.Event) (identity.InvitationPage, error) {
+	return identity.InvitationPage{Invitations: []identity.Invitation{}}, nil
+}
+func (invitationRepository) RevokeInvitation(context.Context, string, string, audit.Event) error {
+	return nil
+}
+
+type invitationAudits struct{}
+
+func (invitationAudits) AppendAuditEvent(context.Context, audit.Event) error { return nil }
+func (invitationAudits) ListAuditEvents(context.Context, string, ports.PageRequest) (audit.Page, error) {
+	return audit.Page{}, nil
+}
+
+func invitationHandler(auth ports.Authenticator, user identity.User, invitations ports.Invitations) http.Handler {
+	admins := map[string]struct{}{}
+	if user.InvitationAdmin {
+		admins[user.ID] = struct{}{}
+	}
+	handler, _ := New(app.App{
+		Auth:                 auth,
+		Users:                invitationUsers{user: user},
+		Invitations:          invitations,
+		Clock:                docsClock{now: time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)},
+		AuditRateLimiter:     docsLimiter{},
+		Audits:               invitationAudits{},
+		InvitationAdminUsers: admins,
+	}, []string{"example"}, Options{})
+	return handler
+}
+
+func TestInvitationRoutesRejectUnauthenticatedAndNonAdminCallers(t *testing.T) {
+	requestBody := `{"email":"invited@example.com","validDays":7}`
+	tests := []struct {
+		name    string
+		handler http.Handler
+		want    int
+		code    string
+	}{
+		{
+			name: "unauthenticated",
+			handler: invitationHandler(invitationAuthenticator{err: ports.ErrInvalidCredential}, identity.User{},
+				invitationRepository{}),
+			want: http.StatusUnauthorized,
+			code: "invalid_credential",
+		},
+		{
+			name: "ordinary user",
+			handler: invitationHandler(invitationAuthenticator{principal: ports.Principal{UserID: "user", Scopes: []string{"api:user"}}},
+				identity.User{ID: "user", InvitationAdmin: false}, invitationRepository{}),
+			want: http.StatusForbidden,
+			code: "forbidden",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/v1/invitations", strings.NewReader(requestBody))
+			request.Header.Set("Content-Type", "application/json")
+			request.Header.Set("Authorization", "Bearer session")
+			request.Header.Set("Idempotency-Key", "0123456789abcdef")
+			response := httptest.NewRecorder()
+			test.handler.ServeHTTP(response, request)
+			var problem struct {
+				Code string `json:"code"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &problem); err != nil || response.Code != test.want || problem.Code != test.code {
+				t.Fatalf("got status=%d code=%q err=%v, want status=%d code=%q: %s", response.Code, problem.Code, err, test.want, test.code, response.Body.String())
+			}
+		})
+	}
+}
+
+func TestInvitationRoutesAllowConfiguredAdmin(t *testing.T) {
+	var created identity.Invitation
+	handler := invitationHandler(
+		invitationAuthenticator{principal: ports.Principal{UserID: "admin", Scopes: []string{"api:user"}}},
+		identity.User{ID: "admin", InvitationAdmin: true},
+		invitationRepository{created: &created},
+	)
+	request := httptest.NewRequest(http.MethodPost, "/v1/invitations", strings.NewReader(`{"email":"Invited@Example.com","validDays":7}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer session")
+	request.Header.Set("Idempotency-Key", "0123456789abcdef")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusCreated || created.Email != "invited@example.com" || created.CreatedByUserID != "admin" {
+		t.Fatalf("legitimate admin invitation failed: status=%d created=%+v body=%s", response.Code, created, response.Body.String())
+	}
+}

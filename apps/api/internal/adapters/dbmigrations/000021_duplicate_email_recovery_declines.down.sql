@@ -1,0 +1,21 @@
+BEGIN;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM audit_event_models
+    WHERE action = 'duplicate_email_recovery.declined'
+  ) THEN
+    RAISE EXCEPTION 'cannot remove duplicate email recovery declines while their audit events exist';
+  END IF;
+END
+$$;
+
+ALTER TABLE audit_event_models DROP CONSTRAINT audit_event_models_action_check;
+ALTER TABLE audit_event_models ADD CONSTRAINT audit_event_models_action_check CHECK (action IN ('user.provisioned', 'user.deactivated', 'user.profile_synchronized', 'user.viewed', 'session.created', 'session.revoked', 'resource.listed', 'resource.viewed', 'resource.created', 'resource.updated', 'resource.deleted', 'resource.access_denied', 'authorization.relationship_applied', 'authorization.relationship_failed', 'authorization.dead_letters_listed', 'authorization.dead_letter_requeued', 'invitation.created', 'invitation.listed', 'invitation.revoked', 'invitation.consumed'));
+
+REVOKE ALL ON duplicate_email_recovery_declines FROM app;
+DROP TABLE duplicate_email_recovery_declines;
+
+COMMIT;

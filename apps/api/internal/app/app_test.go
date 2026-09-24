@@ -1,0 +1,799 @@
+package app
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"sync"
+	"testing"
+	"time"
+)
+
+type fakeClock struct{ now time.Time }
+
+func (f fakeClock) Now() time.Time { return f.now }
+
+type fakeAuditRateLimiter struct{ denied bool }
+
+func (f fakeAuditRateLimiter) Allow(string, time.Time) bool { return !f.denied }
+
+type fakeSessions struct {
+	rotated      bool
+	revoked      bool
+	revokedEvent audit.Event
+	err          error
+}
+
+func (f *fakeSessions) CreateSession(context.Context, string, []string, []byte, time.Time, time.Time, audit.Event) (string, error) {
+	return "created", f.err
+}
+func (f *fakeSessions) RotateSession(_ context.Context, _, _ string, _ []string, expiresAt time.Time, revoked, created audit.Event) (string, time.Time, error) {
+	f.rotated = revoked.Action == audit.SessionRevoked && created.Action == audit.SessionCreated
+	return "rotated", expiresAt, f.err
+}
+func (f *fakeSessions) RevokeSession(_ context.Context, _ string, event audit.Event) error {
+	f.revoked = true
+	f.revokedEvent = event
+	return f.err
+}
+
+type fakeSerializer struct{}
+
+func (fakeSerializer) WithinResource(ctx context.Context, _, _ string, fn func(context.Context) error) error {
+	return fn(ctx)
+}
+
+type blockingSerializer struct {
+	entered chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func (s *blockingSerializer) WithinResource(ctx context.Context, _, _ string, fn func(context.Context) error) error {
+	s.once.Do(func() {
+		close(s.entered)
+		<-s.release
+	})
+	return fn(ctx)
+}
+
+type ownedOutbox struct {
+	mu    sync.Mutex
+	owner string
+}
+
+func (o *ownedOutbox) RenewAuthorizationChange(_ context.Context, _, worker string, _ time.Duration) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.owner != worker {
+		return ports.ErrNotFound
+	}
+	return nil
+}
+func (*ownedOutbox) ClaimAuthorizationChanges(context.Context, string, time.Duration, int) ([]ports.AuthorizationChange, error) {
+	return nil, nil
+}
+func (*ownedOutbox) ClaimAuthorizationChange(context.Context, string, string, time.Duration) (ports.AuthorizationChange, error) {
+	return ports.AuthorizationChange{}, ports.ErrNotFound
+}
+func (*ownedOutbox) ClaimAuthorizationChangeForResource(context.Context, string, string, string, time.Duration) (ports.AuthorizationChange, error) {
+	return ports.AuthorizationChange{}, ports.ErrNotFound
+}
+func (*ownedOutbox) CompleteAuthorizationChangeWithAudit(context.Context, string, string, audit.Event) error {
+	return nil
+}
+func (*ownedOutbox) FailAuthorizationChange(context.Context, string, string, int, string) (bool, error) {
+	return false, nil
+}
+func (*ownedOutbox) ListAuthorizationDeadLetters(context.Context, string, ports.PageRequest) (ports.AuthorizationDeadLetterPage, error) {
+	return ports.AuthorizationDeadLetterPage{}, nil
+}
+func (*ownedOutbox) RequeueAuthorizationDeadLetter(context.Context, string, string, string, time.Duration, audit.Event) (ports.AuthorizationChange, error) {
+	return ports.AuthorizationChange{}, nil
+}
+
+type recordingAuthz struct {
+	mu         sync.Mutex
+	operations []ports.AuthorizationOperation
+}
+
+func (a *recordingAuthz) WriteRelationship(context.Context, string, string, string, string, string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.operations = append(a.operations, ports.AuthorizationTouch)
+	return nil
+}
+func (a *recordingAuthz) DeleteRelationship(context.Context, string, string, string, string, string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.operations = append(a.operations, ports.AuthorizationDelete)
+	return nil
+}
+func (*recordingAuthz) Check(context.Context, string, string, string, string) (bool, error) {
+	return false, nil
+}
+
+type fakeAuth struct {
+	principal ports.Principal
+	err       error
+}
+
+func (f fakeAuth) Authenticate(context.Context, string) (ports.Principal, error) {
+	if f.err != nil {
+		return ports.Principal{}, f.err
+	}
+	if f.principal.UserID == "" {
+		return ports.Principal{UserID: "owner", Scopes: []string{"api:user"}}, nil
+	}
+	return f.principal, nil
+}
+
+type fakeUsers struct {
+	user           identity.User
+	provisional    identity.User
+	err            error
+	provisionalErr error
+	event          *audit.Event
+	disabled       *audit.Event
+	allowCreate    *bool
+	provisionalID  *string
+}
+
+func (f fakeUsers) ResolveOrCreate(_ context.Context, _ ports.Claims, event, _, _ audit.Event, allowCreate bool) (identity.User, error) {
+	if f.event != nil {
+		*f.event = event
+	}
+	if f.allowCreate != nil {
+		*f.allowCreate = allowCreate
+	}
+	return f.user, f.err
+}
+
+func (fakeUsers) HasActiveEmailMatch(context.Context, ports.Claims) (bool, error) { return false, nil }
+
+type fakeIdentityVerifier struct{ claims ports.Claims }
+
+func (f fakeIdentityVerifier) Verify(context.Context, string) (ports.Claims, error) {
+	return f.claims, nil
+}
+func (f fakeUsers) GetUser(context.Context, string) (identity.User, error) { return f.user, f.err }
+func (f fakeUsers) GetProvisionalUser(_ context.Context, userID string) (identity.User, error) {
+	if f.provisionalID != nil {
+		*f.provisionalID = userID
+	}
+	return f.provisional, f.provisionalErr
+}
+func (f fakeUsers) DisableUser(_ context.Context, _ string, event audit.Event) error {
+	if f.disabled != nil {
+		*f.disabled = event
+	}
+	return f.err
+}
+
+type fakeInvitations struct {
+	created       *identity.Invitation
+	idempotencies *[]ports.Idempotency
+	event         *audit.Event
+}
+
+func (f fakeInvitations) CreateInvitation(_ context.Context, invitation identity.Invitation, idempotency ports.Idempotency, event audit.Event) (identity.Invitation, bool, error) {
+	if f.created != nil {
+		*f.created = invitation
+	}
+	if f.idempotencies != nil {
+		*f.idempotencies = append(*f.idempotencies, idempotency)
+	}
+	if f.event != nil {
+		*f.event = event
+	}
+	return invitation, false, nil
+}
+func (fakeInvitations) ListInvitations(context.Context, string, ports.PageRequest, audit.Event) (identity.InvitationPage, error) {
+	return identity.InvitationPage{}, nil
+}
+func (fakeInvitations) RevokeInvitation(context.Context, string, string, audit.Event) error {
+	return nil
+}
+
+type fakeAuthz struct {
+	allowed bool
+	err     error
+	deleted *bool
+	written *bool
+	checked *bool
+}
+
+func (f fakeAuthz) WriteRelationship(context.Context, string, string, string, string, string) error {
+	if f.written != nil {
+		*f.written = true
+	}
+	return f.err
+}
+func (f fakeAuthz) DeleteRelationship(context.Context, string, string, string, string, string) error {
+	if f.deleted != nil {
+		*f.deleted = true
+	}
+	return f.err
+}
+func (f fakeAuthz) Check(context.Context, string, string, string, string) (bool, error) {
+	if f.checked != nil {
+		*f.checked = true
+	}
+	return f.allowed, f.err
+}
+
+type fakeResources struct {
+	resource      ports.Resource
+	page          ports.ResourcePage
+	request       *ports.PageRequest
+	createdChange *ports.AuthorizationChange
+	deletedChange *ports.AuthorizationChange
+	createdEvent  *audit.Event
+	updatedEvent  *audit.Event
+	deletedEvent  *audit.Event
+	replayed      bool
+}
+
+func (f fakeResources) CreateResource(_ context.Context, resource ports.Resource, c ports.AuthorizationChange, event audit.Event, _ ports.Idempotency) (ports.Resource, bool, error) {
+	if f.createdChange != nil {
+		*f.createdChange = c
+	}
+	if f.createdEvent != nil {
+		*f.createdEvent = event
+	}
+	return resource, f.replayed, nil
+}
+func (f fakeResources) ListResources(_ context.Context, _, _ string, p ports.PageRequest) (ports.ResourcePage, error) {
+	if f.request != nil {
+		*f.request = p
+	}
+	return f.page, nil
+}
+func (f fakeResources) GetResource(context.Context, string, string) (ports.Resource, error) {
+	return f.resource, nil
+}
+func (f fakeResources) UpdateResource(_ context.Context, _, _, name string, event audit.Event) (ports.Resource, error) {
+	if f.updatedEvent != nil {
+		*f.updatedEvent = event
+	}
+	r := f.resource
+	r.Name = name
+	return r, nil
+}
+func (f fakeResources) DeleteResource(_ context.Context, _, _ string, c ports.AuthorizationChange, event audit.Event) error {
+	if f.deletedChange != nil {
+		*f.deletedChange = c
+	}
+	if f.deletedEvent != nil {
+		*f.deletedEvent = event
+	}
+	return nil
+}
+
+type fakeAudits struct {
+	events  *[]audit.Event
+	page    audit.Page
+	request *ports.PageRequest
+	err     error
+}
+
+func (f fakeAudits) AppendAuditEvent(_ context.Context, event audit.Event) error {
+	if f.events != nil {
+		*f.events = append(*f.events, event)
+	}
+	return f.err
+}
+func (f fakeAudits) ListAuditEvents(_ context.Context, _ string, request ports.PageRequest) (audit.Page, error) {
+	if f.request != nil {
+		*f.request = request
+	}
+	return f.page, f.err
+}
+
+type fakeOutbox struct {
+	changes          []ports.AuthorizationChange
+	completed        *bool
+	failed           *bool
+	renewed          *bool
+	renewErr         error
+	claimResourceErr error
+	completedEvent   *audit.Event
+	deadLetters      []ports.AuthorizationDeadLetter
+	deadLetterOwner  *string
+	requeueEvent     *audit.Event
+	requeueOwner     *string
+	requeueErr       error
+}
+
+func (f fakeOutbox) RenewAuthorizationChange(context.Context, string, string, time.Duration) error {
+	if f.renewed != nil {
+		*f.renewed = true
+	}
+	return f.renewErr
+}
+
+func (f fakeOutbox) ClaimAuthorizationChanges(context.Context, string, time.Duration, int) ([]ports.AuthorizationChange, error) {
+	return f.changes, nil
+}
+func (f fakeOutbox) ClaimAuthorizationChange(context.Context, string, string, time.Duration) (ports.AuthorizationChange, error) {
+	if len(f.changes) == 0 {
+		return ports.AuthorizationChange{}, ports.ErrNotFound
+	}
+	return f.changes[0], nil
+}
+func (f fakeOutbox) ClaimAuthorizationChangeForResource(context.Context, string, string, string, time.Duration) (ports.AuthorizationChange, error) {
+	if f.claimResourceErr != nil {
+		return ports.AuthorizationChange{}, f.claimResourceErr
+	}
+	if len(f.changes) == 0 {
+		return ports.AuthorizationChange{}, ports.ErrNotFound
+	}
+	return f.changes[0], nil
+}
+func (f fakeOutbox) CompleteAuthorizationChangeWithAudit(_ context.Context, _, _ string, event audit.Event) error {
+	if f.completed != nil {
+		*f.completed = true
+	}
+	if f.completedEvent != nil {
+		*f.completedEvent = event
+	}
+	return nil
+}
+func (f fakeOutbox) FailAuthorizationChange(context.Context, string, string, int, string) (bool, error) {
+	if f.failed != nil {
+		*f.failed = true
+	}
+	return false, nil
+}
+func (f fakeOutbox) ListAuthorizationDeadLetters(_ context.Context, owner string, _ ports.PageRequest) (ports.AuthorizationDeadLetterPage, error) {
+	if f.deadLetterOwner != nil {
+		*f.deadLetterOwner = owner
+	}
+	return ports.AuthorizationDeadLetterPage{Items: f.deadLetters}, nil
+}
+func (f fakeOutbox) RequeueAuthorizationDeadLetter(_ context.Context, _, owner, worker string, _ time.Duration, event audit.Event) (ports.AuthorizationChange, error) {
+	if f.requeueEvent != nil {
+		*f.requeueEvent = event
+	}
+	if f.requeueOwner != nil {
+		*f.requeueOwner = owner
+	}
+	if f.requeueErr != nil {
+		return ports.AuthorizationChange{}, f.requeueErr
+	}
+	if len(f.changes) == 0 {
+		return ports.AuthorizationChange{}, ports.ErrNotFound
+	}
+	change := f.changes[0]
+	change.LockedBy = worker
+	return change, nil
+}
+func TestGetResourceFailsClosed(t *testing.T) {
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "attacker"}}, Authorizer: fakeAuthz{allowed: false}, Resources: fakeResources{resource: ports.Resource{ID: "secret", OwnerUserID: "owner"}}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	_, err := a.GetResource(context.Background(), "Bearer token", "example", "secret")
+	if !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected forbidden, got %v", err)
+	}
+}
+func TestGetResourceAllowsOwner(t *testing.T) {
+	r := ports.Resource{ID: "mine", Domain: "example", OwnerUserID: "owner"}
+	var events []audit.Event
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{allowed: true}, Resources: fakeResources{resource: r}, Audits: fakeAudits{events: &events}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	got, err := a.GetResource(context.Background(), "Bearer token", "example", "mine")
+	if err != nil || got.ID != "mine" {
+		t.Fatalf("unexpected result: %#v %v", got, err)
+	}
+	if len(events) != 1 || events[0].Action != audit.ResourceViewed || events[0].OwnerUserID != "owner" || events[0].Outcome != audit.Succeeded {
+		t.Fatalf("read was not audited: %+v", events)
+	}
+}
+
+func TestDeniedResourceAccessIsAuditedAndAuditFailureFailsClosed(t *testing.T) {
+	var events []audit.Event
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "attacker"}}, Authorizer: fakeAuthz{allowed: false}, Audits: fakeAudits{events: &events}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	if _, err := a.GetResource(context.Background(), "Bearer token", "example", "secret"); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected forbidden, got %v", err)
+	}
+	if len(events) != 1 || events[0].Action != audit.ResourceAccessDenied || events[0].OwnerUserID != "attacker" || events[0].TargetID != "secret" {
+		t.Fatalf("denial audit leaked ownership or was omitted: %+v", events)
+	}
+	a.Audits = fakeAudits{err: errors.New("audit unavailable")}
+	if _, err := a.GetResource(context.Background(), "Bearer token", "example", "secret"); err == nil || errors.Is(err, ErrForbidden) {
+		t.Fatalf("audit failure did not fail closed: %v", err)
+	}
+}
+
+func TestAuditProducingOperationIsRejectedBeforeAuthorizationWhenRateLimited(t *testing.T) {
+	checked := false
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "user"}}, Authorizer: fakeAuthz{allowed: true, checked: &checked}, AuditRateLimiter: fakeAuditRateLimiter{denied: true}}
+	_, err := a.GetResource(context.Background(), "Bearer token", "habit", "id")
+	if !errors.Is(err, ErrRateLimited) {
+		t.Fatalf("expected rate limit, got %v", err)
+	}
+	if checked {
+		t.Fatal("rate-limited request reached authorization boundary")
+	}
+}
+
+func TestCreateCarriesAuditIntoTransactionalPort(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	var event audit.Event
+	a := App{Clock: fakeClock{now: now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{}, Resources: fakeResources{createdEvent: &event}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, AuthorizationOutbox: fakeOutbox{}, AuthorizationSerializer: fakeSerializer{}}
+	ctx := WithCorrelationID(context.Background(), "request-id")
+	r, err := a.CreateResource(ctx, "Bearer token", "habit", "Walk", "request-key-0001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if event.Action != audit.ResourceCreated || event.TargetID != r.ID || event.OwnerUserID != "owner" || !event.OccurredAt.Equal(now) {
+		t.Fatalf("create audit was not carried to persistence: %+v", event)
+	}
+	if event.CorrelationID != "request-id" {
+		t.Fatalf("request event was not correlated: create=%+v", event)
+	}
+}
+func TestIdempotentCreateReplayDoesNotSucceedBeforeAuthorizationIsApplied(t *testing.T) {
+	completed := false
+	written := false
+	change := ports.AuthorizationChange{ID: "original-change", ResourceType: "resource", ResourceID: "example/original", SubjectID: "owner", Operation: ports.AuthorizationTouch}
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{written: &written}, Resources: fakeResources{resource: ports.Resource{ID: "original", Domain: "example", OwnerUserID: "owner"}, replayed: true}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{change}, completed: &completed}, AuthorizationSerializer: fakeSerializer{}}
+	if _, err := a.CreateResource(context.Background(), "Bearer token", "example", "name", "request-key-replay-1"); err != nil {
+		t.Fatal(err)
+	}
+	if !written || !completed {
+		t.Fatalf("replay returned before authorization was durable: written=%v completed=%v", written, completed)
+	}
+	a.AuthorizationOutbox = fakeOutbox{claimResourceErr: ports.ErrAuthorizationPending}
+	if _, err := a.CreateResource(context.Background(), "Bearer token", "example", "name", "request-key-replay-1"); !errors.Is(err, ports.ErrAuthorizationPending) {
+		t.Fatalf("concurrent replay returned success instead of pending: %v", err)
+	}
+}
+func TestCreateRejectsNonPrintableIdempotencyKeys(t *testing.T) {
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	for _, key := range []string{"request-key-0001\n", "request-\x00-key-0001", "réquest-key-0001"} {
+		if _, err := a.CreateResource(context.Background(), "Bearer token", "example", "name", key); !errors.Is(err, ports.ErrInvalidArgument) {
+			t.Fatalf("accepted non-printable ASCII idempotency key %q: %v", key, err)
+		}
+	}
+}
+func TestReconcileKeepsFailedAuthorizationChangePending(t *testing.T) {
+	failed := false
+	var events []audit.Event
+	a := App{Clock: fakeClock{}, Audits: fakeAudits{events: &events}, Authorizer: fakeAuthz{err: errors.New("spicedb unavailable")}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{{ID: "change", ResourceType: "resource", ResourceID: "resource", SubjectID: "user", Operation: ports.AuthorizationTouch}}, failed: &failed}, AuthorizationSerializer: fakeSerializer{}}
+	if err := a.ReconcileAuthorization(context.Background(), "worker", 10); err == nil {
+		t.Fatal("expected dependency error")
+	}
+	if !failed {
+		t.Fatal("expected failed attempt to remain retryable")
+	}
+	if len(events) != 1 || events[0].Action != audit.AuthorizationFailed || events[0].Outcome != audit.Failed {
+		t.Fatalf("authorization failure was not audited: %+v", events)
+	}
+}
+func TestReconcileStaleWorkerCannotWriteAuthorization(t *testing.T) {
+	written := false
+	a := App{Clock: fakeClock{}, Audits: fakeAudits{}, Authorizer: fakeAuthz{written: &written}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{{ID: "change", ResourceType: "resource", ResourceID: "resource", SubjectID: "user", Operation: ports.AuthorizationTouch}}, renewErr: ports.ErrNotFound}, AuthorizationSerializer: fakeSerializer{}}
+	if err := a.ReconcileAuthorization(context.Background(), "stale-worker", 10); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("got %v, want stale claim rejection", err)
+	}
+	if written {
+		t.Fatal("stale worker contacted authorization service")
+	}
+}
+func TestReconcileCompletesSuccessfulAuthorizationChange(t *testing.T) {
+	completed := false
+	var event audit.Event
+	a := App{Clock: fakeClock{}, Audits: fakeAudits{}, Authorizer: fakeAuthz{}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{{ID: "change", ResourceType: "resource", ResourceID: "resource", SubjectID: "user", Operation: ports.AuthorizationTouch}}, completed: &completed, completedEvent: &event}, AuthorizationSerializer: fakeSerializer{}}
+	if err := a.ReconcileAuthorization(context.Background(), "worker", 10); err != nil {
+		t.Fatal(err)
+	}
+	if !completed {
+		t.Fatal("expected completed authorization change")
+	}
+	if event.Action != audit.AuthorizationApplied {
+		t.Fatalf("authorization success was not audited: %+v", event)
+	}
+}
+func TestAuthorizationDeadLetterRecoveryIsOwnerAuditedAndReconciled(t *testing.T) {
+	var events []audit.Event
+	var requeueEvent audit.Event
+	var listedOwner, requeueOwner string
+	completed := false
+	written := false
+	change := ports.AuthorizationChange{ID: "dead", ResourceType: "resource", ResourceID: "example/id", OwnerUserID: "owner", SubjectID: "viewer", Operation: ports.AuthorizationTouch}
+	outbox := fakeOutbox{changes: []ports.AuthorizationChange{change}, deadLetters: []ports.AuthorizationDeadLetter{{ID: "dead", OwnerUserID: "owner", SubjectID: "viewer"}}, deadLetterOwner: &listedOwner, requeueEvent: &requeueEvent, requeueOwner: &requeueOwner, completed: &completed}
+	a := App{Clock: fakeClock{now: time.Now().UTC()}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{written: &written}, Audits: fakeAudits{events: &events}, AuditRateLimiter: fakeAuditRateLimiter{}, AuthorizationOutbox: outbox, AuthorizationSerializer: fakeSerializer{}}
+	page, err := a.ListAuthorizationDeadLetters(context.Background(), "Bearer token", "", 10)
+	if err != nil || len(page.Items) != 1 || len(events) != 1 || events[0].Action != audit.AuthorizationDeadLettersListed {
+		t.Fatalf("dead-letter list was not safely audited: page=%+v events=%+v err=%v", page, events, err)
+	}
+	if err := a.RequeueAuthorizationDeadLetter(context.Background(), "Bearer token", "dead"); err != nil {
+		t.Fatal(err)
+	}
+	if listedOwner != "owner" || requeueOwner != "owner" || requeueEvent.Action != audit.AuthorizationDeadLetterRequeued || requeueEvent.OwnerUserID != "owner" || !written || !completed {
+		t.Fatalf("dead-letter recovery incomplete: listed=%q requeued=%q event=%+v written=%v completed=%v", listedOwner, requeueOwner, requeueEvent, written, completed)
+	}
+}
+
+func TestCurrentUserPreservesInvalidCredentialClassification(t *testing.T) {
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{err: ports.ErrInvalidCredential}, Users: fakeUsers{}}
+	_, err := a.CurrentUser(context.Background(), "Bearer bad")
+	if !errors.Is(err, ports.ErrInvalidCredential) || errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("invalid credential classification was lost: %v", err)
+	}
+	databaseErr := errors.New("database unavailable")
+	a = App{Clock: fakeClock{}, Auth: fakeAuth{err: databaseErr}, Users: fakeUsers{}}
+	_, err = a.CurrentUser(context.Background(), "Bearer valid")
+	if !errors.Is(err, databaseErr) || errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("persistence error was misclassified: %v", err)
+	}
+}
+func TestCurrentUserIsRateLimitedAndDurablyAudited(t *testing.T) {
+	var events []audit.Event
+	a := App{Clock: fakeClock{now: time.Now().UTC()}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Audits: fakeAudits{events: &events}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	u, err := a.CurrentUser(context.Background(), "Bearer valid")
+	if err != nil || u.ID != "owner" || len(events) != 1 || events[0].Action != audit.UserViewed {
+		t.Fatalf("current-user read was not audited: user=%+v events=%+v err=%v", u, events, err)
+	}
+	a.AuditRateLimiter = fakeAuditRateLimiter{denied: true}
+	if _, err := a.CurrentUser(context.Background(), "Bearer valid"); !errors.Is(err, ErrRateLimited) || len(events) != 1 {
+		t.Fatalf("rate-limited read changed durable audit state: events=%+v err=%v", events, err)
+	}
+}
+func TestDeactivateAccountIsGatedAndAudited(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	var event audit.Event
+	a := App{Clock: fakeClock{now: now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}, disabled: &event}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	if err := a.DeactivateAccount(context.Background(), "Bearer session"); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("disabled lifecycle command returned %v", err)
+	}
+	if event.ID != "" {
+		t.Fatal("configuration-gated command changed account state")
+	}
+	a.AllowAccountDeactivation = true
+	if err := a.DeactivateAccount(context.Background(), "Bearer session"); err != nil {
+		t.Fatal(err)
+	}
+	if event.Action != audit.UserDeactivated || event.OwnerUserID != "owner" || event.ActorUserID != "owner" || event.TargetType != "user" || event.TargetID != "owner" || event.Outcome != audit.Succeeded {
+		t.Fatalf("unexpected lifecycle audit event: %+v", event)
+	}
+}
+func TestRefreshSessionRotatesWithAudits(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	sessions := &fakeSessions{}
+	a := App{Clock: fakeClock{now: now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Sessions: sessions, SessionTTL: time.Hour, SessionAbsoluteTTL: 12 * time.Hour, AuditRateLimiter: fakeAuditRateLimiter{}}
+	result, err := a.RefreshSession(context.Background(), "Bearer session")
+	if err != nil || result.Token != "rotated" || !result.ExpiresAt.Equal(now.Add(time.Hour)) || !sessions.rotated {
+		t.Fatalf("session was not safely rotated: result=%+v rotated=%v err=%v", result, sessions.rotated, err)
+	}
+}
+func TestSessionOperationsPreserveInvalidCredentialClassification(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	sessions := &fakeSessions{err: ports.ErrInvalidCredential}
+	a := App{Clock: fakeClock{now: now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner", Status: identity.StatusActive}}, IdentityVerifier: fakeIdentityVerifier{claims: ports.Claims{Issuer: "issuer", Subject: "subject", Email: "user@example.com", EmailVerified: true}}, Sessions: sessions, SessionTTL: time.Hour, SessionAbsoluteTTL: 12 * time.Hour, AuditRateLimiter: fakeAuditRateLimiter{}, AllowAccountProvisioning: true}
+	if _, err := a.RefreshSession(context.Background(), "Bearer invalid"); !errors.Is(err, ports.ErrInvalidCredential) || errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("refresh invalid credential classification was lost: %v", err)
+	}
+	if err := a.RevokeSession(context.Background(), "Bearer invalid"); !errors.Is(err, ports.ErrInvalidCredential) || errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("revoke invalid credential classification was lost: %v", err)
+	}
+	if _, err := a.ExchangeIdentityToken(context.Background(), "identity-token"); !errors.Is(err, ports.ErrInvalidCredential) || errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("session creation invalid credential classification was lost: %v", err)
+	}
+}
+func TestExistingProvisioningAllowsOnlyConfiguredInvitedEmail(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	allowed := false
+	a := App{Clock: fakeClock{now: now}, IdentityVerifier: fakeIdentityVerifier{claims: ports.Claims{Issuer: "issuer", Subject: "subject", Email: " Invited@Example.COM ", EmailVerified: true}}, Users: fakeUsers{user: identity.User{ID: "owner", Status: identity.StatusActive}, allowCreate: &allowed}, Sessions: &fakeSessions{}, SessionTTL: time.Hour, SessionAbsoluteTTL: 12 * time.Hour, AuditRateLimiter: fakeAuditRateLimiter{}, InvitedEmails: map[string]struct{}{"invited@example.com": {}}}
+	if _, err := a.ExchangeIdentityToken(context.Background(), "identity-token"); err != nil || !allowed {
+		t.Fatalf("configured invitation was not claimable: allowed=%v err=%v", allowed, err)
+	}
+	allowed = true
+	a.InvitedEmails = nil
+	if _, err := a.ExchangeIdentityToken(context.Background(), "identity-token"); err != nil || allowed {
+		t.Fatalf("existing-only mode silently self-registered: allowed=%v err=%v", allowed, err)
+	}
+	allowed = true
+	a.InvitedEmails = map[string]struct{}{"invited@example.com": {}}
+	a.IdentityVerifier = fakeIdentityVerifier{claims: ports.Claims{Issuer: "issuer", Subject: "subject", Email: "invited@example.com", EmailVerified: false}}
+	if _, err := a.ExchangeIdentityToken(context.Background(), "identity-token"); err != nil || allowed {
+		t.Fatalf("unverified invitation email was accepted: allowed=%v err=%v", allowed, err)
+	}
+}
+
+func TestInvitationAdministrationRequiresPersistedAdministratorAndAuditsCreate(t *testing.T) {
+	now := time.Date(2026, 7, 18, 1, 0, 0, 0, time.UTC)
+	created := identity.Invitation{}
+	event := audit.Event{}
+	application := App{Clock: fakeClock{now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "admin", InvitationAdmin: true}}, InvitationAdminUsers: map[string]struct{}{"admin": {}}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, Invitations: fakeInvitations{created: &created, event: &event}}
+	invitation, err := application.CreateInvitation(context.Background(), "Bearer valid", " Invited@Example.COM ", "invitation-key-0000001", 7)
+	if err != nil || invitation.Email != "invited@example.com" || created.ExpiresAt != now.Add(7*24*time.Hour) || event.Action != audit.InvitationCreated {
+		t.Fatalf("administrator invitation failed: invitation=%+v created=%+v event=%+v err=%v", invitation, created, event, err)
+	}
+	nonAdmin := application
+	nonAdmin.Users = fakeUsers{user: identity.User{ID: "user"}}
+	if _, err := nonAdmin.CreateInvitation(context.Background(), "Bearer valid", "other@example.com", "invitation-key-0000002", 7); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("non-administrator created invitation: %v", err)
+	}
+}
+
+func TestInvitationReplayHashUsesRequestRatherThanClockDerivedExpiry(t *testing.T) {
+	var captured []ports.Idempotency
+	base := App{Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "admin", InvitationAdmin: true}}, InvitationAdminUsers: map[string]struct{}{"admin": {}}, AuditRateLimiter: fakeAuditRateLimiter{}, Invitations: fakeInvitations{idempotencies: &captured}}
+	first := base
+	first.Clock = fakeClock{time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)}
+	second := base
+	second.Clock = fakeClock{time.Date(2026, 7, 18, 12, 0, 0, 0, time.UTC)}
+	if _, err := first.CreateInvitation(context.Background(), "Bearer valid", "same@example.com", "invitation-replay-0001", 7); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := second.CreateInvitation(context.Background(), "Bearer valid", "same@example.com", "invitation-replay-0001", 7); err != nil {
+		t.Fatal(err)
+	}
+	if len(captured) != 2 || !bytes.Equal(captured[0].RequestHash, captured[1].RequestHash) {
+		t.Fatalf("same invitation request produced clock-dependent replay hashes: %+v", captured)
+	}
+}
+
+func TestConfiguredAdministratorCanBootstrapExistingOnlyProvisioning(t *testing.T) {
+	now := time.Date(2026, 7, 18, 1, 0, 0, 0, time.UTC)
+	allowed := false
+	application := App{Clock: fakeClock{now}, IdentityVerifier: fakeIdentityVerifier{claims: ports.Claims{Issuer: "https://issuer.example", Subject: "admin", Email: "admin@example.com"}}, InvitationAdmins: map[string]struct{}{"https://issuer.example#admin": {}}, Users: fakeUsers{user: identity.User{ID: "admin", Status: identity.StatusActive}, allowCreate: &allowed}, Sessions: &fakeSessions{}, SessionTTL: time.Hour, SessionAbsoluteTTL: 12 * time.Hour, AuditRateLimiter: fakeAuditRateLimiter{}}
+	if _, err := application.ExchangeIdentityToken(context.Background(), "token"); err != nil || !allowed {
+		t.Fatalf("configured administrator could not bootstrap: allowed=%v err=%v", allowed, err)
+	}
+}
+func TestGetResourcePreservesAuthorizationDependencyFailure(t *testing.T) {
+	dependencyErr := errors.New("spicedb unavailable")
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{err: dependencyErr}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	_, err := a.GetResource(context.Background(), "Bearer valid", "example", "id")
+	if !errors.Is(err, dependencyErr) || errors.Is(err, ErrForbidden) {
+		t.Fatalf("dependency failure was concealed as denial: %v", err)
+	}
+}
+func TestDeleteResourceCompletesAuthorizationCleanupBeforeSuccess(t *testing.T) {
+	var change ports.AuthorizationChange
+	deleted := false
+	completed := false
+	queued := ports.AuthorizationChange{ID: "change", Operation: ports.AuthorizationDelete}
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{allowed: true, deleted: &deleted}, Resources: fakeResources{resource: ports.Resource{OwnerUserID: "owner"}, deletedChange: &change}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{queued}, completed: &completed}, AuthorizationSerializer: fakeSerializer{}}
+	if err := a.DeleteResource(context.Background(), "Bearer valid", "example", "id"); err != nil {
+		t.Fatal(err)
+	}
+	if change.Operation != ports.AuthorizationDelete || change.ResourceID != "example/id" {
+		t.Fatalf("unexpected cleanup change: %+v", change)
+	}
+	if !deleted || !completed {
+		t.Fatalf("delete returned before authorization cleanup: deleted=%v completed=%v", deleted, completed)
+	}
+}
+func TestListResourcesUsesBoundedOpaqueCursor(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	key := []byte("01234567890123456789012345678901")
+	request := ports.PageRequest{}
+	a := App{Clock: fakeClock{now: now}, CursorSigningKey: key, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Resources: fakeResources{request: &request, page: ports.ResourcePage{Resources: []ports.Resource{{ID: "second", CreatedAt: now.Add(-time.Minute)}}, HasMore: true}}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	cursor, err := a.encodeCursor(cursorPayload{Version: 1, Owner: "owner", Domain: "example", AfterID: "first", AfterCreated: now.Add(-2 * time.Minute), Snapshot: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := a.ListResources(context.Background(), "Bearer valid", "example", cursor, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if request.AfterID != "first" || request.Limit != 2 || !request.Snapshot.Equal(now) {
+		t.Fatalf("unexpected page request: %+v", request)
+	}
+	decoded, err := a.decodeCursor(page.NextCursor)
+	if err != nil || decoded.AfterID != "second" || decoded.Owner != "owner" {
+		t.Fatalf("unexpected cursor payload=%+v err=%v", decoded, err)
+	}
+	forged := "A" + page.NextCursor[1:]
+	if _, err := a.ListResources(context.Background(), "Bearer valid", "example", forged, 2); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatal("forged cursor accepted")
+	}
+	other := a
+	other.Users = fakeUsers{user: identity.User{ID: "other"}}
+	if _, err := other.ListResources(context.Background(), "Bearer valid", "example", page.NextCursor, 2); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatal("cross-principal cursor accepted")
+	}
+	if _, err := a.ListResources(context.Background(), "Bearer valid", "example", "%%%", 2); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatal("malformed cursor accepted")
+	}
+	if _, err := a.ListResources(context.Background(), "Bearer valid", "example", "", 101); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatal("oversized page accepted")
+	}
+}
+
+func TestListAuditEventsUsesPrincipalBoundSignedCursor(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	key := []byte("01234567890123456789012345678901")
+	request := ports.PageRequest{}
+	a := App{Clock: fakeClock{now: now}, CursorSigningKey: key, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Audits: fakeAudits{request: &request, page: audit.Page{Events: []audit.Event{{ID: "second", OccurredAt: now.Add(-time.Minute)}}, HasMore: true}}, AuditRateLimiter: fakeAuditRateLimiter{}}
+	page, err := a.ListAuditEvents(context.Background(), "Bearer valid", "", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if request.Limit != 2 || !request.Snapshot.Equal(now) || page.NextCursor == "" {
+		t.Fatalf("unexpected audit page request/result: %+v %+v", request, page)
+	}
+	other := a
+	other.Users = fakeUsers{user: identity.User{ID: "other"}}
+	if _, err := other.ListAuditEvents(context.Background(), "Bearer valid", page.NextCursor, 2); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatal("cross-principal audit cursor accepted")
+	}
+}
+
+func TestListAuditEventsRequiresAuthentication(t *testing.T) {
+	a := App{Clock: fakeClock{}, Auth: fakeAuth{err: ports.ErrInvalidCredential}}
+	if _, err := a.ListAuditEvents(context.Background(), "Bearer bad", "", 10); !errors.Is(err, ports.ErrInvalidCredential) || errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("invalid audit credential classification was lost: %v", err)
+	}
+}
+func TestReconcileDeletesAuthorizationRelationship(t *testing.T) {
+	deleted := false
+	completed := false
+	a := App{Clock: fakeClock{}, Audits: fakeAudits{}, Authorizer: fakeAuthz{deleted: &deleted}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{{ID: "change", ResourceType: "resource", ResourceID: "resource", SubjectID: "user", Operation: ports.AuthorizationDelete}}, completed: &completed}, AuthorizationSerializer: fakeSerializer{}}
+	if err := a.ReconcileAuthorization(context.Background(), "worker", 1); err != nil {
+		t.Fatal(err)
+	}
+	if !deleted || !completed {
+		t.Fatalf("deleted=%v completed=%v", deleted, completed)
+	}
+}
+func TestCreatePreclaimsAuthorizationChangeBeforeBackgroundWorkers(t *testing.T) {
+	now := time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)
+	var change ports.AuthorizationChange
+	a := App{Clock: fakeClock{now: now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "owner"}}, Authorizer: fakeAuthz{}, Resources: fakeResources{createdChange: &change}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, AuthorizationOutbox: fakeOutbox{}, AuthorizationSerializer: fakeSerializer{}}
+	if _, err := a.CreateResource(context.Background(), "Bearer token", "example", "name", "request-key-0002"); err != nil {
+		t.Fatal(err)
+	}
+	if change.LockedBy == "" {
+		t.Fatalf("request did not preclaim outbox change: %+v", change)
+	}
+}
+func TestReconcileContinuesIndependentWorkAfterFailure(t *testing.T) {
+	deleted, failed := false, false
+	a := App{Clock: fakeClock{}, Audits: fakeAudits{}, Authorizer: fakeAuthz{deleted: &deleted}, AuthorizationOutbox: fakeOutbox{changes: []ports.AuthorizationChange{{ID: "bad", ResourceType: "resource", ResourceID: "bad", SubjectID: "user", Operation: "unsupported"}, {ID: "good", ResourceType: "resource", ResourceID: "good", SubjectID: "user", Operation: ports.AuthorizationDelete}}, failed: &failed}, AuthorizationSerializer: fakeSerializer{}}
+	if err := a.ReconcileAuthorization(context.Background(), "worker", 2); err == nil {
+		t.Fatal("expected aggregate reconciliation error")
+	}
+	if !failed || !deleted {
+		t.Fatalf("failure=%v later independent work processed=%v", failed, deleted)
+	}
+}
+
+func TestDelayedStaleWorkerCannotResurrectRelationshipAfterReclaimAndDelete(t *testing.T) {
+	serializer := &blockingSerializer{entered: make(chan struct{}), release: make(chan struct{})}
+	outbox := &ownedOutbox{owner: "worker-a"}
+	authorizer := &recordingAuthz{}
+	a := App{Clock: fakeClock{}, Audits: fakeAudits{}, Authorizer: authorizer, AuthorizationOutbox: outbox, AuthorizationSerializer: serializer}
+	touch := ports.AuthorizationChange{ID: "touch", ResourceType: "resource", ResourceID: "example/id", SubjectID: "owner", Operation: ports.AuthorizationTouch}
+	staleDone := make(chan error, 1)
+	go func() {
+		staleDone <- a.reconcileClaimedAuthorizationChange(context.Background(), touch, "worker-a")
+	}()
+	<-serializer.entered
+	outbox.mu.Lock()
+	outbox.owner = "worker-b"
+	outbox.mu.Unlock()
+	close(serializer.release)
+	if err := <-staleDone; !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("stale worker reached authorization boundary: %v", err)
+	}
+	if err := a.reconcileClaimedAuthorizationChange(context.Background(), touch, "worker-b"); err != nil {
+		t.Fatal(err)
+	}
+	deleteChange := touch
+	deleteChange.ID = "delete"
+	deleteChange.Operation = ports.AuthorizationDelete
+	if err := a.reconcileClaimedAuthorizationChange(context.Background(), deleteChange, "worker-b"); err != nil {
+		t.Fatal(err)
+	}
+	authorizer.mu.Lock()
+	defer authorizer.mu.Unlock()
+	if len(authorizer.operations) != 2 || authorizer.operations[0] != ports.AuthorizationTouch || authorizer.operations[1] != ports.AuthorizationDelete {
+		t.Fatalf("authorization boundary observed unsafe order: %v", authorizer.operations)
+	}
+}

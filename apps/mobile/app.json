@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "HourPaths",
+    "slug": "hourpaths",
+    "version": "1.0.0",
+    "scheme": "hourpaths",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#141414",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b145a"
+    },
+    "runtimeVersion": { "policy": "appVersion" },
+    "updates": { "enabled": false, "checkAutomatically": "NEVER" },
+    "plugins": ["expo-router", "expo-secure-store", "expo-dev-client", "expo-notifications"],
+    "ios": {
+      "bundleIdentifier": "com.elsell.hourpaths",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIViewControllerBasedStatusBarAppearance": true
+      },
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.elsell.hourpaths",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0b145a"
+      }
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#141414",
+      "barStyle": "light-content"
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#141414",
+      "barStyle": "light-content"
+    },
+    "web": { "favicon": "./assets/favicon.png" }
+  }
+}

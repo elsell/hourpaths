@@ -1,0 +1,744 @@
+package httpserver
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/elsell/hour-paths/apps/api/internal/app"
+	pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
+	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
+	pathdomain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+type MeInput struct {
+	Authorization string `header:"Authorization"`
+}
+type SessionExchangeInput struct {
+	Body struct {
+		IdentityToken string `json:"identityToken" minLength:"1"`
+	}
+}
+type DataStruct struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+type SessionExchangeData struct {
+	Token      string    `json:"token"`
+	ExpiresAt  time.Time `json:"expiresAt"`
+	NextAction string    `json:"nextAction" enum:"home,onboarding,duplicate_email_recovery"`
+}
+type SessionOutput struct {
+	Body struct {
+		Data DataStruct `json:"data"`
+	}
+}
+type SessionExchangeOutput struct {
+	Body struct {
+		Data SessionExchangeData `json:"data"`
+	}
+}
+type ResourceListInput struct {
+	Authorization string `header:"Authorization"`
+	Cursor        string `query:"cursor"`
+	Limit         int    `query:"limit" default:"50" minimum:"1" maximum:"100"`
+}
+type UserDTO struct {
+	ID                string `json:"id"`
+	Email             string `json:"email"`
+	DisplayName       string `json:"displayName"`
+	ProfileVisibility string `json:"profileVisibility" required:"true" enum:"private,public"`
+}
+type MeOutput struct {
+	Body struct {
+		Data UserDTO `json:"data"`
+	}
+}
+type TimeZonePreferenceInput struct {
+	Authorization  string `header:"Authorization"`
+	IdempotencyKey string `header:"Idempotency-Key" required:"true" minLength:"16" maxLength:"128"`
+	Body           struct {
+		ReviewedTimeZone string `json:"reviewedTimeZone" required:"true" minLength:"1"`
+		ProposedTimeZone string `json:"proposedTimeZone" required:"true" minLength:"1"`
+		Confirmed        bool   `json:"confirmed" required:"true" enum:"true"`
+	}
+}
+type TimeZonePreferenceDTO struct {
+	TimeZone    string    `json:"timeZone"`
+	EffectiveAt time.Time `json:"effectiveAt"`
+	Changed     bool      `json:"changed"`
+}
+type TimeZonePreferenceOutput struct {
+	Body struct {
+		Data TimeZonePreferenceDTO `json:"data"`
+	}
+}
+type ResourceDTO struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+type CreateResourceInput struct {
+	Authorization  string `header:"Authorization"`
+	IdempotencyKey string `header:"Idempotency-Key" required:"true" minLength:"16" maxLength:"128"`
+	Body           struct {
+		Name string `json:"name" required:"true" minLength:"1"`
+	}
+}
+type ResourcePathInput struct {
+	Authorization string `header:"Authorization"`
+	ID            string `path:"id"`
+}
+type UpdateResourceInput struct {
+	Authorization string `header:"Authorization"`
+	ID            string `path:"id"`
+	Body          struct {
+		Name string `json:"name" required:"true" minLength:"1"`
+	}
+}
+type ResourceOutput struct {
+	Body struct {
+		Data ResourceDTO `json:"data"`
+	}
+}
+type PaginationMeta struct {
+	NextCursor string `json:"nextCursor,omitempty"`
+}
+type ResourceListOutput struct {
+	Body struct {
+		Data []ResourceDTO  `json:"data" nullable:"false"`
+		Meta PaginationMeta `json:"meta"`
+	}
+}
+type NoContentOutput struct{ Status int }
+
+type APIError struct {
+	Type   string              `json:"type,omitempty" format:"uri" default:"about:blank"`
+	Title  string              `json:"title,omitempty"`
+	Status int                 `json:"status,omitempty"`
+	Code   string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
+	Detail string              `json:"detail,omitempty"`
+	Errors []*huma.ErrorDetail `json:"errors,omitempty"`
+}
+
+func (e *APIError) Error() string  { return e.Detail }
+func (e *APIError) GetStatus() int { return e.Status }
+func (e *APIError) ContentType(contentType string) string {
+	if contentType == "application/json" {
+		return "application/problem+json"
+	}
+	return contentType
+}
+
+func newAPIError(status int, message string, errs ...error) huma.StatusError {
+	return newCodedAPIError(status, errorCode(status), message, errs...)
+}
+
+func newCodedAPIError(status int, code, message string, errs ...error) huma.StatusError {
+	details := make([]*huma.ErrorDetail, 0, len(errs))
+	for _, err := range errs {
+		if err == nil {
+			continue
+		}
+		if detailer, ok := err.(huma.ErrorDetailer); ok {
+			details = append(details, detailer.ErrorDetail())
+		} else {
+			details = append(details, &huma.ErrorDetail{Message: err.Error()})
+		}
+	}
+	return &APIError{Type: "about:blank", Title: http.StatusText(status), Status: status, Code: code, Detail: message, Errors: details}
+}
+
+func errorCode(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return "bad_request"
+	case http.StatusUnauthorized:
+		return "unauthenticated"
+	case http.StatusForbidden:
+		return "forbidden"
+	case http.StatusNotFound:
+		return "not_found"
+	case http.StatusConflict:
+		return "conflict"
+	case http.StatusUnprocessableEntity:
+		return "validation_failed"
+	case http.StatusTooManyRequests:
+		return "rate_limited"
+	case http.StatusServiceUnavailable:
+		return "unavailable"
+	case http.StatusInternalServerError:
+		return "internal_error"
+	default:
+		return "request_failed"
+	}
+}
+
+func init() {
+	huma.NewError = newAPIError
+	huma.NewErrorWithContext = func(_ huma.Context, status int, message string, errs ...error) huma.StatusError {
+		return newAPIError(status, message, errs...)
+	}
+}
+
+type Options struct {
+	OIDCIssuer, OIDCDiscoveryURL, OIDCAuthorizationURL, OIDCTokenURL, OIDCDocsClientID, OIDCDocsRedirectURI, PublicBaseURL string
+	CORSAllowedOrigins                                                                                                     []string
+	TrustedProxyCIDRs                                                                                                      []string
+	DisableDocs                                                                                                            bool
+	RequestRateLimiter                                                                                                     ports.AuditRateLimiter
+	Clock                                                                                                                  ports.Clock
+	Probe                                                                                                                  ports.Probe
+	MetricsHandler                                                                                                         http.Handler
+	DomainRegistrations                                                                                                    []func(huma.API)
+}
+
+func New(application app.App, domains []string, options Options) (http.Handler, huma.API) {
+	mux := http.NewServeMux()
+	config := huma.DefaultConfig("HourPaths API", "1.0.0")
+	config.DocsPath = ""
+	docsBase := strings.TrimRight(options.PublicBaseURL, "/")
+	config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{"oidc": {Type: "oauth2", Description: "OIDC authorization code with PKCE exchanged for a scoped application session.", Flows: &huma.OAuthFlows{AuthorizationCode: &huma.OAuthFlow{AuthorizationURL: options.OIDCAuthorizationURL, TokenURL: docsBase + "/oidc/token", Scopes: map[string]string{"openid": "Authenticate with OIDC", "profile": "Read profile claims", "email": "Read email claim"}, Extensions: map[string]any{"x-scalar-client-id": options.OIDCDocsClientID, "x-scalar-redirect-uri": options.OIDCDocsRedirectURI, "x-usePkce": "SHA-256"}}}, Extensions: map[string]any{"x-default-scopes": []string{"openid", "profile", "email"}, "x-openid-connect-url": docsBase + "/oidc/.well-known/openid-configuration"}}}
+	api := humago.New(mux, config)
+	if !options.DisableDocs {
+		mux.HandleFunc("GET /docs", oidcDocs(options.OIDCIssuer))
+		mux.HandleFunc("GET "+scalarBrowserRuntimePath, scalarBrowserRuntimeHandler)
+		mux.HandleFunc("GET "+scalarLicensePath, scalarLicenseHandler)
+		discoveryURL := options.OIDCDiscoveryURL
+		if discoveryURL == "" {
+			discoveryURL = options.OIDCIssuer
+		}
+		mux.HandleFunc("GET /oidc/.well-known/openid-configuration", docsOIDCDiscovery(discoveryURL, docsBase))
+		mux.HandleFunc("POST /oidc/token", docsOIDCToken(options.OIDCTokenURL, options.OIDCDocsClientID, options.OIDCDocsRedirectURI, application))
+	}
+	huma.Register(api, huma.Operation{OperationID: "exchange-session", Method: http.MethodPost, Path: "/v1/sessions", Summary: "Exchange a verified OIDC ID token for an application session"}, func(ctx context.Context, input *SessionExchangeInput) (*SessionExchangeOutput, error) {
+		outcome, err := application.ExchangeIdentityToken(ctx, input.Body.IdentityToken)
+		if err != nil {
+			return nil, mapSessionExchangeError(err)
+		}
+		session, _, nextAction, err := identityExchangeSession(outcome)
+		if err != nil {
+			return nil, mapSessionExchangeError(err)
+		}
+		out := &SessionExchangeOutput{}
+		out.Body.Data.Token, out.Body.Data.ExpiresAt = session.Token, session.ExpiresAt
+		out.Body.Data.NextAction = nextAction
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "revoke-session", Method: http.MethodDelete, Path: "/v1/session", Summary: "Revoke the current application session", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*NoContentOutput, error) {
+		if err := application.RevokeSession(ctx, input.Authorization); err != nil {
+			return nil, mapError(err, false)
+		}
+		return &NoContentOutput{Status: http.StatusNoContent}, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "refresh-session", Method: http.MethodPost, Path: "/v1/session/refresh", Summary: "Atomically rotate the current application session", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*SessionOutput, error) {
+		session, err := application.RefreshSession(ctx, input.Authorization)
+		if err != nil {
+			return nil, mapError(err, false)
+		}
+		out := &SessionOutput{}
+		out.Body.Data.Token, out.Body.Data.ExpiresAt = session.Token, session.ExpiresAt
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "get-me", Method: http.MethodGet, Path: "/v1/me", Summary: "Get current user", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*MeOutput, error) {
+		u, err := application.CurrentUser(ctx, input.Authorization)
+		if err != nil {
+			return nil, mapError(err, false)
+		}
+		out := &MeOutput{}
+		out.Body.Data = UserDTO{ID: u.ID, Email: u.Email, DisplayName: u.DisplayName, ProfileVisibility: string(u.ProfileVisibility)}
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "get-configured-time-zone", Method: http.MethodGet, Path: "/v1/me/time-zone", Summary: "Get the current configured time zone", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*TimeZonePreferenceOutput, error) {
+		preference, err := application.ConfiguredTimeZone(ctx, input.Authorization)
+		if err != nil {
+			return nil, mapError(err, false)
+		}
+		out := &TimeZonePreferenceOutput{}
+		out.Body.Data = TimeZonePreferenceDTO{TimeZone: preference.TimeZone, EffectiveAt: preference.EffectiveAt, Changed: false}
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "update-configured-time-zone", Method: http.MethodPut, Path: "/v1/me/time-zone", Summary: "Confirm a configured time-zone change", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *TimeZonePreferenceInput) (*TimeZonePreferenceOutput, error) {
+		result, err := application.UpdateConfiguredTimeZone(ctx, input.Authorization, input.IdempotencyKey, app.TimeZonePreferenceUpdate{ReviewedTimeZone: input.Body.ReviewedTimeZone, ProposedTimeZone: input.Body.ProposedTimeZone, Confirmed: input.Body.Confirmed})
+		if err != nil {
+			return nil, mapError(err, false)
+		}
+		out := &TimeZonePreferenceOutput{}
+		out.Body.Data = TimeZonePreferenceDTO{TimeZone: result.Preference.TimeZone, EffectiveAt: result.Preference.EffectiveAt, Changed: result.Changed}
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "deactivate-me", Method: http.MethodDelete, Path: "/v1/me", Summary: "Deactivate the current account and revoke its sessions", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*NoContentOutput, error) {
+		if err := application.DeactivateAccount(ctx, input.Authorization); err != nil {
+			return nil, mapError(err, false)
+		}
+		return &NoContentOutput{Status: http.StatusNoContent}, nil
+	})
+	registerAuditRoutes(api, application)
+	registerAuthorizationRecoveryRoutes(api, application)
+	registerInvitationRoutes(api, application)
+	registerOnboardingRoutes(api, application)
+	registerPushInstallationRoutes(api, application)
+	for _, register := range options.DomainRegistrations {
+		register(api)
+	}
+	for _, registeredDomain := range domains {
+		domain := registeredDomain
+		path := "/v1/" + domain + "s"
+		huma.Register(api, huma.Operation{OperationID: "create-" + domain, Method: http.MethodPost, Path: path, DefaultStatus: http.StatusCreated, Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *CreateResourceInput) (*ResourceOutput, error) {
+			r, err := application.CreateResource(ctx, input.Authorization, domain, input.Body.Name, input.IdempotencyKey)
+			if err != nil {
+				return nil, mapError(err, false)
+			}
+			out := &ResourceOutput{}
+			out.Body.Data = ResourceDTO{ID: r.ID, Name: r.Name}
+			return out, nil
+		})
+		huma.Register(api, huma.Operation{OperationID: "list-" + domain, Method: http.MethodGet, Path: path, Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *ResourceListInput) (*ResourceListOutput, error) {
+			page, err := application.ListResources(ctx, input.Authorization, domain, input.Cursor, input.Limit)
+			if err != nil {
+				return nil, mapError(err, false)
+			}
+			return resourceListOutput(page), nil
+		})
+		huma.Register(api, huma.Operation{OperationID: "get-" + domain, Method: http.MethodGet, Path: path + "/{id}", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *ResourcePathInput) (*ResourceOutput, error) {
+			r, err := application.GetResource(ctx, input.Authorization, domain, input.ID)
+			if err != nil {
+				return nil, mapError(err, true)
+			}
+			out := &ResourceOutput{}
+			out.Body.Data = ResourceDTO{ID: r.ID, Name: r.Name}
+			return out, nil
+		})
+		huma.Register(api, huma.Operation{OperationID: "update-" + domain, Method: http.MethodPut, Path: path + "/{id}", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *UpdateResourceInput) (*ResourceOutput, error) {
+			r, err := application.UpdateResource(ctx, input.Authorization, domain, input.ID, input.Body.Name)
+			if err != nil {
+				return nil, mapError(err, true)
+			}
+			out := &ResourceOutput{}
+			out.Body.Data = ResourceDTO{ID: r.ID, Name: r.Name}
+			return out, nil
+		})
+		huma.Register(api, huma.Operation{OperationID: "delete-" + domain, Method: http.MethodDelete, Path: path + "/{id}", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *ResourcePathInput) (*NoContentOutput, error) {
+			if err := application.DeleteResource(ctx, input.Authorization, domain, input.ID); err != nil {
+				return nil, mapError(err, true)
+			}
+			return &NoContentOutput{Status: http.StatusNoContent}, nil
+		})
+	}
+	readiness := func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		if err := application.Health(ctx); err != nil {
+			writeProblem(w, http.StatusServiceUnavailable, "unavailable", "service unavailable")
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+	mux.HandleFunc("GET /livez", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	mux.HandleFunc("GET /readyz", readiness)
+	mux.HandleFunc("GET /healthz", readiness)
+	if options.MetricsHandler != nil {
+		mux.Handle("GET /metrics", options.MetricsHandler)
+	}
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		writeProblem(w, http.StatusNotFound, "not_found", "not found")
+	})
+	var handler http.Handler = mux
+	if options.RequestRateLimiter != nil && options.Clock != nil {
+		handler = withRequestRateLimit(handler, options.RequestRateLimiter, options.Clock, trustedNetworks(options.TrustedProxyCIDRs))
+	}
+	handler = withCorrelationID(withSecurity(withCORS(handler, options.CORSAllowedOrigins)), options.Probe, options.Clock)
+	return handler, api
+}
+func resourceListOutput(page app.ResourcePage) *ResourceListOutput {
+	out := &ResourceListOutput{}
+	out.Body.Data = make([]ResourceDTO, 0, len(page.Resources))
+	for _, r := range page.Resources {
+		out.Body.Data = append(out.Body.Data, ResourceDTO{ID: r.ID, Name: r.Name})
+	}
+	out.Body.Meta.NextCursor = page.NextCursor
+	return out
+}
+func oidcDocs(_ string) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'none'; frame-ancestors 'none'; sandbox allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox; script-src 'self' 'unsafe-eval'; style-src 'unsafe-inline'")
+		_, _ = w.Write([]byte(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HourPaths API Reference</title></head><body><script id="api-reference" data-url="/openapi.json" data-configuration='{"authentication":{"preferredSecurityScheme":["oidc"],"securitySchemes":{"oidc":{"flows":{"authorizationCode":{"selectedScopes":["openid","profile","email"]}}}}}}'></script><script src="` + scalarBrowserRuntimePath + `" crossorigin integrity="sha384-tMz7GAo6dMy55x9tLFtH+sHtogji6Scmb+feBR31TAHmvSPRUTboK9H3M5NFaP4R"></script></body></html>`))
+	}
+}
+
+var docsOIDCClient = &http.Client{
+	Timeout: 10 * time.Second,
+	CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
+}
+
+func docsOIDCDiscovery(issuer, docsBase string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		upstream, err := docsOIDCClient.Get(strings.TrimRight(issuer, "/") + "/.well-known/openid-configuration")
+		if err != nil {
+			writeProblem(w, http.StatusBadGateway, "oidc_discovery_unavailable", "OIDC discovery unavailable")
+			return
+		}
+		defer upstream.Body.Close()
+		if upstream.StatusCode >= 300 && upstream.StatusCode < 400 {
+			writeProblem(w, http.StatusBadGateway, "oidc_discovery_unavailable", "OIDC discovery unavailable")
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(upstream.Body, 1<<20))
+		if err != nil || upstream.StatusCode != http.StatusOK {
+			writeProblem(w, http.StatusBadGateway, "oidc_discovery_unavailable", "OIDC discovery unavailable")
+			return
+		}
+		var document map[string]any
+		if json.Unmarshal(body, &document) != nil {
+			writeProblem(w, http.StatusBadGateway, "oidc_discovery_unavailable", "OIDC discovery unavailable")
+			return
+		}
+		document["token_endpoint"] = docsBase + "/oidc/token"
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(document)
+	}
+}
+func docsOIDCToken(target, clientID, redirectURI string, application app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil || r.PostForm.Get("grant_type") != "authorization_code" || r.PostForm.Get("code") == "" || r.PostForm.Get("code_verifier") == "" {
+			writeOAuthProblem(w, http.StatusBadRequest, "invalid_token_exchange", "invalid token exchange")
+			return
+		}
+		form := url.Values{
+			"grant_type":    {"authorization_code"},
+			"code":          {r.PostForm.Get("code")},
+			"code_verifier": {r.PostForm.Get("code_verifier")},
+			"client_id":     {clientID},
+			"redirect_uri":  {redirectURI},
+		}
+		request, err := http.NewRequestWithContext(r.Context(), http.MethodPost, target, strings.NewReader(form.Encode()))
+		if err != nil {
+			writeOAuthProblem(w, http.StatusBadGateway, "oidc_token_exchange_unavailable", "token exchange unavailable")
+			return
+		}
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		request.Header.Set("Accept", "application/json")
+		upstream, err := docsOIDCClient.Do(request)
+		if err != nil {
+			writeOAuthProblem(w, http.StatusBadGateway, "oidc_token_exchange_unavailable", "token exchange unavailable")
+			return
+		}
+		defer upstream.Body.Close()
+		if upstream.StatusCode >= 300 && upstream.StatusCode < 400 {
+			writeOAuthProblem(w, http.StatusBadGateway, "oidc_token_exchange_unavailable", "token exchange unavailable")
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(upstream.Body, 1<<20))
+		if err != nil {
+			writeOAuthProblem(w, http.StatusBadGateway, "oidc_token_exchange_unavailable", "token exchange unavailable")
+			return
+		}
+		if upstream.StatusCode >= 200 && upstream.StatusCode < 300 {
+			var tokens map[string]any
+			if json.Unmarshal(body, &tokens) != nil {
+				writeOAuthProblem(w, http.StatusBadGateway, "oidc_token_exchange_unavailable", "token exchange unavailable")
+				return
+			}
+			idToken, ok := tokens["id_token"].(string)
+			if !ok || idToken == "" {
+				writeOAuthProblem(w, http.StatusBadGateway, "oidc_identity_token_missing", "identity provider omitted ID token")
+				return
+			}
+			outcome, exchangeErr := application.ExchangeIdentityToken(r.Context(), idToken)
+			if exchangeErr != nil {
+				status, code, detail := docsExchangeError(exchangeErr)
+				writeOAuthProblem(w, status, code, detail)
+				return
+			}
+			session, scope, _, exchangeErr := identityExchangeSession(outcome)
+			if exchangeErr != nil {
+				status, code, detail := docsExchangeError(exchangeErr)
+				writeOAuthProblem(w, status, code, detail)
+				return
+			}
+			tokens = map[string]any{"access_token": session.Token, "token_type": "Bearer", "expires_in": max(int(time.Until(session.ExpiresAt).Seconds()), 1), "scope": scope}
+			body, _ = json.Marshal(tokens)
+		} else {
+			var problem map[string]any
+			if json.Unmarshal(body, &problem) != nil {
+				writeOAuthProblem(w, http.StatusBadGateway, "oidc_token_exchange_failed", "token exchange failed")
+				return
+			}
+			problem["code"] = "oidc_token_exchange_failed"
+			body, _ = json.Marshal(problem)
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(upstream.StatusCode)
+		_, _ = w.Write(body)
+	}
+}
+
+func identityExchangeSession(outcome app.IdentityExchangeOutcome) (app.Session, string, string, error) {
+	switch exchange := outcome.(type) {
+	case app.ReturningUserIdentityExchange:
+		return exchange.Session, "api:user", "home", nil
+	case app.DuplicateEmailRecoveryIdentityExchange:
+		return exchange.Session, "api:onboarding", "duplicate_email_recovery", nil
+	case app.OnboardingIdentityExchange:
+		return exchange.Session, "api:onboarding", "onboarding", nil
+	default:
+		return app.Session{}, "", "", app.ErrForbidden
+	}
+}
+func writeProblem(w http.ResponseWriter, status int, code, detail string) {
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(&APIError{Type: "about:blank", Title: http.StatusText(status), Status: status, Code: code, Detail: detail})
+}
+func writeOAuthProblem(w http.ResponseWriter, status int, code, detail string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": code, "error_description": detail, "code": code})
+}
+func withSecurity(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		next.ServeHTTP(w, r)
+	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *statusWriter) Write(body []byte) (int, error) {
+	if w.status == 0 {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(body)
+}
+
+func withCorrelationID(next http.Handler, probe ports.Probe, clock ports.Clock) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestContext := otel.GetTextMapPropagator().Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+		requestContext, span := otel.Tracer("github.com/elsell/hour-paths/apps/api/http").Start(requestContext, r.Method+" "+safeAccessPath(r.URL.Path), trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("http.request.method", r.Method), attribute.String("url.path", safeAccessPath(r.URL.Path))))
+		defer span.End()
+		id := uuid.NewString()
+		traceID := span.SpanContext().TraceID().String()
+		spanID := span.SpanContext().SpanID().String()
+		if !span.SpanContext().IsValid() {
+			traceID = strings.ReplaceAll(uuid.NewString(), "-", "")
+			spanID = strings.ReplaceAll(uuid.NewString(), "-", "")[:16]
+		}
+		w.Header().Set("X-Request-ID", id)
+		w.Header().Set("traceparent", "00-"+traceID+"-"+spanID+"-01")
+		requestContext = app.WithCorrelationID(requestContext, id)
+		r = r.WithContext(requestContext)
+		if probe == nil || clock == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		started := clock.Now()
+		recorder := &statusWriter{ResponseWriter: w}
+		next.ServeHTTP(recorder, r)
+		status := recorder.status
+		if status == 0 {
+			status = http.StatusOK
+		}
+		outcome := "succeeded"
+		if status >= 400 {
+			outcome = "failed"
+		}
+		path := safeAccessPath(r.URL.Path)
+		span.SetAttributes(attribute.Int("http.response.status_code", status), attribute.String("request.id", id))
+		if status >= 500 {
+			span.SetStatus(codes.Error, http.StatusText(status))
+		}
+		probe.Observe(r.Context(), ports.ProbeEvent{Name: "http.request", Outcome: outcome, CorrelationID: id, TraceID: traceID, Method: r.Method, Path: path, Status: status, Duration: clock.Now().Sub(started)})
+	})
+}
+func safeAccessPath(path string) string {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) > 2 && parts[0] == "v1" {
+		return "/" + strings.Join(parts[:2], "/") + "/{id}"
+	}
+	if path == "" {
+		return "/"
+	}
+	return path
+}
+func trustedNetworks(configured []string) []*net.IPNet {
+	result := make([]*net.IPNet, 0, len(configured))
+	for _, configuredNetwork := range configured {
+		_, network, err := net.ParseCIDR(configuredNetwork)
+		if err == nil {
+			result = append(result, network)
+		}
+	}
+	return result
+}
+func trustedIP(ip net.IP, networks []*net.IPNet) bool {
+	for _, network := range networks {
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+func requestSource(r *http.Request, trusted []*net.IPNet) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	peer := net.ParseIP(host)
+	if peer == nil {
+		return "unknown"
+	}
+	if !trustedIP(peer, trusted) {
+		return peer.String()
+	}
+	forwarded := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+	for index := len(forwarded) - 1; index >= 0; index-- {
+		candidate := net.ParseIP(strings.TrimSpace(forwarded[index]))
+		if candidate == nil {
+			return "unknown"
+		}
+		if !trustedIP(candidate, trusted) || index == 0 {
+			return candidate.String()
+		}
+	}
+	return peer.String()
+}
+func withRequestRateLimit(next http.Handler, limiter ports.AuditRateLimiter, clock ports.Clock, trusted []*net.IPNet) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/v1/") || strings.HasPrefix(r.URL.Path, "/oidc/") {
+			if !limiter.Allow(requestSource(r, trusted), clock.Now().UTC()) {
+				if r.URL.Path == "/oidc/token" {
+					writeOAuthProblem(w, http.StatusTooManyRequests, "rate_limited", "rate limit exceeded")
+				} else {
+					writeProblem(w, http.StatusTooManyRequests, "rate_limited", "rate limit exceeded")
+				}
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+func docsExchangeError(err error) (int, string, string) {
+	switch {
+	case errors.Is(err, app.ErrUnauthenticated), errors.Is(err, ports.ErrInvalidCredential):
+		return http.StatusUnauthorized, "invalid_identity_token", "identity token rejected"
+	case errors.Is(err, app.ErrForbidden):
+		return http.StatusForbidden, "identity_forbidden", "identity is not permitted"
+	case errors.Is(err, app.ErrRateLimited):
+		return http.StatusTooManyRequests, "rate_limited", "rate limit exceeded"
+	case errors.Is(err, ports.ErrInvalidArgument):
+		return http.StatusBadRequest, "invalid_identity_token", "identity token rejected"
+	default:
+		return http.StatusServiceUnavailable, "identity_exchange_unavailable", "identity exchange unavailable"
+	}
+}
+func mapError(err error, concealForbidden bool) error {
+	if errors.Is(err, app.ErrUnauthenticated) {
+		return newCodedAPIError(http.StatusUnauthorized, "unauthenticated", "authentication required")
+	}
+	if errors.Is(err, ports.ErrInvalidCredential) {
+		return newCodedAPIError(http.StatusUnauthorized, "invalid_credential", "authentication required")
+	}
+	if errors.Is(err, ports.ErrInvalidArgument) {
+		return newCodedAPIError(http.StatusBadRequest, "bad_request", "invalid request")
+	}
+	if errors.Is(err, ports.ErrIdempotencyConflict) {
+		return newCodedAPIError(http.StatusConflict, "idempotency_conflict", "idempotency key already used for a different request")
+	}
+	if errors.Is(err, ports.ErrUsernameUnavailable) {
+		return newCodedAPIError(http.StatusConflict, "username_unavailable", "username is unavailable")
+	}
+	if errors.Is(err, ports.ErrConflict) {
+		return newCodedAPIError(http.StatusConflict, "conflict", "conflict")
+	}
+	if errors.Is(err, ports.ErrPolicySetChanged) {
+		return newCodedAPIError(http.StatusConflict, "policy_set_changed", "policy review must be refreshed")
+	}
+	if errors.Is(err, pathapp.ErrInvitationWarningRequired) {
+		return newCodedAPIError(http.StatusConflict, "invitation_warning_required", "invitation visibility warning is required")
+	}
+	if errors.Is(err, socialapp.ErrBlockReviewRequired) {
+		return newCodedAPIError(http.StatusConflict, "block_review_required", "block review must be refreshed")
+	}
+	if errors.Is(err, app.ErrRateLimited) {
+		return newCodedAPIError(http.StatusTooManyRequests, "rate_limited", "rate limit exceeded")
+	}
+	if errors.Is(err, ports.ErrAuthorizationPending) {
+		return newCodedAPIError(http.StatusServiceUnavailable, "authorization_pending", "authorization change is not ready")
+	}
+	if errors.Is(err, ports.ErrAuthorizationDeadLettered) {
+		return newCodedAPIError(http.StatusServiceUnavailable, "authorization_dead_lettered", "authorization change requires recovery")
+	}
+	if errors.Is(err, ports.ErrAuthorizationPolicyNotConfigured) {
+		return newCodedAPIError(http.StatusServiceUnavailable, "authorization_policy_not_configured", "authorization policy is not configured")
+	}
+	if errors.Is(err, ports.ErrUnavailable) {
+		return newCodedAPIError(http.StatusServiceUnavailable, "unavailable", "service unavailable")
+	}
+	if errors.Is(err, pathdomain.ErrInvitationUnavailable) {
+		return newCodedAPIError(http.StatusNotFound, "not_found", "not found")
+	}
+	if concealForbidden && (errors.Is(err, app.ErrForbidden) || errors.Is(err, ports.ErrNotFound)) {
+		return newCodedAPIError(http.StatusNotFound, "not_found", "not found")
+	}
+	if errors.Is(err, app.ErrForbidden) {
+		return newCodedAPIError(http.StatusForbidden, "forbidden", "forbidden")
+	}
+	if errors.Is(err, ports.ErrNotFound) {
+		return newCodedAPIError(http.StatusNotFound, "not_found", "not found")
+	}
+	return newCodedAPIError(http.StatusInternalServerError, "internal_error", "internal server error")
+}
+func mapSessionExchangeError(err error) error         { return mapError(err, false) }
+func MapError(err error, concealForbidden bool) error { return mapError(err, concealForbidden) }
+func withCORS(next http.Handler, origins []string) http.Handler {
+	allowed := map[string]bool{}
+	for _, origin := range origins {
+		allowed[origin] = true
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if allowed[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Idempotency-Key")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Add("Vary", "Origin")
+		}
+		if r.Method == http.MethodOptions {
+			if !allowed[origin] {
+				writeProblem(w, http.StatusForbidden, "forbidden", "forbidden")
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

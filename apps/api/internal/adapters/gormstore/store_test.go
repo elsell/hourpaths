@@ -1,0 +1,16 @@
+package gormstore
+
+import (
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
+	"testing"
+)
+
+func TestIdentityUserIDIsStableAndIssuerScoped(t *testing.T) {
+	first := identity.UserID("https://issuer.example", "subject")
+	if first != identity.UserID("https://issuer.example", "subject") {
+		t.Fatal("identity user ID must be deterministic")
+	}
+	if first == identity.UserID("https://other.example", "subject") {
+		t.Fatal("issuer must be part of identity key")
+	}
+}
