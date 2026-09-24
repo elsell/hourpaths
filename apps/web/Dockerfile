@@ -21,6 +21,7 @@ RUN pnpm --filter @hourpaths/web deploy --legacy --prod /app/prod
 FROM registry.access.redhat.com/hi/nodejs:24.18.1-1790203435@sha256:5c2430ca1a1253f680fb9b654c18071bf52c94b336c4a60f5f779dedd9b743b7
 ENV NODE_ENV=production HOURPATHS_APP_ENV=production HOST=0.0.0.0 PORT=3000
 WORKDIR /app
+USER 0
 RUN npm install --global --ignore-scripts --no-audit --no-fund npm@12.1.0
 COPY --from=build --chown=65532:0 /app/prod ./
 USER 65532
