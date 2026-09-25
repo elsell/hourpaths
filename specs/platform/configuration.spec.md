@@ -27,6 +27,11 @@ Define deployment-level configuration behavior that affects product rules.
 - Production client configuration must reject missing or malformed deployment
   environments, blank OIDC client identifiers, and API or issuer endpoints that
   are not HTTPS or target local or loopback hosts.
+- Production OIDC client identifiers must be the broker-assigned protocol
+  identifiers for the deployed applications. Human-readable application names
+  must not be substituted for those identifiers. Local Dex client identifiers
+  may remain stable development defaults and must not override explicit
+  production configuration.
 
 ## Ownership-transfer lifetime
 

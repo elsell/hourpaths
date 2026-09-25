@@ -94,7 +94,7 @@ jobs:
       HOURPATHS_MOBILE_BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
       HOURPATHS_API_URL: https://api.hourpaths.com
       HOURPATHS_OIDC_ISSUER: https://login.hourpaths.com/oidc
-      HOURPATHS_MOBILE_OIDC_CLIENT_ID: hourpaths-mobile
+      HOURPATHS_MOBILE_OIDC_CLIENT_ID: ctdb003l6t7f3d5hidfm7
       APPLE_BUNDLE_ID: com.hourpaths.mobile
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       APPLE_PROVISIONING_PROFILE_NAME: ${{ vars.APPLE_PROVISIONING_PROFILE_NAME }}

@@ -6,10 +6,14 @@ the broker's public OIDC issuer. The broker-hosted provider chooser must present
 both Google and Apple on web and mobile. Dex is for local development and CI
 only and must not be deployed as the production authority.
 
-Create three public authorization-code clients: `hourpaths-web`,
-`hourpaths-mobile`, and `hourpaths-docs`. None receives a client secret. Enable
-authorization code with S256 PKCE and only the `openid`, `profile`, and `email`
-scopes required by HourPaths.
+Create three public authorization-code clients with the display names
+`hourpaths-web`, `hourpaths-mobile`, and `hourpaths-docs`. Configure each
+HourPaths deployment with the broker-assigned application identifier, not its
+display name. None receives a client secret. Enable authorization code with
+S256 PKCE and only the `openid`, `profile`, and `email` scopes required by
+HourPaths. The deployed Logto mobile application currently has App ID
+`ctdb003l6t7f3d5hidfm7`; local Dex continues to use `hourpaths-mobile` as its
+development-only client identifier.
 
 Register these deployed redirect URIs:
 

@@ -105,6 +105,7 @@ class ClassifyChangesTest(unittest.TestCase):
 class WorkflowRoutingGuardTest(unittest.TestCase):
     workflow = (Path(__file__).parent.parent / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     release_workflow = (Path(__file__).parent.parent / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    testflight_workflow = (Path(__file__).parent.parent / ".github/workflows/testflight.yml").read_text(encoding="utf-8")
     stable_jobs = ("verify", "acceptance", "android-native", "ios-native")
 
     def test_push_runs_only_after_changes_land_on_main(self) -> None:
@@ -207,6 +208,16 @@ class WorkflowRoutingGuardTest(unittest.TestCase):
         self.assertIn("testflight:", self.release_workflow)
         self.assertIn("needs: [plan, publish]", self.release_workflow)
         self.assertIn("release_tag: ${{ needs.plan.outputs.tag }}", self.release_workflow)
+
+    def test_testflight_uses_the_deployed_logto_mobile_app_id(self) -> None:
+        self.assertIn(
+            "HOURPATHS_MOBILE_OIDC_CLIENT_ID: ctdb003l6t7f3d5hidfm7",
+            self.testflight_workflow,
+        )
+        self.assertNotIn(
+            "HOURPATHS_MOBILE_OIDC_CLIENT_ID: hourpaths-mobile",
+            self.testflight_workflow,
+        )
 
 
 if __name__ == "__main__":
