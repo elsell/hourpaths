@@ -189,6 +189,13 @@ const approvedExpoUIImports = new Map([
       'accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'foregroundColor', 'frame', 'tint',
     ])],
   ])],
+  ['apps/mobile/src/ui/native-sheet-action.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'HStack', 'Spacer', 'Text'])],
+    ['@expo/ui/swift-ui/modifiers', new Set([
+      'accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'fixedSize',
+      'foregroundColor', 'frame', 'tint',
+    ])],
+  ])],
   ['apps/mobile/src/ui/native-timer-button.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Button', 'Host'])],
     ['@expo/ui/swift-ui/modifiers', new Set([
