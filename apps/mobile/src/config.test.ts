@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import buildAppConfig from '../app.config.js';
+import buildAppConfig, { resolveMobileBuildNumber, resolveMobileReleaseVersion } from '../app.config.js';
 import { loadMobileConfig } from './config.js';
 
 const production = {
@@ -54,6 +54,37 @@ test('development app config omits unlinked Expo project values', () => {
   } finally {
     if (previous === undefined) delete process.env.HOURPATHS_EXPO_PROJECT_ID;
     else process.env.HOURPATHS_EXPO_PROJECT_ID = previous;
+  }
+});
+
+test('tagged release config derives mobile versions and build numbers', () => {
+  const previousTag = process.env.HOURPATHS_MOBILE_RELEASE_TAG;
+  const previousBuild = process.env.HOURPATHS_MOBILE_BUILD_NUMBER;
+  process.env.HOURPATHS_MOBILE_RELEASE_TAG = 'v2.3.4';
+  process.env.HOURPATHS_MOBILE_BUILD_NUMBER = '42';
+  try {
+    const config = buildAppConfig({
+      config: { version: '1.0.0', ios: { buildNumber: '1' }, android: { versionCode: 1 } },
+    });
+    assert.equal(config.version, '2.3.4');
+    assert.equal((config.ios as Record<string, unknown>).buildNumber, '42');
+    assert.equal((config.android as Record<string, unknown>).versionCode, 42);
+  } finally {
+    if (previousTag === undefined) delete process.env.HOURPATHS_MOBILE_RELEASE_TAG;
+    else process.env.HOURPATHS_MOBILE_RELEASE_TAG = previousTag;
+    if (previousBuild === undefined) delete process.env.HOURPATHS_MOBILE_BUILD_NUMBER;
+    else process.env.HOURPATHS_MOBILE_BUILD_NUMBER = previousBuild;
+  }
+});
+
+test('mobile release inputs require an exact tag and positive build number', () => {
+  assert.equal(resolveMobileReleaseVersion('v0.0.1'), '0.0.1');
+  assert.deepEqual(resolveMobileBuildNumber('7'), { numeric: 7, text: '7' });
+  for (const tag of ['1.2.3', 'v1.2', 'v01.2.3', 'v1.2.3+build']) {
+    assert.throws(() => resolveMobileReleaseVersion(tag));
+  }
+  for (const buildNumber of ['', '0', '-1', '1.1', 'abc', '0000000000']) {
+    assert.throws(() => resolveMobileBuildNumber(buildNumber));
   }
 });
 

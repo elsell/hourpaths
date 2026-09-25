@@ -147,3 +147,18 @@ jobs:
           git push origin "${{ needs.plan.outputs.tag }}"
           gh release create "${{ needs.plan.outputs.tag }}" --target "$SOURCE_SHA" --generate-notes
         env: {GH_TOKEN: "${{ github.token }}", SOURCE_SHA: "${{ needs.plan.outputs.sha }}"}
+
+  testflight:
+    name: Publish iOS release to TestFlight
+    needs: [plan, publish]
+    if: needs.plan.outputs.required == 'true' && needs.publish.result == 'success'
+    uses: ./.github/workflows/testflight.yml
+    with:
+      release_tag: ${{ needs.plan.outputs.tag }}
+    secrets:
+      BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+      P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+      BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+      APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
