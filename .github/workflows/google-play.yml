@@ -1,0 +1,170 @@
+name: Google Play Internal
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Exact stable SemVer tag to publish
+        required: true
+        type: string
+      build_number:
+        description: Optional Android version code; defaults to this workflow run number
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: google-play-internal
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    name: Require tagged main CI
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      release_tag: ${{ steps.source.outputs.tag }}
+      required: ${{ steps.source.outputs.required }}
+      source_sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || inputs.release_tag }}
+          fetch-depth: 0
+      - id: source
+        name: Resolve tagged release revision
+        env:
+          DISPATCH_TAG: ${{ inputs.release_tag || '' }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            RELEASE_TAG="$DISPATCH_TAG"
+          else
+            RELEASE_TAG="$(
+              git tag --points-at HEAD --list 'v*' --sort=-version:refname |
+                grep -E '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' |
+                head -n 1 || true
+            )"
+            if [[ -z "$RELEASE_TAG" ]]; then
+              echo "required=false" >> "$GITHUB_OUTPUT"
+              echo "tag=" >> "$GITHUB_OUTPUT"
+              echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$(git rev-parse HEAD)"
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+          echo "required=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Require complete CI evidence
+        if: steps.source.outputs.required == 'true'
+        env: {GH_TOKEN: "${{ github.token }}", SOURCE_SHA: "${{ steps.source.outputs.sha }}"}
+        run: |
+          set -euo pipefail
+          ci_run_id="$(gh run list --workflow CI --commit "$SOURCE_SHA" --event push --limit 20 --json databaseId,conclusion --jq '[.[] | select(.conclusion == "success")] | first | .databaseId // ""')"
+          [[ "$ci_run_id" =~ ^[0-9]+$ ]] || { echo "no successful CI run found for $SOURCE_SHA" >&2; exit 1; }
+          job_results="$(gh run view "$ci_run_id" --json jobs --jq '.jobs[] | [.name, .conclusion] | @tsv')"
+          for job in changes verify acceptance android-native ios-native; do
+            conclusion="$(awk -v expected="$job" '$1 == expected { print $2; exit }' <<<"$job_results")"
+            [[ "$conclusion" == success ]] || { echo "CI job $job did not pass for $SOURCE_SHA" >&2; exit 1; }
+          done
+
+  build-and-upload:
+    name: Build and publish Android internal release
+    needs: gate
+    if: needs.gate.result == 'success' && needs.gate.outputs.required == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: google-play
+    env:
+      HOURPATHS_APP_ENV: production
+      HOURPATHS_API_URL: https://api.hourpaths.com
+      HOURPATHS_OIDC_ISSUER: https://login.hourpaths.com/oidc
+      HOURPATHS_MOBILE_OIDC_CLIENT_ID: ctdb003l6t7f3d5hidfm7
+      HOURPATHS_MOBILE_RELEASE_TAG: ${{ needs.gate.outputs.release_tag }}
+      HOURPATHS_MOBILE_BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+      GOOGLE_PLAY_PACKAGE_NAME: com.hourpaths.mobile
+      ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+      HOURPATHS_ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+      HOURPATHS_ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+      HOURPATHS_ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+    steps:
+      - name: Validate release inputs
+        run: |
+          set -euo pipefail
+          [[ "$HOURPATHS_MOBILE_RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$HOURPATHS_MOBILE_BUILD_NUMBER" =~ ^[1-9][0-9]{0,8}$ ]]
+          for name in ANDROID_UPLOAD_KEYSTORE_BASE64 HOURPATHS_ANDROID_UPLOAD_KEYSTORE_PASSWORD HOURPATHS_ANDROID_UPLOAD_KEY_ALIAS HOURPATHS_ANDROID_UPLOAD_KEY_PASSWORD; do
+            test -n "${!name:-}" || { echo "$name is required" >&2; exit 1; }
+          done
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with: {ref: "${{ needs.gate.outputs.release_tag }}"}
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with: {version: 11.0.7}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with: {node-version: 22.17.0, cache: pnpm}
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.0.0
+        with: {distribution: temurin, java-version: 17.0.15+6}
+      - name: Install required Android toolchain
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          sdkmanager_path="$(command -v sdkmanager || true)"
+          if [[ -z "$sdkmanager_path" ]]; then
+            for candidate in "$sdk_root/cmdline-tools/latest/bin/sdkmanager" "$sdk_root/cmdline-tools/bin/sdkmanager" "$sdk_root/tools/bin/sdkmanager"; do
+              if [[ -x "$candidate" ]]; then sdkmanager_path="$candidate"; break; fi
+            done
+          fi
+          test -n "$sdkmanager_path"
+          yes | "$sdkmanager_path" --sdk_root="$sdk_root" "cmake;3.22.1" "ndk;27.1.12297006" "ndk;27.0.12077973"
+          ./scripts/check-hosted-android-toolchain.sh
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate production native project
+        run: pnpm --dir apps/mobile mobile:prebuild
+      - name: Install upload signing material
+        run: |
+          set -euo pipefail
+          keystore_path="$RUNNER_TEMP/hourpaths-upload.jks"
+          printf '%s' "$ANDROID_UPLOAD_KEYSTORE_BASE64" | python3 -c 'import base64, sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > "$keystore_path"
+          chmod 600 "$keystore_path"
+          echo "HOURPATHS_ANDROID_UPLOAD_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          node scripts/configure-android-release-signing.mjs apps/mobile/android/app/build.gradle
+      - name: Build signed Android App Bundle
+        run: cd apps/mobile/android && ./gradlew bundleRelease --no-daemon
+      - name: Verify signed bundle
+        run: |
+          set -euo pipefail
+          bundle_path="$GITHUB_WORKSPACE/apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$bundle_path"
+          jarsigner -verify -strict "$bundle_path"
+          echo "GOOGLE_PLAY_BUNDLE_PATH=$bundle_path" >> "$GITHUB_ENV"
+      - id: google-auth
+        name: Authenticate to Google Play
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          create_credentials_file: false
+          export_environment_variables: false
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+      - name: Publish to internal testing
+        env:
+          GOOGLE_PLAY_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
+          GOOGLE_PLAY_RELEASE_NAME: ${{ needs.gate.outputs.release_tag }}
+        run: node scripts/google-play-api.mjs
+      - name: Cleanup signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/hourpaths-upload.jks"
