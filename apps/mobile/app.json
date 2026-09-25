@@ -20,6 +20,7 @@
       "bundleIdentifier": "com.hourpaths.mobile",
       "buildNumber": "1",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "UIViewControllerBasedStatusBarAppearance": true
       },
       "supportsTablet": true

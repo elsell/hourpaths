@@ -62,6 +62,12 @@ Ruby 3.4 with Bundler 2.6.9, verifies locked CocoaPods 1.16.2, Android CI select
 EAS profiles select reviewed named Expo SDK 55 build images.
 Hosted iOS compilation runs on the explicit GitHub `macos-26` image because
 Expo SDK 55 requires Xcode 26 or newer.
+The mobile app uses only operating-system HTTPS and secure-storage encryption;
+it does not implement custom or non-exempt encryption. Expo iOS configuration
+must declare Boolean `ITSAppUsesNonExemptEncryption=false`, and the TestFlight
+workflow must reject any signed archive where that declaration is missing,
+non-Boolean, or true. Any change to the app's cryptographic behavior must review
+this classification before release.
 Google Play delivery targets the internal-testing track first. It must build a
 signed Android App Bundle on `ubuntu-24.04` from an exact stable SemVer tag whose
 commit passed all five required CI jobs. The bundle package must remain
