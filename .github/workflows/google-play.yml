@@ -128,7 +128,7 @@ jobs:
             done
           fi
           test -n "$sdkmanager_path"
-          yes | "$sdkmanager_path" --sdk_root="$sdk_root" "cmake;3.22.1" "ndk;27.1.12297006" "ndk;27.0.12077973"
+          "$sdkmanager_path" --sdk_root="$sdk_root" "cmake;3.22.1" "ndk;27.1.12297006" "ndk;27.0.12077973"
           ./scripts/check-hosted-android-toolchain.sh
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
