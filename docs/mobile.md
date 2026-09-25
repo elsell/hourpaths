@@ -129,7 +129,10 @@ Sign in with Apple key. The provisioning profile must target
 `com.hourpaths.mobile` and the distribution certificate's private key must be
 included in the `.p12`. The workflow uses the production endpoints
 `https://api.hourpaths.com` and `https://login.hourpaths.com/oidc` and the
-public Logto client ID `hourpaths-mobile`.
+broker-assigned public Logto App ID `ctdb003l6t7f3d5hidfm7`. The Logto
+application name `hourpaths-mobile` is only a display name and must not be sent
+as the OAuth `client_id`. The native application uses authorization code with
+PKCE and therefore has no client secret.
 
 ## Session behavior
 
