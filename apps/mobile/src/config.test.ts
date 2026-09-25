@@ -83,7 +83,8 @@ test('mobile release inputs require an exact tag and positive build number', () 
   for (const tag of ['1.2.3', 'v1.2', 'v01.2.3', 'v1.2.3+build']) {
     assert.throws(() => resolveMobileReleaseVersion(tag));
   }
-  for (const buildNumber of ['', '0', '-1', '1.1', 'abc', '0000000000']) {
+  assert.equal(resolveMobileBuildNumber(''), undefined);
+  for (const buildNumber of ['0', '-1', '1.1', 'abc', '0000000000']) {
     assert.throws(() => resolveMobileBuildNumber(buildNumber));
   }
 });
