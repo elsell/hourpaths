@@ -8,6 +8,7 @@ assert.match(app.scheme, /^[a-z][a-z0-9]*$/, 'mobile callback scheme must be a s
 assert.match(app.ios.bundleIdentifier, /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+$/i, 'iOS bundle identifier must be an explicit reverse-DNS identifier');
 assert.match(app.android.package, /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)+$/i, 'Android package must be an explicit reverse-DNS identifier');
 assert.equal(app.android.package, app.ios.bundleIdentifier, 'iOS and Android identifiers must share the rendered application identity');
+assert.equal(app.ios.infoPlist.ITSAppUsesNonExemptEncryption, false, 'iOS must declare that it does not use non-exempt encryption');
 assert.match(app.version, /^\d+\.\d+\.\d+$/, 'application version must be semantic');
 assert.match(app.ios.buildNumber, /^\d+$/, 'iOS build number must be numeric');
 assert.ok(Number.isSafeInteger(app.android.versionCode) && app.android.versionCode > 0, 'Android version code must be positive');

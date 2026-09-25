@@ -149,7 +149,9 @@ jobs:
           set -euo pipefail
           bundle_path="$GITHUB_WORKSPACE/apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
           test -s "$bundle_path"
-          jarsigner -verify -strict "$bundle_path"
+          verification_output="$(jarsigner -verify -verbose -certs "$bundle_path" 2>&1)"
+          printf '%s\n' "$verification_output"
+          grep -Fq 'jar verified.' <<<"$verification_output"
           echo "GOOGLE_PLAY_BUNDLE_PATH=$bundle_path" >> "$GITHUB_ENV"
       - id: google-auth
         name: Authenticate to Google Play

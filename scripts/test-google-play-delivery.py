@@ -22,6 +22,8 @@ require(WORKFLOW, "environment: google-play", "protected release environment")
 require(WORKFLOW, "com.hourpaths.mobile", "immutable package name")
 require(WORKFLOW, "ctdb003l6t7f3d5hidfm7", "production Logto client identifier")
 require(WORKFLOW, "./gradlew bundleRelease", "Android App Bundle build")
+require(WORKFLOW, "jarsigner -verify -verbose -certs", "Android App Bundle signature verification")
+require(WORKFLOW, "grep -Fq 'jar verified.'", "positive signed-bundle assertion")
 require(WORKFLOW, "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", "Publisher API credential")
 require(WORKFLOW, "ANDROID_UPLOAD_KEYSTORE_BASE64", "upload keystore secret")
 require(WORKFLOW, "access_token_scopes: https://www.googleapis.com/auth/androidpublisher", "least-privilege OAuth scope")
@@ -33,6 +35,8 @@ if "self-hosted" in WORKFLOW or "track: production" in WORKFLOW or "workflow_cal
     raise AssertionError("Google Play delivery must remain hosted and internal-only")
 if 'yes | "$sdkmanager_path"' in WORKFLOW:
     raise AssertionError("sdkmanager must not inherit a pipefail-sensitive yes pipeline")
+if "jarsigner -verify -strict" in WORKFLOW:
+    raise AssertionError("self-signed Android upload certificates must not fail signature verification")
 
 require(CONFIG, "HOURPATHS_MOBILE_RELEASE_TAG", "tag-derived version name")
 require(CONFIG, "HOURPATHS_MOBILE_BUILD_NUMBER", "numeric platform build version")

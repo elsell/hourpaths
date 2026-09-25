@@ -108,6 +108,10 @@ class WorkflowRoutingGuardTest(unittest.TestCase):
     testflight_workflow = (Path(__file__).parent.parent / ".github/workflows/testflight.yml").read_text(encoding="utf-8")
     stable_jobs = ("verify", "acceptance", "android-native", "ios-native")
 
+    def test_testflight_archive_verifies_export_compliance(self) -> None:
+        self.assertIn("ITSAppUsesNonExemptEncryption", self.testflight_workflow)
+        self.assertIn("info.get('ITSAppUsesNonExemptEncryption') is not False", self.testflight_workflow)
+
     def test_push_runs_only_after_changes_land_on_main(self) -> None:
         triggers = re.search(
             r"(?ms)^on:\n(?P<body>.*?)(?=^[A-Za-z][A-Za-z0-9_-]*:\n)",
