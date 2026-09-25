@@ -92,6 +92,13 @@ credential afterward. Browser sessions use session-scoped storage rather than
 persistent local storage; native sessions use platform secure storage. Clients
 clear rejected or expired sessions, call `/v1/me` after exchange, and surface
 failures without rendering a stale authenticated state.
+The native router must suppress navigation for the exact configured OIDC
+custom-scheme callback so the active AuthSession transaction retains its PKCE
+verifier and consumes the response. It must not render or log callback query
+parameters, and it must leave every non-callback deep link unchanged. A callback
+that cold-starts the app without an active transaction must remain at the account
+entry surface and must not attempt an authorization-code exchange without the
+original state and verifier.
 Native credential restoration and refresh use the shared client session state
 machine. An application credential is removed only when it is expired, explicitly
 rejected with 401, revoked, or cannot be read as a valid local session record.
