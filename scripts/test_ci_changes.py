@@ -204,7 +204,9 @@ class WorkflowRoutingGuardTest(unittest.TestCase):
         for job in ("changes", "verify", "acceptance", "android-native", "ios-native"):
             with self.subTest(job=job):
                 self.assertIn(job, self.release_workflow)
-        self.assertNotIn("TestFlight", self.release_workflow)
+        self.assertIn("testflight:", self.release_workflow)
+        self.assertIn("needs: [plan, publish]", self.release_workflow)
+        self.assertIn("release_tag: ${{ needs.plan.outputs.tag }}", self.release_workflow)
 
 
 if __name__ == "__main__":
