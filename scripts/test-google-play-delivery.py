@@ -28,8 +28,11 @@ require(WORKFLOW, "access_token_scopes: https://www.googleapis.com/auth/androidp
 require(WORKFLOW, "node scripts/google-play-api.mjs", "internal-track uploader")
 require(WORKFLOW, "rm -f", "signing cleanup")
 require(WORKFLOW, "for job in changes verify acceptance android-native ios-native", "complete CI gate")
+require(WORKFLOW, '"$sdkmanager_path" --sdk_root="$sdk_root"', "direct Android toolchain installation")
 if "self-hosted" in WORKFLOW or "track: production" in WORKFLOW or "workflow_call:" in WORKFLOW:
     raise AssertionError("Google Play delivery must remain hosted and internal-only")
+if 'yes | "$sdkmanager_path"' in WORKFLOW:
+    raise AssertionError("sdkmanager must not inherit a pipefail-sensitive yes pipeline")
 
 require(CONFIG, "HOURPATHS_MOBILE_RELEASE_TAG", "tag-derived version name")
 require(CONFIG, "HOURPATHS_MOBILE_BUILD_NUMBER", "numeric platform build version")
