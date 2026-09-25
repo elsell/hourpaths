@@ -76,7 +76,10 @@ monotonically increasing version code comes from the release build number.
 The workflow must use Play App Signing with a dedicated upload keystore and the
 Android Publisher API. The upload keystore, passwords, and API credential must
 come only from the protected `google-play` environment, must never be committed
-or printed, and must be removed from the runner on every outcome. A successful
+or printed, and must be removed from the runner on every outcome. The workflow
+must verify that the bundle is signed, but must not require the self-signed
+upload certificate to chain to a public trust root; Google Play establishes
+upload-key trust through the app's registered certificate. A successful
 workflow may complete an internal-track release, but it must never promote a
 build to closed, open, or production testing without a separate explicit change.
 All Linux CI jobs use the GitHub-hosted `ubuntu-24.04` image, including changes,
