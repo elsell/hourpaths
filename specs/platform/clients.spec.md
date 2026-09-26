@@ -34,6 +34,25 @@ the client implementation.
 
 ## Apple-native presentation and Liquid Glass
 
+### Shared mobile design language
+
+- Mobile screens must use one shared navigation theme matching the existing
+  charcoal content and yellow action palette. Native navigation titles, search,
+  tab selection, and status bars must remain legible regardless of device appearance.
+- Root and nested stacks must share navigation defaults. System materials must
+  retain native rendering; per-screen painted bars must not compensate for a
+  mismatched navigation theme.
+- Shared controls and screen patterns must own typography, spacing, action
+  emphasis, grouping, and loading/error presentation. Screens should compose
+  these patterns instead of independently recreating their appearance.
+- Primary actions must be evident, related content and actions must be grouped,
+  and secondary metadata must not visually dominate the task. Copy should state
+  the user's task or recovery action without explaining implementation details.
+- Keyboard-open, empty, populated, loading, error, and enlarged-text states must
+  preserve readable titles and reachable actions. Secondary tasks must follow
+  the route hierarchy in [Navigation](../experience/navigation.spec.md).
+
+
 - On current Apple platforms, standard system navigation bars, tab bars,
   toolbars, sheets, popovers, and controls must be allowed to inherit Liquid
   Glass automatically. Custom bar, sheet, or popover backgrounds that cover or
