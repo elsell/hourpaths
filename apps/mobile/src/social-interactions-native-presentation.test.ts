@@ -34,6 +34,8 @@ const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('
 const commentsView = source('./ui/practice-comments-view.tsx');
 const editSheet = source('./ui/comment-edit-sheet.tsx');
 const rosterView = source('./ui/comment-heart-roster-view.tsx');
+const inputIOS = source('./ui/native-comment-input.ios.tsx');
+const inputFallback = source('./ui/native-comment-input.tsx');
 const sendIOS = source('./ui/native-comment-send-button.ios.tsx');
 const reactionIOS = source('./ui/social-reaction-menu.ios.tsx');
 const feedView = source('./ui/social-feed-view.tsx');
@@ -66,6 +68,7 @@ test('comment editing is a native keyboard-safe task with safe dismissal and sta
   assert.match(commentsView, /<CommentEditSheet/);
   assert.doesNotMatch(commentsView, /editing \? <View|styles\.editActions/);
   assert.match(editSheet, /<NativeSheet/);
+  assert.match(editSheet, /<NativeCommentInput/);
   assert.match(editSheet, /dismissible=\{!busy\}/);
   assert.match(editSheet, /commentDraftIsDirty/);
   assert.match(editSheet, /Alert\.alert/);
@@ -82,6 +85,7 @@ test('composer separates disabled from busy, scales vertically, and preserves ne
   assert.match(sendIOS, /busy: boolean; disabled: boolean/);
   assert.match(commentsView, /busy=\{presentation\.busy\}/);
   assert.match(commentsView, /disabled=\{!validDraft\}/);
+  assert.match(commentsView, /<NativeCommentInput/);
   assert.doesNotMatch(commentsView, /InputAccessoryView|inputAccessoryViewID/);
   assert.match(commentsView, /keyboardDismissMode=\{Platform\.OS === 'ios' \? 'interactive' : 'on-drag'\}/);
   assert.match(commentsView, /needsCompactVerticalLayout/);
@@ -91,6 +95,19 @@ test('composer separates disabled from busy, scales vertically, and preserves ne
   assert.match(commentsView, /const admittedDraftGeneration = practiceCommentDraftGeneration\(\)/);
   assert.match(commentsView, /composerSubmission\.current\.admit\(\)/);
   assert.match(commentsView, /composerSubmission\.current\.owns\(admission\)/);
+});
+
+test('comment entry uses a vertically growing native field and compact iMessage-style send action', () => {
+  assert.match(inputIOS, /import \{ TextField \} from '@expo\/ui\/swift-ui'/);
+  assert.match(inputIOS, /axis="vertical"/);
+  assert.match(inputIOS, /lineLimit\(\{ min: minimumLines, max: maximumLines \}\)/);
+  assert.match(inputIOS, /textFieldStyle\('roundedBorder'\)/);
+  assert.match(inputIOS, /input\.current\?\.setText\(value\)/);
+  assert.match(inputFallback, /<ThemedTextInput/);
+  assert.match(sendIOS, /systemImage="arrow\.up"/);
+  assert.match(sendIOS, /labelStyle\('iconOnly'\)/);
+  assert.match(sendIOS, /clipShape\('circle'\)/);
+  assert.match(sendIOS, /frame\(\{ height: 44, width: 44 \}\)/);
 });
 
 test('local comment admission synchronously rejects duplicate presses and only its owner releases', () => {
