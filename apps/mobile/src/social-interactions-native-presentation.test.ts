@@ -70,8 +70,7 @@ test('comment editing is a native keyboard-safe task with safe dismissal and sta
   assert.match(editSheet, /commentDraftIsDirty/);
   assert.match(editSheet, /Alert\.alert/);
   assert.match(editSheet, /AccessibilityInfo\.isReduceMotionEnabled/);
-  assert.match(editSheet, /InputAccessoryView/);
-  assert.match(editSheet, /Keyboard\.dismiss/);
+  assert.doesNotMatch(editSheet, /InputAccessoryView|inputAccessoryViewID/);
   assert.match(editSheet, /label: i18n\.t\('social\.commentsSave'\)/);
   assert.match(editSheet, /accessibilityLiveRegion="polite"/);
   assert.match(editSheet, /submission\.current\.admit\(\)/);
@@ -83,7 +82,8 @@ test('composer separates disabled from busy, scales vertically, and preserves ne
   assert.match(sendIOS, /busy: boolean; disabled: boolean/);
   assert.match(commentsView, /busy=\{presentation\.busy\}/);
   assert.match(commentsView, /disabled=\{!validDraft\}/);
-  assert.match(commentsView, /InputAccessoryView/);
+  assert.doesNotMatch(commentsView, /InputAccessoryView|inputAccessoryViewID/);
+  assert.match(commentsView, /keyboardDismissMode=\{Platform\.OS === 'ios' \? 'interactive' : 'on-drag'\}/);
   assert.match(commentsView, /needsCompactVerticalLayout/);
   assert.doesNotMatch(commentsView, /keyboardVerticalOffset=\{88\}/);
   assert.doesNotMatch(commentsView, /automaticallyAdjustKeyboardInsets/);
