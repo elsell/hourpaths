@@ -20,16 +20,18 @@ export function ManualOccurrenceFields({ busy, form, onChange }: {
   const wallTime = manualOccurrencePickerValue('2000-01-15', form.localTime);
   const deviceTime = androidClockPickerValue(form.localTime);
   const uses24HourClock = getCalendars()[0]?.uses24hourClock ?? true;
+  const dateLabel = date ? i18n.date(date, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }) : form.localDate;
+  const timeLabel = wallTime ? i18n.time(wallTime, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12: !uses24HourClock }) : form.localTime;
   const dismiss = () => setPicker(null);
   return <View>
     <SettingsSection>
       <SettingsNavigationRow accessibilityLabel={i18n.t('activity.date')} disabled={busy}
         label={i18n.t('activity.date')} onPress={() => setPicker('date')}
-        value={date ? i18n.date(date, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }) : form.localDate} />
+        value={dateLabel} />
       <SettingsSeparator />
       <SettingsNavigationRow accessibilityLabel={i18n.t('activity.startTime')} disabled={busy}
         label={i18n.t('activity.startTime')} onPress={() => setPicker('time')}
-        value={wallTime ? i18n.time(wallTime, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12: !uses24HourClock }) : form.localTime} />
+        value={timeLabel} />
     </SettingsSection>
     {!busy && picker ? <Host colorScheme="dark" style={styles.dialogHost}>
       {picker === 'date' ? <DatePickerDialog
