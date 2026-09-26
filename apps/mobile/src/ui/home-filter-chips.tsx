@@ -2,6 +2,7 @@ import type { Translator } from '@hourpaths/i18n';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { homeFilters, type HomeFilter } from './home-organization';
 import { ThemedText as Text } from './primitives';
+import { PlatformSymbol } from './platform-symbol';
 import { mobileTheme } from './tokens';
 
 const filterKeys = {
@@ -40,6 +41,7 @@ export function HomeFilterChips({
           pressed ? styles.pressedChip : null,
         ]}
       >
+        {selected ? <PlatformSymbol systemName="checkmark" size={18} color={mobileTheme.colors.accentText} /> : null}
         <Text style={selected ? styles.selectedLabel : styles.label}>{label}</Text>
       </Pressable>;
     })}
@@ -53,6 +55,8 @@ const styles = StyleSheet.create({
     borderRadius: mobileTheme.radii.pill,
     borderWidth: mobileTheme.sizes.border,
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: mobileTheme.spacing.xs,
     minHeight: 44,
     paddingHorizontal: mobileTheme.spacing.md,
   },

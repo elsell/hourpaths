@@ -1,92 +1,18 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PlatformSymbol } from './platform-symbol';
 import { mobileTheme } from './tokens';
 
-export function SettingsIcon({
-  systemName,
-  variant = 'settings',
-}: {
+export function SettingsIcon({ systemName, variant = 'settings' }: {
   systemName: string;
   variant?: 'disclosure' | 'settings' | 'inline';
 }) {
-  return <View
-    accessibilityElementsHidden
-    importantForAccessibility="no-hide-descendants"
-    style={[styles.frame, variant !== 'settings' ? styles.disclosureFrame : null]}
-  >
-    {variant === 'disclosure'
-      ? <Text allowFontScaling={false} style={styles.disclosureGlyph}>›</Text>
-      : systemName === 'plus'
-        ? <Text allowFontScaling={false} style={styles.plusGlyph}>+</Text>
-        : systemName === 'bell'
-          ? <View style={styles.bellFrame}>
-            <View style={styles.bell} />
-            <View style={styles.bellClapper} />
-          </View>
-          : <>
-            <View style={styles.head} />
-            <View style={styles.shoulders} />
-          </>}
+  return <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+    style={[styles.frame, variant !== 'settings' && styles.plain]}>
+    <PlatformSymbol systemName={systemName} size={variant === 'disclosure' ? 20 : 24}
+      color={variant === 'disclosure' ? mobileTheme.colors.textMuted : mobileTheme.colors.accent} />
   </View>;
 }
-
 const styles = StyleSheet.create({
-  frame: {
-    alignItems: 'center',
-    backgroundColor: mobileTheme.colors.surfaceRaised,
-    borderRadius: mobileTheme.radii.sm,
-    height: 34,
-    justifyContent: 'center',
-    width: 34,
-  },
-  disclosureFrame: {
-    backgroundColor: 'transparent',
-    borderRadius: 0,
-    width: 20,
-  },
-  disclosureGlyph: {
-    color: mobileTheme.colors.textMuted,
-    fontSize: 24,
-    lineHeight: 28,
-  },
-  plusGlyph: {
-    color: mobileTheme.colors.accent,
-    fontSize: 27,
-    fontWeight: '500',
-    lineHeight: 29,
-  },
-  bellFrame: {
-    alignItems: 'center',
-    height: 20,
-    justifyContent: 'flex-end',
-    width: 20,
-  },
-  bell: {
-    borderColor: mobileTheme.colors.accent,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderWidth: 2,
-    height: 14,
-    width: 16,
-  },
-  bellClapper: {
-    backgroundColor: mobileTheme.colors.accent,
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
-    height: 3,
-    width: 5,
-  },
-  head: {
-    backgroundColor: mobileTheme.colors.accent,
-    borderRadius: 5,
-    height: 10,
-    marginBottom: 2,
-    width: 10,
-  },
-  shoulders: {
-    backgroundColor: mobileTheme.colors.accent,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    height: 8,
-    width: 18,
-  },
+  frame: { alignItems: 'center', backgroundColor: mobileTheme.colors.surfaceRaised, borderRadius: mobileTheme.radii.sm, height: 34, justifyContent: 'center', width: 34 },
+  plain: { backgroundColor: 'transparent', width: 24 },
 });

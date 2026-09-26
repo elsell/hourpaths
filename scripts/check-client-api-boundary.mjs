@@ -124,6 +124,14 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/src/ui/home-header-actions.ios.tsx', new Set(['Stack'])],
   ['apps/mobile/src/ui/following-header-actions.ios.tsx', new Set(['Stack'])],
 ]);
+const approvedPlatformUIImports = new Map([
+  ['apps/mobile/src/ui/platform-symbol.tsx', new Map([
+    ['expo-symbols', new Set(['SymbolView', 'AndroidSymbol'])],
+  ])],
+  ['apps/mobile/src/ui/native-action-menu.android.tsx', new Map([
+    ['@expo/ui/jetpack-compose', new Set(['DropdownMenu', 'DropdownMenuItem', 'Host', 'RNHostView', 'Text'])],
+  ])],
+]);
 const approvedNavigationImports = new Map([
   ['apps/mobile/app/_layout.tsx', new Map([['@react-navigation/native', new Set(['ThemeProvider'])]])],
   ['apps/mobile/src/ui/navigation-theme.ts', new Map([['@react-navigation/native', new Set(['DarkTheme'])]])],
@@ -136,10 +144,6 @@ const approvedNativeTabsImports = new Map([
   ['apps/mobile/app/(tabs)/_layout.tsx', new Set(['NativeTabs'])],
 ]);
 const approvedExpoUIImports = new Map([
-  ['apps/mobile/src/ui/comment-action-menu.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Image', 'Menu'])],
-    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled'])],
-  ])],
   ['apps/mobile/src/ui/comment-heart-icon.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Image'])],
   ])],
@@ -624,6 +628,7 @@ function approvedResolvedImport(imported, importerRelative) {
 
 function importAllowed(specifier, relative, file) {
   if (specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack') return approvedNavigationImports.get(relative)?.has(specifier) ?? false;
+  if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose') return approvedPlatformUIImports.get(relative)?.has(specifier) ?? false;
   if (specifier === '$env/dynamic/private') return relative === 'apps/web/src/lib/server/config.ts';
   if (specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers') {
     return approvedExpoUIImports.get(relative)?.has(specifier) ?? false;
@@ -940,6 +945,14 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings.elements.every((element) => !element.isTypeOnly && !element.propertyName && reviewedImports.has(element.name.text));
         if (!exactNavigationImport) violation = true;
       }
+      if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose') {
+        const reviewedImports = approvedPlatformUIImports.get(relative)?.get(specifier);
+        const exactPlatformImport = reviewedImports && clause && !clause.name &&
+          clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
+          clause.namedBindings.elements.length === reviewedImports.size &&
+          clause.namedBindings.elements.every((element) => !element.propertyName && reviewedImports.has(element.name.text));
+        if (!exactPlatformImport) violation = true;
+      }
       if (specifier === 'react-native') {
         const allowed = new Set(['AccessibilityInfo', 'Button', 'SafeAreaView', 'ScrollView', 'Switch', 'Text', 'TextInput', 'View']);
         const uiAllowed = new Set(['ActivityIndicator', 'Alert', 'Button', 'FlatList', 'KeyboardAvoidingView', 'Modal', 'Platform', 'Pressable', 'RefreshControl', 'SafeAreaView', 'ScrollView', 'StyleSheet', 'Switch', 'Text', 'TextInput', 'View', 'useWindowDimensions']);
@@ -1150,6 +1163,7 @@ function inspectSource(relative, file, source, index) {
         const specifier = node.moduleSpecifier.text;
         if (specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers' ||
           specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack' ||
+          specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' ||
           (relative === 'apps/mobile/src/ui/onboarding-form.tsx' && specifier === 'react-native') ||
           (relative === 'apps/mobile/src/ui/signed-out-screen.tsx' && specifier === 'react-native') ||
           allProviderImports.has(specifier) || !importAllowed(specifier, relative, file)) violation = true;
@@ -1160,6 +1174,7 @@ function inspectSource(relative, file, source, index) {
       const specifier = expression && ts.isStringLiteral(expression) ? expression.text : undefined;
       if (!specifier || specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers' ||
         specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack' ||
+          specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' ||
         (relative === 'apps/mobile/src/ui/onboarding-form.tsx' && specifier === 'react-native') ||
         (relative === 'apps/mobile/src/ui/signed-out-screen.tsx' && specifier === 'react-native') ||
         !importAllowed(specifier, relative, file)) violation = true;

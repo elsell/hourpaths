@@ -3,7 +3,7 @@ import { type ComponentProps } from 'react';
 import { Button, Image as SwiftUIImage, Menu } from '@expo/ui/swift-ui';
 import { accessibilityLabel as nativeAccessibilityLabel, disabled as nativeDisabled } from '@expo/ui/swift-ui/modifiers';
 import { StyleSheet, View } from 'react-native';
-import type { NativeRouteAction } from './native-route-presentation';
+import type { NativeMenuAction } from './native-menu-action';
 
 type SwiftButtonImage = ComponentProps<typeof Button>['systemImage'];
 
@@ -12,7 +12,7 @@ export function NativeActionMenu({
   actions,
 }: {
   accessibilityLabel: string;
-  actions: readonly NativeRouteAction[];
+  actions: readonly NativeMenuAction[];
 }) {
   return <View style={styles.container}>
     <Host style={styles.host}>

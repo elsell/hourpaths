@@ -168,6 +168,9 @@ importers:
       expo-secure-store:
         specifier: 55.0.18
         version: 55.0.18(expo@55.0.31)
+      expo-symbols:
+        specifier: 55.0.9
+        version: 55.0.9(expo-font@55.0.8)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)
       expo-system-ui:
         specifier: 55.0.22
         version: 55.0.22(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))

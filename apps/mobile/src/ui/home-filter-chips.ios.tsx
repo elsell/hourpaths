@@ -43,6 +43,7 @@ export function HomeFilterChips({
             return <Button
               key={filter}
               label={label}
+              systemImage={selected ? 'checkmark' : undefined}
               modifiers={[
                 accessibilityLabel(label),
                 accessibilityValue(i18n.t(selected ? 'home.filter.selected' : 'home.filter.notSelected')),
