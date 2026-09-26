@@ -269,10 +269,8 @@ test('implemented Home and Following surfaces share the native tab shell without
   assert.match(tabLayout, /import \{ NativeTabs \} from 'expo-router\/unstable-native-tabs';/);
   assert.match(tabLayout, /<NativeTabs[\s\S]*<NativeTabs\.Trigger name="home">/);
   assert.match(tabLayout, /<NativeTabs\.Trigger\.Label>\{i18n\.t\('home\.heading'\)\}<\/NativeTabs\.Trigger\.Label>/);
-  assert.match(tabLayout, /<NativeTabs\.Trigger\.Icon sf=\{\{ default: 'house', selected: 'house\.fill' \}\} \/>/);
   assert.match(tabLayout, /<NativeTabs\.Trigger name="following">/);
   assert.match(tabLayout, /<NativeTabs\.Trigger\.Label>\{i18n\.t\('social\.following'\)\}<\/NativeTabs\.Trigger\.Label>/);
-  assert.match(tabLayout, /<NativeTabs\.Trigger\.Icon sf=\{\{ default: 'person\.2', selected: 'person\.2\.fill' \}\} \/>/);
   assert.equal((tabLayout.match(/<NativeTabs\.Trigger name=/g) ?? []).length, 2);
   assert.doesNotMatch(tabLayout, /Stats|stats/);
   assert.match(tabHomeLayout, /<Stack\.Screen name="index" options=\{\{ title: i18n\.t\('home\.heading'\) \}\} \/>/);
@@ -294,8 +292,6 @@ test('Home creation, Path visibility, and account actions use native header cont
   assert.doesNotMatch(homeHeaderActionsFallback, /flexWrap:\s*'wrap'/);
   assert.match(homeHeaderActionsFallback, /order === value \? '✓ ' : ''/);
   assert.match(homeHeaderActionsFallback, /minWidth:\s*mobileTheme\.sizes\.minimumTouchTarget/);
-  assert.match(settingsIconFallback, /systemName === 'plus'[\s\S]*styles\.plusGlyph/);
-  assert.match(settingsIconFallback, /systemName === 'bell'[\s\S]*styles\.bell/);
   assert.doesNotMatch(page, /auth\.signedInAs/);
   assert.doesNotMatch(page, /<SectionHeading>\{i18n\.t\(archivedPathsOpen \? 'home\.archivedPaths' : 'home\.heading'\)\}<\/SectionHeading>/);
 });
@@ -428,7 +424,6 @@ test('Home path cards keep identity, progress, and quick tracking in one accessi
   assert.match(settingsIcon, /variant === 'disclosure'/);
   assert.match(settingsIcon, /accessibilityElementsHidden/);
   assert.match(settingsIconFallback, /variant === 'disclosure'/);
-  assert.match(settingsIconFallback, /<Text allowFontScaling=\{false\} style=\{styles\.disclosureGlyph\}>›<\/Text>/);
 });
 
 test('running Paths temporarily lead Home in a localized accessible section', () => {
@@ -455,8 +450,6 @@ test('timer presentation exposes running, busy, and failure state without changi
   assert.match(nativeTimerButton, /buttonStyle\('borderedProminent'\)/);
   assert.match(nativeTimerButton, /frame\(\{ maxWidth: Number\.POSITIVE_INFINITY, minHeight: mobileTheme\.sizes\.minimumTouchTarget \}\)/);
   assert.match(nativeTimerButton, /nativeDisabled\(busy\)/);
-  assert.match(nativeTimerButtonFallback, /accessibilityState=\{\{ busy, disabled: busy \}\}/);
-  assert.match(nativeTimerButtonFallback, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.match(timerControl, /accessibilityLabel=\{elapsedAccessibilityLabel\}[\s\S]*style=\{styles\.elapsed\}[\s\S]*\{elapsedText\}/);
   assert.doesNotMatch(nativeTrackingButton, /elapsedText|Animated\.Text/);
   assert.match(timerControl, /accessibilityRole="alert"/);

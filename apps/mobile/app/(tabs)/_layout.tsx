@@ -12,11 +12,11 @@ export default function TabLayout() {
   >
     <NativeTabs.Trigger name="home">
       <NativeTabs.Trigger.Label>{i18n.t('home.heading')}</NativeTabs.Trigger.Label>
-      <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
+      <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
     </NativeTabs.Trigger>
     <NativeTabs.Trigger name="following">
       <NativeTabs.Trigger.Label>{i18n.t('social.following')}</NativeTabs.Trigger.Label>
-      <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} />
+      <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="group" />
     </NativeTabs.Trigger>
   </NativeTabs>;
 }

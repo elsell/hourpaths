@@ -41,6 +41,17 @@ native builds verify this exact existing combination.
 
 ### Shared mobile design language
 
+- Android overflow actions must use a native scrollable menu so every action is
+  available, including when there are more than three. Disabled actions must
+  remain visible and disabled; destructive actions must be distinguishable.
+- Symbols must express the same meaning on both platforms, using SF Symbols on
+  iOS and Material symbols on Android. Tab destinations must have both platform
+  symbol definitions. Selection must have a visible marker and checked or
+  selected accessibility state, independent of color.
+- Platform-specific controls must consume the same shared action, icon, and
+  button contracts. Existing pinned `expo-symbols` 55.0.9, already shipped through
+  Expo Router, supplies the Android symbol adapter without upgrading native code.
+
 - Settings and secondary navigation must use the same grouped rows, disclosure
   indicators, spacing, and separators. Long identity text must have its own
   available width rather than compete with a second long trailing value.

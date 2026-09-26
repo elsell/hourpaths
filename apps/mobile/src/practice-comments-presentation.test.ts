@@ -8,7 +8,7 @@ const route = source('../app/following/comments/[eventID].tsx');
 const layout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const feed = source('./ui/social-feed-view.tsx');
 const view = source('./ui/practice-comments-view.tsx');
-const nativeMenu = source('./ui/comment-action-menu.ios.tsx');
+const nativeMenu = source('./ui/native-action-menu.ios.tsx');
 const fallbackMenu = source('./ui/comment-action-menu.tsx');
 const rosterRoute = source('../app/following/comments/[eventID]/hearts/[commentID].tsx');
 const rosterPresentation = source('./ui/comment-heart-roster-route-presentation.tsx');
@@ -39,7 +39,7 @@ test('comments use compact native rows, accessible menus, and a keyboard-safe bo
   assert.match(view, /allowFontScaling/);
   assert.match(nativeMenu, /@expo\/ui\/swift-ui/);
   assert.match(nativeMenu, /Menu/);
-  assert.match(fallbackMenu, /Alert\.alert/);
+  assert.match(fallbackMenu, /NativeActionMenu/);
   assert.match(view, /comment\.edited && !comment\.pending[\s\S]*commentsHistory/);
 });
 

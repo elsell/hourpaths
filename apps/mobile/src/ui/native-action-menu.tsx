@@ -1,12 +1,12 @@
 import { Alert, Button } from 'react-native';
-import type { NativeRouteAction } from './native-route-presentation';
+import type { NativeMenuAction } from './native-menu-action';
 
 export function NativeActionMenu({
   accessibilityLabel,
   actions,
 }: {
   accessibilityLabel: string;
-  actions: readonly NativeRouteAction[];
+  actions: readonly NativeMenuAction[];
 }) {
   return <Button
     accessibilityLabel={accessibilityLabel}

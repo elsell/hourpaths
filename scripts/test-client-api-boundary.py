@@ -74,6 +74,26 @@ class ClientApiBoundaryTest(unittest.TestCase):
         )})
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_android_presentation_imports_do_not_open_package_capabilities(self) -> None:
+        for source, package in (
+            ("apps/mobile/src/ui/platform-symbol.tsx", "expo-symbols"),
+            ("apps/mobile/src/ui/native-action-menu.android.tsx", "@expo/ui/jetpack-compose"),
+        ):
+            for statement in (
+                f"export * from '{package}';",
+                f"import NativeUI = require('{package}');",
+                f"import * as NativeUI from '{package}';",
+            ):
+                with self.subTest(source=source, statement=statement):
+                    result = self.run_checker({source: statement})
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(source, result.stderr)
+        result = self.run_checker({
+            "apps/mobile/src/ui/platform-symbol.tsx": "import { SymbolView, type AndroidSymbol } from 'expo-symbols';",
+            "apps/mobile/src/ui/native-action-menu.android.tsx": "import { DropdownMenu, DropdownMenuItem, Host, RNHostView, Text } from '@expo/ui/jetpack-compose';",
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_rejects_application_api_construction_in_web_and_mobile(self) -> None:
         result = self.run_checker({
             "apps/web/src/lib/auth.ts": "fetch(`${apiURL}/v1/sessions`);",

@@ -46,7 +46,7 @@ test('visibility stays controlled and the native fallback announces its selectio
   assert.match(choicePicker, /accessibilityRole="radiogroup"/);
   assert.match(choicePicker, /<Text style=\{styles\.groupLabel\}>\{label\}<\/Text>/);
   assert.match(choicePicker, /accessibilityRole="radio"/);
-  assert.match(choicePicker, /accessibilityState=\{\{ disabled, selected \}\}/);
+  assert.match(choicePicker, /accessibilityState=\{\{ disabled, checked: selected \}\}/);
   assert.match(choicePicker, /if \(!selected\) onChange\(choice\.value\)/);
 });
 

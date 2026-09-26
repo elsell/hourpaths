@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText as Text } from './primitives';
+import { PlatformSymbol } from './platform-symbol';
 import { mobileTheme } from './tokens';
 
 export type NativeChoice<Value extends string> = {
@@ -32,7 +33,7 @@ export function NativeChoicePicker<Value extends string>({
       const selected = choice.value === value;
       return <Pressable
         accessibilityRole="radio"
-        accessibilityState={{ disabled, selected }}
+        accessibilityState={{ disabled, checked: selected }}
         disabled={disabled}
         key={choice.value}
         onPress={() => {
@@ -44,6 +45,7 @@ export function NativeChoicePicker<Value extends string>({
           pressed ? styles.pressed : null,
         ]}
       >
+        {selected ? <PlatformSymbol systemName="checkmark" color={mobileTheme.colors.accent} /> : <View style={{ width: 24 }} />}
         <Text style={styles.choiceLabel}>{choice.label}</Text>
       </Pressable>;
     })}
@@ -53,11 +55,13 @@ export function NativeChoicePicker<Value extends string>({
 const styles = StyleSheet.create({
   choice: {
     alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: mobileTheme.spacing.sm,
     minHeight: mobileTheme.sizes.minimumTouchTarget,
     paddingHorizontal: mobileTheme.spacing.md,
   },
   choiceLabel: {
+    flexShrink: 1,
     color: mobileTheme.colors.accent,
     ...mobileTheme.typography.body,
   },

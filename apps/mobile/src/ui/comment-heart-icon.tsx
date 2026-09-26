@@ -1,16 +1,6 @@
-import { StyleSheet, Text } from 'react-native';
+import { PlatformSymbol } from './platform-symbol';
 import { mobileTheme } from './tokens';
-
 export function CommentHeartIcon({ selected }: { selected: boolean }) {
-  return <Text
-    accessibilityElementsHidden
-    allowFontScaling={false}
-    importantForAccessibility="no-hide-descendants"
-    style={[styles.icon, selected ? styles.selected : null]}
-  >{selected ? '♥' : '♡'}</Text>;
+  return <PlatformSymbol systemName={selected ? 'heart.fill' : 'heart'} size={20}
+    color={selected ? mobileTheme.colors.accent : mobileTheme.colors.textMuted} />;
 }
-
-const styles = StyleSheet.create({
-  icon: { color: mobileTheme.colors.textMuted, fontSize: 20, lineHeight: 22 },
-  selected: { color: mobileTheme.colors.accent },
-});
