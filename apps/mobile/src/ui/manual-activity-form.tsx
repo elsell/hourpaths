@@ -76,11 +76,9 @@ export function ManualActivityForm({
       <HumanDurationEditor
         busy={busy}
         compact
-        fallbackUnit="minutes"
         label={i18n.t('activity.durationValue')}
         onChange={onChangeDuration}
         seconds={form.durationSeconds}
-        unitLabel={i18n.t('activity.durationUnit')}
         unitLabels={{
           hours: i18n.t('activity.duration.hours'),
           minutes: i18n.t('activity.duration.minutes'),

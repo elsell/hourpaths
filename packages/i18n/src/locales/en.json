@@ -864,5 +864,7 @@
   "pathVisibility.confirmation.narrowingAccess": "People outside the new audience will immediately lose access to this Path and its history. Membership and recorded activity will not be deleted.",
   "pathVisibility.confirmation.unchangedScope": "Membership, recorded activity, progress, your profile, and unrelated Paths will not change.",
   "pathVisibility.confirmation.confirm": "Confirm visibility change",
-  "notification.pathVisibilityChanged": "{{displayName}} changed {{pathName}} visibility to {{pathVisibility}}. Eligible participant identity, progress, and activity in this Path are now visible to the broader Path audience. Your profile and unrelated Paths remain unchanged."
+  "notification.pathVisibilityChanged": "{{displayName}} changed {{pathName}} visibility to {{pathVisibility}}. Eligible participant identity, progress, and activity in this Path are now visible to the broader Path audience. Your profile and unrelated Paths remain unchanged.",
+  "duration.fieldLabel": "{{label}}: {{unit}}",
+  "duration.showSeconds": "Include seconds"
 }
