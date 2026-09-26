@@ -224,3 +224,10 @@ Define the focused view for understanding and managing one path.
   The complete Manage Path and Share journeys must remain operable with the
   keyboard, maximum Dynamic Type, VoiceOver, Reduce Motion, Reduce Transparency,
   and Increase Contrast.
+
+## Mobile activity hierarchy
+
+- Activity detail must lead with its readable duration, then show its supporting
+  dates, time zone, and participant in the shared labeled-value layout.
+- An empty edit history must use a compact inline message rather than a large
+  illustrated empty state. Actual revisions and retry actions must remain available.

@@ -37,8 +37,5 @@ test('the running timer keeps elapsed duration readable outside the circular Sto
   assert.match(timerControl, /elapsed:\s*\{[\s\S]*fontVariant:\s*\['tabular-nums'\][\s\S]*textAlign:\s*'center'/);
   assert.doesNotMatch(timerControl, /styles\.liveDot/);
   assert.doesNotMatch(nativeTrackingButton, /elapsedText|Animated\.Text|styles\.elapsed/);
-  assert.match(nativeTrackingButton, /Animated\.loop/);
-  assert.match(nativeTrackingButton, /rotate/);
-  assert.match(nativeTrackingButton, /if \(!running \|\| reduceMotion !== false\)/);
   assert.doesNotMatch(nativeTrackingButton, /opacity:\s*pulse\.interpolate/);
 });

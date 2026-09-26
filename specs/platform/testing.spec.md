@@ -301,6 +301,8 @@ It also rejects raw `/v1` requests in web and mobile presentation code. Generate
 client and shared transport adapters are the only client-side locations permitted
 to construct application API requests; public provider discovery and authorization
 requests remain outside this rule.
+Native presentation imports must remain explicitly enumerated by adapter and symbol. Shared themed SwiftUI hosts, independent sheet navigation, and safe-area measurement may use reviewed presentation APIs without gaining network or browser capabilities. Route moves must update the same import declarations.
+
 The handwritten generated-client adapter and provider adapters must be pinned by
 checked hash manifests. All other production sources beneath the API-client,
 web, mobile, client-core, and i18n roots must be scanned fail-closed, including

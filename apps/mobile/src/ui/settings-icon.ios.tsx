@@ -11,12 +11,12 @@ export function SettingsIcon({
   variant = 'settings',
 }: {
   systemName: SystemName;
-  variant?: 'disclosure' | 'settings';
+  variant?: 'disclosure' | 'settings' | 'inline';
 }) {
   return <View
     accessibilityElementsHidden
     importantForAccessibility="no-hide-descendants"
-    style={[styles.frame, variant === 'disclosure' ? styles.disclosureFrame : null]}
+    style={[styles.frame, variant !== 'settings' ? styles.disclosureFrame : null]}
   >
     <Host style={variant === 'disclosure' ? styles.disclosureHost : styles.host}>
       <SwiftUIImage

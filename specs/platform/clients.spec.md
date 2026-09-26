@@ -41,6 +41,14 @@ native builds verify this exact existing combination.
 
 ### Shared mobile design language
 
+- Settings and secondary navigation must use the same grouped rows, disclosure
+  indicators, spacing, and separators. Long identity text must have its own
+  available width rather than compete with a second long trailing value.
+- Social activity actions must form one compact group directly beneath their
+  activity. Search empty-state headings must identify search, and notification
+  copy must focus on the event rather than explain internal classifications.
+
+
 - Mobile screens must use one shared navigation theme matching the existing
   charcoal content and yellow action palette. Native navigation titles, search,
   tab selection, and status bars must remain legible regardless of device appearance.

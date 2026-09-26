@@ -131,7 +131,6 @@ export function NotificationHistoryView({
           onOpen={canOpen(item) ? () => onOpen(item) : undefined}
         />
       </View>)}</View>
-      <Text style={styles.footer}>{i18n.t('notification.actionableFooter')}</Text>
     </View> : null}
     {informational.length > 0 ? <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>{i18n.t('notification.informationalHeading')}</Text>
@@ -145,7 +144,6 @@ export function NotificationHistoryView({
           onOpen={canOpen(item) ? () => onOpen(item) : undefined}
         />
       </View>)}</View>
-      <Text style={styles.footer}>{i18n.t('notification.informationalFooter')}</Text>
     </View> : null}
     {history.nextCursor ? <ActionButton
       disabled={busy}

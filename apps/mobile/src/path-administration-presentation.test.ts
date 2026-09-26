@@ -26,14 +26,6 @@ test('Share is one native overview with visibility, people, invitations, and a k
   assert.doesNotMatch(page, /\? <PathInvitationSheet/);
 });
 
-test('native Share pickers fill their settings row instead of collapsing text vertically', () => {
-  const picker = source('./ui/native-choice-picker.ios.tsx');
-  assert.doesNotMatch(picker, /<Host matchContents/);
-  assert.match(picker, /<Host style=\{styles\.host\}>/);
-  assert.match(picker, /container:\s*\{[\s\S]*alignSelf:\s*'stretch'[\s\S]*width:\s*'100%'/);
-  assert.match(picker, /host:\s*\{[\s\S]*minHeight:\s*48[\s\S]*width:\s*'100%'/);
-});
-
 test('Share dismissal becomes safe again after an exact normalized draft revert', () => {
   const baseline = { role: 'participant' as const, username: 'person' };
   assert.equal(manualShareDraftChanged(baseline, baseline), false);

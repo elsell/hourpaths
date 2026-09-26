@@ -5,7 +5,7 @@ import { createDeviceTranslator } from '../i18n';
 import type { HomePresentation } from './home-presentation';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { NativePrimaryButton } from './native-primary-button';
-import { SectionHeading, StatusBanner } from './primitives';
+import { StatusBanner, ThemedText as Text } from './primitives';
 import { mobileTheme } from './tokens';
 
 const i18n = createDeviceTranslator(getLocales);
@@ -99,7 +99,7 @@ export function HomeView({
     {notice}
     {filterControl}
     {sections.map((section) => <View key={section.key} style={styles.section}>
-      <SectionHeading>{section.title}</SectionHeading>
+      <Text accessibilityRole="header" style={styles.sectionTitle}>{section.title}</Text>
       <View style={styles.rows}>{section.items}</View>
     </View>)}
   </ScrollView>;
@@ -109,6 +109,12 @@ const styles = StyleSheet.create({
   content: {
     gap: mobileTheme.spacing.md,
     paddingBottom: mobileTheme.spacing.xxl,
+  },
+  sectionTitle: {
+    color: mobileTheme.colors.textMuted,
+    ...mobileTheme.typography.caption,
+    paddingHorizontal: mobileTheme.spacing.md,
+    paddingTop: mobileTheme.spacing.md,
   },
   section: {
     gap: mobileTheme.spacing.xs,

@@ -76,7 +76,6 @@ export const mobileShellStyles = StyleSheet.create({
   },
   groupedScrollContent: {
     gap: mobileTheme.spacing.lg,
-    paddingHorizontal: mobileTheme.spacing.md,
     paddingTop: mobileTheme.spacing.sm,
   },
   stack: {

@@ -7,7 +7,7 @@ const i18n = createDeviceTranslator(getLocales);
 
 export default function HomeLayout() {
   return <Stack
-    screenOptions={nativeStackOptions}
+    screenOptions={{ ...nativeStackOptions, headerLargeTitle: false }}
   >
     <Stack.Screen name="index" options={{ title: i18n.t('home.heading') }} />
   </Stack>;

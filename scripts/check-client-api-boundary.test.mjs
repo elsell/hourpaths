@@ -131,7 +131,7 @@ result = check({
   'apps/mobile/app/settings/blocked-accounts.tsx': "import { router, useFocusEffect } from 'expo-router'; import { AccessibilityInfo, Alert } from 'react-native'; export default function BlockedAccounts() { useFocusEffect(() => {}); router.replace('/(tabs)/home'); Alert.alert('x'); AccessibilityInfo.announceForAccessibility('x'); return null; }",
   'apps/mobile/src/config.ts': "export const config = 'safe';",
   'apps/mobile/src/config.test.ts': "import { config } from './config.js'; export { config };",
-  'apps/mobile/src/ui/social-profile-avatar.ios.tsx': "import { Host, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const Avatar = () => <Host><SwiftUIImage systemName='person.crop.circle.fill' /></Host>;",
+  'apps/mobile/src/ui/social-profile-avatar.ios.tsx': "import { Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const Avatar = () => <><SwiftUIImage systemName='person.crop.circle.fill' /></>;",
   'apps/web/src/lib/generated.ts': "import { createSessionApiClient } from '@hourpaths/api-client'; export const session = createSessionApiClient(base, token);",
 });
 assert.equal(result.status, 0, result.stderr);
@@ -347,7 +347,7 @@ assert.equal(result.status, 0, `reviewed-native-onboarding-presentation: ${resul
 result = check({
   'apps/mobile/src/ui/path-create-form.tsx': "import { AccessibilityInfo, InputAccessoryView, Keyboard, Pressable, StyleSheet, Switch, View } from 'react-native'; export const PathCreateForm = () => <Pressable><View><Switch value={false} /></View></Pressable>; void AccessibilityInfo; void InputAccessoryView; void Keyboard;",
   'apps/mobile/src/ui/native-segmented-control.tsx': "import SegmentedControl from '@expo/ui/community/segmented-control'; export const Unit = () => <SegmentedControl values={['Minutes', 'Hours']} />;",
-  'apps/mobile/src/ui/native-choice-picker.ios.tsx': "import { Host, Picker, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, disabled, environment, pickerStyle, tag, tint } from '@expo/ui/swift-ui/modifiers'; export const Choice = () => <Host><Picker modifiers={[accessibilityLabel('Repeat'), disabled(false), environment('colorScheme', 'dark'), pickerStyle('menu'), tint('#FFD84D')]}><Text modifiers={[tag('daily')]}>Daily</Text></Picker></Host>;",
+  'apps/mobile/src/ui/native-choice-picker.ios.tsx': "import { Picker, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, disabled, environment, pickerStyle, tag, tint } from '@expo/ui/swift-ui/modifiers'; export const Choice = () => <><Picker modifiers={[accessibilityLabel('Repeat'), disabled(false), environment('colorScheme', 'dark'), pickerStyle('menu'), tint('#FFD84D')]}><Text modifiers={[tag('daily')]}>Daily</Text></Picker></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-path-create-presentation: ${result.stderr}`);
 
@@ -355,7 +355,7 @@ result = check({
   'apps/mobile/src/ui/comment-edit-sheet.tsx': "import { AccessibilityInfo, Alert, InputAccessoryView, Keyboard, StyleSheet, View } from 'react-native'; export const Edit = () => <View />; void AccessibilityInfo; void Alert; void InputAccessoryView; void Keyboard; void StyleSheet;",
   'apps/mobile/src/ui/practice-comments-view.tsx': "import { ActivityIndicator, Alert, FlatList, InputAccessoryView, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native'; export const Comments = () => <KeyboardAvoidingView><FlatList data={[]} renderItem={() => <Pressable><View><ActivityIndicator /></View></Pressable>} /></KeyboardAvoidingView>; void Alert; void InputAccessoryView; void Keyboard; void Platform; void StyleSheet; void useWindowDimensions;",
   'apps/mobile/src/ui/social-reaction-menu.tsx': "import { AccessibilityInfo, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native'; export const Reactions = () => <Modal><ScrollView><Pressable><View /></Pressable></ScrollView></Modal>; void AccessibilityInfo; void StyleSheet;",
-  'apps/mobile/src/ui/social-reaction-menu.ios.tsx': "import { Button, Host, Image as SwiftUIImage, Menu } from '@expo/ui/swift-ui'; import { accessibilityLabel as nativeAccessibilityLabel, disabled as nativeDisabled, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Reactions = () => <Host><Menu label={<SwiftUIImage systemName='heart' />} modifiers={[nativeAccessibilityLabel('Reactions'), nativeDisabled(false), frame({ height: 44 }), tint('#FFD84D')]}><Button label='Heart' /></Menu></Host>;",
+  'apps/mobile/src/ui/social-reaction-menu.ios.tsx': "import { Button, Image as SwiftUIImage, Menu } from '@expo/ui/swift-ui'; import { accessibilityLabel as nativeAccessibilityLabel, disabled as nativeDisabled, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Reactions = () => <><Menu label={<SwiftUIImage systemName='heart' />} modifiers={[nativeAccessibilityLabel('Reactions'), nativeDisabled(false), frame({ height: 44 }), tint('#FFD84D')]}><Button label='Heart' /></Menu></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-comment-interactions: ${result.stderr}`);
 
@@ -365,26 +365,26 @@ result = check({
 assert.equal(result.status, 0, `capability-free-symbol-admission: ${result.stderr}`);
 
 result = check({
-  'apps/mobile/src/ui/home-filter-chips.ios.tsx': "import { Button, HStack, Host, ScrollView } from '@expo/ui/swift-ui'; import { accessibilityLabel, accessibilityValue, buttonStyle, controlSize, environment, tint } from '@expo/ui/swift-ui/modifiers'; export const Filters = () => <Host><ScrollView><HStack><Button label='All' modifiers={[accessibilityLabel('All'), accessibilityValue('Selected'), buttonStyle('bordered'), controlSize('regular'), environment('colorScheme', 'dark'), tint('#FFD84D')]} /></HStack></ScrollView></Host>;",
-  'apps/mobile/src/ui/home-arrangement-view.ios.tsx': "import { Button, HStack, Host, List, Section, Spacer, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, disabled, environment, listStyle, tint } from '@expo/ui/swift-ui/modifiers'; export const Arrangement = () => <Host><List modifiers={[disabled(false), environment('colorScheme', 'dark'), listStyle('insetGrouped'), tint('#FFD84D')]}><Section><HStack><Text>Path</Text><Spacer /><Button label='Pin' modifiers={[accessibilityLabel('Pin'), buttonStyle('borderless')]} /></HStack></Section></List></Host>;",
+  'apps/mobile/src/ui/home-filter-chips.ios.tsx': "import { Button, HStack, ScrollView } from '@expo/ui/swift-ui'; import { accessibilityLabel, accessibilityValue, buttonStyle, controlSize, environment, tint } from '@expo/ui/swift-ui/modifiers'; export const Filters = () => <><ScrollView><HStack><Button label='All' modifiers={[accessibilityLabel('All'), accessibilityValue('Selected'), buttonStyle('bordered'), controlSize('regular'), environment('colorScheme', 'dark'), tint('#FFD84D')]} /></HStack></ScrollView></>;",
+  'apps/mobile/src/ui/home-arrangement-view.ios.tsx': "import { Button, HStack, List, Section, Spacer, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, disabled, environment, listStyle, tint } from '@expo/ui/swift-ui/modifiers'; export const Arrangement = () => <><List modifiers={[disabled(false), environment('colorScheme', 'dark'), listStyle('insetGrouped'), tint('#FFD84D')]}><Section><HStack><Text>Path</Text><Spacer /><Button label='Pin' modifiers={[accessibilityLabel('Pin'), buttonStyle('borderless')]} /></HStack></Section></List></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-home-organization-presentation: ${result.stderr}`);
 
 result = check({
   'apps/mobile/src/ui/signed-out-screen.tsx': "import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native'; export const SignedOutScreen = () => { const { width } = useWindowDimensions(); return <ScrollView><View style={{ width }}><ActivityIndicator /></View></ScrollView>; };",
-  'apps/mobile/src/ui/native-primary-button.ios.tsx': "import { Button, Host, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, controlSize, disabled, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Primary = () => <Host><Button modifiers={[accessibilityLabel('Sign in'), buttonStyle('borderedProminent'), controlSize('large'), disabled(false), foregroundColor('#000000'), tint('#FFD84D')]}><Text modifiers={[frame({ width: 300 }), foregroundColor('#000000')]}>Sign in</Text></Button></Host>;",
+  'apps/mobile/src/ui/native-button.ios.tsx': "import { Button, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, controlSize, disabled, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Primary = () => <><Button modifiers={[accessibilityLabel('Sign in'), buttonStyle('borderedProminent'), controlSize('large'), disabled(false), foregroundColor('#000000'), tint('#FFD84D')]}><Text modifiers={[frame({ width: 300 }), foregroundColor('#000000')]}>Sign in</Text></Button></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-signed-out-presentation: ${result.stderr}`);
 
 result = check({
-  'apps/mobile/src/ui/native-content-unavailable.ios.tsx': "import { ContentUnavailableView, Host } from '@expo/ui/swift-ui'; export const Empty = () => <Host><ContentUnavailableView title='No activity' /></Host>;",
+  'apps/mobile/src/ui/native-content-unavailable.ios.tsx': "import { ContentUnavailableView } from '@expo/ui/swift-ui'; export const Empty = () => <><ContentUnavailableView title='No activity' /></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-empty-state-presentation: ${result.stderr}`);
 
 for (const source of [
   "import SwiftUI from '@expo/ui/swift-ui'; export const Empty = SwiftUI;",
   "import * as SwiftUI from '@expo/ui/swift-ui'; export const Empty = SwiftUI;",
-  "import { Button, ContentUnavailableView, Host } from '@expo/ui/swift-ui'; export const Empty = () => <Host><Button label='Retry' /><ContentUnavailableView /></Host>;",
+  "import { Button, ContentUnavailableView } from '@expo/ui/swift-ui'; export const Empty = () => <><Button label='Retry' /><ContentUnavailableView /></>;",
   "import { tint } from '@expo/ui/swift-ui/modifiers'; export const Empty = tint('#FFD84D');",
   "export { Button } from '@expo/ui/swift-ui';",
 ]) {
@@ -393,15 +393,15 @@ for (const source of [
 }
 
 result = check({
-  'apps/mobile/src/ui/native-timer-button.ios.tsx': "import { Button, Host } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, controlSize, disabled, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Timer = () => <Host><Button label='Start timer' modifiers={[accessibilityLabel('Start timer'), buttonStyle('borderedProminent'), controlSize('large'), frame({ maxWidth: Number.POSITIVE_INFINITY, minHeight: 48 }), disabled(false), foregroundColor('#000000'), tint('#FFD84D')]} /></Host>;",
-  'apps/mobile/src/ui/native-tracking-button.ios.tsx': "import { Button, Host, Image as SwiftUIImage, VStack } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, clipShape, controlSize, disabled, frame, tint } from '@expo/ui/swift-ui/modifiers'; import { AccessibilityInfo, Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native'; export const Tracking = () => <View><Animated.View /><Host><Button label='Stop timer' modifiers={[accessibilityLabel('Stop timer'), buttonStyle('borderedProminent'), clipShape('circle'), controlSize('large'), disabled(false), frame({ height: 76, width: 76 }), tint('#FFD84D')]}><VStack><SwiftUIImage systemName='stop.fill' /></VStack></Button></Host></View>;",
-  'apps/mobile/src/ui/manual-occurrence-fields.ios.tsx': "import { DatePicker, Host } from '@expo/ui/swift-ui'; import { datePickerStyle, disabled, environment, tint } from '@expo/ui/swift-ui/modifiers'; export const Occurrence = () => <Host><DatePicker modifiers={[datePickerStyle('compact'), disabled(false), environment('timeZone', 'UTC'), tint('#FFD84D')]} /></Host>;",
+  'apps/mobile/src/ui/native-timer-button.ios.tsx': "import { Button } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, controlSize, disabled, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Timer = () => <><Button label='Start timer' modifiers={[accessibilityLabel('Start timer'), buttonStyle('borderedProminent'), controlSize('large'), frame({ maxWidth: Number.POSITIVE_INFINITY, minHeight: 48 }), disabled(false), foregroundColor('#000000'), tint('#FFD84D')]} /></>;",
+  'apps/mobile/src/ui/native-tracking-button.ios.tsx': "import { Button, Image as SwiftUIImage, VStack } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, clipShape, controlSize, disabled, frame, tint } from '@expo/ui/swift-ui/modifiers'; import { StyleSheet, View, useWindowDimensions } from 'react-native'; export const Tracking = () => <View><><Button label='Stop timer' modifiers={[accessibilityLabel('Stop timer'), buttonStyle('borderedProminent'), clipShape('circle'), controlSize('large'), disabled(false), frame({ height: 76, width: 76 }), tint('#FFD84D')]}><VStack><SwiftUIImage systemName='stop.fill' /></VStack></Button></></View>;",
+  'apps/mobile/src/ui/manual-occurrence-fields.ios.tsx': "import { DatePicker } from '@expo/ui/swift-ui'; import { datePickerStyle, disabled, environment, tint } from '@expo/ui/swift-ui/modifiers'; export const Occurrence = () => <><DatePicker modifiers={[datePickerStyle('compact'), disabled(false), environment('timeZone', 'UTC'), tint('#FFD84D')]} /></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-timer-presentation: ${result.stderr}`);
 
 for (const [path, source] of Object.entries({
   'apps/mobile/src/ui/signed-out-screen.tsx': "import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from 'react-native'; export const SignedOutScreen = () => <Image source={{ uri: '/remote' }} />;",
-  'apps/mobile/src/ui/native-primary-button.ios.tsx': "import { Button, Host, Menu } from '@expo/ui/swift-ui'; export const Primary = () => <Host><Menu label={<Button label='Sign in' />} /></Host>;",
+  'apps/mobile/src/ui/native-button.ios.tsx': "import { Button, Menu } from '@expo/ui/swift-ui'; export const Primary = () => <><Menu label={<Button label='Sign in' />} /></>;",
 })) {
   result = check({ [path]: source });
   assert.notEqual(result.status, 0, `unreviewed-native-signed-out-capability: ${path}`);
@@ -424,7 +424,7 @@ for (const source of [
 }
 
 result = check({
-  'apps/mobile/src/ui/settings-icon.ios.tsx': "import { Host, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <Host><SwiftUIImage systemName='person.crop.circle' /></Host>;",
+  'apps/mobile/src/ui/settings-icon.ios.tsx': "import { Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <><SwiftUIImage systemName='person.crop.circle' /></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-settings-icon: ${result.stderr}`);
 
@@ -439,18 +439,18 @@ result = check({
 assert.notEqual(result.status, 0, 'unreviewed-manual-activity-capability');
 
 result = check({
-  'apps/mobile/src/ui/native-system-image.ios.tsx': "import { Host, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const NativeSystemImage = () => <Host><SwiftUIImage systemName='exclamationmark.triangle' /></Host>;",
+  'apps/mobile/src/ui/native-system-image.ios.tsx': "import { Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const NativeSystemImage = () => <><SwiftUIImage systemName='exclamationmark.triangle' /></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-system-image: ${result.stderr}`);
 
 for (const source of [
   "import SwiftUI from '@expo/ui/swift-ui'; export const SettingsIcon = SwiftUI;",
   "import * as SwiftUI from '@expo/ui/swift-ui'; export const SettingsIcon = SwiftUI;",
-  "import { Button, Host, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <Host><Button label='Account' /><SwiftUIImage systemName='person.crop.circle' /></Host>;",
-  "import { Host, Image as SwiftUIImage, Menu } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <Host><Menu label={<SwiftUIImage systemName='person.crop.circle' />} /></Host>;",
+  "import { Button, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <><Button label='Account' /><SwiftUIImage systemName='person.crop.circle' /></>;",
+  "import { Image as SwiftUIImage, Menu } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <><Menu label={<SwiftUIImage systemName='person.crop.circle' />} /></>;",
   "import { accessibilityLabel } from '@expo/ui/swift-ui/modifiers'; export const SettingsIcon = accessibilityLabel('Account');",
-  "import { Host, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export { Button } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <Host><SwiftUIImage systemName='person.crop.circle' /></Host>;",
-  "import { Host, Image as SwiftUIImage } from '@expo/ui/swift-ui'; export * from '@expo/ui/swift-ui'; export const SettingsIcon = () => <Host><SwiftUIImage systemName='person.crop.circle' /></Host>;",
+  "import { Image as SwiftUIImage } from '@expo/ui/swift-ui'; export { Button } from '@expo/ui/swift-ui'; export const SettingsIcon = () => <><SwiftUIImage systemName='person.crop.circle' /></>;",
+  "import { Image as SwiftUIImage } from '@expo/ui/swift-ui'; export * from '@expo/ui/swift-ui'; export const SettingsIcon = () => <><SwiftUIImage systemName='person.crop.circle' /></>;",
   "import SwiftUI = require('@expo/ui/swift-ui'); export const SettingsIcon = SwiftUI.Button;",
 ]) {
   result = check({ 'apps/mobile/src/ui/settings-icon.ios.tsx': source });
@@ -493,7 +493,7 @@ result = check({
   'apps/mobile/src/use-social-interaction-route-ancestry.ts': "import { useFocusEffect, useNavigation } from 'expo-router'; export function useSocialInteractionRouteAncestry() { const navigation = useNavigation(); useFocusEffect(() => { navigation.reset({ index: 0, routes: [{ name: 'index' }] }); }); }",
   'apps/mobile/src/use-notification-journey-route-ancestry.ts': "import { useFocusEffect, useNavigation } from 'expo-router'; export function useNotificationJourneyRouteAncestry() { const navigation = useNavigation(); useFocusEffect(() => { navigation.reset({ index: 0, routes: [{ name: '(tabs)' }] }); }); }",
   'apps/mobile/src/use-settings-journey-route-ancestry.ts': "import { useFocusEffect, useNavigation } from 'expo-router'; export function useSettingsJourneyRouteAncestry() { const navigation = useNavigation(); useFocusEffect(() => { navigation.reset({ index: 0, routes: [{ name: '(tabs)' }] }); }); }",
-  'apps/mobile/src/ui/native-header-button.ios.tsx': "import { Button, Host } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, disabled, labelStyle } from '@expo/ui/swift-ui/modifiers'; export function Header() { return <Host><Button label='Read' modifiers={[accessibilityLabel('Read'), buttonStyle('plain'), disabled(false), labelStyle('iconOnly')]} /></Host>; }",
+  'apps/mobile/src/ui/native-header-button.ios.tsx': "import { Button } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, disabled, labelStyle } from '@expo/ui/swift-ui/modifiers'; export function Header() { return <><Button label='Read' modifiers={[accessibilityLabel('Read'), buttonStyle('plain'), disabled(false), labelStyle('iconOnly')]} /></>; }",
   'apps/mobile/src/ui/path-header-menu.ios.tsx': "import { Stack } from 'expo-router'; export default function Menu() { return <Stack.Toolbar />; }",
   'apps/mobile/src/ui/path-header-menu.tsx': "import { Stack } from 'expo-router'; export default function Menu() { return <Stack.Toolbar />; }",
 });

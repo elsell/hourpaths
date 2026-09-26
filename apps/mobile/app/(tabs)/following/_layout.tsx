@@ -7,8 +7,8 @@ const i18n = createDeviceTranslator(getLocales);
 
 export default function FollowingLayout() {
   return <Stack
-    screenOptions={nativeStackOptions}
+    screenOptions={{ ...nativeStackOptions, headerLargeTitle: false }}
   >
-    <Stack.Screen name="index" options={{ title: i18n.t('social.feedHeading') }} />
+    <Stack.Screen name="index" options={{ title: i18n.t('social.following') }} />
   </Stack>;
 }

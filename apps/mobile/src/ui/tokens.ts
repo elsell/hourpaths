@@ -10,6 +10,7 @@ export const mobileTheme = {
     accentPressed: '#F2C230',
     accentText: '#141414',
     border: '#767676',
+    separator: '#414141',
     progressTrack: '#767676',
     error: '#FF8A80',
     errorSurface: '#3B2424',

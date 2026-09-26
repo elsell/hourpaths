@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button, Text as NativeText } from '@expo/ui/swift-ui';
 import { accessibilityLabel as nativeAccessibilityLabel, buttonStyle, controlSize, disabled as nativeDisabled, frame, foregroundColor, tint } from '@expo/ui/swift-ui/modifiers';
 import { StyleSheet, View } from 'react-native';
-import type { NativeButtonProps } from './native-button.types';
+import type { NativeButtonProps } from './native-button-types';
 import { mobileTheme } from './tokens';
 
 export function NativeButton({ accessibilityLabel, busy = false, disabled = false, fullWidth = false, label, onPress, selected, systemImage, variant = 'primary' }: NativeButtonProps) {

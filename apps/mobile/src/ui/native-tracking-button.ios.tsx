@@ -9,8 +9,7 @@ import {
   frame,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { mobileTheme } from './tokens';
 
 export function NativeTrackingButton({
@@ -24,44 +23,12 @@ export function NativeTrackingButton({
   onPress: () => void;
   running: boolean;
 }) {
-  const rotation = useRef(new Animated.Value(0)).current;
-  const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
   const { fontScale } = useWindowDimensions();
   const buttonSize = Math.max(48, 40 + 8 * fontScale);
   const frameSize = buttonSize + 4;
 
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => subscription.remove();
-  }, []);
-
-  useEffect(() => {
-    if (!running || reduceMotion !== false) {
-      rotation.stopAnimation();
-      rotation.setValue(0);
-      return;
-    }
-    const animation = Animated.loop(Animated.timing(rotation, {
-      duration: 1400,
-      easing: Easing.linear,
-      toValue: 1,
-      useNativeDriver: true,
-    }));
-    animation.start();
-    return () => animation.stop();
-  }, [reduceMotion, rotation, running]);
-
   return <View style={[styles.frame, { height: frameSize, width: frameSize }]}>
-    {running ? <Animated.View
-      importantForAccessibility="no"
-      style={[styles.ring, {
-        borderRadius: frameSize / 2,
-        height: frameSize,
-        transform: [{ rotate: rotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }],
-        width: frameSize,
-      }]}
-    /> : null}
+
     <Host style={[styles.host, { height: buttonSize, width: buttonSize }]}>
       <Button
         modifiers={[
@@ -93,11 +60,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   host: {
-  },
-  ring: {
-    borderColor: mobileTheme.colors.error,
-    borderTopColor: 'transparent',
-    borderWidth: 3,
-    position: 'absolute',
   },
 });

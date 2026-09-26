@@ -6,12 +6,12 @@ export function SettingsIcon({
   variant = 'settings',
 }: {
   systemName: string;
-  variant?: 'disclosure' | 'settings';
+  variant?: 'disclosure' | 'settings' | 'inline';
 }) {
   return <View
     accessibilityElementsHidden
     importantForAccessibility="no-hide-descendants"
-    style={[styles.frame, variant === 'disclosure' ? styles.disclosureFrame : null]}
+    style={[styles.frame, variant !== 'settings' ? styles.disclosureFrame : null]}
   >
     {variant === 'disclosure'
       ? <Text allowFontScaling={false} style={styles.disclosureGlyph}>›</Text>

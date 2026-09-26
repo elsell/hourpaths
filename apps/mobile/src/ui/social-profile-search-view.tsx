@@ -73,7 +73,7 @@ function SearchState({
     return <NativeContentUnavailable
       description={i18n.t('social.searchHint')}
       systemImage="person.2.fill"
-      title={i18n.t('social.following')}
+      title={i18n.t('social.searchPlaceholder')}
     />;
   }
 

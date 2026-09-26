@@ -10,7 +10,6 @@ import {
 import { createDeviceTranslator } from '../i18n';
 import { needsCompactVerticalLayout } from './adaptive-layout';
 import { formatCompactDuration } from './compact-duration';
-import { NativeContentUnavailable } from './native-content-unavailable';
 import { NativePrimaryButton } from './native-primary-button';
 import { ActionButton, SectionHeading, StatusBanner, Surface, ThemedText } from './primitives';
 import { SettingsActionRow, SettingsSection } from './settings-list';
@@ -80,6 +79,10 @@ export function ActivityDetailView({
   });
 
   return <View style={styles.stack}>
+    <View style={styles.summary}>
+      <ThemedText style={styles.label}>{i18n.t('timer.elapsedLabel')}</ThemedText>
+      <ThemedText style={styles.duration}>{formatCompactDuration(activity.activity.durationSeconds, i18n)}</ThemedText>
+    </View>
     <Surface>
       <DetailRow
         compact={compact}
@@ -90,11 +93,6 @@ export function ActivityDetailView({
         compact={compact}
         label={i18n.t('pathDetails.ended')}
         value={activityInstant(activity.activity.endedAt, activity.activity.occurrenceTimeZone)}
-      />
-      <DetailRow
-        compact={compact}
-        label={i18n.t('timer.elapsedLabel')}
-        value={formatCompactDuration(activity.activity.durationSeconds, i18n)}
       />
       <DetailRow
         compact={compact}
@@ -147,11 +145,7 @@ export function ActivityDetailView({
     <View style={styles.section}>
       <SectionHeading>{i18n.t('pathDetails.revisions')}</SectionHeading>
       {revisionPresentation.showEmpty
-        ? <NativeContentUnavailable
-          description={i18n.t('pathDetails.revisionsEmpty')}
-          systemImage="pencil.line"
-          title={i18n.t('pathDetails.revisionsEmptyTitle')}
-        />
+        ? <ThemedText style={styles.label}>{i18n.t('pathDetails.revisionsEmpty')}</ThemedText>
         : revisions.map((revision) => <Surface key={revision.version}>
           <ThemedText accessibilityRole="header" style={styles.revisionHeading}>{i18n.t('pathDetails.revision', {
             version: i18n.number(revision.version),
@@ -233,13 +227,15 @@ function revisionTimestamp(instant: string) {
 }
 
 const styles = StyleSheet.create({
+  summary: { gap: mobileTheme.spacing.xxs, paddingVertical: mobileTheme.spacing.sm },
+  duration: { ...mobileTheme.typography.title, fontVariant: ['tabular-nums'] },
   detailRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: mobileTheme.spacing.sm,
     justifyContent: 'space-between',
     minHeight: mobileTheme.sizes.minimumTouchTarget,
-    paddingVertical: mobileTheme.spacing.sm,
+    paddingVertical: mobileTheme.spacing.xs,
   },
   detailRowCompact: {
     flexDirection: 'column',
