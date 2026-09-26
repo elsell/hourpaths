@@ -1,14 +1,14 @@
 import { getLocales } from 'expo-localization';
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { createDeviceTranslator } from '../../../src/i18n';
-import { scheduleSocialRouteBootstrap } from '../../../src/social-route-recovery';
-import type { SocialPublicProfile } from '../../../src/ui/social-profile-presentation';
-import { useSocialProfileRoutePresentation } from '../../../src/ui/social-profile-route-presentation';
-import { SocialProfileSearchView } from '../../../src/ui/social-profile-search-view';
-import { useSocialRouteRecovery } from '../../../src/ui/social-route-recovery-presentation';
-import { SocialRouteRecoveryView } from '../../../src/ui/social-route-recovery-view';
-import { mobileTheme } from '../../../src/ui/tokens';
+import { createDeviceTranslator } from '../../src/i18n';
+import { scheduleSocialRouteBootstrap } from '../../src/social-route-recovery';
+import type { SocialPublicProfile } from '../../src/ui/social-profile-presentation';
+import { useSocialProfileRoutePresentation } from '../../src/ui/social-profile-route-presentation';
+import { SocialProfileSearchView } from '../../src/ui/social-profile-search-view';
+import { useSocialRouteRecovery } from '../../src/ui/social-route-recovery-presentation';
+import { SocialRouteRecoveryView } from '../../src/ui/social-route-recovery-view';
+import { mobileTheme } from '../../src/ui/tokens';
 
 const i18n = createDeviceTranslator(getLocales);
 

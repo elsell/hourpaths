@@ -1,17 +1,17 @@
 import { getLocales } from 'expo-localization';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { createDeviceTranslator } from '../../../../../../src/i18n';
-import { scheduleSocialRouteBootstrap } from '../../../../../../src/social-route-recovery';
-import { useSocialInteractionRouteAncestry } from '../../../../../../src/use-social-interaction-route-ancestry';
+import { createDeviceTranslator } from '../../../../../src/i18n';
+import { scheduleSocialRouteBootstrap } from '../../../../../src/social-route-recovery';
+import { useSocialInteractionRouteAncestry } from '../../../../../src/use-social-interaction-route-ancestry';
 import {
   dismissCommentHeartRosterRoute,
   recoverCommentHeartRosterRoute,
   useCommentHeartRosterRoutePresentation,
-} from '../../../../../../src/ui/comment-heart-roster-route-presentation';
-import { CommentHeartRosterView } from '../../../../../../src/ui/comment-heart-roster-view';
-import { useSocialRouteRecovery } from '../../../../../../src/ui/social-route-recovery-presentation';
-import { SocialRouteRecoveryView } from '../../../../../../src/ui/social-route-recovery-view';
+} from '../../../../../src/ui/comment-heart-roster-route-presentation';
+import { CommentHeartRosterView } from '../../../../../src/ui/comment-heart-roster-view';
+import { useSocialRouteRecovery } from '../../../../../src/ui/social-route-recovery-presentation';
+import { SocialRouteRecoveryView } from '../../../../../src/ui/social-route-recovery-view';
 
 const i18n = createDeviceTranslator(getLocales);
 

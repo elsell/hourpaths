@@ -1,22 +1,22 @@
 import { getLocales } from 'expo-localization';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { createDeviceTranslator } from '../../../../src/i18n';
-import { scheduleSocialRouteBootstrap } from '../../../../src/social-route-recovery';
+import { createDeviceTranslator } from '../../../src/i18n';
+import { scheduleSocialRouteBootstrap } from '../../../src/social-route-recovery';
 import {
   clearPracticeCommentRouteDrafts,
   practiceCommentRouteRemovalDecision,
-} from '../../../../src/ui/comment-draft-presentation';
-import { useSocialInteractionRouteAncestry } from '../../../../src/use-social-interaction-route-ancestry';
+} from '../../../src/ui/comment-draft-presentation';
+import { useSocialInteractionRouteAncestry } from '../../../src/use-social-interaction-route-ancestry';
 import {
   dismissPracticeCommentsRoute,
   recoverPracticeCommentsRoute,
   usePracticeCommentsRoutePresentation,
-} from '../../../../src/ui/practice-comments-route-presentation';
-import { PracticeCommentsView } from '../../../../src/ui/practice-comments-view';
-import { presentNativeDestructiveConfirmation } from '../../../../src/ui/native-confirmation';
-import { useSocialRouteRecovery } from '../../../../src/ui/social-route-recovery-presentation';
-import { SocialRouteRecoveryView } from '../../../../src/ui/social-route-recovery-view';
+} from '../../../src/ui/practice-comments-route-presentation';
+import { PracticeCommentsView } from '../../../src/ui/practice-comments-view';
+import { presentNativeDestructiveConfirmation } from '../../../src/ui/native-confirmation';
+import { useSocialRouteRecovery } from '../../../src/ui/social-route-recovery-presentation';
+import { SocialRouteRecoveryView } from '../../../src/ui/social-route-recovery-view';
 
 const i18n = createDeviceTranslator(getLocales);
 

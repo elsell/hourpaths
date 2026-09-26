@@ -15,17 +15,17 @@ export type SocialNavigationState = Readonly<{
 }>;
 
 export function socialInteractionNavigationState(intent: SocialInteractionIntent): SocialNavigationState {
-  const routes: SocialNavigationRoute[] = [{ name: 'index' }];
+  const routes: SocialNavigationRoute[] = [{ name: '(tabs)', state: { index: 0, routes: [{ name: 'following' }] } }];
   if (intent.kind === 'activity') routes.push({
-    name: 'activity/[pathID]/[activityID]',
+    name: 'following/activity/[pathID]/[activityID]',
     params: { activityID: intent.activityID, pathID: intent.pathID },
   });
   if (intent.kind === 'comments' || intent.kind === 'comment-hearts') routes.push({
-    name: 'comments/[eventID]',
+    name: 'following/comments/[eventID]',
     params: { eventID: intent.eventID },
   });
   if (intent.kind === 'comment-hearts') routes.push({
-    name: 'comments/[eventID]/hearts/[commentID]',
+    name: 'following/comments/[eventID]/hearts/[commentID]',
     params: { commentID: intent.commentID, eventID: intent.eventID },
   });
   return { index: routes.length - 1, routes };

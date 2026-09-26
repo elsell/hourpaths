@@ -104,6 +104,15 @@ responsibilities.
   an admitted mutation must not be abandoned. Once authoritative success or
   failure reconciles, ordinary navigation behavior must resume.
 
+## Mobile task layout
+
+- People search, social activity details, comments, and comment-heart rosters
+  must open above the primary tabs. The comment composer must remain above the
+  bottom safe area and software keyboard without a tab bar covering its controls.
+- Returning from a secondary task must preserve the existing primary-tab state.
+  A cold social interaction must reconstruct a Following destination beneath it;
+  a heart roster must additionally retain its parent comments destination.
+
 ## Primary-surface state
 
 - Switching among Home, Following, and Stats must preserve each surface's

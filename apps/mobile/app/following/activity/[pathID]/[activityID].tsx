@@ -1,17 +1,17 @@
 import { getLocales } from 'expo-localization';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { createDeviceTranslator } from '../../../../../src/i18n';
-import { scheduleSocialRouteBootstrap } from '../../../../../src/social-route-recovery';
-import { useSocialInteractionRouteAncestry } from '../../../../../src/use-social-interaction-route-ancestry';
-import { NativeRouteScreen } from '../../../../../src/ui/native-route-presentation';
+import { createDeviceTranslator } from '../../../../src/i18n';
+import { scheduleSocialRouteBootstrap } from '../../../../src/social-route-recovery';
+import { useSocialInteractionRouteAncestry } from '../../../../src/use-social-interaction-route-ancestry';
+import { NativeRouteScreen } from '../../../../src/ui/native-route-presentation';
 import {
   socialFeedActivityDetailRouteKey,
   useSocialFeedActivityDetailRoutePresentation,
-} from '../../../../../src/ui/social-feed-activity-detail-route-presentation';
-import { SocialFeedActivityDetailView } from '../../../../../src/ui/social-feed-activity-detail-view';
-import { useSocialRouteRecovery } from '../../../../../src/ui/social-route-recovery-presentation';
-import { SocialRouteRecoveryView } from '../../../../../src/ui/social-route-recovery-view';
+} from '../../../../src/ui/social-feed-activity-detail-route-presentation';
+import { SocialFeedActivityDetailView } from '../../../../src/ui/social-feed-activity-detail-view';
+import { useSocialRouteRecovery } from '../../../../src/ui/social-route-recovery-presentation';
+import { SocialRouteRecoveryView } from '../../../../src/ui/social-route-recovery-view';
 
 const i18n = createDeviceTranslator(getLocales);
 

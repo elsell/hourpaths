@@ -26,14 +26,14 @@ function source(path: string) {
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
 }
 
-const followingLayout = source('../app/(tabs)/following/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
 const followingRoute = source('../app/(tabs)/following/index.tsx');
-const peopleRoute = source('../app/(tabs)/following/people.tsx');
+const peopleRoute = source('../app/following/people.tsx');
 const feedView = source('./ui/social-feed-view.tsx');
 const routePresentation = source('./ui/social-feed-route-presentation.tsx');
 const reactionMenu = source('./ui/social-reaction-menu.ios.tsx');
 const reactionMenuFallback = source('./ui/social-reaction-menu.tsx');
-const detailRoute = source('../app/(tabs)/following/activity/[pathID]/[activityID].tsx');
+const detailRoute = source('../app/following/activity/[pathID]/[activityID].tsx');
 const detailView = source('./ui/social-feed-activity-detail-view.tsx');
 const homeOrchestration = source('../app/index.tsx');
 const fixtureDisplayName = ['Alex', 'Rivera'].join(' ');
