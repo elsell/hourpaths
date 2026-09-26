@@ -386,10 +386,12 @@ motivation, and encouragement.
   iOS, the composer must use a vertically growing SwiftUI text field and a
   compact, icon-only circular up-arrow send control inside one continuous,
   rounded native messaging capsule. The field must not appear as a rectangular
-  form control or as a separate surface from the send action. Other platforms
-  must use their platform-native text-input control. The composer must use one
-  native keyboard-inset strategy and must not combine a hard-coded keyboard
-  offset with automatic keyboard insets.
+  form control or as a separate surface from the send action. A single-line
+  draft and its placeholder must be vertically centered in the capsule while
+  the field remains able to grow vertically for multiline drafts. Other
+  platforms must use their platform-native text-input control. The composer
+  must use one native keyboard-inset strategy and must not combine a hard-coded
+  keyboard offset with automatic keyboard insets.
 - Comment editing must use a standard single-view native task with leading
   Cancel and trailing Save-or-Retry actions. Validation and network failure must
   preserve the complete draft, identify the error in text, and keep retry

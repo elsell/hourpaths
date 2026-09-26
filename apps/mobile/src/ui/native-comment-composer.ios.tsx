@@ -50,7 +50,7 @@ export function NativeCommentComposer({
 
   return <Host matchContents={{ vertical: true }} style={styles.host}>
     <HStack
-      alignment="bottom"
+      alignment="center"
       modifiers={[
         padding({ bottom: 5, leading: 16, top: 5, trailing: 5 }),
         background(mobileTheme.colors.surfaceRaised, shapes.capsule({ roundedCornerStyle: 'continuous' })),
