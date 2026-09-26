@@ -11,23 +11,36 @@ import {
 const profile = { id: 'user-alice', username: 'alice', displayName: 'Alice', followerCount: 2, followingCount: 3, relationship: 'none' };
 
 test('relationship mutation retains only the authoritative profile state and optional request id', () => {
-  assert.deepEqual(relationshipMutationResultFromAPI({ data: { profile: { ...profile, relationship: 'following' } } }), {
+  assert.deepEqual(relationshipMutationResultFromAPI({
+    $schema: 'https://api.hourpaths.com/schemas/RelationshipOutputBody.json',
+    data: { profile: { ...profile, relationship: 'following' } },
+  }), {
     profile: { userId: 'user-alice', username: 'alice', displayName: 'Alice', followerCount: 2, followingCount: 3, relationship: 'following' },
   });
   assert.equal(relationshipMutationResultFromAPI({ data: { profile: { ...profile, relationship: 'requested' }, requestId: 'request-1' } }).requestId, 'request-1');
   assert.throws(() => relationshipMutationResultFromAPI({ data: { profile: { ...profile, relationship: 'requested' } } }), /invalid relationship response/);
   assert.throws(() => relationshipMutationResultFromAPI({ data: { profile, requestId: 'request-1' } }), /invalid relationship response/);
+  assert.throws(() => relationshipMutationResultFromAPI({ $schema: 42, data: { profile } }), /invalid relationship response/);
+  assert.throws(() => relationshipMutationResultFromAPI({ data: { profile }, viewer: 'user-viewer' }), /invalid relationship response/);
 });
 
 test('request review requires an authoritative matching safe request and decision', () => {
-  const reviewed = followRequestReviewResultFromAPI({ data: { decision: 'accepted', request: { id: 'request-1', requester: profile, createdAt: '2026-07-27T12:00:00Z' } } });
+  const reviewed = followRequestReviewResultFromAPI({
+    $schema: 'https://api.hourpaths.com/schemas/ReviewOutputBody.json',
+    data: { decision: 'accepted', request: { id: 'request-1', requester: profile, createdAt: '2026-07-27T12:00:00Z' } },
+  });
   assert.equal(reviewed.request.id, 'request-1');
   assert.equal(reviewed.decision, 'accepted');
   assert.throws(() => followRequestReviewResultFromAPI({ data: { decision: 'removed', request: reviewed.request } }), /invalid follow request review/);
+  assert.throws(() => followRequestReviewResultFromAPI({ $schema: 42, data: { decision: 'accepted', request: reviewed.request } }), /invalid follow request review/);
 });
 
 test('incoming requests validate safe profiles, paginate once, and resolve locally only after acknowledgement', () => {
-  const first = followRequestPageFromAPI({ data: [{ id: 'request-1', requester: profile, createdAt: '2026-07-27T12:00:00Z' }], meta: { nextCursor: 'signed' } });
+  const first = followRequestPageFromAPI({
+    $schema: 'https://api.hourpaths.com/schemas/FollowRequestsOutputBody.json',
+    data: [{ id: 'request-1', requester: profile, createdAt: '2026-07-27T12:00:00Z' }],
+    meta: { nextCursor: 'signed' },
+  });
   const second = followRequestPageFromAPI({ data: [{ id: 'request-2', requester: { ...profile, id: 'user-bob', username: 'bob', displayName: 'Bob' }, createdAt: '2026-07-27T11:00:00Z' }], meta: {} });
   const merged = mergeFollowRequestPage(first, second, 'signed');
   assert.deepEqual(merged.items.map(({ id }) => id), ['request-1', 'request-2']);
@@ -42,4 +55,8 @@ test('incoming requests reject recipient metadata, duplicate ids, and self proje
     [{ id: 'request-1', requester: profile, createdAt: '2026-07-27T12:00:00Z' }, { id: 'request-1', requester: profile, createdAt: '2026-07-27T11:00:00Z' }],
     [{ id: 'request-1', requester: { ...profile, relationship: 'self' }, createdAt: '2026-07-27T12:00:00Z' }],
   ]) assert.throws(() => followRequestPageFromAPI({ data, meta: {} }), /invalid follow request response/);
+  for (const envelope of [
+    { $schema: 42, data: [], meta: {} },
+    { data: [], meta: {}, viewer: { id: 'viewer' } },
+  ]) assert.throws(() => followRequestPageFromAPI(envelope), /invalid follow request response/);
 });
