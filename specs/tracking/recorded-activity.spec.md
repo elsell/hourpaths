@@ -131,6 +131,12 @@ on a path.
   form sheet with persistent Cancel and Save-or-Retry actions. Date, start time,
   duration, and optional note must remain reachable with the software keyboard
   and maximum Dynamic Type.
+- Android date and start-time fields must open native calendar and clock dialogs.
+  Opening or cancelling a picker must not change the draft. Confirmation must
+  change only its date or time field. The clock must honor the device's 12/24-hour
+  preference while preserving the participant-local hour and minute, regardless
+  of the device timezone. For example, an entered 01:30 must open as 01:30 on
+  phones in UTC, New York, or Tokyo; it must not convert the activity's zone.
 - Validation or service failure must identify the problem in text, preserve the
   complete activity draft, and keep retry available without duplicating a
   successful save. Submission progress and outcome must use native status

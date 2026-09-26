@@ -125,6 +125,9 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/src/ui/following-header-actions.ios.tsx', new Set(['Stack'])],
 ]);
 const approvedPlatformUIImports = new Map([
+  ['apps/mobile/src/ui/manual-occurrence-fields.android.tsx', new Map([
+    ['@expo/ui/jetpack-compose', new Set(['DatePickerDialog', 'Host', 'TimePickerDialog'])],
+  ])],
   ['apps/mobile/src/ui/platform-symbol.tsx', new Map([
     ['expo-symbols', new Set(['SymbolView', 'AndroidSymbol'])],
   ])],

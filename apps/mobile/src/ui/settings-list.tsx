@@ -38,6 +38,7 @@ export function SettingsSeparator() {
 export function SettingsNavigationRow({
   accessibilityLabel,
   context,
+  disabled = false,
   icon,
   label,
   onPress,
@@ -45,6 +46,7 @@ export function SettingsNavigationRow({
 }: {
   accessibilityLabel: string;
   context?: string;
+  disabled?: boolean;
   icon?: ReactNode;
   label: string;
   onPress: () => void;
@@ -55,9 +57,11 @@ export function SettingsNavigationRow({
   return <Pressable
     accessibilityLabel={accessibilityLabel}
     accessibilityRole="button"
+    accessibilityState={{ disabled }}
+    disabled={disabled}
     accessibilityValue={value ? { text: value } : undefined}
     onPress={onPress}
-    style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
+    style={({ pressed }) => [styles.row, disabled ? styles.disabled : null, pressed ? styles.rowPressed : null]}
   >
     <View style={styles.navigationRowContent}>
       {icon ? <View style={styles.rowIconFrame}>{icon}</View> : null}

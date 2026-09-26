@@ -33,3 +33,14 @@ export function localDateFromPicker(value: Date): string {
 export function localTimeFromPicker(value: Date): string {
   return `${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}:00`;
 }
+
+// Compose's clock reads a device-local Calendar. Anchor only its clock fields
+// on a stable date; the activity date and participant timezone remain untouched.
+export function androidClockPickerValue(localTime: string): Date | null {
+  const value = manualOccurrencePickerValue('2000-01-15', localTime);
+  return value ? new Date(2000, 0, 15, value.getUTCHours(), value.getUTCMinutes(), value.getUTCSeconds()) : null;
+}
+
+export function localTimeFromAndroidClock(value: Date): string {
+  return `${pad(value.getHours())}:${pad(value.getMinutes())}:00`;
+}
