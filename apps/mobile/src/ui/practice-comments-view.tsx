@@ -30,8 +30,7 @@ import { CommentEditSheet } from './comment-edit-sheet';
 import { CommentHeartIcon } from './comment-heart-icon';
 import { normalizedComment } from './comment-presentation';
 import { createCommentSubmissionOwner } from './comment-submission-admission';
-import { NativeCommentInput } from './native-comment-input';
-import { NativeCommentSendButton } from './native-comment-send-button';
+import { NativeCommentComposer } from './native-comment-composer';
 import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { ActionButton, ThemedText as Text } from './primitives';
@@ -190,19 +189,13 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
     {presentation.errorKey && presentation.items.length > 0 ? <Text accessibilityLiveRegion="assertive" accessibilityRole="alert" style={styles.errorBanner}>
       {i18n.t(presentation.errorKey)}
     </Text> : null}
-    <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, mobileTheme.spacing.sm) }, stackComposer ? styles.composerStacked : null]}>
-      <View style={[styles.composerInput, stackComposer && styles.composerStackedInput]}>
-        <NativeCommentInput
-          accessibilityLabel={i18n.t('social.commentsPlaceholder')}
-          onChangeText={(value) => setPracticeCommentComposerDraft(presentation.eventID, value)}
-          placeholder={i18n.t('social.commentsPlaceholder')}
-          value={draft}
-        />
-      </View>
-      <NativeCommentSendButton
+    <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, mobileTheme.spacing.sm) }]}>
+      <NativeCommentComposer
+        accessibilityLabel={i18n.t('social.commentsPlaceholder')}
         busy={presentation.busy}
         disabled={!validDraft}
         label={i18n.t('social.commentsSend')}
+        onChangeText={(value) => setPracticeCommentComposerDraft(presentation.eventID, value)}
         onPress={() => {
           if (!validDraft) return;
           const admission = composerSubmission.current.admit();
@@ -224,6 +217,9 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
               if (composerSubmission.current.owns(admission)) composerSubmission.current.release(admission);
             });
         }}
+        placeholder={i18n.t('social.commentsPlaceholder')}
+        stacked={stackComposer}
+        value={draft}
       />
     </View>
   </KeyboardAvoidingView></View>;
@@ -232,10 +228,7 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
 const styles = StyleSheet.create({
   byline: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: mobileTheme.spacing.xs },
   comment: { color: mobileTheme.colors.text, fontSize: 16, lineHeight: 22 },
-  composer: { alignItems: 'flex-end', backgroundColor: mobileTheme.colors.surface, borderTopColor: mobileTheme.colors.border, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: mobileTheme.spacing.sm, padding: mobileTheme.spacing.sm },
-  composerStacked: { alignItems: 'stretch', flexDirection: 'column' },
-  composerInput: { flex: 1, maxHeight: 120, minHeight: 44, paddingVertical: mobileTheme.spacing.sm },
-  composerStackedInput: { flex: 0 },
+  composer: { backgroundColor: mobileTheme.colors.background, paddingHorizontal: mobileTheme.spacing.md, paddingTop: mobileTheme.spacing.sm },
   emptyList: { flexGrow: 1, justifyContent: 'center' },
   error: { color: mobileTheme.colors.error },
   errorBanner: { backgroundColor: mobileTheme.colors.errorSurface, color: mobileTheme.colors.error, padding: mobileTheme.spacing.sm, textAlign: 'center' },
