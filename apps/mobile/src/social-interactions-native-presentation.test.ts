@@ -27,10 +27,10 @@ function source(path: string) {
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
 }
 
-const commentsRoute = source('../app/(tabs)/following/comments/[eventID].tsx');
-const heartsRoute = source('../app/(tabs)/following/comments/[eventID]/hearts/[commentID].tsx');
-const activityRoute = source('../app/(tabs)/following/activity/[pathID]/[activityID].tsx');
-const followingLayout = source('../app/(tabs)/following/_layout.tsx');
+const commentsRoute = source('../app/following/comments/[eventID].tsx');
+const heartsRoute = source('../app/following/comments/[eventID]/hearts/[commentID].tsx');
+const activityRoute = source('../app/following/activity/[pathID]/[activityID].tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
 const commentsView = source('./ui/practice-comments-view.tsx');
 const editSheet = source('./ui/comment-edit-sheet.tsx');
 const rosterView = source('./ui/comment-heart-roster-view.tsx');
@@ -180,18 +180,18 @@ test('cold heart routes construct keyed Following to Comments to Roster native a
     kind: 'comment-hearts' as const,
     routeKey: 'social:comment-hearts:event-1:comment-1',
   };
-  const following = { key: 'following-root', name: 'index', state: { retained: true } };
-  const comments = { key: 'comments-route', name: 'comments/[eventID]', params: { eventID: 'event-1' } };
-  const roster = { key: 'roster-route', name: 'comments/[eventID]/hearts/[commentID]', params: { commentID: 'comment-1', eventID: 'event-1' } };
+  const following = { key: 'following-root', name: '(tabs)', state: { retained: true } };
+  const comments = { key: 'comments-route', name: 'following/comments/[eventID]', params: { eventID: 'event-1' } };
+  const roster = { key: 'roster-route', name: 'following/comments/[eventID]/hearts/[commentID]', params: { commentID: 'comment-1', eventID: 'event-1' } };
   const normalized = normalizeSocialInteractionRouteState({
     index: 2,
     key: 'following-stack',
     routes: [roster, following, comments],
   }, intent);
   assert.deepEqual(normalized.routes.map(({ name }) => name), [
-    'index',
-    'comments/[eventID]',
-    'comments/[eventID]/hearts/[commentID]',
+    '(tabs)',
+    'following/comments/[eventID]',
+    'following/comments/[eventID]/hearts/[commentID]',
   ]);
   assert.equal(normalized.key, 'following-stack');
   assert.equal(normalized.routes[0]?.key, 'following-root');
@@ -200,6 +200,18 @@ test('cold heart routes construct keyed Following to Comments to Roster native a
   assert.strictEqual(normalized.routes[0]?.state, following.state);
   const backToComments = nativeBackSocialInteractionState(normalized);
   const backToFollowing = nativeBackSocialInteractionState(backToComments);
-  assert.equal(backToComments.routes.at(-1)?.name, 'comments/[eventID]');
-  assert.equal(backToFollowing.routes.at(-1)?.name, 'index');
+  assert.equal(backToComments.routes.at(-1)?.name, 'following/comments/[eventID]');
+  assert.equal(backToFollowing.routes.at(-1)?.name, '(tabs)');
+});
+
+
+test('opening comments from notifications preserves the warm return destination', () => {
+  const current = { index: 2, routes: [
+    { name: '(tabs)', state: { retained: true } },
+    { name: 'notifications' },
+    { name: 'following/comments/[eventID]', params: { eventID: 'event-1' } },
+  ] };
+  assert.equal(normalizeSocialInteractionRouteState(current, {
+    kind: 'comments', eventID: 'event-1', routeKey: 'social:comments:event-1',
+  }), current);
 });

@@ -1,6 +1,6 @@
 import type { PracticeComment } from '@hourpaths/client-core';
 import type { Translator } from '@hourpaths/i18n';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { needsCompactVerticalLayout } from './adaptive-layout';
 import type { CommentAction } from './comment-action';
 import { CommentActionMenu } from './comment-action-menu';
@@ -136,6 +137,9 @@ function CommentRow({ comment, i18n, presentation }: {
 }
 
 export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator; presentation: PracticeCommentsRoutePresentation }) {
+  const insets = useSafeAreaInsets();
+  const keyboardFrame = useRef<View>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const draft = usePracticeCommentComposerDraft(presentation.eventID);
   const list = useRef<FlatList<PracticeComment>>(null);
   const composerSubmission = useRef(createCommentSubmissionOwner());
@@ -166,7 +170,10 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
           title={i18n.t('social.commentsEmptyHeading')}
         />;
 
-  return <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
+  return <View ref={keyboardFrame} style={styles.screen} onLayout={() => {
+    keyboardFrame.current?.measureInWindow((_x, y) => setKeyboardOffset(y));
+  }}>
+  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset} style={styles.screen}>
     <FlatList
       automaticallyAdjustContentInsets
       contentContainerStyle={presentation.items.length ? styles.list : styles.emptyList}
@@ -193,7 +200,7 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
     {presentation.errorKey && presentation.items.length > 0 ? <Text accessibilityLiveRegion="assertive" accessibilityRole="alert" style={styles.errorBanner}>
       {i18n.t(presentation.errorKey)}
     </Text> : null}
-    <View style={[styles.composer, stackComposer ? styles.composerStacked : null]}>
+    <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, mobileTheme.spacing.sm) }, stackComposer ? styles.composerStacked : null]}>
       <ThemedTextInput
         accessibilityLabel={i18n.t('social.commentsPlaceholder')}
         allowFontScaling
@@ -236,7 +243,7 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
         <ActionButton label={i18n.t('common.done')} onPress={Keyboard.dismiss} variant="quiet" />
       </View>
     </InputAccessoryView>
-  </KeyboardAvoidingView>;
+  </KeyboardAvoidingView></View>;
 }
 
 const styles = StyleSheet.create({

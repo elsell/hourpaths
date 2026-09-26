@@ -4,13 +4,13 @@ import test from 'node:test';
 
 const source = (path: string) => readFileSync(decodeURIComponent(new URL(path, import.meta.url).pathname), 'utf8');
 const page = source('../app/index.tsx');
-const route = source('../app/(tabs)/following/comments/[eventID].tsx');
-const layout = source('../app/(tabs)/following/_layout.tsx');
+const route = source('../app/following/comments/[eventID].tsx');
+const layout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
 const feed = source('./ui/social-feed-view.tsx');
 const view = source('./ui/practice-comments-view.tsx');
 const nativeMenu = source('./ui/comment-action-menu.ios.tsx');
 const fallbackMenu = source('./ui/comment-action-menu.tsx');
-const rosterRoute = source('../app/(tabs)/following/comments/[eventID]/hearts/[commentID].tsx');
+const rosterRoute = source('../app/following/comments/[eventID]/hearts/[commentID].tsx');
 const rosterPresentation = source('./ui/comment-heart-roster-route-presentation.tsx');
 const rosterView = source('./ui/comment-heart-roster-view.tsx');
 const nativeHeart = source('./ui/comment-heart-icon.ios.tsx');

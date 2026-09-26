@@ -15,17 +15,17 @@ export type SocialNavigationState = Readonly<{
 }>;
 
 export function socialInteractionNavigationState(intent: SocialInteractionIntent): SocialNavigationState {
-  const routes: SocialNavigationRoute[] = [{ name: 'index' }];
+  const routes: SocialNavigationRoute[] = [{ name: '(tabs)', state: { index: 0, routes: [{ name: 'following' }] } }];
   if (intent.kind === 'activity') routes.push({
-    name: 'activity/[pathID]/[activityID]',
+    name: 'following/activity/[pathID]/[activityID]',
     params: { activityID: intent.activityID, pathID: intent.pathID },
   });
   if (intent.kind === 'comments' || intent.kind === 'comment-hearts') routes.push({
-    name: 'comments/[eventID]',
+    name: 'following/comments/[eventID]',
     params: { eventID: intent.eventID },
   });
   if (intent.kind === 'comment-hearts') routes.push({
-    name: 'comments/[eventID]/hearts/[commentID]',
+    name: 'following/comments/[eventID]/hearts/[commentID]',
     params: { commentID: intent.commentID, eventID: intent.eventID },
   });
   return { index: routes.length - 1, routes };
@@ -41,6 +41,13 @@ export function normalizeSocialInteractionRouteState(
   intent: SocialInteractionIntent,
 ): SocialNavigationState {
   const expected = socialInteractionNavigationState(intent);
+  const active = current.routes[current.index];
+  const parent = current.routes[current.index - 1];
+  // A warm push already owns its return destination (for example Notifications).
+  // Only synthesize ancestry when cold links lack the required parent screens.
+  if (active && matches(active, expected.routes.at(-1)!) &&
+    current.routes.slice(0, current.index).some((route) => route.name === '(tabs)') &&
+    (intent.kind !== 'comment-hearts' || (parent && matches(parent, expected.routes[1]!)))) return current;
   if (current.index === expected.index && current.routes.length === expected.routes.length &&
     current.routes.every((route, index) => matches(route, expected.routes[index]!))) return current;
   return {

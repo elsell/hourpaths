@@ -13,9 +13,9 @@ function source(path: string) {
 }
 
 const tabs = source('../app/(tabs)/_layout.tsx');
-const followingLayout = source('../app/(tabs)/following/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
 const followingRoute = source('../app/(tabs)/following/index.tsx');
-const peopleRoute = source('../app/(tabs)/following/people.tsx');
+const peopleRoute = source('../app/following/people.tsx');
 const rootLayout = source('../app/_layout.tsx');
 const profileRoute = source('../app/profile/[username].tsx');
 const followRequestsRoute = source('../app/follow-requests.tsx');

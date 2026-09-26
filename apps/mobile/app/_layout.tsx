@@ -15,6 +15,10 @@ export default function RootLayout() {
   >
     <Stack.Screen name="index" options={{ headerShown: false }} />
     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack.Screen name="following/people" options={{ headerLargeTitle: false, title: i18n.t('social.people') }} />
+    <Stack.Screen name="following/activity/[pathID]/[activityID]" options={{ headerLargeTitle: false, title: i18n.t('pathDetails.activityHeading') }} />
+    <Stack.Screen name="following/comments/[eventID]" options={{ headerLargeTitle: false, title: i18n.t('social.commentsHeading') }} />
+    <Stack.Screen name="following/comments/[eventID]/hearts/[commentID]" options={{ headerLargeTitle: false, title: i18n.t('social.commentHeartRosterHeading') }} />
     <Stack.Screen name="notifications" options={{
       headerLargeTitle: false,
       headerRight: notificationPresentation

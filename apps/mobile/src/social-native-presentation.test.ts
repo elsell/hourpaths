@@ -9,14 +9,14 @@ function source(path: string) {
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
 }
 
-const followingLayout = source('../app/(tabs)/following/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
 const followingRoute = source('../app/(tabs)/following/index.tsx');
-const peopleRoute = source('../app/(tabs)/following/people.tsx');
+const peopleRoute = source('../app/following/people.tsx');
 const profileRoute = source('../app/profile/[username].tsx');
 const requestsRoute = source('../app/follow-requests.tsx');
-const activityRoute = source('../app/(tabs)/following/activity/[pathID]/[activityID].tsx');
-const commentsRoute = source('../app/(tabs)/following/comments/[eventID].tsx');
-const heartsRoute = source('../app/(tabs)/following/comments/[eventID]/hearts/[commentID].tsx');
+const activityRoute = source('../app/following/activity/[pathID]/[activityID].tsx');
+const commentsRoute = source('../app/following/comments/[eventID].tsx');
+const heartsRoute = source('../app/following/comments/[eventID]/hearts/[commentID].tsx');
 const feedView = source('./ui/social-feed-view.tsx');
 const searchView = source('./ui/social-profile-search-view.tsx');
 const profileView = source('./ui/social-profile-detail-view.tsx');
