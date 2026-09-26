@@ -26,6 +26,13 @@ function exactKeys(record: Record<string, unknown>, required: readonly string[],
   return required.every((key) => Object.hasOwn(record, key)) && Object.keys(record).every((key) => allowed.has(key));
 }
 
+function exactEnvelopeKeys(record: Record<string, unknown>, required: readonly string[]): boolean {
+  const keys = Object.keys(record);
+  return required.every((key) => keys.includes(key)) &&
+    keys.every((key) => required.includes(key) || key === '$schema') &&
+    (record.$schema === undefined || validOpaqueText(record.$schema, 2048));
+}
+
 function validOpaqueText(value: unknown, maximum: number): value is string {
   return typeof value === 'string' && value.length > 0 && value.length <= maximum && value.trim() === value &&
     !/[\u0000-\u001f\u007f]/u.test(value);
@@ -49,7 +56,7 @@ function followRequest(value: unknown): FollowRequest | undefined {
 export function relationshipMutationResultFromAPI(value: unknown): RelationshipMutationResult {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid relationship response');
   const envelope = value as Record<string, unknown>;
-  if (!exactKeys(envelope, ['data']) || !envelope.data || typeof envelope.data !== 'object' || Array.isArray(envelope.data)) {
+  if (!exactEnvelopeKeys(envelope, ['data']) || !envelope.data || typeof envelope.data !== 'object' || Array.isArray(envelope.data)) {
     throw new Error('invalid relationship response');
   }
   const data = envelope.data as Record<string, unknown>;
@@ -64,7 +71,7 @@ export function relationshipMutationResultFromAPI(value: unknown): RelationshipM
 export function followRequestPageFromAPI(value: unknown): FollowRequestState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid follow request response');
   const envelope = value as Record<string, unknown>;
-  if (!exactKeys(envelope, ['data', 'meta']) || !Array.isArray(envelope.data) || !envelope.meta || typeof envelope.meta !== 'object' || Array.isArray(envelope.meta)) {
+  if (!exactEnvelopeKeys(envelope, ['data', 'meta']) || !Array.isArray(envelope.data) || !envelope.meta || typeof envelope.meta !== 'object' || Array.isArray(envelope.meta)) {
     throw new Error('invalid follow request response');
   }
   const meta = envelope.meta as Record<string, unknown>;
@@ -81,7 +88,7 @@ export function followRequestPageFromAPI(value: unknown): FollowRequestState {
 export function followRequestReviewResultFromAPI(value: unknown): FollowRequestReviewResult {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('invalid follow request review');
   const envelope = value as Record<string, unknown>;
-  if (!exactKeys(envelope, ['data']) || !envelope.data || typeof envelope.data !== 'object' || Array.isArray(envelope.data)) {
+  if (!exactEnvelopeKeys(envelope, ['data']) || !envelope.data || typeof envelope.data !== 'object' || Array.isArray(envelope.data)) {
     throw new Error('invalid follow request review');
   }
   const data = envelope.data as Record<string, unknown>;

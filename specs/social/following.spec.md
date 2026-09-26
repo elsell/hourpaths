@@ -139,6 +139,9 @@ user's shared activity.
   localized. A cold or direct route must mount a visible loading or recovery
   presentation rather than return blank while presentation context or its
   authoritative target resolves.
+- Native clients must accept the generated API's optional top-level `$schema`
+  link on follow, follow-request list, and follow-request review responses while
+  continuing to reject unexpected envelope metadata and malformed schema links.
 - Search and relationship results must remain owned by the activated
   account/profile lineage, query or target, and admitted operation. Credential
   rotation for that same account must preserve owned work without allowing an
