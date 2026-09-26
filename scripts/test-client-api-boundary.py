@@ -55,6 +55,25 @@ class ClientApiBoundaryTest(unittest.TestCase):
                 text=True,
             )
 
+    def test_native_navigation_imports_remain_symbol_scoped(self) -> None:
+        source = "apps/mobile/src/ui/native-sheet-frame.ios.tsx"
+        for statement in (
+            "export * from '@react-navigation/native';",
+            "import Navigation = require('@react-navigation/native');",
+            "import { useLinkTo } from '@react-navigation/native';",
+            "export * from '@react-navigation/native-stack';",
+            "import Stack = require('@react-navigation/native-stack');",
+        ):
+            with self.subTest(statement=statement):
+                result = self.run_checker({source: statement})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(source, result.stderr)
+        result = self.run_checker({source: (
+            "import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';"
+            "import { createNativeStackNavigator } from '@react-navigation/native-stack';"
+        )})
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_rejects_application_api_construction_in_web_and_mobile(self) -> None:
         result = self.run_checker({
             "apps/web/src/lib/auth.ts": "fetch(`${apiURL}/v1/sessions`);",

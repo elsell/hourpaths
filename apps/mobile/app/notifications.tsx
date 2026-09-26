@@ -73,12 +73,11 @@ export default function Notifications() {
       <SettingsSection>
         <SettingsNavigationRow
           accessibilityLabel={i18n.t('pathInvitation.pendingHeading')}
-          context={i18n.t('notification.invitationsContext')}
           label={i18n.t('pathInvitation.pendingHeading')}
           onPress={presentation.openInvitations}
           value={presentation.invitationCount === undefined
             ? undefined
-            : i18n.t('pathInvitation.pendingCount', { count: presentation.invitationCount })}
+            : i18n.number(presentation.invitationCount)}
         />
       </SettingsSection>
       {presentation.content}

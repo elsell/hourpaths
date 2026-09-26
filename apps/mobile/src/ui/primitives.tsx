@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     color: mobileTheme.colors.text,
-    ...mobileTheme.typography.heading,
+    ...mobileTheme.typography.subheading,
   },
   input: {
     backgroundColor: mobileTheme.colors.surfaceRaised,
@@ -201,9 +201,7 @@ const styles = StyleSheet.create({
   },
   surface: {
     backgroundColor: mobileTheme.colors.surface,
-    borderColor: mobileTheme.colors.border,
-    borderRadius: mobileTheme.radii.lg,
-    borderWidth: mobileTheme.sizes.border,
+    borderRadius: mobileTheme.radii.md,
     gap: mobileTheme.spacing.sm,
     padding: mobileTheme.spacing.md,
   },

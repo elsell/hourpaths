@@ -8,7 +8,7 @@ import { useSettingsJourneyRouteAncestry } from '../../src/use-settings-journey-
 import { SettingsIcon } from '../../src/ui/settings-icon';
 import { SettingsJourneyRecoveryView } from '../../src/ui/settings-journey-recovery-view';
 import { useSettingsJourneyRecovery } from '../../src/ui/settings-journey-route-presentation';
-import { SettingsNavigationRow, SettingsSection, SettingsShell } from '../../src/ui/settings-list';
+import { SettingsNavigationRow, SettingsSection, SettingsSeparator, SettingsShell } from '../../src/ui/settings-list';
 import { useSettingsPresentation } from '../../src/ui/settings-presentation';
 
 const i18n = createDeviceTranslator(getLocales);
@@ -44,33 +44,37 @@ export default function Settings() {
   />;
   const name = presentation.displayName || presentation.email;
   return <SettingsShell>
-    <SettingsSection>
+    <SettingsSection title={i18n.t('settings.account')}>
       <SettingsNavigationRow
         accessibilityLabel={i18n.t('settings.account.openLabel', { email: presentation.email, name })}
         context={presentation.email}
         icon={<SettingsIcon systemName="person.crop.circle" />}
-        label={i18n.t('settings.account')}
+        label={name}
         onPress={() => router.push('/settings/account')}
-        value={name}
       />
+    </SettingsSection>
+    <SettingsSection>
       <SettingsNavigationRow
         accessibilityLabel={i18n.t('notification.settings.openLabel')}
         icon={<SettingsIcon systemName="bell" />}
         label={i18n.t('notification.settings.heading')}
         onPress={() => router.push('/settings/notifications')}
       />
+      <SettingsSeparator />
       <SettingsNavigationRow
         accessibilityLabel={i18n.t('settings.timeZone.openLabel')}
         icon={<SettingsIcon systemName="globe" />}
         label={i18n.t('settings.timeZone.heading')}
         onPress={() => router.push('/settings/time-zone')}
       />
+      <SettingsSeparator />
       <SettingsNavigationRow
         accessibilityLabel={i18n.t('settings.interactions.openLabel')}
         icon={<SettingsIcon systemName="person.2" />}
         label={i18n.t('settings.interactions.heading')}
         onPress={() => router.push('/settings/interactions')}
       />
+      <SettingsSeparator />
       <SettingsNavigationRow
         accessibilityLabel={i18n.t('blocking.settingsOpenLabel')}
         icon={<SettingsIcon systemName="hand.raised" />}

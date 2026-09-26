@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 60,
+    minWidth: 88,
   },
   elapsed: {
     color: mobileTheme.colors.text,
@@ -56,6 +56,6 @@ const styles = StyleSheet.create({
     ...mobileTheme.typography.caption,
   },
   runningContainer: {
-    minWidth: 96,
+    minWidth: 88,
   },
 });

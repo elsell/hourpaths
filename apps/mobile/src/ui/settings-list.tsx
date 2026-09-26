@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   separator: {
-    backgroundColor: mobileTheme.colors.border,
+    backgroundColor: mobileTheme.colors.separator,
     height: StyleSheet.hairlineWidth,
     marginLeft: mobileTheme.spacing.md,
   },

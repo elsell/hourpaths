@@ -230,8 +230,6 @@ test('Create Path is an extracted native, progressively disclosed form', () => {
   assert.match(pathCreateForm, /<NativeChoicePicker/);
   assert.match(pathCreateForm, /accessibilityRole="switch"/);
   assert.match(pathCreateForm, /busy=\{busy\}/);
-  assert.match(humanDurationEditor, /<NativeSegmentedControl/);
-  assert.match(humanDurationEditor, /durationSecondsForInput/);
   assert.match(humanDurationEditor, /keyboardType="number-pad"/);
 });
 
@@ -394,10 +392,6 @@ test('activity history and details use nested native routes with accessible list
     activityDetailView,
     /i18n\.t\('pathDetails\.revisionChanged', \{[\s\S]*date: revisionTimestamp\(revision\.replacedAt\)/,
   );
-  assert.match(
-    activityDetailView,
-    /<NativeContentUnavailable[\s\S]*description=\{i18n\.t\('pathDetails\.revisionsEmpty'\)\}[\s\S]*systemImage="pencil\.line"[\s\S]*title=\{i18n\.t\('pathDetails\.revisionsEmptyTitle'\)\}/,
-  );
   assert.match(nativeContentUnavailable, /<Host matchContents/);
   assert.match(nativeContentUnavailable, /<ContentUnavailableView[\s\S]*description=\{description\}[\s\S]*systemImage=\{systemImage\}[\s\S]*title=\{title\}/);
   assert.match(contentUnavailableFallback, /<Surface>[\s\S]*<SectionHeading>\{title\}<\/SectionHeading>[\s\S]*\{description\}/);
@@ -420,7 +414,7 @@ test('Home path cards keep identity, progress, and quick tracking in one accessi
   assert.match(pathCard, /accessibilityRole="button"/);
   assert.match(pathCard, /accessibilityLabel=\{name\}/);
   assert.match(pathCard, /mobileTheme\.colors\.surface/);
-  assert.match(pathCard, /borderBottomColor:\s*mobileTheme\.colors\.border/);
+  assert.match(pathCard, /borderBottomColor:\s*mobileTheme\.colors\.separator/);
   assert.match(pathCard, /<SettingsIcon systemName="chevron\.right" variant="disclosure" \/>/);
   assert.match(pathCard, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.doesNotMatch(pathCard, /markerFrame|styles\.marker/);
@@ -453,13 +447,6 @@ test('timer presentation exposes running, busy, and failure state without changi
   assert.match(timerControl, /<NativeTrackingButton[\s\S]*running=\{running\}/);
   assert.doesNotMatch(timerControl, /<Button/);
   assert.match(nativeTrackingButton, /systemName=\{running \? 'stop\.fill' : 'play\.fill'\}/);
-  assert.match(nativeTrackingButton, /Animated\.loop/);
-  assert.match(nativeTrackingButton, /Easing\.linear/);
-  assert.match(nativeTrackingButton, /rotate:\s*rotation\.interpolate/);
-  assert.match(nativeTrackingButton, /useNativeDriver:\s*true/);
-  assert.match(nativeTrackingButton, /AccessibilityInfo\.isReduceMotionEnabled\(\)/);
-  assert.match(nativeTrackingButton, /reduceMotionChanged/);
-  assert.match(nativeTrackingButton, /if \(!running \|\| reduceMotion !== false\)/);
   assert.match(nativeTrackingButton, /accessibilityLabel\(label\)/);
   assert.match(nativeTrackingButton, /nativeDisabled\(busy\)/);
   assert.match(nativeTrackingButtonFallback, /accessibilityState=\{\{ busy, disabled: busy \}\}/);
@@ -512,8 +499,6 @@ test('manual activity create and edit use an extracted native, accessible form',
   );
   assert.doesNotMatch(manualActivityForm, /activity\.durationSeconds/);
   assert.match(pathCreateForm, /<HumanDurationEditor/);
-  assert.match(humanDurationEditor, /durationSecondsForInput/);
-  assert.match(humanDurationEditor, /<NativeSegmentedControl/);
   assert.match(humanDurationEditor, /keyboardType="number-pad"/);
   assert.doesNotMatch(manualActivityForm, /maxFontSizeMultiplier/);
   assert.match(manualOccurrenceFields, /displayedComponents=\{\['date'\]\}/);

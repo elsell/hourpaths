@@ -158,6 +158,11 @@ record time where permitted.
   every supported Dynamic Type size. Reflow or native overflow behavior must
   preserve logical reading order and at least 44-by-44-point touch targets.
 
+Home's native navigation title must remain visible and distinct from collection
+section headings. A Path's name, summary, and progress must share one disclosure
+hit area, with its timer and menu remaining separate controls. Recorded interval
+progress must be labeled distinctly from a currently running timer.
+
 ## Native Home control and row fidelity
 
 - Home navigation and global actions must remain in the system navigation and

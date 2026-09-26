@@ -1,5 +1,5 @@
 import { NativeHost as Host } from './native-host';
-import { Picker, Text } from '@expo/ui/swift-ui';
+import { Picker, Text as NativeText } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel as nativeAccessibilityLabel,
   disabled as nativeDisabled,
@@ -8,7 +8,7 @@ import {
   tag,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { mobileTheme } from './tokens';
 
 export type NativeChoice<Value extends string> = {
@@ -32,9 +32,9 @@ export function NativeChoicePicker<Value extends string>({
   value: Value;
 }) {
   return <View pointerEvents={disabled ? 'none' : 'auto'} style={styles.container}>
-    <Host style={styles.host}>
+    <Text style={styles.label}>{label}</Text>
+    <Host matchContents={{ vertical: true }} style={styles.host}>
       <Picker
-        label={label}
         modifiers={[
           nativeAccessibilityLabel(accessibilityLabel),
           environment('colorScheme', 'dark'),
@@ -45,9 +45,9 @@ export function NativeChoicePicker<Value extends string>({
         onSelectionChange={onChange}
         selection={value}
       >
-        {choices.map((choice) => <Text key={choice.value} modifiers={[tag(choice.value)]}>
+        {choices.map((choice) => <NativeText key={choice.value} modifiers={[tag(choice.value)]}>
           {choice.label}
-        </Text>)}
+        </NativeText>)}
       </Picker>
     </Host>
   </View>;
@@ -55,13 +55,14 @@ export function NativeChoicePicker<Value extends string>({
 
 const styles = StyleSheet.create({
   container: {
-    alignSelf: 'stretch',
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: mobileTheme.spacing.xs,
     justifyContent: 'center',
     minHeight: 48,
     width: '100%',
   },
-  host: {
-    minHeight: 48,
-    width: '100%',
-  },
+  label: { color: mobileTheme.colors.text, ...mobileTheme.typography.body, flexGrow: 1, flexShrink: 1 },
+  host: { minHeight: 48, width: '100%' },
 });

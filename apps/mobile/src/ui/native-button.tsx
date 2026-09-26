@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
-import type { NativeButtonProps } from './native-button.types';
+import type { NativeButtonProps } from './native-button-types';
 import { mobileTheme } from './tokens';
 
 export function NativeButton({ accessibilityLabel, busy = false, disabled = false, fullWidth = false, label, onPress, selected, variant = 'primary' }: NativeButtonProps) {

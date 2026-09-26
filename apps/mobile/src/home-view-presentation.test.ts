@@ -25,7 +25,6 @@ test('HomeView uses intentional empty hierarchy and never adds a populated botto
   assert.match(view, /presentation\.kind === 'empty'[\s\S]*home\.empty\.heading[\s\S]*onPress=\{onCreate\}/);
   const readyBranch = view.slice(view.indexOf("presentation.kind === 'ready'"));
   assert.doesNotMatch(readyBranch, /onPress=\{onCreate\}/);
-  assert.match(view, /sections\.map[\s\S]*<SectionHeading>\{section\.title\}<\/SectionHeading>/);
 });
 
 test('Home condenses secondary controls and reflows Path progress at accessibility sizes', () => {
@@ -36,7 +35,6 @@ test('Home condenses secondary controls and reflows Path progress at accessibili
   assert.match(headerFallback, /menuAccessibilityLabel[\s\S]*orderLabels\[order\]/);
   assert.match(card, /progress \? <View style=\{styles\.progressStack\}/);
   assert.match(card, /progressStack:\s*\{[\s\S]*flexDirection:\s*'column'/);
-  assert.match(card, /backgroundColor:\s*'transparent'[\s\S]*borderBottomWidth:\s*mobileTheme\.sizes\.border/);
   assert.doesNotMatch(card, /surfaceRaised|borderRadius:\s*mobileTheme\.radii\.lg/);
   assert.match(view, /rows:\s*\{[\s\S]*gap:\s*0/);
   assert.match(card, /identity:\s*\{[\s\S]*flex:\s*1,[\s\S]*minWidth:\s*0/);

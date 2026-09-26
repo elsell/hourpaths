@@ -13,8 +13,8 @@ export function NativeSheetFrame({ children, title, leadingAction, trailingActio
         <SheetStack.Screen name="task" options={{
           title,
           headerShown: Boolean(title),
-          headerLeft: leadingAction ? () => <NativeSheetAction {...leadingAction} /> : undefined,
-          headerRight: trailingAction ? () => <NativeSheetAction {...trailingAction} /> : undefined,
+          headerLeft: leadingAction ? () => <NativeSheetAction disabled={leadingAction.disabled} label={leadingAction.label} onPress={leadingAction.onPress} /> : undefined,
+          headerRight: trailingAction ? () => <NativeSheetAction disabled={trailingAction.disabled} label={trailingAction.label} onPress={trailingAction.onPress} /> : undefined,
         }}>{() => children}</SheetStack.Screen>
       </SheetStack.Navigator>
     </NavigationContainer>

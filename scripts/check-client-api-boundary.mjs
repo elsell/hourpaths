@@ -94,10 +94,10 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/app/(tabs)/home/_layout.tsx', new Set(['Stack'])],
   ['apps/mobile/app/(tabs)/following/_layout.tsx', new Set(['Stack'])],
   ['apps/mobile/app/(tabs)/following/index.tsx', new Set(['Stack', 'router', 'useFocusEffect'])],
-  ['apps/mobile/app/(tabs)/following/people.tsx', new Set(['Stack', 'router'])],
-  ['apps/mobile/app/(tabs)/following/activity/[pathID]/[activityID].tsx', new Set(['router', 'Stack', 'useLocalSearchParams'])],
-  ['apps/mobile/app/(tabs)/following/comments/[eventID].tsx', new Set(['router', 'useLocalSearchParams', 'useNavigation'])],
-  ['apps/mobile/app/(tabs)/following/comments/[eventID]/hearts/[commentID].tsx', new Set(['router', 'useLocalSearchParams'])],
+  ['apps/mobile/app/following/people.tsx', new Set(['Stack', 'router'])],
+  ['apps/mobile/app/following/activity/[pathID]/[activityID].tsx', new Set(['router', 'Stack', 'useLocalSearchParams'])],
+  ['apps/mobile/app/following/comments/[eventID].tsx', new Set(['router', 'useLocalSearchParams', 'useNavigation'])],
+  ['apps/mobile/app/following/comments/[eventID]/hearts/[commentID].tsx', new Set(['router', 'useLocalSearchParams'])],
   ['apps/mobile/app/follow-requests.tsx', new Set(['router'])],
   ['apps/mobile/app/index.tsx', new Set(['router', 'useGlobalSearchParams', 'usePathname'])],
   ['apps/mobile/app/settings/index.tsx', new Set(['router'])],
@@ -124,102 +124,96 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/src/ui/home-header-actions.ios.tsx', new Set(['Stack'])],
   ['apps/mobile/src/ui/following-header-actions.ios.tsx', new Set(['Stack'])],
 ]);
+const approvedNavigationImports = new Map([
+  ['apps/mobile/app/_layout.tsx', new Map([['@react-navigation/native', new Set(['ThemeProvider'])]])],
+  ['apps/mobile/src/ui/navigation-theme.ts', new Map([['@react-navigation/native', new Set(['DarkTheme'])]])],
+  ['apps/mobile/src/ui/native-sheet-frame.ios.tsx', new Map([
+    ['@react-navigation/native', new Set(['NavigationContainer', 'NavigationIndependentTree'])],
+    ['@react-navigation/native-stack', new Set(['createNativeStackNavigator'])],
+  ])],
+]);
 const approvedNativeTabsImports = new Map([
   ['apps/mobile/app/(tabs)/_layout.tsx', new Set(['NativeTabs'])],
 ]);
 const approvedExpoUIImports = new Map([
-  ['apps/mobile/src/ui/home-filter-chips.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'Host', 'ScrollView'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'accessibilityValue', 'buttonStyle', 'controlSize', 'environment', 'tint',
-    ])],
-  ])],
-  ['apps/mobile/src/ui/home-arrangement-view.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'Host', 'List', 'Section', 'Spacer', 'Text'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'buttonStyle', 'disabled', 'environment', 'listStyle', 'tint',
-    ])],
-  ])],
   ['apps/mobile/src/ui/comment-action-menu.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'Image', 'Menu'])],
+    ['@expo/ui/swift-ui', new Set(['Button', 'Image', 'Menu'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled'])],
   ])],
   ['apps/mobile/src/ui/comment-heart-icon.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Host', 'Image'])],
+    ['@expo/ui/swift-ui', new Set(['Image'])],
   ])],
-  ['apps/mobile/src/ui/native-comment-send-button.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host'])],
-    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'disabled', 'tint'])],
+  ['apps/mobile/src/ui/home-arrangement-view.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'List', 'Section', 'Spacer', 'Text'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'disabled', 'environment', 'listStyle', 'tint'])],
   ])],
-  ['apps/mobile/src/ui/social-profile-avatar.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Host', 'Image'])],
-  ])],
-  ['apps/mobile/src/ui/native-content-unavailable.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['ContentUnavailableView', 'Host'])],
-  ])],
-  ['apps/mobile/src/ui/native-choice-picker.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Host', 'Picker', 'Text'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'disabled', 'environment', 'pickerStyle', 'tag', 'tint',
-    ])],
+  ['apps/mobile/src/ui/home-filter-chips.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'ScrollView'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'accessibilityValue', 'buttonStyle', 'controlSize', 'environment', 'tint'])],
   ])],
   ['apps/mobile/src/ui/manual-occurrence-fields.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['DatePicker', 'Host'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'datePickerStyle', 'disabled', 'environment', 'tint',
-    ])],
+    ['@expo/ui/swift-ui', new Set(['DatePicker'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['datePickerStyle', 'disabled', 'environment', 'tint'])],
   ])],
   ['apps/mobile/src/ui/native-action-menu.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'Image', 'Menu'])],
+    ['@expo/ui/swift-ui', new Set(['Button', 'Image', 'Menu'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled'])],
   ])],
-  ['apps/mobile/src/ui/social-reaction-menu.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'Image', 'Menu'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'disabled', 'frame', 'tint',
-    ])],
+  ['apps/mobile/src/ui/native-button.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'Text'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'frame', 'foregroundColor', 'tint'])],
+  ])],
+  ['apps/mobile/src/ui/native-choice-picker.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Picker', 'Text'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled', 'environment', 'pickerStyle', 'tag', 'tint'])],
+  ])],
+  ['apps/mobile/src/ui/native-comment-send-button.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'disabled', 'tint'])],
+  ])],
+  ['apps/mobile/src/ui/native-content-unavailable.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['ContentUnavailableView'])],
   ])],
   ['apps/mobile/src/ui/native-header-button.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host'])],
+    ['@expo/ui/swift-ui', new Set(['Button'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'disabled', 'labelStyle'])],
   ])],
-  ['apps/mobile/src/ui/native-primary-button.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'Text'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'foregroundColor', 'frame', 'tint',
-    ])],
+  ['apps/mobile/src/ui/native-host.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Host'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['tint'])],
   ])],
   ['apps/mobile/src/ui/native-sheet-action.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'HStack', 'Spacer', 'Text'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'fixedSize',
-      'foregroundColor', 'frame', 'tint',
-    ])],
-  ])],
-  ['apps/mobile/src/ui/native-timer-button.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'foregroundColor', 'frame', 'tint',
-    ])],
-  ])],
-  ['apps/mobile/src/ui/native-tracking-button.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button', 'Host', 'Image', 'VStack'])],
-    ['@expo/ui/swift-ui/modifiers', new Set([
-      'accessibilityLabel', 'buttonStyle', 'clipShape', 'controlSize', 'disabled',
-      'frame', 'tint',
-    ])],
-  ])],
-  ['apps/mobile/src/ui/settings-icon.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Host', 'Image'])],
+    ['@expo/ui/swift-ui', new Set(['Button'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'controlSize', 'frame', 'disabled', 'tint'])],
   ])],
   ['apps/mobile/src/ui/native-system-image.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Host', 'Image'])],
+    ['@expo/ui/swift-ui', new Set(['Image'])],
+  ])],
+  ['apps/mobile/src/ui/native-timer-button.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'foregroundColor', 'frame', 'tint'])],
+  ])],
+  ['apps/mobile/src/ui/native-tracking-button.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'Image', 'VStack'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'clipShape', 'controlSize', 'disabled', 'frame', 'tint'])],
+  ])],
+  ['apps/mobile/src/ui/settings-icon.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Image'])],
+  ])],
+  ['apps/mobile/src/ui/social-profile-avatar.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Image'])],
+  ])],
+  ['apps/mobile/src/ui/social-reaction-menu.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'Image', 'Menu'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled', 'frame', 'tint'])],
   ])],
 ]);
 const approvedSafeAreaImports = new Set([
   'apps/mobile/app/index.tsx',
   'apps/mobile/src/ui/native-route-presentation.tsx',
   'apps/mobile/src/ui/primitives.tsx',
+  'apps/mobile/src/ui/native-sheet-frame.tsx',
+  'apps/mobile/src/ui/practice-comments-view.tsx',
 ]);
 const approvedSvelteComponentProps = new Map([
   ['apps/web/src/routes/+page.svelte', new Map([
@@ -629,6 +623,7 @@ function approvedResolvedImport(imported, importerRelative) {
 }
 
 function importAllowed(specifier, relative, file) {
+  if (specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack') return approvedNavigationImports.get(relative)?.has(specifier) ?? false;
   if (specifier === '$env/dynamic/private') return relative === 'apps/web/src/lib/server/config.ts';
   if (specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers') {
     return approvedExpoUIImports.get(relative)?.has(specifier) ?? false;
@@ -937,6 +932,14 @@ function inspectSource(relative, file, source, index) {
             !element.isTypeOnly && reviewedImports.has((element.propertyName ?? element.name).text));
         if (!exactNativeUIImport) violation = true;
       }
+      if (specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack') {
+        const reviewedImports = approvedNavigationImports.get(relative)?.get(specifier);
+        const exactNavigationImport = reviewedImports && clause && !clause.name && !clause.isTypeOnly &&
+          clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
+          clause.namedBindings.elements.length === reviewedImports.size &&
+          clause.namedBindings.elements.every((element) => !element.isTypeOnly && !element.propertyName && reviewedImports.has(element.name.text));
+        if (!exactNavigationImport) violation = true;
+      }
       if (specifier === 'react-native') {
         const allowed = new Set(['AccessibilityInfo', 'Button', 'SafeAreaView', 'ScrollView', 'Switch', 'Text', 'TextInput', 'View']);
         const uiAllowed = new Set(['ActivityIndicator', 'Alert', 'Button', 'FlatList', 'KeyboardAvoidingView', 'Modal', 'Platform', 'Pressable', 'RefreshControl', 'SafeAreaView', 'ScrollView', 'StyleSheet', 'Switch', 'Text', 'TextInput', 'View', 'useWindowDimensions']);
@@ -960,10 +963,10 @@ function inspectSource(relative, file, source, index) {
         ]);
         const signedOutPresentationAllowed = new Set(['ActivityIndicator', 'ScrollView', 'StyleSheet', 'View', 'useWindowDimensions']);
         const trackingPresentationAllowed = new Set([
-          'AccessibilityInfo', 'Animated', 'Easing', 'StyleSheet', 'View', 'useWindowDimensions',
+          'StyleSheet', 'View', 'useWindowDimensions',
         ]);
         const trackingFallbackAllowed = new Set([
-          'AccessibilityInfo', 'Animated', 'Easing', 'Pressable', 'StyleSheet', 'Text', 'View', 'useWindowDimensions',
+          'Pressable', 'StyleSheet', 'Text', 'View', 'useWindowDimensions',
         ]);
         const exactPresentationImport = relative === 'apps/mobile/app/index.tsx' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
@@ -1138,7 +1141,7 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
           clause.namedBindings.elements.length === 1 &&
           !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
-          clause.namedBindings.elements[0].name.text === 'SafeAreaView';
+          clause.namedBindings.elements[0].name.text === (relative === 'apps/mobile/src/ui/practice-comments-view.tsx' ? 'useSafeAreaInsets' : 'SafeAreaView');
         if (!exactSafeAreaImport) violation = true;
       }
     }
@@ -1146,6 +1149,7 @@ function inspectSource(relative, file, source, index) {
       if (node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
         const specifier = node.moduleSpecifier.text;
         if (specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers' ||
+          specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack' ||
           (relative === 'apps/mobile/src/ui/onboarding-form.tsx' && specifier === 'react-native') ||
           (relative === 'apps/mobile/src/ui/signed-out-screen.tsx' && specifier === 'react-native') ||
           allProviderImports.has(specifier) || !importAllowed(specifier, relative, file)) violation = true;
@@ -1155,6 +1159,7 @@ function inspectSource(relative, file, source, index) {
       const expression = node.moduleReference.expression;
       const specifier = expression && ts.isStringLiteral(expression) ? expression.text : undefined;
       if (!specifier || specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers' ||
+        specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack' ||
         (relative === 'apps/mobile/src/ui/onboarding-form.tsx' && specifier === 'react-native') ||
         (relative === 'apps/mobile/src/ui/signed-out-screen.tsx' && specifier === 'react-native') ||
         !importAllowed(specifier, relative, file)) violation = true;

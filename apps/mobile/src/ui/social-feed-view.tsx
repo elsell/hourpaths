@@ -248,14 +248,14 @@ function FeedEngagement({
   onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
   onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
 }) {
-  return <>
+  return <View style={styles.engagement}>
     {event.commentsEnabled ? <Pressable
       accessibilityLabel={i18n.t('social.commentsOpen')}
       accessibilityRole="button"
       onPress={onOpenComments}
       style={({ pressed }) => [styles.commentsAction, pressed ? styles.rowPressed : null]}
     >
-      <SettingsIcon systemName="bubble.left" />
+      <SettingsIcon systemName="bubble.left" variant="inline" />
       <Text style={styles.commentsActionLabel}>{i18n.t('social.commentsHeading')}</Text>
     </Pressable> : null}
     {event.reactionsEnabled ? <ReactionStrip
@@ -264,7 +264,7 @@ function FeedEngagement({
       onRemoveReaction={onRemoveReaction}
       onSetReaction={onSetReaction}
     /> : null}
-  </>;
+  </View>;
 }
 
 function AchievementFeedRow({
@@ -365,6 +365,7 @@ function FeedRow({
     >
       <SocialProfileAvatar
         accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
+        profilePictureURL={event.participant.profilePictureURL}
         size={40}
       />
       <View style={styles.copy}>
@@ -606,7 +607,7 @@ const styles = StyleSheet.create({
     color: mobileTheme.colors.textMuted,
     paddingHorizontal: mobileTheme.spacing.md,
     paddingVertical: mobileTheme.spacing.sm,
-    ...mobileTheme.typography.body,
+    ...mobileTheme.typography.caption,
   },
   activeList: {
     borderTopColor: mobileTheme.colors.border,
@@ -623,7 +624,7 @@ const styles = StyleSheet.create({
   activeSection: {
     gap: mobileTheme.spacing.xs,
     marginHorizontal: mobileTheme.spacing.md,
-    paddingBottom: mobileTheme.spacing.lg,
+    paddingBottom: mobileTheme.spacing.sm,
     paddingTop: mobileTheme.spacing.sm,
   },
   activeState: {
@@ -650,7 +651,7 @@ const styles = StyleSheet.create({
     minHeight: 260,
   },
   content: {
-    paddingBottom: mobileTheme.spacing.lg,
+    paddingBottom: mobileTheme.spacing.sm,
   },
   compactAction: {
     alignItems: 'center',
@@ -665,13 +666,13 @@ const styles = StyleSheet.create({
     gap: mobileTheme.spacing.xxs,
     minWidth: 0,
   },
+  engagement: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: mobileTheme.spacing.sm, paddingLeft: 68, paddingRight: mobileTheme.spacing.md, paddingBottom: mobileTheme.spacing.sm },
   commentsAction: {
     alignItems: 'center',
     alignSelf: 'flex-start',
     flexDirection: 'row',
     gap: mobileTheme.spacing.xxs,
     minHeight: 44,
-    paddingHorizontal: mobileTheme.spacing.md,
   },
   commentsActionLabel: {
     color: mobileTheme.colors.textMuted,
@@ -749,7 +750,6 @@ const styles = StyleSheet.create({
   },
   reactionCounts: {
     flexDirection: 'row',
-    flexGrow: 1,
     flexShrink: 1,
     flexWrap: 'wrap',
     gap: mobileTheme.spacing.xs,
@@ -778,8 +778,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: mobileTheme.spacing.xs,
     minHeight: 44,
-    paddingBottom: mobileTheme.spacing.sm,
-    paddingHorizontal: mobileTheme.spacing.md,
   },
   screen: {
     backgroundColor: mobileTheme.colors.background,
