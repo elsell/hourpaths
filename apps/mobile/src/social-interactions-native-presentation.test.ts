@@ -34,9 +34,10 @@ const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('
 const commentsView = source('./ui/practice-comments-view.tsx');
 const editSheet = source('./ui/comment-edit-sheet.tsx');
 const rosterView = source('./ui/comment-heart-roster-view.tsx');
+const composerIOS = source('./ui/native-comment-composer.ios.tsx');
+const composerTypes = source('./ui/native-comment-composer-types.ts');
 const inputIOS = source('./ui/native-comment-input.ios.tsx');
 const inputFallback = source('./ui/native-comment-input.tsx');
-const sendIOS = source('./ui/native-comment-send-button.ios.tsx');
 const reactionIOS = source('./ui/social-reaction-menu.ios.tsx');
 const feedView = source('./ui/social-feed-view.tsx');
 const en = JSON.parse(source('../../../packages/i18n/src/locales/en.json')) as Record<string, string>;
@@ -82,10 +83,10 @@ test('comment editing is a native keyboard-safe task with safe dismissal and sta
 });
 
 test('composer separates disabled from busy, scales vertically, and preserves newer typing on failure', () => {
-  assert.match(sendIOS, /busy: boolean; disabled: boolean/);
+  assert.match(composerTypes, /busy: boolean;[\s\S]*disabled: boolean/);
   assert.match(commentsView, /busy=\{presentation\.busy\}/);
   assert.match(commentsView, /disabled=\{!validDraft\}/);
-  assert.match(commentsView, /<NativeCommentInput/);
+  assert.match(commentsView, /<NativeCommentComposer/);
   assert.doesNotMatch(commentsView, /InputAccessoryView|inputAccessoryViewID/);
   assert.match(commentsView, /keyboardDismissMode=\{Platform\.OS === 'ios' \? 'interactive' : 'on-drag'\}/);
   assert.match(commentsView, /needsCompactVerticalLayout/);
@@ -97,17 +98,22 @@ test('composer separates disabled from busy, scales vertically, and preserves ne
   assert.match(commentsView, /composerSubmission\.current\.owns\(admission\)/);
 });
 
-test('comment entry uses a vertically growing native field and compact iMessage-style send action', () => {
+test('comment entry uses one vertically growing native messaging capsule', () => {
   assert.match(inputIOS, /import \{ TextField \} from '@expo\/ui\/swift-ui'/);
-  assert.match(inputIOS, /axis="vertical"/);
-  assert.match(inputIOS, /lineLimit\(\{ min: minimumLines, max: maximumLines \}\)/);
-  assert.match(inputIOS, /textFieldStyle\('roundedBorder'\)/);
-  assert.match(inputIOS, /input\.current\?\.setText\(value\)/);
+  assert.match(composerIOS, /import \{ Button, HStack, TextField \} from '@expo\/ui\/swift-ui'/);
+  assert.match(composerIOS, /<HStack/);
+  assert.match(composerIOS, /axis="vertical"/);
+  assert.match(composerIOS, /lineLimit\(\{ min: 1, max: 5 \}\)/);
+  assert.match(composerIOS, /textFieldStyle\('plain'\)/);
+  assert.match(composerIOS, /background\(mobileTheme\.colors\.surfaceRaised, shapes\.capsule/);
+  assert.match(composerIOS, /glassEffect\([\s\S]*shape: 'capsule'/);
+  assert.match(composerIOS, /input\.current\?\.setText\(value\)/);
   assert.match(inputFallback, /<ThemedTextInput/);
-  assert.match(sendIOS, /systemImage="arrow\.up"/);
-  assert.match(sendIOS, /labelStyle\('iconOnly'\)/);
-  assert.match(sendIOS, /clipShape\('circle'\)/);
-  assert.match(sendIOS, /frame\(\{ height: 44, width: 44 \}\)/);
+  assert.match(composerIOS, /systemImage="arrow\.up"/);
+  assert.match(composerIOS, /labelStyle\('iconOnly'\)/);
+  assert.match(composerIOS, /clipShape\('circle'\)/);
+  assert.match(composerIOS, /frame\(\{ height: 44, width: 44 \}\)/);
+  assert.doesNotMatch(composerIOS, /roundedBorder/);
 });
 
 test('local comment admission synchronously rejects duplicate presses and only its owner releases', () => {
@@ -123,10 +129,10 @@ test('local comment admission synchronously rejects duplicate presses and only i
   assert.ok(owner.admit());
 });
 
-test('iOS send control exposes one native actionable button without a suppressing wrapper', () => {
-  assert.equal((sendIOS.match(/<Button\b/g) ?? []).length, 1);
-  assert.doesNotMatch(sendIOS, /<View|\baccessible\b|accessibilityRole/);
-  assert.match(sendIOS, /<Host[^>]*><Button/);
+test('iOS composer exposes one native actionable button inside its field capsule', () => {
+  assert.equal((composerIOS.match(/<Button\b/g) ?? []).length, 1);
+  assert.doesNotMatch(composerIOS, /<View|\baccessible\b|accessibilityRole/);
+  assert.match(composerIOS, /<Host[\s\S]*<HStack[\s\S]*<TextField[\s\S]*<Button/);
 });
 
 test('comments and heart roster are flat intrinsic rows with native system interaction icons', () => {

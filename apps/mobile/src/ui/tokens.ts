@@ -9,6 +9,8 @@ export const mobileTheme = {
     accent: '#FFD84D',
     accentPressed: '#F2C230',
     accentText: '#141414',
+    systemAction: '#0A84FF',
+    systemActionText: '#FFFFFF',
     border: '#767676',
     separator: '#414141',
     progressTrack: '#767676',

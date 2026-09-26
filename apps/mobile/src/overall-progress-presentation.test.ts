@@ -78,6 +78,7 @@ test('charcoal and yellow mobile tokens meet applicable contrast and target base
   assert.ok(contrastRatio(mobileTheme.colors.progressTrack, mobileTheme.colors.background) >= 3);
   assert.ok(contrastRatio(mobileTheme.colors.progressTrack, mobileTheme.colors.surface) >= 3);
   assert.ok(contrastRatio(mobileTheme.colors.progressTrack, mobileTheme.colors.surfaceRaised) >= 3);
+  assert.ok(contrastRatio(mobileTheme.colors.systemActionText, mobileTheme.colors.systemAction) >= 3);
   assert.ok(mobileTheme.sizes.minimumTouchTarget >= 48);
   assert.equal(mobileTheme.typography.body.fontSize, 17);
 });

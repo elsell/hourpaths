@@ -174,9 +174,9 @@ const approvedExpoUIImports = new Map([
     ['@expo/ui/swift-ui', new Set(['Picker', 'Text'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled', 'environment', 'pickerStyle', 'tag', 'tint'])],
   ])],
-  ['apps/mobile/src/ui/native-comment-send-button.ios.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['Button'])],
-    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'clipShape', 'disabled', 'foregroundColor', 'frame', 'labelStyle', 'tint'])],
+  ['apps/mobile/src/ui/native-comment-composer.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'TextField'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'background', 'buttonStyle', 'clipShape', 'disabled', 'foregroundColor', 'frame', 'glassEffect', 'labelStyle', 'layoutPriority', 'lineLimit', 'padding', 'shapes', 'textFieldStyle', 'tint'])],
   ])],
   ['apps/mobile/src/ui/native-comment-input.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['TextField'])],
