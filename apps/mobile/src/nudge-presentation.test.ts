@@ -9,7 +9,7 @@ function source(path: string): string {
 }
 
 const app = source('../app/index.tsx');
-const layout = source('../app/_layout.tsx');
+const layout = source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const memberView = source('./ui/path-member-management-view.tsx');
 const composer = source('./ui/nudge-composer-sheet.tsx');
 const audienceView = source('./ui/path-nudge-settings-view.tsx');

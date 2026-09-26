@@ -1,5 +1,6 @@
+import { NativeHost as Host } from './native-host';
 import { type ComponentProps } from 'react';
-import { Button, Host } from '@expo/ui/swift-ui';
+import { Button, } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel as nativeAccessibilityLabel,
   buttonStyle,

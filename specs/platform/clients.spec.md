@@ -34,6 +34,11 @@ the client implementation.
 
 ## Apple-native presentation and Liquid Glass
 
+The mobile client uses the repository-pinned React Navigation 7.3.8 and native
+stack 7.17.10 already resolved by Expo Router. Expo's recommended-version check
+excludes these direct declarations; the lockfile, type check, route tests, and
+native builds verify this exact existing combination.
+
 ### Shared mobile design language
 
 - Mobile screens must use one shared navigation theme matching the existing
@@ -42,6 +47,10 @@ the client implementation.
 - Root and nested stacks must share navigation defaults. System materials must
   retain native rendering; per-screen painted bars must not compensate for a
   mismatched navigation theme.
+- iOS task sheets must use a native navigation bar with intrinsic-size actions,
+  so keyboard and text-size changes cannot hide completion or cancellation.
+- Buttons must share primary, secondary, quiet, and destructive semantics across
+  platforms, including visible disabled state and accessible busy/selection state.
 - Shared controls and screen patterns must own typography, spacing, action
   emphasis, grouping, and loading/error presentation. Screens should compose
   these patterns instead of independently recreating their appearance.

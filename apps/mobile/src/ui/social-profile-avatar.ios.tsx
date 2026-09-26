@@ -1,4 +1,5 @@
-import { Host, Image as SwiftUIImage } from '@expo/ui/swift-ui';
+import { NativeHost as Host } from './native-host';
+import { Image as SwiftUIImage } from '@expo/ui/swift-ui';
 import { Image as ExpoImage } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import { mobileTheme } from './tokens';

@@ -1,3 +1,5 @@
+import { mobileShellStyles } from './shell-styles';
+export { mobileShellStyles } from './shell-styles';
 import { createElement, forwardRef, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -8,52 +10,15 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
-  type AccessibilityState,
   type TextInputProps,
   type TextProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { needsCompactVerticalLayout } from './adaptive-layout';
-import { NativeSheetAction } from './native-sheet-action';
+import { NativeSheetFrame } from './native-sheet-frame';
 import { mobileTheme } from './tokens';
 
-type ActionButtonProps = {
-  accessibilityLabel?: string;
-  busy?: boolean;
-  disabled?: boolean;
-  label: string;
-  onPress: () => void;
-  selected?: AccessibilityState['selected'];
-  variant?: 'primary' | 'secondary' | 'quiet' | 'danger';
-};
-
-export function ActionButton({
-  accessibilityLabel,
-  busy = false,
-  disabled = false,
-  label,
-  onPress,
-  selected,
-  variant = 'primary',
-}: ActionButtonProps) {
-  const color = variant === 'primary'
-    ? mobileTheme.colors.accentText
-    : variant === 'danger'
-      ? mobileTheme.colors.error
-      : mobileTheme.colors.accent;
-
-  return <View style={[styles.action, styles[`${variant}Action`], disabled ? styles.actionDisabled : null]}>
-    <Button
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ busy, disabled, selected }}
-      color={color}
-      disabled={disabled}
-      onPress={onPress}
-      title={label}
-    />
-  </View>;
-}
+// Compatibility export for existing forms; all actions share one platform control.
+export { NativeButton as ActionButton } from './native-button';
 
 export function ScreenHeader({
   compact = false,
@@ -151,22 +116,6 @@ export function NativeSheet({
   trailingAction?: { disabled?: boolean; label: string; onPress: () => void };
   visible: boolean;
 }) {
-  const { fontScale, width } = useWindowDimensions();
-  const stackSheetHeader = needsCompactVerticalLayout(width, fontScale);
-  const leadingHeaderAction = <View style={mobileShellStyles.sheetHeaderAction}>
-    {leadingAction ? <NativeSheetAction
-      disabled={leadingAction.disabled}
-      label={leadingAction.label}
-      onPress={leadingAction.onPress}
-    /> : null}
-  </View>;
-  const trailingHeaderAction = <View style={[mobileShellStyles.sheetHeaderAction, mobileShellStyles.sheetHeaderTrailing]}>
-    {trailingAction ? <NativeSheetAction
-      disabled={trailingAction.disabled}
-      label={trailingAction.label}
-      onPress={trailingAction.onPress}
-    /> : null}
-  </View>;
 
   return <Modal
     allowSwipeDismissal={dismissible}
@@ -175,21 +124,10 @@ export function NativeSheet({
     presentationStyle="pageSheet"
     visible={visible}
   >
-    <SafeAreaView style={mobileShellStyles.sheet}>
-      {title ? <View style={[mobileShellStyles.sheetHeader, stackSheetHeader ? mobileShellStyles.sheetHeaderStacked : null]}>
-        {stackSheetHeader ? <>
-          <Text accessibilityRole="header" style={[mobileShellStyles.sheetTitle, mobileShellStyles.sheetTitleStacked]}>{title}</Text>
-          <View style={mobileShellStyles.sheetHeaderStackedActions}>
-            {leadingHeaderAction}
-            {trailingHeaderAction}
-          </View>
-        </> : <>
-          {leadingHeaderAction}
-          <Text accessibilityRole="header" style={mobileShellStyles.sheetTitle}>{title}</Text>
-          {trailingHeaderAction}
-        </>}
-      </View> : null}
+    <NativeSheetFrame title={title} leadingAction={leadingAction} trailingAction={trailingAction}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={mobileShellStyles.sheet}>
       {scrollable ? <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={[
           mobileShellStyles.sheetContent,
@@ -201,112 +139,12 @@ export function NativeSheet({
         {children}
       </ScrollView> : <View style={mobileShellStyles.sheetBody}>{children}</View>}
     </SafeAreaView>
+    </NativeSheetFrame>
   </Modal>;
 }
 
-export const mobileShellStyles = StyleSheet.create({
-  sheetBody: {
-    flex: 1,
-  },
-  emptyState: {
-    gap: mobileTheme.spacing.sm,
-    paddingVertical: mobileTheme.spacing.lg,
-  },
-  screen: {
-    backgroundColor: mobileTheme.colors.background,
-    flex: 1,
-    paddingHorizontal: mobileTheme.spacing.md,
-    paddingTop: mobileTheme.spacing.sm,
-  },
-  sheet: {
-    backgroundColor: mobileTheme.colors.background,
-    flex: 1,
-  },
-  sheetCompactContent: {
-    gap: mobileTheme.spacing.lg,
-    padding: mobileTheme.spacing.md,
-    paddingBottom: mobileTheme.spacing.xxl,
-  },
-  sheetContent: {
-    gap: mobileTheme.spacing.md,
-    padding: mobileTheme.spacing.lg,
-    paddingBottom: mobileTheme.spacing.xxl,
-  },
-  sheetHeader: {
-    alignItems: 'center',
-    borderBottomColor: mobileTheme.colors.surfaceRaised,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    minHeight: 52,
-    paddingHorizontal: mobileTheme.spacing.xs,
-  },
-  sheetHeaderAction: {
-    alignItems: 'flex-start',
-    flexShrink: 1,
-    maxWidth: '45%',
-    minWidth: 72,
-  },
-  sheetHeaderStacked: {
-    alignItems: 'stretch',
-    flexDirection: 'column',
-    gap: mobileTheme.spacing.xxs,
-    paddingTop: mobileTheme.spacing.sm,
-  },
-  sheetHeaderStackedActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  sheetHeaderTrailing: {
-    alignItems: 'flex-end',
-  },
-  sheetTitle: {
-    color: mobileTheme.colors.text,
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '600',
-    lineHeight: 22,
-    paddingHorizontal: mobileTheme.spacing.xs,
-    textAlign: 'center',
-  },
-  sheetTitleStacked: {
-    flex: 0,
-  },
-  scrollContent: {
-    gap: mobileTheme.spacing.md,
-    paddingBottom: mobileTheme.spacing.xxl,
-  },
-  groupedScrollContent: {
-    gap: mobileTheme.spacing.lg,
-    paddingHorizontal: mobileTheme.spacing.md,
-    paddingTop: mobileTheme.spacing.sm,
-  },
-  stack: {
-    gap: mobileTheme.spacing.md,
-  },
-  text: {
-    color: mobileTheme.colors.text,
-    ...mobileTheme.typography.body,
-  },
-  textMuted: {
-    color: mobileTheme.colors.textMuted,
-    ...mobileTheme.typography.body,
-  },
-});
 
 const styles = StyleSheet.create({
-  action: {
-    borderRadius: mobileTheme.radii.md,
-    borderWidth: mobileTheme.sizes.border,
-    justifyContent: 'center',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-    overflow: 'hidden',
-    paddingHorizontal: mobileTheme.spacing.xs,
-  },
-  actionDisabled: {
-    opacity: 0.48,
-  },
   banner: {
     backgroundColor: mobileTheme.colors.surfaceRaised,
     borderColor: mobileTheme.colors.border,
@@ -330,10 +168,6 @@ const styles = StyleSheet.create({
   },
   compactTitle: {
     ...mobileTheme.typography.subheading,
-  },
-  dangerAction: {
-    backgroundColor: mobileTheme.colors.errorSurface,
-    borderColor: mobileTheme.colors.error,
   },
   errorBanner: {
     backgroundColor: mobileTheme.colors.errorSurface,
@@ -364,18 +198,6 @@ const styles = StyleSheet.create({
   offlineBanner: {
     backgroundColor: mobileTheme.colors.offlineSurface,
     borderColor: mobileTheme.colors.accent,
-  },
-  primaryAction: {
-    backgroundColor: mobileTheme.colors.accent,
-    borderColor: mobileTheme.colors.accent,
-  },
-  quietAction: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-  secondaryAction: {
-    backgroundColor: mobileTheme.colors.surfaceRaised,
-    borderColor: mobileTheme.colors.border,
   },
   surface: {
     backgroundColor: mobileTheme.colors.surface,

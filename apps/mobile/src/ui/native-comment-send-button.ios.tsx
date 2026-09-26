@@ -1,4 +1,5 @@
-import { Button, Host } from '@expo/ui/swift-ui';
+import { NativeHost as Host } from './native-host';
+import { Button, } from '@expo/ui/swift-ui';
 import { accessibilityLabel, buttonStyle, disabled as nativeDisabled, tint } from '@expo/ui/swift-ui/modifiers';
 import { StyleSheet } from 'react-native';
 import { mobileTheme } from './tokens';

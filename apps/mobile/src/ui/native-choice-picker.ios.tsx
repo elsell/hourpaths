@@ -1,4 +1,5 @@
-import { Host, Picker, Text } from '@expo/ui/swift-ui';
+import { NativeHost as Host } from './native-host';
+import { Picker, Text } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel as nativeAccessibilityLabel,
   disabled as nativeDisabled,
