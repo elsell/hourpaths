@@ -1,16 +1,13 @@
 import type { Translator } from '@hourpaths/i18n';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, InputAccessoryView, Keyboard, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Alert, StyleSheet, View } from 'react-native';
 import { commentDraftIsDirty, normalizedComment } from './comment-presentation';
 import { createCommentSubmissionOwner } from './comment-submission-admission';
-import { NativePrimaryButton } from './native-primary-button';
 import { NativeSheet, StatusBanner, ThemedTextInput } from './primitives';
-import { mobileTheme } from './tokens';
 
 export function CommentEditSheet({
   baseline,
   admittedBusy,
-  commentID,
   draft,
   i18n,
   onDraftChange,
@@ -20,7 +17,6 @@ export function CommentEditSheet({
 }: {
   baseline: string;
   admittedBusy: boolean;
-  commentID: string;
   draft: string;
   i18n: Translator;
   onDraftChange: (draft: string) => void;
@@ -32,7 +28,6 @@ export function CommentEditSheet({
   const [failed, setFailed] = useState(false);
   const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
   const submission = useRef(createCommentSubmissionOwner());
-  const accessoryID = `comment-edit-keyboard-${commentID}`;
   const validDraft = normalizedComment(draft);
   const dirty = commentDraftIsDirty(baseline, draft);
   const busy = admittedBusy || localBusy;
@@ -95,7 +90,6 @@ export function CommentEditSheet({
       accessibilityLabel={i18n.t('social.commentsEditTitle')}
       autoFocus
       editable={!busy}
-      inputAccessoryViewID={accessoryID}
       multiline
       onChangeText={onDraftChange}
       style={styles.input}
@@ -105,25 +99,9 @@ export function CommentEditSheet({
     {busy ? <View accessibilityLiveRegion="polite">
       <StatusBanner text={i18n.t('social.commentsSaving')} tone="loading" />
     </View> : null}
-    <InputAccessoryView nativeID={accessoryID}>
-      <View style={styles.keyboardBar}>
-        <NativePrimaryButton
-          label={i18n.t('common.done')}
-          onPress={Keyboard.dismiss}
-          variant="plain"
-        />
-      </View>
-    </InputAccessoryView>
   </NativeSheet>;
 }
 
 const styles = StyleSheet.create({
   input: { minHeight: 132, textAlignVertical: 'top' },
-  keyboardBar: {
-    alignItems: 'flex-end',
-    backgroundColor: mobileTheme.colors.surfaceRaised,
-    borderTopColor: mobileTheme.colors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: mobileTheme.spacing.sm,
-  },
 });
