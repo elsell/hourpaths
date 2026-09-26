@@ -41,6 +41,11 @@ native builds verify this exact existing combination.
 
 ### Shared mobile design language
 
+- Recovery and arrangement actions must use the shared button contract. Path
+  names must retain their own row width when arrangement actions wrap.
+- Invitation visibility warnings must use the shared sheet title and cancellation
+  action. Explicit acceptance must follow the complete privacy disclosure.
+
 - Android overflow actions must use a native scrollable menu so every action is
   available, including when there are more than three. Disabled actions must
   remain visible and disabled; destructive actions must be distinguishable.

@@ -3,7 +3,6 @@ export { mobileShellStyles } from './shell-styles';
 import { createElement, forwardRef, type ReactNode } from 'react';
 import {
   ActivityIndicator,
-  Button,
   Modal,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   type TextProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeButton } from './native-button';
 import { NativeSheetFrame } from './native-sheet-frame';
 import { mobileTheme } from './tokens';
 
@@ -65,7 +65,7 @@ export function StatusBanner({
       /> : null}
       <Text style={styles.bannerText}>{text}</Text>
     </View>
-    {onAction ? <Button color={mobileTheme.colors.accent} onPress={onAction} title={actionLabel ?? ''} /> : null}
+    {onAction && actionLabel ? <NativeButton label={actionLabel} onPress={onAction} variant="quiet" /> : null}
   </View>;
 }
 
