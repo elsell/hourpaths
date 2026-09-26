@@ -1,3 +1,4 @@
+import { NativeButton } from './native-button';
 import type { PathMemberRemovalReview } from '@hourpaths/client-core';
 import type { NudgeEligibility } from '@hourpaths/client-core';
 import type { MessageKey, Translator } from '@hourpaths/i18n';
@@ -139,9 +140,7 @@ export function PathMemberManagementView({
 }) {
   if (state.items.length === 0) return <View style={styles.state}>
     <ListState i18n={i18n} state={state} />
-    {state.error ? <Pressable accessibilityRole="button" onPress={onRetry} style={styles.stateAction}>
-      <Text style={styles.action}>{i18n.t('common.retry')}</Text>
-    </Pressable> : null}
+    {state.error ? <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" /> : null}
   </View>;
 
   return <View style={styles.group}>
@@ -151,22 +150,11 @@ export function PathMemberManagementView({
     </View>)}
     {state.nextCursor ? <>
       <View style={styles.separator} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ busy: state.loadingMore, disabled: state.loadingMore }}
-        disabled={state.loadingMore}
-        onPress={onLoadMore}
-        style={styles.loadMore}
-      >
-        {state.loadingMore ? <ActivityIndicator color={mobileTheme.colors.accent} /> : null}
-        <Text style={styles.action}>{i18n.t(state.loadingMore ? 'common.loading' : 'common.loadMore')}</Text>
-      </Pressable>
+      <NativeButton busy={state.loadingMore} disabled={state.loadingMore} label={i18n.t(state.loadingMore ? 'common.loading' : 'common.loadMore')} onPress={onLoadMore} variant="quiet" />
     </> : null}
     {state.error ? <View accessibilityRole="alert" style={styles.partialError}>
       <Text style={styles.error}>{i18n.t('pathMembers.unavailableDescription')}</Text>
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.stateAction}>
-        <Text style={styles.action}>{i18n.t('common.retry')}</Text>
-      </Pressable>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
     </View> : null}
   </View>;
 }
@@ -377,9 +365,7 @@ export function PathMemberRemovalReviewView({
         systemImage="wifi.exclamationmark"
         title={i18n.t('pathMembers.reviewUnavailableHeading')}
       />
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.stateAction}>
-        <Text style={styles.action}>{i18n.t('common.retry')}</Text>
-      </Pressable>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
     </View> : review ? <><View accessibilityRole="alert" style={styles.warning}>
       {participant ? <>
         <Text style={styles.warningText}>{i18n.t('pathMembers.participantActivityWarning')}</Text>
@@ -422,7 +408,6 @@ export function PathMemberRemovalReviewView({
 }
 
 const styles = StyleSheet.create({
-  action: { color: mobileTheme.colors.accent, fontSize: 17, fontWeight: '600' },
   centered: { alignItems: 'center', gap: mobileTheme.spacing.sm, minHeight: 260, justifyContent: 'center' },
   confirmation: { color: mobileTheme.colors.textMuted, fontSize: 15, lineHeight: 20, textAlign: 'center' },
   chevron: { color: mobileTheme.colors.textMuted, fontSize: 28, lineHeight: 28 },
@@ -430,7 +415,6 @@ const styles = StyleSheet.create({
   error: { color: mobileTheme.colors.error, textAlign: 'center' },
   group: { backgroundColor: mobileTheme.colors.surface, borderRadius: mobileTheme.radii.md, overflow: 'hidden' },
   identity: { flex: 1, minWidth: 0 },
-  loadMore: { alignItems: 'center', flexDirection: 'row', gap: mobileTheme.spacing.xs, justifyContent: 'center', minHeight: mobileTheme.sizes.minimumTouchTarget },
   partialError: { gap: mobileTheme.spacing.xs, padding: mobileTheme.spacing.md },
   pressed: { backgroundColor: mobileTheme.colors.surfaceRaised },
   progressRow: { paddingHorizontal: mobileTheme.spacing.md, paddingVertical: mobileTheme.spacing.sm },
@@ -444,7 +428,6 @@ const styles = StyleSheet.create({
   secondary: { color: mobileTheme.colors.textMuted },
   separator: { backgroundColor: mobileTheme.colors.border, height: StyleSheet.hairlineWidth, marginLeft: mobileTheme.spacing.md },
   state: { gap: mobileTheme.spacing.sm },
-  stateAction: { alignItems: 'center', minHeight: mobileTheme.sizes.minimumTouchTarget, justifyContent: 'center' },
   username: { color: mobileTheme.colors.textMuted, fontSize: 15, lineHeight: 20 },
   warning: { backgroundColor: mobileTheme.colors.surface, borderRadius: mobileTheme.radii.md, gap: mobileTheme.spacing.sm, padding: mobileTheme.spacing.md },
   warningText: { color: mobileTheme.colors.text, fontSize: 15, lineHeight: 21 },

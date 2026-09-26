@@ -1,5 +1,6 @@
 import type { Translator } from '@hourpaths/i18n';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { NativePrimaryButton } from './native-primary-button';
 import { ThemedText as Text } from './primitives';
@@ -38,9 +39,7 @@ export function SocialProfileDetailView({
         systemImage="person.crop.circle.badge.exclamationmark"
         title={i18n.t('social.profileUnavailableHeading')}
       />
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.retry}>
-        <Text style={styles.retryLabel}>{i18n.t('common.retry')}</Text>
-      </Pressable>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
     </View>;
   }
 
@@ -175,16 +174,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 19,
     textAlign: 'center',
-  },
-  retry: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-  },
-  retryLabel: {
-    color: mobileTheme.colors.accent,
-    fontSize: 17,
-    fontWeight: '600',
   },
   username: {
     color: mobileTheme.colors.textMuted,

@@ -33,6 +33,7 @@ import { CommentHeartIcon } from './comment-heart-icon';
 import { normalizedComment } from './comment-presentation';
 import { createCommentSubmissionOwner } from './comment-submission-admission';
 import { NativeCommentSendButton } from './native-comment-send-button';
+import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { ActionButton, ThemedText as Text, ThemedTextInput } from './primitives';
 import type { PracticeCommentsRoutePresentation } from './practice-comments-route-presentation';
@@ -183,16 +184,7 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
       keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
       ListEmptyComponent={empty}
-      ListFooterComponent={presentation.nextCursor ? <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ busy: presentation.loadingMore, disabled: presentation.loadingMore }}
-        disabled={presentation.loadingMore}
-        onPress={presentation.loadMore}
-        style={styles.loadMore}
-      >
-        {presentation.loadingMore ? <ActivityIndicator color={mobileTheme.colors.accent} /> : null}
-        <Text style={styles.link}>{i18n.t(presentation.loadingMore ? 'social.commentsLoadingMore' : 'social.commentsLoadMore')}</Text>
-      </Pressable> : null}
+      ListFooterComponent={presentation.nextCursor ? <NativeButton busy={presentation.loadingMore} disabled={presentation.loadingMore} label={i18n.t(presentation.loadingMore ? 'social.commentsLoadingMore' : 'social.commentsLoadMore')} onPress={presentation.loadMore} variant="quiet" /> : null}
       onRefresh={presentation.refresh}
       ref={list}
       refreshing={presentation.refreshing}
@@ -267,9 +259,7 @@ const styles = StyleSheet.create({
   history: { borderLeftColor: mobileTheme.colors.border, borderLeftWidth: StyleSheet.hairlineWidth, gap: mobileTheme.spacing.sm, marginTop: mobileTheme.spacing.sm, paddingLeft: mobileTheme.spacing.sm },
   historyHeading: { fontSize: 15, fontWeight: '600' },
   keyboardBar: { alignItems: 'flex-end', backgroundColor: mobileTheme.colors.surfaceRaised, borderTopColor: mobileTheme.colors.border, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: mobileTheme.spacing.sm },
-  link: { color: mobileTheme.colors.accent, fontWeight: '600' },
   list: { paddingBottom: mobileTheme.spacing.md },
-  loadMore: { alignItems: 'center', flexDirection: 'row', gap: mobileTheme.spacing.xs, justifyContent: 'center', minHeight: 52 },
   metadata: { color: mobileTheme.colors.textMuted, fontSize: 12, lineHeight: 16 },
   name: { flexShrink: 1, fontSize: 15, fontWeight: '600' },
   row: { alignItems: 'flex-start', flexDirection: 'row', gap: mobileTheme.spacing.sm, minHeight: 64, paddingHorizontal: mobileTheme.spacing.md, paddingVertical: mobileTheme.spacing.sm },
