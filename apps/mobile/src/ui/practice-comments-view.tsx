@@ -171,9 +171,10 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
         />;
 
   return <View ref={keyboardFrame} style={styles.screen} onLayout={() => {
-    keyboardFrame.current?.measureInWindow((_x, y) => setKeyboardOffset(y));
+    // Android reports window coordinates; keyboard events use screen coordinates.
+    keyboardFrame.current?.measureInWindow((_x, y) => setKeyboardOffset(y + (Platform.OS === 'android' ? insets.top : 0)));
   }}>
-  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset} style={styles.screen}>
+  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={keyboardOffset} style={styles.screen}>
     <FlatList
       automaticallyAdjustContentInsets
       contentContainerStyle={presentation.items.length ? styles.list : styles.emptyList}
@@ -238,11 +239,11 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
         }}
       />
     </View>
-    <InputAccessoryView nativeID={composerAccessoryID}>
+    {Platform.OS === 'ios' ? <InputAccessoryView nativeID={composerAccessoryID}>
       <View style={styles.keyboardBar}>
         <ActionButton label={i18n.t('common.done')} onPress={Keyboard.dismiss} variant="quiet" />
       </View>
-    </InputAccessoryView>
+    </InputAccessoryView> : null}
   </KeyboardAvoidingView></View>;
 }
 

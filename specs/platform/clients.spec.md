@@ -41,6 +41,10 @@ native builds verify this exact existing combination.
 
 ### Shared mobile design language
 
+- Comment input and submission must remain visible above the Android keyboard,
+  including at enlarged text sizes. Keyboard positioning must account for the
+  native header and the window-to-screen status-bar inset.
+
 - Recovery and arrangement actions must use the shared button contract. Path
   names must retain their own row width when arrangement actions wrap.
 - Invitation visibility warnings must use the shared sheet title and cancellation
