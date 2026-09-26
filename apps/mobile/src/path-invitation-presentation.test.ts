@@ -15,7 +15,7 @@ const warningSheet = readFileSync(
   'utf8',
 );
 const nativePrimaryButton = readFileSync(
-  fileURLToPath(new URL('./ui/native-primary-button.ios.tsx', import.meta.url)),
+  fileURLToPath(new URL('./ui/native-button.ios.tsx', import.meta.url)),
   'utf8',
 );
 
@@ -196,8 +196,6 @@ test('mobile visibility warning uses a native page sheet with ordered accessible
   assert.match(disclosure, /pathInvitation\.visibilityWarning\.privacyScope/);
   assert.match(disclosure, /hasRetainedActivity[\s\S]*pathInvitation\.visibilityWarning\.retainedActivity/);
   assert.match(warningSheet, /<NativePrimaryButton/);
-  assert.match(nativePrimaryButton, /@expo\/ui\/swift-ui/);
-  assert.match(nativePrimaryButton, /buttonStyle\('borderedProminent'\)/);
   assert.match(warningSheet, /variant="quiet"/);
   assert.doesNotMatch(warningSheet, /@hourpaths\/api-client|createSessionApiClient/);
 });

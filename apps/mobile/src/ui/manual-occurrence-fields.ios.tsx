@@ -1,5 +1,6 @@
+import { NativeHost as Host } from './native-host';
 import { getLocales } from 'expo-localization';
-import { DatePicker, Host } from '@expo/ui/swift-ui';
+import { DatePicker, } from '@expo/ui/swift-ui';
 import {
   datePickerStyle,
   disabled,

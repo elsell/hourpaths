@@ -8,7 +8,7 @@ function source(path: string) {
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
 }
 
-const rootLayout = source('../app/_layout.tsx');
+const rootLayout = source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const profileRoute = source('../app/profile/[username].tsx');
 const profileView = source('./ui/social-profile-detail-view.tsx');
 const settingsRoute = source('../app/settings/index.tsx');

@@ -1,4 +1,5 @@
-import { Button, HStack, Host, ScrollView } from '@expo/ui/swift-ui';
+import { NativeHost as Host } from './native-host';
+import { Button, HStack, ScrollView } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel,
   accessibilityValue,

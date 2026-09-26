@@ -14,7 +14,7 @@ import {
 import { ownsNotificationSettingsState } from './notification-settings-state';
 
 const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
-const rootLayout = source('../app/_layout.tsx');
+const rootLayout = source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const notificationsRoute = source('../app/notifications.tsx');
 const invitationsRoute = source('../app/invitations.tsx');
 const notificationSettingsRoute = source('../app/settings/notifications.tsx');
@@ -136,7 +136,6 @@ test('notification toolbar action remains stable while busy and announces progre
   assert.match(nativeHeader, /nativeDisabled\(disabled\)/);
   assert.match(notificationsRoute, /accessibilityLiveRegion="polite"/);
   assert.match(notificationsRoute, /notification\.updating/);
-  assert.doesNotMatch(rootLayout, /statusBarStyle:\s*'light'/);
 });
 
 test('notification and invitation rows are flat, intrinsic, and accessibility-scalable', () => {

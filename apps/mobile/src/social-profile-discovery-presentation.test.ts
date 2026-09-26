@@ -13,10 +13,10 @@ function source(path: string) {
 }
 
 const tabs = source('../app/(tabs)/_layout.tsx');
-const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const followingRoute = source('../app/(tabs)/following/index.tsx');
 const peopleRoute = source('../app/following/people.tsx');
-const rootLayout = source('../app/_layout.tsx');
+const rootLayout = source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const profileRoute = source('../app/profile/[username].tsx');
 const followRequestsRoute = source('../app/follow-requests.tsx');
 const followRequestsView = source('./ui/follow-request-list-view.tsx');
@@ -33,7 +33,7 @@ test('Following is a native primary tab with an independent native stack', () =>
   assert.match(tabs, /person\.2/);
   assert.match(followingLayout, /<Stack/);
   assert.match(followingLayout, /headerLargeTitle: true/);
-  assert.match(followingLayout, /name="people"/);
+  assert.match(followingLayout, /name="following\/people"/);
   assert.match(peopleRoute, /headerSearchBarOptions/);
   assert.match(peopleRoute, /i18n\.t\('social\.searchPlaceholder'\)/);
   assert.doesNotMatch(followingLayout, /headerStyle|navigationBarColor/);

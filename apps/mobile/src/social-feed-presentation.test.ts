@@ -26,7 +26,7 @@ function source(path: string) {
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
 }
 
-const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const followingRoute = source('../app/(tabs)/following/index.tsx');
 const peopleRoute = source('../app/following/people.tsx');
 const feedView = source('./ui/social-feed-view.tsx');
@@ -278,7 +278,7 @@ test('feed mapping rejects crossed or invalid discriminant payloads at runtime',
 
 test('Following root is the compact practice feed and keeps social destinations native', () => {
   assert.match(followingLayout, /<Stack/);
-  assert.match(followingLayout, /name="people"/);
+  assert.match(followingLayout, /name="following\/people"/);
   assert.match(followingRoute, /<SocialFeedView/);
   assert.match(followingRoute, /router\.push\('\/(?:\(tabs\)\/)?following\/people'\)/);
   assert.match(followingRoute, /router\.push\('\/follow-requests'\)/);

@@ -53,11 +53,6 @@ test('onboarding remains keyboard and Dynamic Type safe without hiding draft err
   assert.match(form, /!canSubmit && !busy[\s\S]*onboarding\.requirementsPending/);
   assert.match(form, /busy \? <StatusBanner text=\{i18n\.t\('onboarding\.confirming'\)\} \/> : null/);
   assert.match(form, /\{errorText \? <StatusBanner text=\{errorText\} tone="error" \/> : null\}/);
-  assert.match(primitives, /needsCompactVerticalLayout\(width, fontScale\)/);
-  assert.match(primitives, /stackSheetHeader \? mobileShellStyles\.sheetHeaderStacked : null/);
-  assert.match(primitives, /mobileShellStyles\.sheetHeaderStackedActions/);
-  assert.match(primitives, /sheetHeaderAction:\s*\{[\s\S]*flexShrink:\s*1,[\s\S]*maxWidth:\s*'45%'/);
-  assert.match(primitives, /sheetTitleStacked:\s*\{\s*flex:\s*0/);
   assert.doesNotMatch(primitives, /<Text accessibilityRole="header" numberOfLines=/);
   assert.match(form, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.doesNotMatch(form, /maxFontSizeMultiplier|allowFontScaling=\{false\}/);

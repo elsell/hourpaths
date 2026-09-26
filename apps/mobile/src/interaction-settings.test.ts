@@ -11,7 +11,7 @@ import {
 const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
 const route = source('../app/settings/interactions.tsx');
 const settings = source('../app/settings/index.tsx');
-const layout = source('../app/_layout.tsx');
+const layout = source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const presentation = source('./ui/settings-presentation.tsx');
 const home = source('../app/index.tsx');
 const list = source('./ui/settings-list.tsx');

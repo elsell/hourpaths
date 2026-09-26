@@ -5,7 +5,7 @@ import test from 'node:test';
 const source = (path: string) => readFileSync(decodeURIComponent(new URL(path, import.meta.url).pathname), 'utf8');
 const page = source('../app/index.tsx');
 const route = source('../app/following/comments/[eventID].tsx');
-const layout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
+const layout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const feed = source('./ui/social-feed-view.tsx');
 const view = source('./ui/practice-comments-view.tsx');
 const nativeMenu = source('./ui/comment-action-menu.ios.tsx');

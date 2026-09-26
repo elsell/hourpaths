@@ -7,7 +7,7 @@ const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import
 
 test('configured time zone has a dedicated compact native Settings destination', () => {
   const settings = source('../app/settings/index.tsx');
-  const layout = source('../app/_layout.tsx');
+  const layout = source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
   const route = source('../app/settings/time-zone.tsx');
 
   assert.match(settings, /settings\.timeZone\.openLabel/);

@@ -30,7 +30,7 @@ function source(path: string) {
 const commentsRoute = source('../app/following/comments/[eventID].tsx');
 const heartsRoute = source('../app/following/comments/[eventID]/hearts/[commentID].tsx');
 const activityRoute = source('../app/following/activity/[pathID]/[activityID].tsx');
-const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const commentsView = source('./ui/practice-comments-view.tsx');
 const editSheet = source('./ui/comment-edit-sheet.tsx');
 const rosterView = source('./ui/comment-heart-roster-view.tsx');

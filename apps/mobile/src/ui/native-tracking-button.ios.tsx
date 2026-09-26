@@ -1,4 +1,5 @@
-import { Button, Host, Image as SwiftUIImage, VStack } from '@expo/ui/swift-ui';
+import { NativeHost as Host } from './native-host';
+import { Button, Image as SwiftUIImage, VStack } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel,
   buttonStyle,

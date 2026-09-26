@@ -1,34 +1,6 @@
-import { Button, StyleSheet, View } from 'react-native';
+import { NativeButton } from './native-button';
+import type { NativeButtonProps } from './native-button.types';
 
-export function NativePrimaryButton({
-  disabled = false,
-  fullWidth: _fullWidth = false,
-  label,
-  onPress,
-  systemImage: _systemImage,
-  variant: _variant = 'prominent',
-}: {
-  disabled?: boolean;
-  fullWidth?: boolean;
-  label: string;
-  onPress: () => void;
-  systemImage?: string;
-  variant?: 'plain' | 'prominent';
-}) {
-  return <View style={styles.container}>
-    <Button
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      title={label}
-    />
-  </View>;
+export function NativePrimaryButton({ variant = 'prominent', ...props }: Omit<NativeButtonProps, 'variant'> & { variant?: 'plain' | 'prominent' }) {
+  return <NativeButton {...props} variant={variant === 'plain' ? 'quiet' : 'primary'} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: 'center',
-    minHeight: 48,
-  },
-});

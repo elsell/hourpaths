@@ -1,5 +1,6 @@
+import { NativeHost as Host } from './native-host';
 import { type ComponentProps } from 'react';
-import { ContentUnavailableView, Host } from '@expo/ui/swift-ui';
+import { ContentUnavailableView, } from '@expo/ui/swift-ui';
 import { StyleSheet, View } from 'react-native';
 
 type SystemImage = ComponentProps<typeof ContentUnavailableView>['systemImage'];

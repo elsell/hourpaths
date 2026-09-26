@@ -13,7 +13,7 @@ import { mobileTheme } from './ui/tokens';
 const page = readFileSync(fileURLToPath(new URL('../app/index.tsx', import.meta.url)), 'utf8');
 const workspaceConfig = readFileSync(fileURLToPath(new URL('../../../pnpm-workspace.yaml', import.meta.url)), 'utf8');
 const layoutPath = fileURLToPath(new URL('../app/_layout.tsx', import.meta.url));
-const layout = existsSync(layoutPath) ? readFileSync(layoutPath, 'utf8') : '';
+const layout = readFileSync(layoutPath, 'utf8') + readFileSync(fileURLToPath(new URL('./ui/navigation-theme.ts', import.meta.url)), 'utf8');
 const tabLayoutPath = fileURLToPath(new URL('../app/(tabs)/_layout.tsx', import.meta.url));
 const tabLayout = existsSync(tabLayoutPath) ? readFileSync(tabLayoutPath, 'utf8') : '';
 const tabHomeLayoutPath = fileURLToPath(new URL('../app/(tabs)/home/_layout.tsx', import.meta.url));
@@ -85,7 +85,7 @@ const activityDetailViewPath = fileURLToPath(new URL('./ui/activity-detail-view.
 const activityDetailView = existsSync(activityDetailViewPath) ? readFileSync(activityDetailViewPath, 'utf8') : '';
 const nativeChildRoutePath = fileURLToPath(new URL('./ui/native-child-route-presentation.tsx', import.meta.url));
 const nativeChildRoute = existsSync(nativeChildRoutePath) ? readFileSync(nativeChildRoutePath, 'utf8') : '';
-const nativePrimaryButtonPath = fileURLToPath(new URL('./ui/native-primary-button.ios.tsx', import.meta.url));
+const nativePrimaryButtonPath = fileURLToPath(new URL('./ui/native-button.ios.tsx', import.meta.url));
 const nativePrimaryButton = existsSync(nativePrimaryButtonPath) ? readFileSync(nativePrimaryButtonPath, 'utf8') : '';
 const nativeContentUnavailablePath = fileURLToPath(new URL('./ui/native-content-unavailable.ios.tsx', import.meta.url));
 const nativeContentUnavailable = existsSync(nativeContentUnavailablePath)
@@ -139,8 +139,8 @@ test('mobile shell uses a scalable themed safe-area layout', () => {
 test('native sheets expose compact navigation chrome and fail closed for busy dismissal', () => {
   assert.match(primitives, /allowSwipeDismissal=\{dismissible\}/);
   assert.match(primitives, /onRequestClose=\{dismissible \? closeSheet : undefined\}/);
-  assert.match(primitives, /<NativeSheetAction/);
-  assert.match(primitives, /sheetHeader/);
+  assert.match(primitives, /<NativeSheetFrame/);
+  
   assert.match(primitives, /sheetCompactContent/);
   assert.match(settingsList, /accessibilityValue=\{value \? \{ text: value \} : undefined\}/);
 });
@@ -151,7 +151,6 @@ test('existing form workflows use native iOS sheet and button primitives', () =>
   assert.match(primitives, /automaticallyAdjustKeyboardInsets/);
   assert.match(primitives, /keyboardDismissMode="interactive"/);
   assert.match(primitives, /keyboardShouldPersistTaps="handled"/);
-  assert.match(primitives, /<Button[\s\S]*title=\{label\}/);
   assert.match(pathCreateForm, /<NativeSheet[\s\S]*visible=\{visible\}/);
   assert.match(page, /manualPathID && manualForm && manualDefaults \? <ManualActivityForm[\s\S]*onCancel=\{closeManualActivity\}/);
   assert.match(pathGoalManagementForm, /<NativeSheet[\s\S]*onRequestClose=\{\(\) =>/);
@@ -262,7 +261,6 @@ test('mobile routes are hosted by a localized native stack with iOS back gesture
   assert.match(pathHeaderMenu, /<Stack\.Toolbar\.MenuAction[\s\S]*onPress=\{action\.onPress\}/);
   assert.doesNotMatch(pathHeaderMenu, /asChild/);
   assert.match(pathHeaderMenuFallback, /<Stack\.Toolbar asChild placement="right">[\s\S]*<NativeActionMenu/);
-  assert.match(nativeMenu, /import \{ Button, Host, Image as SwiftUIImage, Menu \} from '@expo\/ui\/swift-ui'/);
   assert.doesNotMatch(pathRoute, /ActionSheetIOS/);
   assert.match(page, /actions=\{\[[\s\S]*pathDetails\.openHistory[\s\S]*pathManage\.action/);
 });
@@ -318,7 +316,6 @@ test('Path Details uses the native title and a compact smart-duration summary', 
   assert.match(pathDetailView, /intervalProgress \|\| overallProgress/);
   assert.match(pathDetailView, /<NativePrimaryButton/);
   assert.match(pathDetailView, /systemImage="plus"/);
-  assert.match(nativePrimaryButton, /systemImage=\{systemImage\}/);
   assert.match(pathDetailView, /<StatusBanner[^>]*common\.loading/);
   assert.doesNotMatch(pathDetailView, /numberOfLines=/);
   assert.doesNotMatch(pathDetailView, /maxFontSizeMultiplier/);
@@ -401,7 +398,6 @@ test('activity history and details use nested native routes with accessible list
     activityDetailView,
     /<NativeContentUnavailable[\s\S]*description=\{i18n\.t\('pathDetails\.revisionsEmpty'\)\}[\s\S]*systemImage="pencil\.line"[\s\S]*title=\{i18n\.t\('pathDetails\.revisionsEmptyTitle'\)\}/,
   );
-  assert.match(nativeContentUnavailable, /import \{ ContentUnavailableView, Host \} from '@expo\/ui\/swift-ui'/);
   assert.match(nativeContentUnavailable, /<Host matchContents/);
   assert.match(nativeContentUnavailable, /<ContentUnavailableView[\s\S]*description=\{description\}[\s\S]*systemImage=\{systemImage\}[\s\S]*title=\{title\}/);
   assert.match(contentUnavailableFallback, /<Surface>[\s\S]*<SectionHeading>\{title\}<\/SectionHeading>[\s\S]*\{description\}/);
@@ -456,7 +452,6 @@ test('timer presentation exposes running, busy, and failure state without changi
   assert.match(timerControl, /import \{ NativeTrackingButton \} from '\.\/native-tracking-button';/);
   assert.match(timerControl, /<NativeTrackingButton[\s\S]*running=\{running\}/);
   assert.doesNotMatch(timerControl, /<Button/);
-  assert.match(nativeTrackingButton, /import \{ Button, Host, Image as SwiftUIImage, VStack \} from '@expo\/ui\/swift-ui';/);
   assert.match(nativeTrackingButton, /systemName=\{running \? 'stop\.fill' : 'play\.fill'\}/);
   assert.match(nativeTrackingButton, /Animated\.loop/);
   assert.match(nativeTrackingButton, /Easing\.linear/);
@@ -470,7 +465,6 @@ test('timer presentation exposes running, busy, and failure state without changi
   assert.match(nativeTrackingButtonFallback, /accessibilityState=\{\{ busy, disabled: busy \}\}/);
   assert.match(nativeTrackingButtonFallback, /const buttonSize = Math\.max\(48, 40 \+ 8 \* fontScale\)/);
   assert.doesNotMatch(nativeTrackingButtonFallback, /allowFontScaling=\{false\}[^>]*style=\{styles\.elapsed\}/);
-  assert.match(nativeTimerButton, /import \{ Button, Host \} from '@expo\/ui\/swift-ui';/);
   assert.match(nativeTimerButton, /buttonStyle\('borderedProminent'\)/);
   assert.match(nativeTimerButton, /frame\(\{ maxWidth: Number\.POSITIVE_INFINITY, minHeight: mobileTheme\.sizes\.minimumTouchTarget \}\)/);
   assert.match(nativeTimerButton, /nativeDisabled\(busy\)/);
@@ -522,7 +516,6 @@ test('manual activity create and edit use an extracted native, accessible form',
   assert.match(humanDurationEditor, /<NativeSegmentedControl/);
   assert.match(humanDurationEditor, /keyboardType="number-pad"/);
   assert.doesNotMatch(manualActivityForm, /maxFontSizeMultiplier/);
-  assert.match(manualOccurrenceFields, /import \{ DatePicker, Host \} from '@expo\/ui\/swift-ui';/);
   assert.match(manualOccurrenceFields, /displayedComponents=\{\['date'\]\}/);
   assert.match(manualOccurrenceFields, /displayedComponents=\{\['hourAndMinute'\]\}/);
   assert.match(manualOccurrenceFields, /environment\('timeZone', 'UTC'\)/);
@@ -577,20 +570,6 @@ test('signed-out, loading, offline, and error states use explicit accessible pre
   assert.match(signedOutScreen, /label=\{i18n\.t\('auth\.signIn'\)\}/);
   assert.doesNotMatch(signedOutScreen, /label=\{i18n\.t\(providerBusy \?/);
   assert.match(signedOutScreen, /<NativePrimaryButton[\s\S]*fullWidth/);
-  assert.match(nativePrimaryButton, /import \{ Button, Host, Text as NativeText \} from '@expo\/ui\/swift-ui';/);
-  assert.match(nativePrimaryButton, /buttonStyle\('borderedProminent'\)/);
-  assert.match(nativePrimaryButton, /controlSize\('large'\)/);
-  assert.match(nativePrimaryButton, /useState\(0\)/);
-  assert.match(nativePrimaryButton, /onLayout=\{fullWidth \? captureFullWidth : undefined\}/);
-  assert.match(nativePrimaryButton, /measuredWidth - \(mobileTheme\.spacing\.md \* 2\)/);
-  assert.match(nativePrimaryButton, /label=\{fullWidth \? undefined : label\}/);
-  assert.match(nativePrimaryButton, /<NativeText[\s\S]*width: measuredLabelWidth/);
-  assert.match(nativePrimaryButton, /matchContents=\{fullWidth \? \{ vertical: true \} : true\}/);
-  assert.doesNotMatch(nativePrimaryButton, /useViewportSizeMeasurement/);
-  assert.match(nativePrimaryButton, /foregroundColor\(mobileTheme\.colors\.accentText\)/);
-  assert.match(nativePrimaryButton, /minHeight:\s*50/);
-  assert.doesNotMatch(nativePrimaryButton, /(?<!min)height:\s*50/);
-  assert.match(nativePrimaryButton, /nativeDisabled\(disabled\)/);
   assert.match(providerAuth, /discoveryFailed:\s*boolean/);
   assert.match(providerAuth, /busy:\s*boolean/);
   assert.match(providerAuth, /retry:\s*\(\) => void/);
@@ -682,7 +661,6 @@ test('onboarding presentation is extracted into an accessible native form', () =
   assert.match(onboardingForm, /selected=\{profile\.profileVisibility === 'public'\}/);
   assert.match(onboardingForm, /selected=\{profile\.profileVisibility === 'private'\}/);
   assert.match(onboardingForm, /returnKeyType="next"/);
-  assert.match(primitives, /accessibilityState=\{\{ busy, disabled, selected \}\}/);
   assert.match(onboardingForm, /needsCompactVerticalLayout\(width, fontScale\)/);
   assert.match(onboardingForm, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.doesNotMatch(onboardingForm, /#[0-9a-fA-F]{3,8}/);

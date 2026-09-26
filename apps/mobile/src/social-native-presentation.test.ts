@@ -9,7 +9,7 @@ function source(path: string) {
   return existsSync(file) ? readFileSync(file, 'utf8') : '';
 }
 
-const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx');
+const followingLayout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const followingRoute = source('../app/(tabs)/following/index.tsx');
 const peopleRoute = source('../app/following/people.tsx');
 const profileRoute = source('../app/profile/[username].tsx');
