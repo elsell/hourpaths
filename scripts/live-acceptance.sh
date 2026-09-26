@@ -4768,7 +4768,7 @@ note_03d_event_id="practice:$note_03d_activity_id"
 # grant is delivered by the outbox worker. Wait for that fixture prerequisite.
 note_03d_public_status=''
 for _ in $(seq 1 40); do
-  note_03d_public_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  note_03d_public_status="$(curl --connect-timeout 1 --max-time 2 -sS -o /dev/null -w '%{http_code}' \
     -H "Authorization: Bearer $participant_token" \
     "http://localhost:8080/v1/social/feed/$note_03d_event_id")"
   [[ "$note_03d_public_status" == 200 ]] && break
