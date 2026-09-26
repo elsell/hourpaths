@@ -41,6 +41,13 @@ export function normalizeSocialInteractionRouteState(
   intent: SocialInteractionIntent,
 ): SocialNavigationState {
   const expected = socialInteractionNavigationState(intent);
+  const active = current.routes[current.index];
+  const parent = current.routes[current.index - 1];
+  // A warm push already owns its return destination (for example Notifications).
+  // Only synthesize ancestry when cold links lack the required parent screens.
+  if (active && matches(active, expected.routes.at(-1)!) &&
+    current.routes.slice(0, current.index).some((route) => route.name === '(tabs)') &&
+    (intent.kind !== 'comment-hearts' || (parent && matches(parent, expected.routes[1]!)))) return current;
   if (current.index === expected.index && current.routes.length === expected.routes.length &&
     current.routes.every((route, index) => matches(route, expected.routes[index]!))) return current;
   return {

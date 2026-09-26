@@ -203,3 +203,15 @@ test('cold heart routes construct keyed Following to Comments to Roster native a
   assert.equal(backToComments.routes.at(-1)?.name, 'following/comments/[eventID]');
   assert.equal(backToFollowing.routes.at(-1)?.name, '(tabs)');
 });
+
+
+test('opening comments from notifications preserves the warm return destination', () => {
+  const current = { index: 2, routes: [
+    { name: '(tabs)', state: { retained: true } },
+    { name: 'notifications' },
+    { name: 'following/comments/[eventID]', params: { eventID: 'event-1' } },
+  ] };
+  assert.equal(normalizeSocialInteractionRouteState(current, {
+    kind: 'comments', eventID: 'event-1', routeKey: 'social:comments:event-1',
+  }), current);
+});
