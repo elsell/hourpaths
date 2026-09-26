@@ -1,3 +1,4 @@
+import { NativeButton } from './native-button';
 import type { PracticeCommentHearter } from '@hourpaths/client-core';
 import type { Translator } from '@hourpaths/i18n';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -56,9 +57,7 @@ export function CommentHeartRosterView({ i18n, presentation }: {
             systemImage="wifi.exclamationmark"
             title={i18n.t('social.commentHeartRosterUnavailableHeading')}
           />
-          <Pressable accessibilityRole="button" onPress={presentation.retry} style={styles.stateAction}>
-            <Text style={styles.stateActionLabel}>{i18n.t('common.retry')}</Text>
-          </Pressable>
+          <NativeButton label={i18n.t('common.retry')} onPress={presentation.retry} variant="quiet" />
         </View>
       : <NativeContentUnavailable
           description={i18n.t('social.commentHeartRosterEmptyDescription')}
@@ -69,22 +68,9 @@ export function CommentHeartRosterView({ i18n, presentation }: {
   const footer = presentation.errorKey && presentation.items.length > 0
     ? <View accessibilityRole="alert" style={styles.partialError}>
         <Text style={styles.errorText}>{i18n.t(presentation.errorKey)}</Text>
-        <Pressable accessibilityRole="button" onPress={presentation.retry} style={styles.stateAction}>
-          <Text style={styles.stateActionLabel}>{i18n.t('common.retry')}</Text>
-        </Pressable>
+        <NativeButton label={i18n.t('common.retry')} onPress={presentation.retry} variant="quiet" />
       </View>
-    : presentation.nextCursor ? <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ busy: presentation.loadingMore, disabled: presentation.loadingMore }}
-        disabled={presentation.loadingMore}
-        onPress={presentation.loadMore}
-        style={styles.loadMore}
-      >
-        {presentation.loadingMore ? <ActivityIndicator color={mobileTheme.colors.accent} /> : null}
-        <Text style={styles.stateActionLabel}>
-          {i18n.t(presentation.loadingMore ? 'social.commentHeartRosterLoadingMore' : 'social.commentHeartRosterLoadMore')}
-        </Text>
-      </Pressable> : null;
+    : presentation.nextCursor ? <NativeButton busy={presentation.loadingMore} disabled={presentation.loadingMore} label={i18n.t(presentation.loadingMore ? 'social.commentHeartRosterLoadingMore' : 'social.commentHeartRosterLoadMore')} onPress={presentation.loadMore} variant="quiet" /> : null;
 
   return <FlatList
     automaticallyAdjustContentInsets
@@ -110,14 +96,11 @@ const styles = StyleSheet.create({
   identity: { flex: 1, minWidth: 0 },
   errorText: { color: mobileTheme.colors.error, textAlign: 'center' },
   list: { paddingBottom: mobileTheme.spacing.sm },
-  loadMore: { alignItems: 'center', flexDirection: 'row', gap: mobileTheme.spacing.xs, justifyContent: 'center', minHeight: mobileTheme.sizes.minimumTouchTarget },
   partialError: { gap: mobileTheme.spacing.xs, padding: mobileTheme.spacing.md },
   row: { alignItems: 'center', flexDirection: 'row', gap: mobileTheme.spacing.sm, minHeight: mobileTheme.sizes.minimumTouchTarget, paddingHorizontal: mobileTheme.spacing.md, paddingVertical: mobileTheme.spacing.sm },
   rowPressed: { backgroundColor: mobileTheme.colors.surfacePressed },
   screen: { backgroundColor: mobileTheme.colors.background, flex: 1 },
   separator: { backgroundColor: mobileTheme.colors.border, height: StyleSheet.hairlineWidth, marginLeft: 68 },
   state: { alignItems: 'stretch', gap: mobileTheme.spacing.sm, justifyContent: 'center', minHeight: 260, padding: mobileTheme.spacing.lg },
-  stateAction: { alignItems: 'center', minHeight: mobileTheme.sizes.minimumTouchTarget, justifyContent: 'center' },
-  stateActionLabel: { color: mobileTheme.colors.accent, fontWeight: '600' },
   username: { color: mobileTheme.colors.textMuted, fontSize: 14, lineHeight: 19 },
 });

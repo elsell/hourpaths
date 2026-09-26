@@ -45,6 +45,8 @@ native builds verify this exact existing combination.
   including at enlarged text sizes. Keyboard positioning must account for the
   native header and the window-to-screen status-bar inset.
 
+- List recovery and pagination actions must use the shared button contract,
+  preserving loading labels, busy state, and mutation-related disabling.
 - Recovery and arrangement actions must use the shared button contract. Path
   names must retain their own row width when arrangement actions wrap.
 - Invitation visibility warnings must use the shared sheet title and cancellation

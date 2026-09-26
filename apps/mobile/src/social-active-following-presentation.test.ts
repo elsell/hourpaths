@@ -97,13 +97,10 @@ test('an empty failed Recent Activity feed exposes an accessible full-size retry
 
   assert.match(unavailable, /onRetry: \(\) => void/);
   assert.match(unavailable, /<NativeContentUnavailable/);
-  assert.match(unavailable, /accessibilityLabel=\{i18n\.t\('common\.retry'\)\}/);
-  assert.match(unavailable, /accessibilityRole="button"/);
+  assert.match(unavailable, /<NativeButton label=\{i18n\.t\('common\.retry'\)\}/);
   assert.match(unavailable, /onPress=\{onRetry\}/);
-  assert.match(unavailable, /style=\{styles\.unavailableAction\}/);
-  assert.match(feedView, /unavailableAction:\s*\{[\s\S]*?minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.match(feedView, /<FeedUnavailable i18n=\{i18n\} onRetry=\{onRetry\} state=\{state\} \/>/);
-  assert.match(feedView, /state\.status === 'error' && hasEvents[\s\S]*?<Pressable[\s\S]*?onPress=\{onRetry\}/);
+  assert.match(feedView, /state\.status === 'error' && hasEvents[\s\S]*?<NativeButton[\s\S]*?onPress=\{onRetry\}/);
 });
 
 test('published active state owns initial load, refresh, retry, pagination, and stale responses', () => {

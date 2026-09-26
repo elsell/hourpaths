@@ -1,3 +1,4 @@
+import { NativeButton } from './native-button';
 import type { Translator } from '@hourpaths/i18n';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { NativeContentUnavailable } from './native-content-unavailable';
@@ -63,9 +64,7 @@ function SearchState({
         systemImage="wifi.exclamationmark"
         title={i18n.t('social.searchUnavailableHeading')}
       />
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.stateAction}>
-        <Text style={styles.stateActionLabel}>{i18n.t('common.retry')}</Text>
-      </Pressable>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
     </View>;
   }
 
@@ -105,23 +104,10 @@ export function SocialProfileSearchView({
         <Text style={styles.errorText}>
           {i18n.t(state.errorKey ?? 'social.searchUnavailableDescription')}
         </Text>
-        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.stateAction}>
-          <Text style={styles.stateActionLabel}>{i18n.t('common.retry')}</Text>
-        </Pressable>
+        <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
       </View>
     : state.nextCursor
-      ? <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ busy: state.loadingMore, disabled: state.loadingMore }}
-          disabled={state.loadingMore}
-          onPress={onLoadMore}
-          style={styles.loadMore}
-        >
-          {state.loadingMore ? <ActivityIndicator color={mobileTheme.colors.accent} /> : null}
-          <Text style={styles.stateActionLabel}>
-            {i18n.t(state.loadingMore ? 'social.loadingMore' : 'social.loadMore')}
-          </Text>
-        </Pressable>
+      ? <NativeButton busy={state.loadingMore} disabled={state.loadingMore} label={i18n.t(state.loadingMore ? 'social.loadingMore' : 'social.loadMore')} onPress={onLoadMore} variant="quiet" />
       : null;
   return <ScrollView
     alwaysBounceVertical
@@ -185,13 +171,6 @@ const styles = StyleSheet.create({
     backgroundColor: mobileTheme.colors.background,
     flex: 1,
   },
-  loadMore: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: mobileTheme.spacing.xs,
-    justifyContent: 'center',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-  },
   partialError: {
     gap: mobileTheme.spacing.xs,
     padding: mobileTheme.spacing.md,
@@ -215,16 +194,6 @@ const styles = StyleSheet.create({
     backgroundColor: mobileTheme.colors.border,
     height: StyleSheet.hairlineWidth,
     marginLeft: 76,
-  },
-  stateAction: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-  },
-  stateActionLabel: {
-    color: mobileTheme.colors.accent,
-    fontSize: 17,
-    fontWeight: '600',
   },
   username: {
     color: mobileTheme.colors.textMuted,

@@ -3,6 +3,7 @@ import { activeTimerSeconds } from '@hourpaths/client-core';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { formatCompactDuration } from './compact-duration';
+import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { ThemedText as Text } from './primitives';
 import {
@@ -105,28 +106,13 @@ function ActiveFollowingSection({
       : state.status === 'error'
         ? <View accessibilityRole="alert" style={styles.activeState}>
             <Text style={styles.error}>{i18n.t(state.errorKey ?? 'social.activeUnavailable')}</Text>
-            <Pressable accessibilityRole="button" onPress={onRetry} style={styles.compactAction}>
-              <Text style={styles.actionLabel}>{i18n.t('common.retry')}</Text>
-            </Pressable>
+            <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
           </View>
         : <Text style={styles.activeEmpty}>{i18n.t('social.activeEmpty')}</Text>}
-    {state.nextCursor && state.status !== 'error' ? <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ busy: state.loadingMore, disabled: state.loadingMore }}
-      disabled={state.loadingMore}
-      onPress={onLoadMore}
-      style={styles.compactAction}
-    >
-      {state.loadingMore ? <ActivityIndicator color={mobileTheme.colors.accent} size="small" /> : null}
-      <Text style={styles.actionLabel}>{i18n.t(state.loadingMore
-        ? 'social.activeLoadingMore'
-        : 'social.activeLoadMore')}</Text>
-    </Pressable> : null}
+    {state.nextCursor && state.status !== 'error' ? <NativeButton busy={state.loadingMore} disabled={state.loadingMore} label={i18n.t(state.loadingMore ? 'social.activeLoadingMore' : 'social.activeLoadMore')} onPress={onLoadMore} variant="quiet" /> : null}
     {state.status === 'error' && state.items.length > 0 ? <View accessibilityRole="alert" style={styles.activeState}>
       <Text style={styles.error}>{i18n.t(state.errorKey ?? 'social.activeUnavailable')}</Text>
-      <Pressable accessibilityRole="button" onPress={onRetry} style={styles.compactAction}>
-        <Text style={styles.actionLabel}>{i18n.t('common.retry')}</Text>
-      </Pressable>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
     </View> : null}
   </View>;
 }
@@ -420,14 +406,7 @@ function FeedUnavailable({
         systemImage="wifi.exclamationmark"
         title={i18n.t('social.feedUnavailableHeading')}
       />
-      <Pressable
-        accessibilityLabel={i18n.t('common.retry')}
-        accessibilityRole="button"
-        onPress={onRetry}
-        style={styles.unavailableAction}
-      >
-        <Text style={styles.actionLabel}>{i18n.t('common.retry')}</Text>
-      </Pressable>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
     </View>;
   }
 
@@ -495,21 +474,10 @@ export function SocialFeedView({
   const footer = state.status === 'error' && hasEvents
     ? <View accessibilityRole="alert" style={styles.footer}>
         <Text style={styles.error}>{i18n.t(state.errorKey ?? 'social.feedUnavailableDescription')}</Text>
-        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.footerAction}>
-          <Text style={styles.actionLabel}>{i18n.t('common.retry')}</Text>
-        </Pressable>
+        <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
       </View>
     : state.nextCursor
-      ? <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ busy: state.loadingMore, disabled: state.loadingMore }}
-          disabled={state.loadingMore}
-          onPress={onLoadMore}
-          style={styles.footerAction}
-        >
-          {state.loadingMore ? <ActivityIndicator color={mobileTheme.colors.accent} /> : null}
-          <Text style={styles.actionLabel}>{i18n.t(state.loadingMore ? 'social.loadingMore' : 'social.loadMore')}</Text>
-        </Pressable>
+      ? <NativeButton busy={state.loadingMore} disabled={state.loadingMore} label={i18n.t(state.loadingMore ? 'social.loadingMore' : 'social.loadMore')} onPress={onLoadMore} variant="quiet" />
       : null;
 
   return <ScrollView
@@ -639,11 +607,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     ...mobileTheme.typography.caption,
   },
-  actionLabel: {
-    color: mobileTheme.colors.accent,
-    fontSize: 17,
-    fontWeight: '600',
-  },
   centeredState: {
     alignItems: 'center',
     flex: 1,
@@ -652,14 +615,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: mobileTheme.spacing.sm,
-  },
-  compactAction: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: mobileTheme.spacing.xs,
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-    paddingHorizontal: mobileTheme.spacing.md,
   },
   copy: {
     flex: 1,
@@ -699,13 +654,6 @@ const styles = StyleSheet.create({
     gap: mobileTheme.spacing.xs,
     padding: mobileTheme.spacing.md,
   },
-  footerAction: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: mobileTheme.spacing.xs,
-    justifyContent: 'center',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-  },
   list: {
     borderTopColor: mobileTheme.colors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -726,14 +674,6 @@ const styles = StyleSheet.create({
   },
   rowPressed: {
     backgroundColor: mobileTheme.colors.surfacePressed,
-  },
-  unavailableAction: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
-    minWidth: mobileTheme.sizes.minimumTouchTarget,
-    paddingHorizontal: mobileTheme.spacing.md,
   },
   unavailableState: {
     alignItems: 'stretch',
