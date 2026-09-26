@@ -968,11 +968,11 @@ function inspectSource(relative, file, source, index) {
         const pathArchivePresentationAllowed = new Set(['AccessibilityInfo']);
         const nudgeComposerPresentationAllowed = new Set(['AccessibilityInfo', 'Pressable', 'StyleSheet', 'View']);
         const commentEditPresentationAllowed = new Set([
-          'AccessibilityInfo', 'Alert', 'InputAccessoryView', 'Keyboard', 'StyleSheet', 'View',
+          'AccessibilityInfo', 'Alert', 'StyleSheet', 'View',
         ]);
         const practiceCommentsPresentationAllowed = new Set([
-          'ActivityIndicator', 'Alert', 'FlatList', 'InputAccessoryView', 'Keyboard', 'KeyboardAvoidingView',
-          'Platform', 'Pressable', 'StyleSheet', 'View', 'useWindowDimensions',
+          'ActivityIndicator', 'Alert', 'FlatList', 'KeyboardAvoidingView', 'Platform', 'Pressable',
+          'StyleSheet', 'View', 'useWindowDimensions',
         ]);
         const reactionFallbackPresentationAllowed = new Set([
           'AccessibilityInfo', 'Modal', 'Pressable', 'ScrollView', 'StyleSheet', 'View',
