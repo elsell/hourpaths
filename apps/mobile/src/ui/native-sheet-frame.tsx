@@ -24,7 +24,7 @@ export function NativeSheetFrame({ children, title, leadingAction, trailingActio
     /> : null}
   </View>;
 
-  return <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+  return <SafeAreaView edges={['top']} style={mobileShellStyles.sheet}>
       {title ? <View style={[mobileShellStyles.sheetHeader, stackSheetHeader ? mobileShellStyles.sheetHeaderStacked : null]}>
         {stackSheetHeader ? <>
           <Text accessibilityRole="header" style={[mobileShellStyles.sheetTitle, mobileShellStyles.sheetTitleStacked]}>{title}</Text>

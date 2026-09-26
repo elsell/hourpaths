@@ -70,6 +70,8 @@ native builds verify this exact existing combination.
 - Mobile screens must use one shared navigation theme matching the existing
   charcoal content and yellow action palette. Native navigation titles, search,
   tab selection, and status bars must remain legible regardless of device appearance.
+  Android sheet frames must apply that background to their header and top safe
+  area as well as their scrolling content.
 - Root and nested stacks must share navigation defaults. System materials must
   retain native rendering; per-screen painted bars must not compensate for a
   mismatched navigation theme.

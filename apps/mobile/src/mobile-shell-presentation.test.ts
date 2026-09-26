@@ -146,7 +146,7 @@ test('native sheets expose compact navigation chrome and fail closed for busy di
 });
 
 test('existing form workflows use native iOS sheet and button primitives', () => {
-  assert.match(primitives, /Button,[\s\S]*Modal,[\s\S]*Text,[\s\S]*TextInput/);
+  assert.match(primitives, /Modal,[\s\S]*Text,[\s\S]*TextInput/);
   assert.match(primitives, /presentationStyle="pageSheet"/);
   assert.match(primitives, /automaticallyAdjustKeyboardInsets/);
   assert.match(primitives, /keyboardDismissMode="interactive"/);
@@ -517,12 +517,12 @@ test('signed-out, loading, offline, and error states use explicit accessible pre
   assert.match(page, /shouldTransitionMobileSessionForFeatureFailure\(failure\)/);
   assert.doesNotMatch(page, /announceForAccessibility\(i18n\.t\('auth\.offline'\)\)/);
   assert.match(page, /setDestination\(nextDestination\);[\s\S]*setAccessState\('authenticated_online'\);[\s\S]*setErrorKey\(null\)/);
-  assert.match(primitives, /import \{[\s\S]*ActivityIndicator,[\s\S]*Button,/);
+  assert.match(primitives, /import \{[\s\S]*ActivityIndicator,/);
   assert.match(primitives, /tone = 'loading'/);
   assert.match(primitives, /tone\?: 'loading' \| 'offline' \| 'error'/);
   assert.match(primitives, /accessibilityRole=\{tone === 'loading' \? 'progressbar' : 'alert'\}/);
   assert.match(primitives, /tone === 'loading' \? <ActivityIndicator/);
-  assert.match(primitives, /onAction \? <Button/);
+  assert.match(primitives, /onAction && actionLabel \? <NativeButton/);
   assert.match(page, /<SignedOutScreen[\s\S]*providerBusy=\{providerSignIn\.busy\}/);
   assert.match(page, /providerDiscoveryFailed=\{providerSignIn\.discoveryFailed\}/);
   assert.match(page, /providerReady=\{providerSignIn\.ready\}/);
