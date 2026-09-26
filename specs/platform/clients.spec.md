@@ -75,7 +75,10 @@ native builds verify this exact existing combination.
   charcoal content and yellow action palette. Native navigation titles, search,
   tab selection, and status bars must remain legible regardless of device appearance.
   Android sheet frames must apply that background to their header and top safe
-  area as well as their scrolling content.
+  area as well as their scrolling content. Their content must resize for the
+  keyboard so lower form fields can scroll into view while actions stay visible.
+- Goal switches must respond to taps on both their label and native switch
+  surface, with a single accessible checked state.
 - Root and nested stacks must share navigation defaults. System materials must
   retain native rendering; per-screen painted bars must not compensate for a
   mismatched navigation theme.
