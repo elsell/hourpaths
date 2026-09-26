@@ -209,7 +209,7 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
         multiline
         onChangeText={(value) => setPracticeCommentComposerDraft(presentation.eventID, value)}
         placeholder={i18n.t('social.commentsPlaceholder')}
-        style={styles.composerInput}
+        style={[styles.composerInput, stackComposer && styles.composerStackedInput]}
         value={draft}
       />
       <NativeCommentSendButton
@@ -253,6 +253,7 @@ const styles = StyleSheet.create({
   composer: { alignItems: 'flex-end', backgroundColor: mobileTheme.colors.surface, borderTopColor: mobileTheme.colors.border, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: mobileTheme.spacing.sm, padding: mobileTheme.spacing.sm },
   composerStacked: { alignItems: 'stretch', flexDirection: 'column' },
   composerInput: { flex: 1, maxHeight: 120, minHeight: 44, paddingVertical: mobileTheme.spacing.sm },
+  composerStackedInput: { flex: 0 },
   emptyList: { flexGrow: 1, justifyContent: 'center' },
   error: { color: mobileTheme.colors.error },
   errorBanner: { backgroundColor: mobileTheme.colors.errorSurface, color: mobileTheme.colors.error, padding: mobileTheme.spacing.sm, textAlign: 'center' },
