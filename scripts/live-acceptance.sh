@@ -4764,6 +4764,24 @@ INSERT INTO recorded_activity_models (
 );
 NOTE_03D_ACTIVITY_SEED
 note_03d_event_id="practice:$note_03d_activity_id"
+# Creation synchronously publishes the creator relationship; the public-viewer
+# grant is delivered by the outbox worker. Wait for that fixture prerequisite.
+note_03d_public_status=''
+for _ in $(seq 1 40); do
+  note_03d_public_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer $participant_token" \
+    "http://localhost:8080/v1/social/feed/$note_03d_event_id")"
+  [[ "$note_03d_public_status" == 200 ]] && break
+  [[ "$note_03d_public_status" == 404 ]] || {
+    echo "NOTE-03D public fixture returned unexpected status $note_03d_public_status" >&2
+    exit 1
+  }
+  sleep 0.1
+done
+[[ "$note_03d_public_status" == 200 ]] || {
+  echo "NOTE-03D public visibility grant did not become effective" >&2
+  exit 1
+}
 curl -fsS -H "Authorization: Bearer $participant_token" \
   "http://localhost:8080/v1/social/feed/$note_03d_event_id" |
   EVENT_ID="$note_03d_event_id" PATH_ID="$note_03d_interaction_path_id" OWNER_ID="$administrator_id" python3 -c \

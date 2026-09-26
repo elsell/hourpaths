@@ -404,3 +404,11 @@ acceptance exercises bridge-network service discovery and the OIDC backchannel
 without weakening public issuer validation. Acceptance cleanup removes its
 project-scoped containers, volumes, and locally built images so repeated clean
 runs do not exhaust a development or CI host.
+
+### Public Path acceptance readiness
+
+- A fixture that creates a public Path must allow bounded convergence of its
+  asynchronous visibility grant before asserting nonmember access. It must fail
+  if the grant never becomes effective or a response other than the expected
+  pending 404 occurs. Denial and notification cleanup assertions must not be
+  weakened by this readiness wait.
