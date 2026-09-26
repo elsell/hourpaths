@@ -1,11 +1,13 @@
 import { getLocales } from 'expo-localization';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { mobileTheme } from '../../src/ui/tokens';
 import { createDeviceTranslator } from '../../src/i18n';
 
 const i18n = createDeviceTranslator(getLocales);
 
 export default function TabLayout() {
   return <NativeTabs
+    tintColor={mobileTheme.colors.accent}
     minimizeBehavior="onScrollDown"
   >
     <NativeTabs.Trigger name="home">

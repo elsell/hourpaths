@@ -25,6 +25,7 @@
     "@hourpaths/api-client": "workspace:*",
     "@hourpaths/client-core": "workspace:*",
     "@hourpaths/i18n": "workspace:*",
+    "@react-navigation/native": "7.3.8",
     "expo": "55.0.31",
     "expo-auth-session": "55.0.18",
     "expo-constants": "55.0.17",
