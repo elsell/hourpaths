@@ -5,8 +5,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  InputAccessoryView,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -126,7 +124,6 @@ function CommentRow({ comment, i18n, presentation }: {
     <CommentEditSheet
       admittedBusy={presentation.busy}
       baseline={comment.text}
-      commentID={comment.id}
       draft={editDraft.draft}
       i18n={i18n}
       onClose={() => clearPracticeCommentEditDraft(presentation.eventID, comment.id)}
@@ -147,7 +144,6 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
   const { fontScale, width } = useWindowDimensions();
   const stackComposer = needsCompactVerticalLayout(width, fontScale);
   const validDraft = normalizedComment(draft);
-  const composerAccessoryID = 'practice-comment-keyboard-actions';
   useEffect(() => {
     if (presentation.focusedCommentID) {
       const index = presentation.items.findIndex(({ id }) => id === presentation.focusedCommentID);
@@ -181,7 +177,7 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
       contentContainerStyle={presentation.items.length ? styles.list : styles.emptyList}
       data={presentation.items}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
-      keyboardDismissMode="interactive"
+      keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
       keyboardShouldPersistTaps="handled"
       ListEmptyComponent={empty}
       ListFooterComponent={presentation.nextCursor ? <NativeButton busy={presentation.loadingMore} disabled={presentation.loadingMore} label={i18n.t(presentation.loadingMore ? 'social.commentsLoadingMore' : 'social.commentsLoadMore')} onPress={presentation.loadMore} variant="quiet" /> : null}
@@ -197,7 +193,6 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
       <ThemedTextInput
         accessibilityLabel={i18n.t('social.commentsPlaceholder')}
         allowFontScaling
-        inputAccessoryViewID={composerAccessoryID}
         multiline
         onChangeText={(value) => setPracticeCommentComposerDraft(presentation.eventID, value)}
         placeholder={i18n.t('social.commentsPlaceholder')}
@@ -231,11 +226,6 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
         }}
       />
     </View>
-    {Platform.OS === 'ios' ? <InputAccessoryView nativeID={composerAccessoryID}>
-      <View style={styles.keyboardBar}>
-        <ActionButton label={i18n.t('common.done')} onPress={Keyboard.dismiss} variant="quiet" />
-      </View>
-    </InputAccessoryView> : null}
   </KeyboardAvoidingView></View>;
 }
 
@@ -258,7 +248,6 @@ const styles = StyleSheet.create({
   heartSelected: { backgroundColor: mobileTheme.colors.surfaceRaised },
   history: { borderLeftColor: mobileTheme.colors.border, borderLeftWidth: StyleSheet.hairlineWidth, gap: mobileTheme.spacing.sm, marginTop: mobileTheme.spacing.sm, paddingLeft: mobileTheme.spacing.sm },
   historyHeading: { fontSize: 15, fontWeight: '600' },
-  keyboardBar: { alignItems: 'flex-end', backgroundColor: mobileTheme.colors.surfaceRaised, borderTopColor: mobileTheme.colors.border, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: mobileTheme.spacing.sm },
   list: { paddingBottom: mobileTheme.spacing.md },
   metadata: { color: mobileTheme.colors.textMuted, fontSize: 12, lineHeight: 16 },
   name: { flexShrink: 1, fontSize: 15, fontWeight: '600' },

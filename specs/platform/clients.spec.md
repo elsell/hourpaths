@@ -44,6 +44,10 @@ native builds verify this exact existing combination.
 - Comment input and submission must remain visible above the Android keyboard,
   including at enlarged text sizes. Keyboard positioning must account for the
   native header and the window-to-screen status-bar inset.
+- Multiline comment inputs must not attach React Native's per-field
+  `InputAccessoryView`; the pinned React Native version documents multiline
+  input as unsupported for that component. Comments must instead retain native
+  keyboard dismissal gestures on iOS and Android.
 
 - List recovery and pagination actions must use the shared button contract,
   preserving loading labels, busy state, and mutation-related disabling.
