@@ -62,6 +62,19 @@ on a path.
 - The initial product must not impose an arbitrary maximum activity duration
   when the start and end are otherwise valid.
 
+## Duration entry presentation
+
+- Mobile creation and editing must present duration as hours and minutes rather
+  than require conversion to a total number of seconds. Nonzero seconds must
+  remain visible and editable; otherwise second precision may be disclosed on
+  demand. This same duration control should be used for goal entry.
+- Editing an existing duration must preserve its exact value until the user
+  changes it. For example, 14,021 seconds must open as 3 hours, 53 minutes, and
+  41 seconds; changing the minutes to 54 must produce 14,081 seconds.
+- Blank fields may contribute zero when another field has a value. An entirely
+  blank duration must remain blank. Invalid or unsafe numeric input must remain
+  invalid, never silently become a shorter saved duration.
+
 ## Recording methods
 
 - A participant must be able to record activity by starting and stopping a

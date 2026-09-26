@@ -210,13 +210,11 @@ export function PathGoalFields({
         <HumanDurationEditor
           busy={busy}
           compact={compact}
-          fallbackUnit="minutes"
           inputAccessoryViewID={inputAccessoryViewID}
           label={i18n.t('pathCreate.durationValue')}
           onChange={(intervalSeconds) => onUpdate({ intervalSeconds })}
           onSubmitEditing={Keyboard.dismiss}
           seconds={form.intervalSeconds}
-          unitLabel={i18n.t('pathCreate.durationUnit')}
           unitLabels={{
             hours: i18n.t(durationUnitKeys.hours),
             minutes: i18n.t(durationUnitKeys.minutes),
@@ -261,13 +259,11 @@ export function PathGoalFields({
         <HumanDurationEditor
           busy={busy}
           compact={compact}
-          fallbackUnit="hours"
           inputAccessoryViewID={inputAccessoryViewID}
           label={i18n.t('pathCreate.durationValue')}
           onChange={(overallSeconds) => onUpdate({ overallSeconds })}
           onSubmitEditing={Keyboard.dismiss}
           seconds={form.overallSeconds}
-          unitLabel={i18n.t('pathCreate.durationUnit')}
           unitLabels={{
             hours: i18n.t(durationUnitKeys.hours),
             minutes: i18n.t(durationUnitKeys.minutes),

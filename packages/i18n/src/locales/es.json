@@ -864,5 +864,7 @@
   "pathVisibility.confirmation.narrowingAccess": "Las personas fuera del público nuevo perderán de inmediato el acceso a esta ruta y a su historial. La membresía y la actividad registrada no se eliminarán.",
   "pathVisibility.confirmation.unchangedScope": "La membresía, la actividad registrada, el progreso, tu perfil y las rutas no relacionadas no cambiarán.",
   "pathVisibility.confirmation.confirm": "Confirmar cambio de visibilidad",
-  "notification.pathVisibilityChanged": "{{displayName}} cambió la visibilidad de {{pathName}} a {{pathVisibility}}. La identidad de participantes, el progreso y la actividad elegibles de esta ruta ahora son visibles para el público más amplio de la ruta. El perfil y las rutas no relacionadas permanecen sin cambios."
+  "notification.pathVisibilityChanged": "{{displayName}} cambió la visibilidad de {{pathName}} a {{pathVisibility}}. La identidad de participantes, el progreso y la actividad elegibles de esta ruta ahora son visibles para el público más amplio de la ruta. El perfil y las rutas no relacionadas permanecen sin cambios.",
+  "duration.fieldLabel": "{{label}}: {{unit}}",
+  "duration.showSeconds": "Incluir segundos"
 }
