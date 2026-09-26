@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Alert, StyleSheet, View } from 'react-native';
 import { commentDraftIsDirty, normalizedComment } from './comment-presentation';
 import { createCommentSubmissionOwner } from './comment-submission-admission';
-import { NativeSheet, StatusBanner, ThemedTextInput } from './primitives';
+import { NativeCommentInput } from './native-comment-input';
+import { NativeSheet, StatusBanner } from './primitives';
 
 export function CommentEditSheet({
   baseline,
@@ -86,15 +87,17 @@ export function CommentEditSheet({
     }}
     visible={visible}
   >
-    <ThemedTextInput
-      accessibilityLabel={i18n.t('social.commentsEditTitle')}
-      autoFocus
-      editable={!busy}
-      multiline
-      onChangeText={onDraftChange}
-      style={styles.input}
-      value={draft}
-    />
+    <View style={styles.input}>
+      <NativeCommentInput
+        accessibilityLabel={i18n.t('social.commentsEditTitle')}
+        autoFocus
+        editable={!busy}
+        maximumLines={10}
+        minimumLines={5}
+        onChangeText={onDraftChange}
+        value={draft}
+      />
+    </View>
     {failed ? <StatusBanner text={i18n.t('social.commentsMutationUnavailable')} tone="error" /> : null}
     {busy ? <View accessibilityLiveRegion="polite">
       <StatusBanner text={i18n.t('social.commentsSaving')} tone="loading" />
@@ -103,5 +106,5 @@ export function CommentEditSheet({
 }
 
 const styles = StyleSheet.create({
-  input: { minHeight: 132, textAlignVertical: 'top' },
+  input: { minHeight: 132 },
 });

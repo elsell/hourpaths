@@ -382,9 +382,12 @@ motivation, and encouragement.
   available actions, and privacy-safe roster identity must follow logical
   reading order and each be exposed once to VoiceOver.
 - Comment creation must use a keyboard-safe native composer whose text and send
-  action remain visible and reachable at every supported Dynamic Type size. It
-  must use one native keyboard-inset strategy and must not combine a hard-coded
-  keyboard offset with automatic keyboard insets.
+  action remain visible and reachable at every supported Dynamic Type size. On
+  iOS, the composer must use a vertically growing SwiftUI text field and a
+  compact, icon-only circular up-arrow send control that follows the native
+  messaging pattern. Other platforms must use their platform-native text-input
+  control. The composer must use one native keyboard-inset strategy and must
+  not combine a hard-coded keyboard offset with automatic keyboard insets.
 - Comment editing must use a standard single-view native task with leading
   Cancel and trailing Save-or-Retry actions. Validation and network failure must
   preserve the complete draft, identify the error in text, and keep retry

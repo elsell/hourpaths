@@ -8,6 +8,8 @@ const route = source('../app/following/comments/[eventID].tsx');
 const layout = source('../app/(tabs)/following/_layout.tsx') + source('../app/_layout.tsx') + source('./ui/navigation-theme.ts');
 const feed = source('./ui/social-feed-view.tsx');
 const view = source('./ui/practice-comments-view.tsx');
+const nativeInput = source('./ui/native-comment-input.ios.tsx');
+const fallbackInput = source('./ui/native-comment-input.tsx');
 const nativeMenu = source('./ui/native-action-menu.ios.tsx');
 const fallbackMenu = source('./ui/comment-action-menu.tsx');
 const rosterRoute = source('../app/following/comments/[eventID]/hearts/[commentID].tsx');
@@ -28,7 +30,9 @@ test('each compact feed event and resolved comment notification open the dedicat
 
 test('comments use compact native rows, accessible menus, and a keyboard-safe bottom composer', () => {
   assert.match(view, /KeyboardAvoidingView/);
-  assert.match(view, /ThemedTextInput/);
+  assert.match(view, /NativeCommentInput/);
+  assert.match(nativeInput, /@expo\/ui\/swift-ui/);
+  assert.match(fallbackInput, /ThemedTextInput/);
   assert.match(view, /NativeCommentSendButton/);
   assert.match(view, /SocialProfileAvatar/);
   assert.match(view, /profilePictureURL=\{comment\.author\.profilePictureURL\}/);
@@ -36,7 +40,7 @@ test('comments use compact native rows, accessible menus, and a keyboard-safe bo
   assert.match(view, /CommentActionMenu/);
   assert.match(view, /NativeContentUnavailable/);
   assert.match(view, /accessibilityLiveRegion/);
-  assert.match(view, /allowFontScaling/);
+  assert.match(fallbackInput, /allowFontScaling/);
   assert.match(nativeMenu, /@expo\/ui\/swift-ui/);
   assert.match(nativeMenu, /Menu/);
   assert.match(fallbackMenu, /NativeActionMenu/);

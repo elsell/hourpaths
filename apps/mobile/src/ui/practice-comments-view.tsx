@@ -30,10 +30,11 @@ import { CommentEditSheet } from './comment-edit-sheet';
 import { CommentHeartIcon } from './comment-heart-icon';
 import { normalizedComment } from './comment-presentation';
 import { createCommentSubmissionOwner } from './comment-submission-admission';
+import { NativeCommentInput } from './native-comment-input';
 import { NativeCommentSendButton } from './native-comment-send-button';
 import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
-import { ActionButton, ThemedText as Text, ThemedTextInput } from './primitives';
+import { ActionButton, ThemedText as Text } from './primitives';
 import type { PracticeCommentsRoutePresentation } from './practice-comments-route-presentation';
 import { SocialProfileAvatar } from './social-profile-avatar';
 import { mobileTheme } from './tokens';
@@ -190,15 +191,14 @@ export function PracticeCommentsView({ i18n, presentation }: { i18n: Translator;
       {i18n.t(presentation.errorKey)}
     </Text> : null}
     <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, mobileTheme.spacing.sm) }, stackComposer ? styles.composerStacked : null]}>
-      <ThemedTextInput
-        accessibilityLabel={i18n.t('social.commentsPlaceholder')}
-        allowFontScaling
-        multiline
-        onChangeText={(value) => setPracticeCommentComposerDraft(presentation.eventID, value)}
-        placeholder={i18n.t('social.commentsPlaceholder')}
-        style={[styles.composerInput, stackComposer && styles.composerStackedInput]}
-        value={draft}
-      />
+      <View style={[styles.composerInput, stackComposer && styles.composerStackedInput]}>
+        <NativeCommentInput
+          accessibilityLabel={i18n.t('social.commentsPlaceholder')}
+          onChangeText={(value) => setPracticeCommentComposerDraft(presentation.eventID, value)}
+          placeholder={i18n.t('social.commentsPlaceholder')}
+          value={draft}
+        />
+      </View>
       <NativeCommentSendButton
         busy={presentation.busy}
         disabled={!validDraft}
