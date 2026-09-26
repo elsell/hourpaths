@@ -9,6 +9,7 @@ import { SettingsNavigationRow, SettingsSection, SettingsSeparator } from './set
 import { mobileTheme } from './tokens';
 
 const i18n = createDeviceTranslator(getLocales);
+const pickerTimeZone = 'utc';
 
 export function ManualOccurrenceFields({ busy, form, onChange }: {
   busy: boolean;
@@ -20,8 +21,8 @@ export function ManualOccurrenceFields({ busy, form, onChange }: {
   const wallTime = manualOccurrencePickerValue('2000-01-15', form.localTime);
   const deviceTime = androidClockPickerValue(form.localTime);
   const uses24HourClock = getCalendars()[0]?.uses24hourClock ?? true;
-  const dateLabel = date ? i18n.date(date, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' }) : form.localDate;
-  const timeLabel = wallTime ? i18n.time(wallTime, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12: !uses24HourClock }) : form.localTime;
+  const dateLabel = date ? i18n.date(date, { timeZone: pickerTimeZone, year: 'numeric', month: 'short', day: 'numeric' }) : form.localDate;
+  const timeLabel = wallTime ? i18n.time(wallTime, { timeZone: pickerTimeZone, hour: 'numeric', minute: '2-digit', hour12: !uses24HourClock }) : form.localTime;
   const dismiss = () => setPicker(null);
   return <View>
     <SettingsSection>
