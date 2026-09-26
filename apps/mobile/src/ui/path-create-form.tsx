@@ -307,14 +307,13 @@ function GoalSwitchRow({
     style={({ pressed }) => [styles.switchRow, pressed ? styles.pressed : null]}
   >
     <Text style={styles.switchLabel}>{label}</Text>
-    <Switch
+    <View pointerEvents="none"><Switch
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      pointerEvents="none"
       trackColor={{ false: mobileTheme.colors.border, true: mobileTheme.colors.accentPressed }}
       thumbColor={value ? mobileTheme.colors.accent : mobileTheme.colors.textMuted}
       value={value}
-    />
+    /></View>
   </Pressable>;
 }
 

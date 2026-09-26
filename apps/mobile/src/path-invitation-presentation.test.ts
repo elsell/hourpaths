@@ -196,7 +196,7 @@ test('mobile visibility warning uses a native page sheet with ordered accessible
   assert.match(disclosure, /pathInvitation\.visibilityWarning\.privacyScope/);
   assert.match(disclosure, /hasRetainedActivity[\s\S]*pathInvitation\.visibilityWarning\.retainedActivity/);
   assert.match(warningSheet, /<NativePrimaryButton/);
-  assert.match(warningSheet, /variant="quiet"/);
+  assert.match(warningSheet, /leadingAction=\{\{ disabled: busy/);
   assert.doesNotMatch(warningSheet, /@hourpaths\/api-client|createSessionApiClient/);
 });
 

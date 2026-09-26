@@ -41,6 +41,15 @@ native builds verify this exact existing combination.
 
 ### Shared mobile design language
 
+- Comment input and submission must remain visible above the Android keyboard,
+  including at enlarged text sizes. Keyboard positioning must account for the
+  native header and the window-to-screen status-bar inset.
+
+- Recovery and arrangement actions must use the shared button contract. Path
+  names must retain their own row width when arrangement actions wrap.
+- Invitation visibility warnings must use the shared sheet title and cancellation
+  action. Explicit acceptance must follow the complete privacy disclosure.
+
 - Android overflow actions must use a native scrollable menu so every action is
   available, including when there are more than three. Disabled actions must
   remain visible and disabled; destructive actions must be distinguishable.
@@ -65,6 +74,11 @@ native builds verify this exact existing combination.
 - Mobile screens must use one shared navigation theme matching the existing
   charcoal content and yellow action palette. Native navigation titles, search,
   tab selection, and status bars must remain legible regardless of device appearance.
+  Android sheet frames must apply that background to their header and top safe
+  area as well as their scrolling content. Their content must resize for the
+  keyboard so lower form fields can scroll into view while actions stay visible.
+- Goal switches must respond to taps on both their label and native switch
+  surface, with a single accessible checked state.
 - Root and nested stacks must share navigation defaults. System materials must
   retain native rendering; per-screen painted bars must not compensate for a
   mismatched navigation theme.

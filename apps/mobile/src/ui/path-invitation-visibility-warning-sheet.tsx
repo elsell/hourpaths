@@ -2,9 +2,7 @@ import type { PathInvitationAcceptanceReview } from '@hourpaths/client-core';
 import type { Translator } from '@hourpaths/i18n';
 import { StyleSheet, View } from 'react-native';
 import {
-  ActionButton,
   NativeSheet,
-  SectionHeading,
   Surface,
   ThemedText,
 } from './primitives';
@@ -29,12 +27,14 @@ export function PathInvitationVisibilityWarningSheet({
   review: ConfirmationReview;
   translator: Translator;
 }) {
-  return <NativeSheet dismissible={!busy} onRequestClose={onCancel} visible>
+  return <NativeSheet
+    dismissible={!busy}
+    leadingAction={{ disabled: busy, label: translator.t('pathInvitation.visibilityWarning.cancel'), onPress: onCancel }}
+    onRequestClose={onCancel}
+    title={translator.t('pathInvitation.visibilityWarning.heading')}
+    visible>
     <View accessibilityRole="alert">
       <Surface>
-        <SectionHeading>
-          {translator.t('pathInvitation.visibilityWarning.heading')}
-        </SectionHeading>
         <ThemedText style={styles.audience}>
           {translator.t(review.warning.pathVisibility === 'public'
             ? 'pathInvitation.visibilityWarning.audience.public'
@@ -55,12 +55,6 @@ export function PathInvitationVisibilityWarningSheet({
       disabled={busy}
       label={translator.t('pathInvitation.visibilityWarning.confirm')}
       onPress={onConfirm}
-    />
-    <ActionButton
-      disabled={busy}
-      label={translator.t('pathInvitation.visibilityWarning.cancel')}
-      onPress={onCancel}
-      variant="quiet"
     />
   </NativeSheet>;
 }

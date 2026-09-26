@@ -4,29 +4,19 @@ import type {
 } from '@hourpaths/client-core';
 import type { MessageKey, Translator } from '@hourpaths/i18n';
 import { getLocales } from 'expo-localization';
-import { ActivityIndicator, Button, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { createDeviceTranslator } from '../i18n';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { presentNativeDestructiveConfirmation } from './native-confirmation';
 import {
   ActionButton,
-  NativeSheet,
-  SectionHeading,
   StatusBanner,
   ThemedText as Text,
-  ThemedTextInput,
 } from './primitives';
 import { SettingsActionRow, SettingsSection, SettingsSeparator } from './settings-list';
 import { mobileTheme } from './tokens';
 
 const i18n = createDeviceTranslator(getLocales);
-
-type InvitationReview = {
-  recipient: {
-    displayName: string;
-    username: string;
-  };
-};
 
 function ManagedInvitationRow({
   busy,
@@ -195,148 +185,7 @@ export function ManagedInvitations({
   </View>;
 }
 
-export function PathInvitationSheet({
-  errorText,
-  managedInvitationBusy,
-  managedInvitationErrors,
-  managedInvitations,
-  managedInvitationsBusy,
-  managedInvitationsErrorKey,
-  onCancel,
-  onCancelManagedInvitation,
-  onChangeRole,
-  onChangeUsername,
-  onLoadMoreManagedInvitations,
-  onRetryManagedInvitations,
-  onReview,
-  onSend,
-  review,
-  reviewBusy,
-  role,
-  sendBusy,
-  sent,
-  username,
-}: {
-  errorText?: string;
-  managedInvitationBusy?: Readonly<Record<string, boolean | undefined>>;
-  managedInvitationErrors?: Readonly<Record<string, MessageKey | undefined>>;
-  managedInvitations?: ManagedPendingPathInvitationState;
-  managedInvitationsBusy?: boolean;
-  managedInvitationsErrorKey?: MessageKey;
-  onCancel: () => void;
-  onCancelManagedInvitation?: (invitation: ManagedPendingPathInvitation) => void;
-  onChangeRole: (role: 'participant' | 'supporter') => void;
-  onChangeUsername: (username: string) => void;
-  onLoadMoreManagedInvitations?: () => void;
-  onRetryManagedInvitations?: () => void;
-  onReview: () => void;
-  onSend: () => void;
-  review: InvitationReview | null;
-  reviewBusy: boolean;
-  role: 'participant' | 'supporter';
-  sendBusy: boolean;
-  sent: boolean;
-  username: string;
-}) {
-  const managedMutationBusy = Object.values(managedInvitationBusy ?? {}).some(Boolean);
-  const sheetBusy = reviewBusy || sendBusy || managedMutationBusy;
-  const managedPresentationAvailable = Boolean(
-    managedInvitations &&
-    typeof managedInvitationsBusy === 'boolean' &&
-    managedInvitationBusy &&
-    managedInvitationErrors &&
-    onCancelManagedInvitation &&
-    onLoadMoreManagedInvitations &&
-    onRetryManagedInvitations,
-  );
-
-  return <NativeSheet
-    compact
-    dismissible={!sheetBusy}
-    leadingAction={{ disabled: sheetBusy, label: i18n.t('common.cancel'), onPress: onCancel }}
-    onRequestClose={onCancel}
-    title={i18n.t('pathInvitation.heading')}
-    visible
-  >
-    <View style={styles.shareForm}>
-      <SectionHeading>{i18n.t('pathInvitation.usernameLabel')}</SectionHeading>
-      <ThemedTextInput
-        accessibilityLabel={i18n.t('pathInvitation.usernameLabel')}
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!reviewBusy && !sendBusy}
-        value={username}
-        onChangeText={onChangeUsername}
-      />
-      <Text style={styles.hint}>{i18n.t('pathInvitation.usernameHint')}</Text>
-      <ActionButton
-        disabled={reviewBusy || sendBusy}
-        label={i18n.t(reviewBusy ? 'pathInvitation.reviewing' : 'pathInvitation.review')}
-        onPress={onReview}
-      />
-      {review ? <>
-        <Text>{i18n.t('pathInvitation.reviewedIdentity', {
-          displayName: review.recipient.displayName,
-          username: review.recipient.username,
-        })}</Text>
-        <Text>{i18n.t('pathInvitation.roleLabel')}</Text>
-        <Button
-          disabled={sendBusy || role === 'participant'}
-          title={i18n.t('pathInvitation.role.participant')}
-          onPress={() => onChangeRole('participant')}
-        />
-        <Text style={styles.hint}>{i18n.t('pathInvitation.role.participantEffect')}</Text>
-        <Button
-          disabled={sendBusy || role === 'supporter'}
-          title={i18n.t('pathInvitation.role.supporter')}
-          onPress={() => onChangeRole('supporter')}
-        />
-        <Text style={styles.hint}>{i18n.t('pathInvitation.role.supporterEffect')}</Text>
-        <Text accessibilityRole="header">{i18n.t('pathInvitation.confirmHeading')}</Text>
-        <Text>{i18n.t('pathInvitation.confirmSend', {
-          displayName: review.recipient.displayName,
-          username: review.recipient.username,
-          role: i18n.t(role === 'participant' ? 'pathInvitation.role.participant' : 'pathInvitation.role.supporter'),
-        })}</Text>
-        <ActionButton
-          disabled={sendBusy}
-          label={i18n.t(sendBusy ? 'pathInvitation.sending' : 'pathInvitation.send')}
-          onPress={onSend}
-        />
-      </> : null}
-      {sent && review ? <Text accessibilityLiveRegion="polite">{i18n.t('pathInvitation.sent', {
-        displayName: review.recipient.displayName,
-        username: review.recipient.username,
-      })}</Text> : null}
-      {errorText ? <StatusBanner text={errorText} tone="error" /> : null}
-    </View>
-    {managedPresentationAvailable && managedInvitations && managedInvitationBusy &&
-    managedInvitationErrors && onCancelManagedInvitation && onLoadMoreManagedInvitations &&
-    onRetryManagedInvitations ? <View style={styles.managedArea}>
-      <SectionHeading>{i18n.t('pathInvitation.managed.heading')}</SectionHeading>
-      <ManagedInvitations
-        busy={Boolean(managedInvitationsBusy)}
-        errorKey={managedInvitationsErrorKey}
-        invitationBusy={managedInvitationBusy}
-        invitationErrors={managedInvitationErrors}
-        invitations={managedInvitations}
-        onCancelManagedInvitation={onCancelManagedInvitation}
-        onLoadMoreManagedInvitations={onLoadMoreManagedInvitations}
-        onRetryManagedInvitations={onRetryManagedInvitations}
-      />
-    </View> : null}
-  </NativeSheet>;
-}
-
 const styles = StyleSheet.create({
-  hint: {
-    color: mobileTheme.colors.textMuted,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  managedArea: {
-    gap: mobileTheme.spacing.sm,
-  },
   managedDetails: {
     gap: mobileTheme.spacing.xxs,
     paddingHorizontal: mobileTheme.spacing.md,
@@ -365,8 +214,5 @@ const styles = StyleSheet.create({
     gap: mobileTheme.spacing.sm,
     justifyContent: 'center',
     minHeight: 180,
-  },
-  shareForm: {
-    gap: mobileTheme.spacing.sm,
   },
 });

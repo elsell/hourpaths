@@ -1,7 +1,8 @@
 import type { Translator } from '@hourpaths/i18n';
-import { Button, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { HomePath, HomePreferences } from './home-organization';
 import { SectionHeading, ThemedText as Text } from './primitives';
+import { NativeButton } from './native-button';
 import { mobileTheme } from './tokens';
 
 export type HomeArrangementCollection = 'manual' | 'pinned';
@@ -61,25 +62,27 @@ function ArrangementSection({
         <Text style={styles.name}>{path.name}</Text>
         <View style={styles.actions}>
           {reorderable ? <>
-            <Button
+            <NativeButton
+              variant="quiet"
               accessibilityLabel={i18n.t('home.arrange.moveUp', { pathName: path.name })}
               disabled={busy || index === 0}
               onPress={() => onMove(collection, [index], index - 1)}
-              title={i18n.t('home.arrange.up')}
+              label={i18n.t('home.arrange.up')}
             />
-            <Button
+            <NativeButton
+              variant="quiet"
               accessibilityLabel={i18n.t('home.arrange.moveDown', { pathName: path.name })}
               disabled={busy || index === paths.length - 1}
               onPress={() => onMove(collection, [index], index + 2)}
-              title={i18n.t('home.arrange.down')}
+              label={i18n.t('home.arrange.down')}
             />
           </> : null}
-          <Button
+          <NativeButton
+            variant="quiet"
             accessibilityLabel={i18n.t(pinned ? 'home.arrange.unpin' : 'home.arrange.pin', { pathName: path.name })}
-            color={mobileTheme.colors.accent}
             disabled={busy}
             onPress={() => onPinChange(path.id, !pinned)}
-            title={i18n.t(pinned ? 'home.arrange.unpinShort' : 'home.arrange.pinShort')}
+            label={i18n.t(pinned ? 'home.arrange.unpinShort' : 'home.arrange.pinShort')}
           />
         </View>
       </View>)}
@@ -141,11 +144,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   name: {
-    flex: 1,
+    ...mobileTheme.typography.body,
   },
   row: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: mobileTheme.spacing.sm,
     minHeight: 56,
     paddingHorizontal: mobileTheme.spacing.md,
