@@ -51,6 +51,8 @@ native builds verify this exact existing combination.
 - Platform-specific controls must consume the same shared action, icon, and
   button contracts. Existing pinned `expo-symbols` 55.0.9, already shipped through
   Expo Router, supplies the Android symbol adapter without upgrading native code.
+  The mobile app must directly declare its native peer `expo-font` at the existing
+  resolved version 55.0.8 so native autolinking and Expo Doctor include it.
 
 - Settings and secondary navigation must use the same grouped rows, disclosure
   indicators, spacing, and separators. Long identity text must have its own
