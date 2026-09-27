@@ -73,7 +73,7 @@ test('Home filters explicit membership and keeps supporter-only Paths in their o
   });
 });
 
-test('personal recent ordering, pinning, and running elevation never mutate saved order', () => {
+test('running shortcuts preserve the full grid and saved ordering', () => {
   const paths = [
     path('never-zulu', 'solo'),
     path('older', 'shared', '2026-08-01T12:00:00Z'),
@@ -87,7 +87,10 @@ test('personal recent ordering, pinning, and running elevation never mutate save
 
   assert.deepEqual(result.active.map(({ id }) => id), ['newer']);
   assert.deepEqual(result.pinned.map(({ id }) => id), ['older']);
-  assert.deepEqual(result.trackable.map(({ id }) => id), ['never-alpha', 'never-zulu']);
+  assert.deepEqual(result.trackable.map(({ id }) => id), ['newer', 'never-alpha', 'never-zulu']);
+  const stopped = organizeHomePaths(paths, {}, preferences, 'all');
+  assert.deepEqual(result.trackable, stopped.trackable);
+  assert.deepEqual(result.pinned, stopped.pinned);
   assert.deepEqual(preferences, snapshot);
 });
 

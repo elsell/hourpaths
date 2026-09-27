@@ -4,11 +4,14 @@ import type { NativeMenuAction } from './native-menu-action';
 export function NativeActionMenu({
   accessibilityLabel,
   actions,
+  color,
 }: {
   accessibilityLabel: string;
+  color?: string;
   actions: readonly NativeMenuAction[];
 }) {
   return <Button
+    color={color}
     accessibilityLabel={accessibilityLabel}
     onPress={() => Alert.alert(
       accessibilityLabel,

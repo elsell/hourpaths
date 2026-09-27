@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import type { NativeButtonProps } from './native-button-types';
 import { mobileTheme } from './tokens';
 
-export function NativeButton({ accessibilityLabel, busy = false, disabled = false, fullWidth = false, label, onPress, selected, variant = 'primary' }: NativeButtonProps) {
+export function NativeButton({ accessibilityLabel, busy = false, disabled = false, fullWidth = false, label, onPress, selected, systemImage, tone, variant = 'primary' }: NativeButtonProps) {
   const unavailable = disabled || busy;
   return <Pressable
     accessibilityLabel={accessibilityLabel ?? label}
@@ -11,10 +11,10 @@ export function NativeButton({ accessibilityLabel, busy = false, disabled = fals
     android_ripple={{ color: mobileTheme.colors.surfacePressed }}
     disabled={unavailable}
     onPress={onPress}
-    style={({ pressed }) => [styles.button, styles[variant], fullWidth && styles.fullWidth, (pressed || unavailable) && styles.dimmed]}
+    style={({ pressed }) => [styles.button, styles[variant], tone ? { backgroundColor: tone.background, borderRadius: mobileTheme.radii.md } : null, fullWidth && styles.fullWidth, (pressed || unavailable) && styles.dimmed]}
   >
     {busy ? <ActivityIndicator color={variant === 'primary' ? mobileTheme.colors.accentText : mobileTheme.colors.accent} /> : null}
-    <Text style={[styles.label, variant === 'primary' && styles.primaryLabel, variant === 'danger' && styles.dangerLabel]}>{label}</Text>
+    <Text style={[styles.label, variant === 'primary' && styles.primaryLabel, variant === 'danger' && styles.dangerLabel, tone ? { color: tone.foreground } : null]}>{systemImage === 'stop.fill' ? '■ ' : systemImage === 'play.fill' ? '▶ ' : ''}{label}</Text>
   </Pressable>;
 }
 const styles = StyleSheet.create({

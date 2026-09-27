@@ -47,3 +47,7 @@ Cross-domain implementation scenarios are maintained in
 [`acceptance/initial-product.scenarios.spec.md`](acceptance/initial-product.scenarios.spec.md).
 They supplement the authoritative domain requirements and the derived
 [`paths/permission-matrix.spec.md`](paths/permission-matrix.spec.md).
+
+September 2026 Home revision: approved stable colorful mobile tiles, native flat
+controls, consistent period totals, and Running jump shortcuts. Appearance
+ownership remains open in the Home specification.

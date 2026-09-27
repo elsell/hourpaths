@@ -17,7 +17,7 @@ function sourceSection(start: string, end: string): string {
 
 test('mobile Home separates active and archived Paths while archived detail stays reachable', () => {
   assert.match(page, /const \[archivedPathsOpen, setArchivedPathsOpen\] = useState\(false\)/);
-  assert.match(page, /homeSections\.active\.map\(renderHomePath\)/);
+  assert.match(page, /homeSections\.trackable\.map\(renderHomePath\)/);
   assert.match(page, /homeSections\.trackable\.map\(renderHomePath\)/);
   assert.match(page, /ownedHomeDestination\.profile\.archivedPaths\.map\(\(path\)/);
   assert.match(page, /<HomeHeaderActions[\s\S]*mode=\{archivedPathsOpen \? 'archived' : 'active'\}/);

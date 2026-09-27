@@ -866,5 +866,18 @@
   "pathVisibility.confirmation.confirm": "Confirmar cambio de visibilidad",
   "notification.pathVisibilityChanged": "{{displayName}} cambió la visibilidad de {{pathName}} a {{pathVisibility}}. La identidad de participantes, el progreso y la actividad elegibles de esta ruta ahora son visibles para el público más amplio de la ruta. El perfil y las rutas no relacionadas permanecen sin cambios.",
   "duration.fieldLabel": "{{label}}: {{unit}}",
-  "duration.showSeconds": "Incluir segundos"
+  "duration.showSeconds": "Incluir segundos",
+  "home.jumpToPath": "Mostrar {{pathName}} en tus caminos",
+  "home.timer.stopElapsed": "{{duration}} · Detener",
+  "home.timer.stopAccessible": "Detener {{pathName}}, tiempo transcurrido {{duration}}",
+  "home.timer.startAccessible": "Iniciar {{pathName}}",
+  "home.tile.hourly": "de {{target}} esta hora",
+  "home.tile.daily": "de {{target}} este día",
+  "home.tile.weekly": "de {{target}} esta semana",
+  "home.tile.monthly": "de {{target}} este mes",
+  "home.tile.yearly": "de {{target}} este año",
+  "path.progress.accumulatedLabel": "Tiempo total",
+  "duration.minutes": "{{minutes}}m",
+  "duration.clockHours": "{{hours}}:{{minutes}}:{{seconds}}",
+  "duration.clockMinutes": "{{minutes}}:{{seconds}}"
 }

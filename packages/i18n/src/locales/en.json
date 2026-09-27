@@ -866,5 +866,18 @@
   "pathVisibility.confirmation.confirm": "Confirm visibility change",
   "notification.pathVisibilityChanged": "{{displayName}} changed {{pathName}} visibility to {{pathVisibility}}. Eligible participant identity, progress, and activity in this Path are now visible to the broader Path audience. Your profile and unrelated Paths remain unchanged.",
   "duration.fieldLabel": "{{label}}: {{unit}}",
-  "duration.showSeconds": "Include seconds"
+  "duration.showSeconds": "Include seconds",
+  "home.jumpToPath": "Show {{pathName}} in your paths",
+  "home.timer.stopElapsed": "{{duration}} · Stop",
+  "home.timer.stopAccessible": "Stop {{pathName}}, elapsed {{duration}}",
+  "home.timer.startAccessible": "Start {{pathName}}",
+  "home.tile.hourly": "of {{target}} this hour",
+  "home.tile.daily": "of {{target}} this day",
+  "home.tile.weekly": "of {{target}} this week",
+  "home.tile.monthly": "of {{target}} this month",
+  "home.tile.yearly": "of {{target}} this year",
+  "path.progress.accumulatedLabel": "Total time",
+  "duration.minutes": "{{minutes}}m",
+  "duration.clockHours": "{{hours}}:{{minutes}}:{{seconds}}",
+  "duration.clockMinutes": "{{minutes}}:{{seconds}}"
 }

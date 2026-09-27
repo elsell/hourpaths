@@ -1,10 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { boundedAccessibilityProgress } from './progress-indicator-values';
+import type { PathTone } from './path-appearance';
 import { mobileTheme } from './tokens';
 
 type ProgressIndicatorProps = {
   accessibilityLabel: string;
   compact?: boolean;
+  tone?: PathTone;
+  hideText?: boolean;
   targetValue: number;
   text: string;
   visualValue: number;
@@ -14,6 +17,8 @@ export function ProgressIndicator({
   accessibilityLabel,
   compact = false,
   targetValue,
+  tone,
+  hideText = false,
   text,
   visualValue,
 }: ProgressIndicatorProps) {
@@ -32,12 +37,12 @@ export function ProgressIndicator({
     }}
     style={[styles.container, compact ? styles.compactContainer : null]}
   >
-    <Text style={[styles.label, compact ? styles.compactLabel : null]}>{text}</Text>
+    {!hideText ? <Text style={[styles.label, compact ? styles.compactLabel : null, tone ? { color: tone.foreground } : null]}>{text}</Text> : null}
     <View
       importantForAccessibility="no-hide-descendants"
-      style={[styles.track, compact ? styles.compactTrack : null]}
+      style={[styles.track, compact ? styles.compactTrack : null, tone ? { backgroundColor: tone.track } : null]}
     >
-      <View style={[styles.fill, compact ? styles.compactFill : null, { width: `${clampedVisualPercent}%` as `${number}%` }]} />
+      <View style={[styles.fill, compact ? styles.compactFill : null, { width: `${clampedVisualPercent}%` as `${number}%` }, tone ? { backgroundColor: tone.accent } : null]} />
     </View>
   </View>;
 }

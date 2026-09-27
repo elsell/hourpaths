@@ -402,64 +402,6 @@ test('activity history and details use nested native routes with accessible list
   assert.doesNotMatch(activityDetailView, /maxFontSizeMultiplier/);
 });
 
-test('Home path cards keep identity, progress, and quick tracking in one accessible surface', () => {
-  assert.match(page, /<PathCard/);
-  assert.match(page, /name=\{path\.name\}/);
-  assert.match(page, /accumulatedText=\{state \? i18n\.t\('path\.progress\.accumulatedCompact'/);
-  assert.match(page, /<TimerControl/);
-  assert.match(pathCard, /accessibilityRole="button"/);
-  assert.match(pathCard, /accessibilityLabel=\{name\}/);
-  assert.match(pathCard, /mobileTheme\.colors\.surface/);
-  assert.match(pathCard, /borderBottomColor:\s*mobileTheme\.colors\.separator/);
-  assert.match(pathCard, /<SettingsIcon systemName="chevron\.right" variant="disclosure" \/>/);
-  assert.match(pathCard, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
-  assert.doesNotMatch(pathCard, /markerFrame|styles\.marker/);
-  assert.match(pathCard, /flexDirection:\s*'row'/);
-  assert.match(pathCard, /minHeight:\s*80/);
-  assert.match(pathCard, /needsCompactVerticalLayout\(width, fontScale\)/);
-  assert.match(pathCard, /styles\.accessibilityRow/);
-  assert.doesNotMatch(pathCard, /maxFontSizeMultiplier/);
-  assert.doesNotMatch(pathCard, />›</);
-  assert.match(settingsIcon, /Image as SwiftUIImage/);
-  assert.match(settingsIcon, /variant === 'disclosure'/);
-  assert.match(settingsIcon, /accessibilityElementsHidden/);
-  assert.match(settingsIconFallback, /variant === 'disclosure'/);
-});
-
-test('running Paths temporarily lead Home in a localized accessible section', () => {
-  assert.match(page, /import \{ organizeHomePaths,[^\n]+\} from '\.\.\/src\/ui\/home-organization';/);
-  assert.match(page, /const homeSections = ownedHomeDestination/);
-  assert.match(page, /organizeHomePaths\(ownedHomeDestination\.profile\.paths, ownedHomeDestination\.profile\.timers, homePreferences, homeFilter\)/);
-  assert.match(page, /homeSections\.active\.length > 0/);
-  assert.match(page, /key: 'active',[\s\S]*title: i18n\.t\('home\.activeTimersHeading'\)/);
-  assert.match(page, /homeSections\.active\.map\(renderHomePath\)/);
-  assert.match(page, /homeSections\.trackable\.map\(renderHomePath\)/);
-  assert.doesNotMatch(page, /destination\.profile\.paths\.map\(\(path\) =>/);
-});
-
-test('timer presentation exposes running, busy, and failure state without changing orchestration', () => {
-  assert.match(timerControl, /import \{ NativeTrackingButton \} from '\.\/native-tracking-button';/);
-  assert.match(timerControl, /<NativeTrackingButton[\s\S]*running=\{running\}/);
-  assert.doesNotMatch(timerControl, /<Button/);
-  assert.match(nativeTrackingButton, /systemName=\{running \? 'stop\.fill' : 'play\.fill'\}/);
-  assert.match(nativeTrackingButton, /accessibilityLabel\(label\)/);
-  assert.match(nativeTrackingButton, /nativeDisabled\(busy\)/);
-  assert.match(nativeTrackingButtonFallback, /accessibilityState=\{\{ busy, disabled: busy \}\}/);
-  assert.match(nativeTrackingButtonFallback, /const buttonSize = Math\.max\(48, 40 \+ 8 \* fontScale\)/);
-  assert.doesNotMatch(nativeTrackingButtonFallback, /allowFontScaling=\{false\}[^>]*style=\{styles\.elapsed\}/);
-  assert.match(nativeTimerButton, /buttonStyle\('borderedProminent'\)/);
-  assert.match(nativeTimerButton, /frame\(\{ maxWidth: Number\.POSITIVE_INFINITY, minHeight: mobileTheme\.sizes\.minimumTouchTarget \}\)/);
-  assert.match(nativeTimerButton, /nativeDisabled\(busy\)/);
-  assert.match(timerControl, /accessibilityLabel=\{elapsedAccessibilityLabel\}[\s\S]*style=\{styles\.elapsed\}[\s\S]*\{elapsedText\}/);
-  assert.doesNotMatch(nativeTrackingButton, /elapsedText|Animated\.Text/);
-  assert.match(timerControl, /accessibilityRole="alert"/);
-  assert.doesNotMatch(timerControl, /position:\s*'absolute'/);
-  assert.doesNotMatch(timerControl, /<Pressable/);
-  assert.match(page, /onPress=\{\(\) => void toggleTimer\(path\.id\)\}/);
-  assert.match(page, /timerBusy\[path\.id\]/);
-  assert.match(page, /timerErrorKeys\[path\.id\]/);
-});
-
 test('manual activity create and edit use an extracted native, accessible form', () => {
   assert.match(page, /import \{ ManualActivityForm \} from '\.\.\/src\/ui\/manual-activity-form';/);
   assert.match(page, /<ManualActivityForm[\s\S]*form=\{manualForm\}[\s\S]*onSave=\{\(\) => void submitManualActivity\(\)\}/);
