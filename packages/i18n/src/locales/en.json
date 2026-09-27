@@ -891,5 +891,7 @@
   "home.appearance.color.pink": "Lilac",
   "home.appearance.emoji": "Emoji",
   "home.appearance.emojiHint": "Choose an emoji with your keyboard",
-  "home.appearance.invalidEmoji": "Enter one emoji."
+  "home.appearance.invalidEmoji": "Enter one emoji.",
+  "home.appearance.loadFailed": "Your saved colors and emoji could not be refreshed.",
+  "home.appearance.saveFailed": "Could not save. Your draft is kept. Retry to apply it to the latest saved appearance."
 }

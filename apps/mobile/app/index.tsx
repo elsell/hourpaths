@@ -1,3 +1,5 @@
+import { usePathAppearances } from '../src/use-path-appearances';
+import { PathAppearanceEditor } from '../src/ui/path-appearance-editor';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
@@ -7412,6 +7414,7 @@ export function HomeScreen() {
 
   const ownedHomeDestination = destination?.kind === 'home' && session &&
     homeProjectionSessionToken.current === session.token ? destination : null;
+  const appearances = usePathAppearances(apiURL, ownedHomeDestination?.profile.id, session?.token, ownedHomeDestination ? [...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].map((path) => path.id).join('\u0000') : '');
   const socialPresentationKey = [
     ownedHomeDestination?.profile.id ?? '',
     socialPresentationGeneration.current,
@@ -7588,14 +7591,14 @@ export function HomeScreen() {
     const elapsedText = state?.running
       ? formatSessionClock(activeTimerSeconds(state.timer?.startedAt, now), i18n)
       : undefined;
-    const appearance = defaultPathAppearance(path.id);
+    const appearance = appearances.appearance(path.id);
     const tone = pathPalette[appearance.color];
     const pinned = homePreferences.pinnedPathIDs.includes(path.id);
     return <PathCard
       appearance={appearance}
       headline={state ? formatGoalDuration(currentIntervalProgress?.accumulatedSeconds ?? state.accumulatedSeconds, i18n) : undefined}
       intervalSummary={currentIntervalProgress && path.intervalGoal ? i18n.t(`home.tile.${path.intervalGoal.recurrence}`, { target: formatGoalDuration(currentIntervalProgress.targetSeconds, i18n) }) : state ? i18n.t('path.progress.accumulatedLabel') : undefined}
-      actions={[{
+      actions={[{ label: i18n.t('home.appearance.title'), systemImage: 'paintpalette', onPress: () => appearances.open(path.id) }, {
         disabled: homePreferenceBusy,
         label: i18n.t(pinned ? 'home.arrange.unpin' : 'home.arrange.pin', { pathName: path.name }),
         onPress: () => void updateHomePreferences(pinned
@@ -7635,6 +7638,7 @@ export function HomeScreen() {
       title: i18n.t('home.archivedPaths'),
       items: ownedHomeDestination.profile.archivedPaths.map((path) => <PathCard
         key={path.id}
+        appearance={appearances.appearance(path.id)}
         name={path.name}
         onOpen={() => void openPathDetail(path.id)}
         progress={<Text style={styles.textMuted}>{i18n.t('pathArchive.readOnly')}</Text>}
@@ -7880,9 +7884,11 @@ export function HomeScreen() {
       onRetry={() => void retryAuthenticatedHome()}
       presentation={currentHomePresentation}
       sections={homeViewSections}
-      running={archivedPathsOpen ? [] : homeSections.active.map((path) => ({ id: path.id, name: path.name, appearance: defaultPathAppearance(path.id) }))}
+      running={archivedPathsOpen ? [] : homeSections.active.map((path) => ({ id: path.id, name: path.name, appearance: appearances.appearance(path.id) }))}
     /> : null}
     {ready && ownedHomeDestination ? <>
+      {appearances.failed ? <StatusBanner text={i18n.t('home.appearance.loadFailed')} tone="error" actionLabel={i18n.t('common.retry')} onAction={appearances.retry} /> : null}
+      {appearances.editor ? <PathAppearanceEditor key={appearances.editor.pathID} initial={appearances.appearance(appearances.editor.pathID)} name={[...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].find((path) => path.id === appearances.editor!.pathID)?.name ?? ''} i18n={i18n} busy={appearances.editor.busy} errorText={appearances.editor.failed ? i18n.t('home.appearance.saveFailed') : undefined} onCancel={appearances.close} onSave={(value) => void appearances.save(value)} /> : null}
       {selectedPath ? <NativeRouteSource
         actions={[
           {

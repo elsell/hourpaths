@@ -891,5 +891,7 @@
   "home.appearance.color.pink": "Lila",
   "home.appearance.emoji": "Emoji",
   "home.appearance.emojiHint": "Elige un emoji con el teclado",
-  "home.appearance.invalidEmoji": "Introduce un solo emoji."
+  "home.appearance.invalidEmoji": "Introduce un solo emoji.",
+  "home.appearance.loadFailed": "No se pudieron actualizar tus colores y emojis guardados.",
+  "home.appearance.saveFailed": "No se pudo guardar. Tu borrador se conserva. Reintenta para aplicarlo a la última apariencia guardada."
 }

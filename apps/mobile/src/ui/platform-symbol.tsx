@@ -20,7 +20,7 @@ const materialSymbols: Readonly<Record<string, AndroidSymbol>> = {
   'person.crop.circle.badge.checkmark': 'verified_user',
   'person.crop.circle.badge.exclamationmark': 'person_alert',
   'person.crop.circle.badge.questionmark': 'person_search',
-  'pin': 'push_pin', 'pin.slash': 'keep_off', 'play.fill': 'play_arrow', 'plus': 'add',
+  'paintpalette': 'palette', 'pin': 'push_pin', 'pin.slash': 'keep_off', 'play.fill': 'play_arrow', 'plus': 'add',
   'rectangle.portrait.and.arrow.right': 'logout', 'slider.horizontal.3': 'tune',
   'stop.fill': 'stop', 'trash': 'delete', 'trophy.fill': 'trophy',
   'wifi.exclamationmark': 'wifi_off', 'wifi.slash': 'wifi_off',

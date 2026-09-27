@@ -900,3 +900,5 @@ export {
   type PathVisibilityProjection,
   type ProfileVisibility,
 } from './path-visibility';
+
+export * from './path-appearance';
