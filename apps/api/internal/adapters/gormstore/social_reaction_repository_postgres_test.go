@@ -51,7 +51,7 @@ func TestPostgresAchievementEventSupportsReactionsCommentsHeartsGraceAndOpaqueAu
 		ID, OwnerUserID, Name, Visibility string
 		CreatedAt, UpdatedAt              time.Time
 	}
-	if err := migrationStore.DB.Table("path_models").Create(&pathRow{ID: pathID, OwnerUserID: owner.ID, Name: "Piano", Visibility: "public", CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+	if err := migrationStore.DB.Table("path_models").Create(&pathRow{ID: pathID, OwnerUserID: owner.ID, Name: "Piano", Visibility: "followers", CreatedAt: now, UpdatedAt: now}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := migrationStore.DB.Table("follow_models").Create(&socialFollowTestModel{FollowerUserID: actor.ID, FollowingUserID: owner.ID, CreatedAt: now}).Error; err != nil {
