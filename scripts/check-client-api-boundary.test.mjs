@@ -374,7 +374,7 @@ assert.equal(result.status, 0, `reviewed-native-home-organization-presentation: 
 
 result = check({
   'apps/mobile/src/ui/signed-out-screen.tsx': "import { ActivityIndicator, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native'; export const SignedOutScreen = () => { const { width } = useWindowDimensions(); return <ScrollView><View style={{ width }}><ActivityIndicator /></View></ScrollView>; };",
-  'apps/mobile/src/ui/native-button.ios.tsx': "import { Button, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, controlSize, disabled, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Primary = () => <><Button modifiers={[accessibilityLabel('Sign in'), buttonStyle('borderedProminent'), controlSize('large'), disabled(false), foregroundColor('#000000'), tint('#FFD84D')]}><Text modifiers={[frame({ width: 300 }), foregroundColor('#000000')]}>Sign in</Text></Button></>;",
+  'apps/mobile/src/ui/native-button.ios.tsx': "import { Button, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, buttonStyle, controlSize, contentShape, shapes, disabled, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers'; export const Primary = () => <><Button modifiers={[accessibilityLabel('Sign in'), buttonStyle('borderedProminent'), controlSize('large'), disabled(false), foregroundColor('#000000'), tint('#FFD84D')]}><Text modifiers={[frame({ width: 300 }), contentShape(shapes.rectangle()), foregroundColor('#000000')]}>Sign in</Text></Button></>;",
 });
 assert.equal(result.status, 0, `reviewed-native-signed-out-presentation: ${result.stderr}`);
 

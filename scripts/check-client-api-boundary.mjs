@@ -168,7 +168,7 @@ const approvedExpoUIImports = new Map([
   ])],
   ['apps/mobile/src/ui/native-button.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Button', 'Text'])],
-    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'controlSize', 'disabled', 'frame', 'foregroundColor', 'tint'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'controlSize', 'contentShape', 'shapes', 'disabled', 'frame', 'foregroundColor', 'tint'])],
   ])],
   ['apps/mobile/src/ui/native-choice-picker.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Picker', 'Text'])],
@@ -963,6 +963,10 @@ function inspectSource(relative, file, source, index) {
       if (specifier === 'react-native') {
         const allowed = new Set(['AccessibilityInfo', 'Button', 'SafeAreaView', 'ScrollView', 'Switch', 'Text', 'TextInput', 'View']);
         const uiAllowed = new Set(['ActivityIndicator', 'Alert', 'Button', 'FlatList', 'KeyboardAvoidingView', 'Modal', 'Platform', 'Pressable', 'RefreshControl', 'SafeAreaView', 'ScrollView', 'StyleSheet', 'Switch', 'Text', 'TextInput', 'View', 'useWindowDimensions']);
+        if (relative === 'apps/mobile/src/ui/home-view.tsx') {
+          uiAllowed.add('AccessibilityInfo');
+          uiAllowed.add('findNodeHandle');
+        }
         const onboardingPresentationAllowed = new Set(['StyleSheet', 'Switch', 'View', 'useWindowDimensions']);
         const pathCreatePresentationAllowed = new Set([
           'AccessibilityInfo', 'InputAccessoryView', 'Keyboard', 'Pressable', 'StyleSheet', 'Switch', 'View',

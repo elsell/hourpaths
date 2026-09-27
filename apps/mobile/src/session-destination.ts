@@ -51,7 +51,14 @@ export function applyRefreshedMobilePath(
   profile: MobileHomeProfile,
   pathID: string,
   refreshed: HomePath | null,
+  preserveRecentPosition = false,
 ): MobileHomeProfile {
+  const previous = profile.paths.find(({ id }) => id === pathID);
+  if (refreshed && previous && preserveRecentPosition) {
+    refreshed = { ...refreshed, recentOrderAt: previous.recentOrderAt === undefined
+      ? previous.home.recentActivityAt ?? null
+      : previous.recentOrderAt };
+  }
   const replaceOrAppend = <T extends SessionPath>(paths: T[], path: T): T[] => {
     const found = paths.some(({ id }) => id === pathID);
     return found

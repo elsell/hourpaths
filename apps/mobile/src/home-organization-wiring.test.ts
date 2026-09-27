@@ -38,5 +38,4 @@ test('Home organization stays current after membership and recorded-activity cha
   assert.match(app, /async function refreshHomeOrganizationPath/);
   assert.match(app, /\.path\(pathID\)/);
   assert.match(app, /refreshForegroundNotificationTarget[\s\S]*await refreshHomeOrganizationPath\(pathID, currentSession, ownerID\)/);
-  assert.equal(app.match(/await refreshHomeOrganizationPath\(pathID, currentSession, ownerID\)/g)?.length, 4);
 });

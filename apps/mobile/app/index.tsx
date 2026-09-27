@@ -2199,6 +2199,7 @@ export function HomeScreen() {
     pathID: string,
     currentSession: Session,
     ownerID: string,
+    preserveRecentPosition = false,
   ): Promise<void> {
     const isCurrent = () => {
       const active = notificationLifecycleState.current;
@@ -2231,7 +2232,7 @@ export function HomeScreen() {
       if (!refreshed) throw sessionFailureFromResponse(502);
       if (!isCurrent()) return;
       setDestination((current) => isCurrent() && current?.kind === 'home' && current.profile.id === ownerID
-        ? { ...current, profile: applyRefreshedMobilePath(current.profile, pathID, refreshed) }
+        ? { ...current, profile: applyRefreshedMobilePath(current.profile, pathID, refreshed, preserveRecentPosition) }
         : current);
     } catch (cause) {
       const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
@@ -6189,7 +6190,7 @@ export function HomeScreen() {
     const presentation = timerMutationPresentation(result.state);
     applyOwnedTimerState(ownerID, currentSession, pathID, presentation.state);
     if (state.running && result.state.running === false && 'saved' in result.state && result.state.saved === true) {
-      await refreshHomeOrganizationPath(pathID, currentSession, ownerID);
+      await refreshHomeOrganizationPath(pathID, currentSession, ownerID, true);
     }
     if (presentation.notice === 'subsecond') setTimerNoticeKey('timer.subsecondNotice');
     } finally {

@@ -91,6 +91,11 @@ test('running shortcuts preserve the full grid and saved ordering', () => {
   const stopped = organizeHomePaths(paths, {}, preferences, 'all');
   assert.deepEqual(result.trackable, stopped.trackable);
   assert.deepEqual(result.pinned, stopped.pinned);
+  const justStopped = paths.map((candidate) => candidate.id === 'never-zulu'
+    ? { ...candidate, recentOrderAt: null, home: { ...candidate.home, recentActivityAt: '2026-09-27T12:00:00Z' } }
+    : candidate);
+  assert.deepEqual(organizeHomePaths(justStopped, {}, preferences, 'all').trackable.map(({ id }) => id),
+    stopped.trackable.map(({ id }) => id));
   assert.deepEqual(preferences, snapshot);
 });
 
