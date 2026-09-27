@@ -8,6 +8,8 @@ export const homeOrders = ['recent', 'alphabetical', 'manual'] as const;
 export type HomeOrder = typeof homeOrders[number];
 
 export type HomePath = SessionPath & {
+  // Presentation-only recent position retained across Stop, reset by a collection reload.
+  recentOrderAt?: string | null;
   home: {
     classification: 'solo' | 'shared' | 'supporting';
     pinned: boolean;
@@ -52,8 +54,10 @@ function ordered<P extends HomePath>(paths: readonly P[], preferences: HomePrefe
       }
     }
     if (preferences.order === 'recent') {
-      const leftInstant = left.home.recentActivityAt ? Date.parse(left.home.recentActivityAt) : Number.NaN;
-      const rightInstant = right.home.recentActivityAt ? Date.parse(right.home.recentActivityAt) : Number.NaN;
+      const leftActivity = left.recentOrderAt === undefined ? left.home.recentActivityAt : left.recentOrderAt;
+      const rightActivity = right.recentOrderAt === undefined ? right.home.recentActivityAt : right.recentOrderAt;
+      const leftInstant = leftActivity ? Date.parse(leftActivity) : Number.NaN;
+      const rightInstant = rightActivity ? Date.parse(rightActivity) : Number.NaN;
       const leftValid = Number.isFinite(leftInstant);
       const rightValid = Number.isFinite(rightInstant);
       if (leftValid !== rightValid) return leftValid ? -1 : 1;

@@ -225,7 +225,10 @@ progress must be labeled distinctly from a currently running timer.
 
 ## Active timer shortcuts
 
-- Starting a timer must not lift its Path out of the ordinary or pinned grid.
+- Starting or stopping a timer must not lift its Path out of the ordinary or
+  pinned grid. A successful Stop must refresh permissions and Path metadata
+  without immediately moving the tile because of its new recent-activity time.
+  A subsequent collection reload may recompute recent-activity ordering.
 - A compact Running strip must appear above the grid while visible trackable
   Paths have valid running timers. It must repeat their emoji, color, and name.
 - Selecting a shortcut must scroll to its existing tile without starting,

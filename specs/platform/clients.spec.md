@@ -151,3 +151,11 @@ native builds verify this exact existing combination.
   does not allow an in-app re-request.
 - Permanently deleting the account must end and remove every operating-system
   surface associated with that account's running timers.
+
+### Home tile presentation APIs
+
+- The mobile Home view may use React Native `AccessibilityInfo` and
+  `findNodeHandle` for reduced-motion scrolling and focus transfer to an existing
+  tile. The shared native button may use SwiftUI `contentShape` and `shapes`
+  modifiers to preserve a complete minimum touch target. These presentation-only
+  imports must not permit client transport outside generated adapters.
