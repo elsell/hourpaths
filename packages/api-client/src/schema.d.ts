@@ -1254,6 +1254,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read personal recorded activity statistics */
+        get: operations["get-stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2877,6 +2894,53 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["TimerState"];
+        };
+        StatsBucket: {
+            key: string;
+            /** Format: int64 */
+            seconds: number;
+        };
+        StatsCalendarDay: {
+            date: string;
+            /** Format: int64 */
+            seconds: number;
+        };
+        StatsDistribution: {
+            name: string;
+            pathId: string;
+            /** Format: int64 */
+            seconds: number;
+        };
+        StatsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/StatsOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["StatsSummary"];
+        };
+        StatsPath: {
+            archived: boolean;
+            id: string;
+            name: string;
+        };
+        StatsSummary: {
+            anchor: string;
+            availablePaths: components["schemas"]["StatsPath"][];
+            bucketUnit: string;
+            buckets: components["schemas"]["StatsBucket"][];
+            calendar: components["schemas"]["StatsCalendarDay"][];
+            distribution: components["schemas"]["StatsDistribution"][];
+            endDate: string;
+            nextAnchor?: string;
+            previousAnchor?: string;
+            range: string;
+            startDate: string;
+            /** Format: int64 */
+            totalSeconds: number;
+            /** Format: int64 */
+            weekStartsOn: number;
         };
         StopOutputBody: {
             /**
@@ -6349,6 +6413,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PracticeReactionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-stats": {
+        parameters: {
+            query?: {
+                range?: "day" | "week" | "month" | "year" | "all_time";
+                anchor?: string;
+                pathIds?: string;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOutputBody"];
                 };
             };
             /** @description Error */

@@ -9,6 +9,7 @@ import (
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver"
 	pathroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/path/routes"
 	socialroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/social/routes"
+	statsroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/stats"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/observability"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/oidcauth"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/ratelimit"
@@ -17,6 +18,7 @@ import (
 	"github.com/elsell/hour-paths/apps/api/internal/app"
 	pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
+	statsapp "github.com/elsell/hour-paths/apps/api/internal/app/stats"
 	"github.com/elsell/hour-paths/apps/api/internal/config"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/generated"
@@ -117,6 +119,9 @@ func main() {
 	go reconcile(ctx, application, authorizationWorker)
 	go reconcilePush(ctx, pushWorker)
 	registrations := generated.Registrations(generated.Dependencies{DB: store.DB, Auth: sessions, Profiles: store, Authorizer: authorizer, AuthorizationOutbox: store, AuthorizationSerializer: store, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock, Probe: probe, NewID: uuid.NewString, AuthorizationWorker: uuid.NewString(), AuthorizationLease: 30 * time.Second, CursorSigningKey: []byte(cfg.CursorSigningKey)})
+	registrations = append(registrations, func(api huma.API) {
+		statsroutes.Register(api, &statsapp.Service{Auth: sessions, Repository: gormstore.StatsRepository{DB: store.DB}, Authorizer: authorizer, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock})
+	})
 	socialRelationships := gormstore.NewSocialRelationshipRepository(store.DB, uuid.NewString, authorizationWorker, 30*time.Second)
 	socialFeed := gormstore.NewSocialFeedRepository(store.DB)
 	socialService := socialapp.New(socialapp.Dependencies{

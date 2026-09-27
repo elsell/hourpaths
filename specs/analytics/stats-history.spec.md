@@ -80,3 +80,30 @@ paths and over time.
 - When one activity crosses a calendar boundary in its applicable time zone,
   each elapsed portion must contribute to the corresponding calendar period
   without duplicating time or splitting the source activity record.
+
+## Delivery and failure behavior
+
+- Stats must be available through the existing primary navigation in the mobile
+  and web clients, using each client's shared controls, spacing, and typography.
+- Loading, retry, and zero-activity states must retain the selected Path filter
+  and date range. A failed refresh must not display data for a different filter.
+- Every chart must provide the corresponding dates, Paths, and recorded durations
+  as accessible text. Color alone must not identify a Path or a calendar value.
+- Switching accounts or signing out must clear the previous account's Stats data
+  and discard late responses from that account.
+- Aggregation must include the complete eligible recorded history, not only a
+  client's currently loaded page of Paths or activity. Deleted or inaccessible
+  records must not contribute after refresh.
+
+## Acceptance scenarios
+
+- Given two Paths containing the user's recorded activity and another
+  participant's sessions, All Paths shows only the user's time. Selecting either
+  Path updates every summary, distribution, chart, and calendar consistently.
+- Given a recorded session from 23:30 to 00:30 in its occurrence time zone, each
+  adjacent date receives 30 minutes. Changing the current preference later must
+  not move that recorded time into a different date.
+- Given daylight-saving transitions, recorded elapsed time must be conserved
+  across the historical calendar buckets, including repeated or skipped hours.
+- Given no activity in the selected period, controls remain usable and the
+  surface shows zero recorded time without invented chart values.

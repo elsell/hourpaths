@@ -2967,6 +2967,25 @@ soc03b_first_response="$(curl -fsS -X POST \
   "http://localhost:8080/v1/paths/$soc03b_path_id/activities")"
 soc03b_first_activity_id="$(printf '%s' "$soc03b_first_response" | python3 -c \
   'import json,sys;d=json.load(sys.stdin)["data"];assert d["activity"]["durationSeconds"]==60 and d["accumulatedSeconds"]==60;print(d["activity"]["id"])')"
+# Stats uses the existing 60-second owned activity to exercise its real HTTP
+# envelope, complete aggregation and authentication/ownership boundary.
+expect_status 401 'http://localhost:8080/v1/stats?range=all_time'
+expect_status 401 -H 'Authorization: Bearer malformed' 'http://localhost:8080/v1/stats?range=all_time'
+expect_status 404 -H "Authorization: Bearer $stranger_token" \
+  "http://localhost:8080/v1/stats?range=all_time&pathIds=$soc03b_path_id"
+curl -fsS -H "Authorization: Bearer $owner_token" \
+  "http://localhost:8080/v1/stats?range=all_time&pathIds=$soc03b_path_id" |
+  STATS_PATH_ID="$soc03b_path_id" python3 -c '
+import json,os,sys
+d=json.load(sys.stdin)["data"]
+assert type(d["totalSeconds"]) is int and d["totalSeconds"]==60
+assert d["range"]=="all_time"
+assert d["distribution"]==[{"pathId":os.environ["STATS_PATH_ID"],"name":"Goal achievement acceptance","seconds":60}]
+assert sum(item["seconds"] for item in d["buckets"])==60
+assert sum(item["seconds"] for item in d["calendar"])==60
+assert any(item["id"]==os.environ["STATS_PATH_ID"] for item in d["availablePaths"])
+assert "private achievement source" not in json.dumps(d)
+'
 soc03b_first_ids="$(soc03b_feed | soc03b_achievement_ids 1 2)"
 IFS='|' read -r soc03b_first_interval_id soc03b_first_overall_id <<<"$soc03b_first_ids"
 [[ -n "$soc03b_first_interval_id" && -n "$soc03b_first_overall_id" && "$soc03b_first_interval_id" != "$soc03b_first_overall_id" ]] || {
