@@ -208,3 +208,13 @@ user's shared activity.
   and the relationship's timer-start notification preference.
 - Canceling or unfollowing must not remove access independently granted through
   participation or supporter membership in a shared Path.
+
+### Live active-path progress
+
+Active-following timers must include recorded lifetime progress, configured overall
+goal, and the current interval's recorded progress, target, recurrence and UTC
+boundaries, calculated in the participant's time zone at the response instant.
+Clients must add only the running session's overlap with those boundaries and
+refresh at the interval end. Progress must not include private notes or another
+user's personal appearance. Existing active-following eligibility and authorization
+must apply to every returned path.

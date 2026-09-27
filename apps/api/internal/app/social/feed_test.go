@@ -288,3 +288,41 @@ func TestActiveFollowingFillsVisibleParticipantPageAndBindsCursorToViewer(t *tes
 		t.Fatalf("cross-viewer items=%+v next=%q err=%v", items, next, err)
 	}
 }
+
+func (feed *controlledFeed) ListProfilePracticeCandidates(ctx context.Context, viewer, profileID string, request FeedPageRequest) (FeedCandidatePage, error) {
+	return feed.ListPracticeCandidates(ctx, viewer, request)
+}
+func TestProfileActivityUsesProfileBoundCursorAndAuthoritativePathVisibility(t *testing.T) {
+	now := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
+	feed := &controlledFeed{pages: []FeedCandidatePage{{Items: []PracticeFeedItem{feedItem("a", "visible", now.Add(-time.Minute))}, HasMore: true}}}
+	service := feedService(feed, &feedAuthorizer{allowed: map[string]bool{"visible": true}}, &controlledAudits{})
+	profiles := &controlledProfiles{profile: domain.PublicProfile{ID: "person", Username: "alex", DisplayName: "Alex", Relationship: domain.RelationshipNone}}
+	service.Profiles = profiles
+	items, cursor, err := service.ListProfileActivity(context.Background(), "Bearer session", "alex", "", 1)
+	if err != nil || len(items) != 1 || cursor == "" {
+		t.Fatalf("profile page: %+v %q %v", items, cursor, err)
+	}
+	profiles.profile.ID = "other"
+	if _, _, err := service.ListProfileActivity(context.Background(), "Bearer session", "alex", cursor, 1); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatalf("cross-profile cursor: %v", err)
+	}
+	if _, _, err := service.ListPracticeFeed(context.Background(), "Bearer session", cursor, 1); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatalf("profile cursor on following: %v", err)
+	}
+
+	profiles.profile.ID = "person"
+	feed.pages = []FeedCandidatePage{{Items: []PracticeFeedItem{feedItem("hidden", "denied", now.Add(-time.Minute))}}}
+	hidden, _, err := service.ListProfileActivity(context.Background(), "Bearer session", "alex", "", 1)
+	if err != nil || len(hidden) != 0 {
+		t.Fatalf("path authorization denial exposed history: %+v %v", hidden, err)
+	}
+	service.Auth = controlledAuth{err: ports.ErrInvalidCredential}
+	if _, _, err := service.ListProfileActivity(context.Background(), "Bearer session", "alex", "", 1); !errors.Is(err, ports.ErrInvalidCredential) {
+		t.Fatalf("invalid credential: %v", err)
+	}
+	service.Auth = controlledAuth{principal: ports.Principal{UserID: "viewer", Scopes: []string{"api:user"}}}
+	profiles.err = ports.ErrNotFound
+	if _, _, err := service.ListProfileActivity(context.Background(), "Bearer session", "alex", "", 1); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("hidden profile: %v", err)
+	}
+}

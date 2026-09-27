@@ -119,6 +119,31 @@ func TestPostgresSocialFeedCandidatesAreCurrentSafeChronologicalAndStable(t *tes
 	}
 
 	repository := NewSocialFeedRepository(runtimeStore.DB)
+	profilePage, err := repository.ListProfilePracticeCandidates(context.Background(), viewer.ID, unrelated.ID, socialapp.FeedPageRequest{Snapshot: now, Limit: 10})
+	if err != nil || len(profilePage.Items) != 1 || profilePage.Items[0].PathID != unrelatedPath {
+		t.Fatalf("unfollowed visible profile history = %+v, %v", profilePage, err)
+	}
+	if _, err := resolvePracticeReactionTarget(runtimeStore.DB, viewer.ID, profilePage.Items[0].ID); err != nil {
+		t.Fatalf("visible profile event engagement: %v", err)
+	}
+	blockedPage, err := repository.ListProfilePracticeCandidates(context.Background(), viewer.ID, blocked.ID, socialapp.FeedPageRequest{Snapshot: now, Limit: 10})
+	if err != nil || len(blockedPage.Items) != 0 {
+		t.Fatalf("blocked history leaked: %+v %v", blockedPage, err)
+	}
+	if err := migrationStore.DB.Table("path_membership_models").Where("path_id = ? AND user_id = ?", unrelatedPath, viewer.ID).Delete(&membershipRow{}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := migrationStore.DB.Table("path_models").Where("id = ?", unrelatedPath).Update("visibility", "private").Error; err != nil {
+		t.Fatal(err)
+	}
+	privatePage, err := repository.ListProfilePracticeCandidates(context.Background(), viewer.ID, unrelated.ID, socialapp.FeedPageRequest{Snapshot: now, Limit: 10})
+	if err != nil || len(privatePage.Items) != 0 {
+		t.Fatalf("private history leaked: %+v %v", privatePage, err)
+	}
+	if _, err := resolvePracticeReactionTarget(runtimeStore.DB, viewer.ID, profilePage.Items[0].ID); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("private profile engagement = %v", err)
+	}
+
 	first, err := repository.ListPracticeCandidates(context.Background(), viewer.ID, socialapp.FeedPageRequest{Snapshot: now, Limit: 2})
 	if err != nil || len(first.Items) != 2 || !first.HasMore {
 		t.Fatalf("first candidates = %+v, %v", first, err)

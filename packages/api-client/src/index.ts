@@ -234,6 +234,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     followRequests: (cursor?: string) => authenticatedClient.GET('/v1/follow-requests', {
       params: { query: { cursor, limit: 25 } },
     }),
+	 profileActivity: (username: string, cursor?: string) => authenticatedClient.GET('/v1/profiles/{username}/activity', { params: { path: { username }, query: { cursor, limit: 25 } } }),
 	 socialFeed: (cursor?: string) => authenticatedClient.GET('/v1/social/feed', {
       params: { query: { cursor, limit: 25 } },
     }),

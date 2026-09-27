@@ -942,6 +942,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profiles/{username}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List chronological feed events */
+        get: operations["list-profile-activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/profiles/{username}/block": {
         parameters: {
             query?: never;
@@ -1284,8 +1301,29 @@ export interface components {
         ActiveFollowingTimer: {
             id: string;
             path: components["schemas"]["PracticeFeedPath"];
+            progress?: components["schemas"]["ActivePathProgress"];
             /** Format: date-time */
             startedAt: string;
+        };
+        ActivePathIntervalProgress: {
+            /** Format: date-time */
+            endedAt: string;
+            /** Format: int64 */
+            recordedSeconds: number;
+            recurrence: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: int64 */
+            targetSeconds: number;
+        };
+        ActivePathProgress: {
+            /** Format: int64 */
+            accumulatedSeconds: number;
+            /** Format: date-time */
+            asOf: string;
+            interval?: components["schemas"]["ActivePathIntervalProgress"];
+            /** Format: int64 */
+            overallTargetSeconds?: number;
         };
         Activity: {
             /** Format: date-time */
@@ -5480,6 +5518,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProfileOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-profile-activity": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeFeedOutputBody"];
                 };
             };
             /** @description Error */

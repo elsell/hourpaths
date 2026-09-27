@@ -58,10 +58,24 @@ type PracticeFeedItem struct {
 	ReactionsEnabled bool                    `json:"reactionsEnabled" required:"true"`
 }
 
+type ActivePathIntervalProgress struct {
+	RecordedSeconds int64     `json:"recordedSeconds" minimum:"0"`
+	TargetSeconds   int64     `json:"targetSeconds" minimum:"1"`
+	StartedAt       time.Time `json:"startedAt"`
+	EndedAt         time.Time `json:"endedAt"`
+	Recurrence      string    `json:"recurrence"`
+}
+type ActivePathProgress struct {
+	AsOf                 time.Time                   `json:"asOf"`
+	AccumulatedSeconds   int64                       `json:"accumulatedSeconds" minimum:"0"`
+	OverallTargetSeconds *int64                      `json:"overallTargetSeconds,omitempty"`
+	Interval             *ActivePathIntervalProgress `json:"interval,omitempty"`
+}
 type ActiveFollowingTimer struct {
-	ID        string           `json:"id"`
-	Path      PracticeFeedPath `json:"path"`
-	StartedAt time.Time        `json:"startedAt"`
+	Progress  *ActivePathProgress `json:"progress,omitempty"`
+	ID        string              `json:"id"`
+	Path      PracticeFeedPath    `json:"path"`
+	StartedAt time.Time           `json:"startedAt"`
 }
 
 type ActiveFollowingItem struct {

@@ -13,7 +13,22 @@ import (
 
 const activeFollowingCursorDomain = "social-active-following"
 
+type ActivePathIntervalProgress struct {
+	RecordedSeconds int64
+	TargetSeconds   int64
+	StartedAt       time.Time
+	EndedAt         time.Time
+	Recurrence      string
+}
+type ActivePathProgress struct {
+	AsOf                 time.Time
+	AccumulatedSeconds   int64
+	OverallTargetSeconds *int64
+	Interval             *ActivePathIntervalProgress
+}
+
 type ActiveFollowingTimer struct {
+	Progress  *ActivePathProgress
 	ID        string
 	PathID    string
 	PathName  string
@@ -46,6 +61,7 @@ func (candidate ActiveFollowingCandidate) valid() bool {
 }
 
 type ActiveFollowingPageRequest struct {
+	AsOf               time.Time
 	AfterParticipantID string
 	Limit              int
 }
@@ -77,7 +93,7 @@ func (service *Service) ListActiveFollowing(ctx context.Context, authorization, 
 	if !service.AuditRateLimiter.Allow(principal.UserID, now) {
 		return nil, "", platformapp.ErrRateLimited
 	}
-	request := ActiveFollowingPageRequest{Limit: limit}
+	request := ActiveFollowingPageRequest{Limit: limit, AsOf: now}
 	if cursor != "" {
 		payload, decodeErr := shared.DecodeCursor(service.CursorSigningKey, cursor)
 		if decodeErr != nil || payload.Owner != principal.UserID || payload.Domain != activeFollowingCursorDomain || payload.AfterID == "" {
