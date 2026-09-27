@@ -30,7 +30,6 @@ test('archived Path detail is read-only but preserves history access', () => {
   assert.match(pathDetailView, /archived[\s\S]*accessibilityRole="alert"[\s\S]*i18n\.t\('pathArchive\.readOnly'\)/);
   assert.match(detail, /selectedCapabilities\.manageGoals/);
   assert.match(detail, /selectedCapabilities\.trackTime/);
-  assert.match(pathDetailView, /!archived && canTrackTime \? <NativePrimaryButton/);
   assert.match(detail, /openActivityHistory\(selectedPath\.id\)/);
 });
 

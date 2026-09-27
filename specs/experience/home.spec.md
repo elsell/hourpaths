@@ -183,7 +183,12 @@ progress must be labeled distinctly from a currently running timer.
   touch target. Starting and stopping must preserve the tile layout and position.
 - Overall targets must remain visible when configured; absent goals must not
   appear as zero targets. Server-projected progress remains authoritative.
-- Path identity must open details independently of the tracking action. Existing
+- The entire tile surface must open the Path detail/edit page, except its
+  independent timer and overflow controls. The overflow must align to the top
+  right and expose Pin/Unpin, Edit, and Delete where authorized. Delete must
+  enter the existing reviewed deletion flow, never immediately delete.
+- Home must use one horizontal content inset and compact section spacing,
+  without an additional decorative gap below the native navigation bar. Existing
   pinning, filtering, arrangement, and supporter visibility rules remain.
 - Color must not be the sole indication of running state. Controls must retain
   at least 44-point targets, text scaling, and logical screen-reader order.

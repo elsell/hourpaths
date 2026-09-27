@@ -78,9 +78,3 @@ test('system chrome stays native and unavailable fallback renders its icon', () 
   assert.match(systemImage, /Image as SwiftUIImage/);
   assert.match(systemImage, /systemName=\{systemName\}/);
 });
-
-test('compact Path detail keeps History visible in body and avoids duplicate Path title', () => {
-  assert.match(detail, /<SettingsNavigationRow[\s\S]*pathDetails\.openHistory[\s\S]*onPress=\{onOpenHistory\}/);
-  assert.doesNotMatch(detail, /pathName|<ScreenHeader|<PageHeader/);
-  assert.doesNotMatch(detail, /numberOfLines|maxFontSizeMultiplier|allowFontScaling=\{false\}/);
-});

@@ -11,10 +11,11 @@ type TimerControlProps = {
   errorText?: string;
   onPress: () => void;
   running: boolean;
+  prominent?: boolean;
   tone?: PathTone;
 };
 
-export function TimerControl({ actionLabel, busy, elapsedAccessibilityLabel, elapsedText, errorText, onPress, running, tone }: TimerControlProps) {
+export function TimerControl({ actionLabel, busy, elapsedAccessibilityLabel, elapsedText, errorText, onPress, running, tone, prominent = false }: TimerControlProps) {
   return <View style={styles.container}>
     <NativeButton
       accessibilityLabel={elapsedAccessibilityLabel ?? actionLabel}
@@ -23,7 +24,7 @@ export function TimerControl({ actionLabel, busy, elapsedAccessibilityLabel, ela
       label={elapsedText ?? actionLabel}
       onPress={onPress}
       systemImage={running ? 'stop.fill' : 'play.fill'}
-      tone={{ background: '#FFFFFFD9', foreground: running ? '#AD1830' : tone?.accent ?? '#235F9E' }}
+      tone={prominent && tone ? { background: tone.foreground, foreground: tone.background } : { background: '#FFFFFFD9', foreground: running ? '#AD1830' : tone?.accent ?? '#235F9E' }}
       variant="secondary"
     />
     {errorText ? <Text accessibilityRole="alert" style={[styles.error, tone ? { color: tone.foreground } : null]}>{errorText}</Text> : null}

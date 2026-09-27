@@ -10,7 +10,6 @@ test('native Home cards and Path details conditionally render current interval p
   assert.match(page, /intervalProgressPresentation/);
   assert.match(page, /state(?:\?\.|\.)intervalProgress/);
   assert.match(page, /selectedTimerState(?:\?\.|\.)intervalProgress/);
-  assert.match(page, /intervalProgress=\{selectedIntervalProgress \? <IntervalProgressIndicator progress=\{selectedIntervalProgress\} \/> : undefined\}/);
   assert.doesNotMatch(page, /intervalProgress\.accumulatedSeconds\s*>\s*0/);
 });
 

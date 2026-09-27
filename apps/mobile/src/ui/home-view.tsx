@@ -154,14 +154,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: mobileTheme.colors.textMuted,
     ...mobileTheme.typography.caption,
-    paddingHorizontal: mobileTheme.spacing.md,
-    paddingTop: mobileTheme.spacing.md,
+    paddingTop: mobileTheme.spacing.xs,
   },
   section: {
     gap: mobileTheme.spacing.xs,
   },
   rows: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: mobileTheme.spacing.sm },
-  collection: { paddingHorizontal: mobileTheme.spacing.sm, gap: mobileTheme.spacing.sm },
+  collection: { gap: mobileTheme.spacing.sm },
   running: { backgroundColor: mobileTheme.colors.surface, borderRadius: mobileTheme.radii.lg, borderCurve: 'continuous', padding: mobileTheme.spacing.sm, gap: mobileTheme.spacing.xs },
   runningTitle: { ...mobileTheme.typography.body, fontWeight: '600' },
   shortcuts: { gap: mobileTheme.spacing.xs },

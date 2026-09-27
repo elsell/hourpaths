@@ -16,8 +16,8 @@ Define the focused view for understanding and managing one path.
 
 - Path details, Path activity history, and activity-entry detail must use one
   native secondary navigation stack above Home. The native navigation title
-  must identify the current Path or activity destination without repeating a
-  decorative page title in the body. Standard native bars and controls must
+  must identify the destination. The Path landing screen may use a generic
+  localized Path title because its compact header contains the editable name. Standard native bars and controls must
   inherit the platform's Liquid Glass appearance without a custom navigation
   background that obscures or duplicates the system material.
 - A cold launch, restored route, direct link, or notification route to an
@@ -66,14 +66,16 @@ Define the focused view for understanding and managing one path.
 - The personal summary must show total accumulated time, current interval
   progress when an interval goal exists, and overall-target progress when an
   overall target exists.
-- On mobile, the native navigation title must identify the selected Path without
-  repeating the same Path-name heading in the detail body.
+- On mobile, the compact colored header must identify the selected Path with
+  its editable name and personal emoji; the navigation bar uses a generic Path
+  title.
 - Mobile accumulated-time and goal-progress values must choose localized
   seconds, minutes, or hours appropriate to their magnitude instead of exposing
   storage-oriented seconds for every value.
-- The mobile personal summary must present total time first, then only the goal
-  progress indicators that are configured, followed by the primary activity
-  action. A Path with no configured goal must not show an empty or failed-goal
+- The mobile personal summary must present current goal-period time first,
+  falling back to clearly labeled lifetime time when no interval goal exists,
+  with configured progress and lifetime time secondary. The Start/Stop control
+  must show the live session elapsed time independently of the main number. A Path with no configured goal must not show an empty or failed-goal
   placeholder.
 - The mobile primary activity action must use a native button, remain reachable
   after text-size reflow, and expose its purpose without relying on its icon.
@@ -81,14 +83,14 @@ Define the focused view for understanding and managing one path.
   participant, including the current user when they participate.
 - Each participant comparison must show current interval progress and
   overall-target progress when the corresponding goals are configured.
-- The Path details landing view must show aggregate participant progress
-  indicators only; it must not list any participant's individual sessions
-  inline.
+- The mobile Path landing page may preview the two newest authorized activity
+  entries. Shared activity must identify the participant; private notes must
+  retain their existing visibility rules.
 - A supporter has no personal tracking progress for the Path, so their detail
   view must begin with the participant comparison rather than an empty personal
   summary.
-- Path details must provide a way to open the selected Path's recorded activity
-  history without placing that session list on the landing view.
+- Path details must provide See all to open full recorded activity history
+  from the compact recent-activity preview.
 - On mobile, Path activity history and individual session detail must be
   separate native navigation destinations. Standard navigation-bar back
   controls and the platform back gesture must move from session detail to
@@ -231,3 +233,25 @@ Define the focused view for understanding and managing one path.
   dates, time zone, and participant in the shared labeled-value layout.
 - An empty edit history must use a compact inline message rather than a large
   illustrated empty state. Actual revisions and retry actions must remain available.
+
+## Compact mobile detail/edit page (approved September 2026)
+
+- The landing destination must be one scrolling page: compact personal-color
+  header, recent activity with Add time and See all, then grouped settings.
+- The header must expose emoji editing and preset palette selection, plus name
+  editing only when authorized. Appearance uses the account-scoped persistence
+  and conflict behavior defined in [Home](home.spec.md#personal-appearance-approved-september-2026).
+  Failed saves must retain a retryable draft and must not claim success.
+- Goals, sharing, and notification preferences must open the existing focused
+  native editors when authorized. Lifecycle and ownership actions must remain
+  reachable without crowding the everyday overview.
+- Shared native settings rows, palette controls, timer controls, progress,
+  corner radii, and spacing tokens must keep alignment consistent. Controls
+  must remain flat and reflow for large text, without clipping tap targets.
+- Recent activity must distinguish loading, empty, and retryable failure. Late
+  activity results must not cross account or Path boundaries.
+- Acceptance: tapping a Home tile opens this page; tapping its timer does not
+  navigate; its overflow opens Pin/Unpin, Edit, and authorized Delete. A running
+  Path retains the same main time meaning and exposes Stop with elapsed time.
+- Acceptance: selecting a palette color updates that user's Home and detail
+  presentation after persistence; other users' appearance remains unchanged.

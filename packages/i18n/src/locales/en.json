@@ -893,5 +893,21 @@
   "home.appearance.emojiHint": "Choose an emoji with your keyboard",
   "home.appearance.invalidEmoji": "Enter one emoji.",
   "home.appearance.loadFailed": "Your saved colors and emoji could not be refreshed.",
-  "home.appearance.saveFailed": "Could not save. Your draft is kept. Retry to apply it to the latest saved appearance."
+  "home.appearance.saveFailed": "Could not save. Your draft is kept. Retry to apply it to the latest saved appearance.",
+  "pathDetails.recentActivity": "Recent activity",
+  "pathDetails.settings": "Settings",
+  "pathDetails.seeAll": "See all",
+  "pathDetails.editPath": "Edit",
+  "pathDetails.sharing": "Sharing",
+  "pathDetails.notifications": "Notifications",
+  "pathDetails.appearancePersonal": "Your color and emoji",
+  "pathDetails.period.hourly": "This hour",
+  "pathDetails.period.daily": "Today",
+  "pathDetails.period.weekly": "This week",
+  "pathDetails.period.monthly": "This month",
+  "pathDetails.period.yearly": "This year",
+  "duration.compactSeconds": "{{seconds}}s",
+  "duration.compactHours": "{{hours}}h",
+  "duration.compactHoursMinutes": "{{hours}}h {{minutes}}m",
+  "pathDetails.goalTarget": "of {{target}} goal"
 }

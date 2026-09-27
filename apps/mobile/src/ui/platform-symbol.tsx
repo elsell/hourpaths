@@ -1,4 +1,5 @@
 import { SymbolView, type AndroidSymbol } from 'expo-symbols';
+import type { ComponentProps } from 'react';
 import { View } from 'react-native';
 import { mobileTheme } from './tokens';
 
@@ -22,7 +23,7 @@ const materialSymbols: Readonly<Record<string, AndroidSymbol>> = {
   'person.crop.circle.badge.questionmark': 'person_search',
   'paintpalette': 'palette', 'pin': 'push_pin', 'pin.slash': 'keep_off', 'play.fill': 'play_arrow', 'plus': 'add',
   'rectangle.portrait.and.arrow.right': 'logout', 'slider.horizontal.3': 'tune',
-  'stop.fill': 'stop', 'trash': 'delete', 'trophy.fill': 'trophy',
+  'target': 'adjust', 'stop.fill': 'stop', 'trash': 'delete', 'trophy.fill': 'trophy',
   'wifi.exclamationmark': 'wifi_off', 'wifi.slash': 'wifi_off',
   'xmark': 'close', 'xmark.circle': 'cancel',
 };
@@ -34,6 +35,6 @@ export function PlatformSymbol({ systemName, color = mobileTheme.colors.textMute
 }) {
   const name = materialSymbols[systemName] ?? 'help_outline';
   return <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-    <SymbolView name={{ android: name, web: name }} size={size} tintColor={color} />
+    <SymbolView name={{ ios: systemName as Extract<ComponentProps<typeof SymbolView>['name'], object>['ios'], android: name, web: name }} size={size} tintColor={color} />
   </View>;
 }

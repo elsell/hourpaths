@@ -47,6 +47,7 @@ const weekdayKeys = [
 ] as const satisfies readonly MessageKey[];
 
 export type PathGoalManagementFormProps = {
+  initialScreen?: 'overview' | 'name' | 'goals' | 'delete';
   archived?: boolean;
   busy: boolean;
   canDelete: boolean;
@@ -94,6 +95,7 @@ export type PathGoalManagementFormProps = {
 };
 
 export function PathGoalManagementForm({
+  initialScreen = 'overview',
   archived = false,
   busy,
   canDelete,
@@ -139,7 +141,7 @@ export function PathGoalManagementForm({
   visibilityReview,
   visibilitySaved,
 }: PathGoalManagementFormProps) {
-  const [screen, setScreen] = useState<PathManagementScreen>('overview');
+  const [screen, setScreen] = useState<PathManagementScreen>(initialScreen);
   const managementBusy = pathManagementIsBusy({ deleteBusy, goalBusy: busy, renameBusy });
   const renamePresentation = derivePathRenamePresentation({
     busy: renameBusy,

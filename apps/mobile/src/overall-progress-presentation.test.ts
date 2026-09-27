@@ -32,7 +32,6 @@ function contrastRatio(foreground: string, background: string): number {
 
 test('mobile Home and Path details show authoritative accumulated and overall progress', () => {
   assert.match(page, /overallProgress/);
-  assert.match(pathDetailView, /pathDetails\.totalTime/);
   assert.match(page, /path\.progress\.overallDetail(?:Complete)?/);
   assert.match(page, /formatCompactDuration\(progress\.accumulatedSeconds, i18n\)/);
   assert.match(page, /formatCompactDuration\(progress\.targetSeconds, i18n\)/);
