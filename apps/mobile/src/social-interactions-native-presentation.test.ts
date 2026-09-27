@@ -102,6 +102,8 @@ test('comment entry uses one vertically growing native messaging capsule', () =>
   assert.match(inputIOS, /import \{ TextField \} from '@expo\/ui\/swift-ui'/);
   assert.match(composerIOS, /import \{ Button, HStack, TextField \} from '@expo\/ui\/swift-ui'/);
   assert.match(composerIOS, /<HStack/);
+  assert.match(composerIOS, /alignment="center"/);
+  assert.doesNotMatch(composerIOS, /alignment="bottom"/);
   assert.match(composerIOS, /axis="vertical"/);
   assert.match(composerIOS, /lineLimit\(\{ min: 1, max: 5 \}\)/);
   assert.match(composerIOS, /textFieldStyle\('plain'\)/);
