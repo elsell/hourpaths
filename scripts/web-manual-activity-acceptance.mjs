@@ -97,6 +97,7 @@ try {
   const historyResponse = await historyResponsePromise
   if (historyResponse.status() !== 200) throw new Error(`browser Path history failed: ${historyResponse.status()}`)
   const createdRow = page.locator(`[data-activity-id="${activityID}"]`)
+  await createdRow.first().waitFor({ state: 'visible' })
   if (await createdRow.count() !== 1) throw new Error('browser-created activity did not have exactly one stable history control')
   const detailResponsePromise = page.waitForResponse((response) =>
     new URL(response.url()).pathname.endsWith(`/activities/${activityID}`) && response.request().method() === 'GET')
