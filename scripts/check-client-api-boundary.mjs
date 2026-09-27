@@ -228,6 +228,7 @@ const approvedSafeAreaImports = new Set([
 ]);
 const approvedSvelteComponentProps = new Map([
   ['apps/web/src/routes/+page.svelte', new Map([
+    ['PathAppearanceSurface', new Set(['apiURL', 'token', 'pathID', 'i18n'])],
     ['SocialProfileDiscovery', new Set([
       'blockBusy', 'blockError', 'blockedAccounts', 'blockedAccountsNextCursor', 'blockedAccountsOpen',
       'blockedAccountsState', 'blockReview', 'busyFollowRequestID', 'followRequests', 'followRequestsNextCursor', 'followRequestsOpen',

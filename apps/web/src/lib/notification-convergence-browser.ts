@@ -70,3 +70,8 @@ export function openNotificationConvergenceBrowser(
     },
   });
 }
+
+export function subscribeBrowserFocus(listener: () => void): () => void {
+  window.addEventListener('focus', listener);
+  return () => window.removeEventListener('focus', listener);
+}
