@@ -8,6 +8,8 @@ import { createDeviceTranslator } from '../../src/i18n';
 import { scheduleSocialRouteBootstrap } from '../../src/social-route-recovery';
 import { NativeRouteScreen } from '../../src/ui/native-route-presentation';
 import { PathHeaderMenu } from '../../src/ui/path-header-menu';
+import { SocialTimeline } from '../../src/ui/social-feed-view';
+import { SectionHeading } from '../../src/ui/primitives';
 import { SocialProfileDetailView } from '../../src/ui/social-profile-detail-view';
 import { canBlockCurrentSocialProfile, useSocialProfileRoutePresentation } from '../../src/ui/social-profile-route-presentation';
 import { useSocialRouteRecovery } from '../../src/ui/social-route-recovery-presentation';
@@ -164,6 +166,16 @@ export default function SocialProfileScreen() {
         }}
         state={profile}
       />
+      {profile.status === 'ready' ? <>
+        <SectionHeading>{i18n.t('social.profileActivityHeading')}</SectionHeading>
+        <SocialTimeline profile i18n={i18n} state={social.activity}
+          onLoadMore={social.loadMoreActivity} onRetry={social.retryActivity}
+          onDismissInteractionNotice={social.dismissActivityNotice}
+          onOpen={social.openActivity} onOpenComments={social.openComments}
+          onSetReaction={social.setReaction} onRemoveReaction={social.removeReaction}
+          onOpenProfile={(nextUsername) => { if (nextUsername !== username) router.push({ pathname: '/profile/[username]', params: { username: nextUsername } }); }}
+        />
+      </> : null}
     </NativeRouteScreen>
   </>;
 }

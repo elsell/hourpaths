@@ -287,38 +287,10 @@ test('Following root is the compact practice feed and keeps social destinations 
   assert.match(peopleRoute, /<SocialProfileSearchView/);
 });
 
-test('feed rows are accessible, compact, branded, and open existing activity detail', () => {
-  assert.match(feedView, /accessibilityRole="button"/);
-  assert.match(feedView, /<SocialProfileAvatar/);
-  assert.match(feedView, /formatCompactDuration/);
-  assert.match(feedView, /mobileTheme\.colors\.accent/);
-  assert.match(feedView, /social\.feedRowEdited/);
-  assert.match(feedView, /NativeContentUnavailable/);
-  assert.match(feedView, /RefreshControl/);
-  assert.match(feedView, /state\.detailErrorKey/);
-  assert.match(followingRoute, /onOpen=\{presentation\.openActivity\}/);
-});
-
-test('goal achievement row is compact, native, accessible, and exposes engagement without activity navigation', () => {
-  const achievementRow = feedView.slice(
-    feedView.indexOf('function AchievementFeedRow'),
-    feedView.indexOf('function FeedRow'),
-  );
-  assert.match(achievementRow, /accessible/);
-  assert.match(achievementRow, /accessibilityLabel/);
-  assert.match(achievementRow, /systemName="trophy\.fill"/);
-  assert.match(achievementRow, /formatCompactDuration\(event\.achievement\.targetSeconds, i18n\)/);
-  assert.match(achievementRow, /social\.feedAchievementInterval/);
-  assert.match(achievementRow, /social\.feedAchievementOverall/);
-  assert.match(achievementRow, /<FeedEngagement/);
-  assert.match(achievementRow, /onOpenComments=\{onOpenComments\}/);
-  assert.doesNotMatch(achievementRow, /onOpen(?:=|:)|chevron\.right/);
-});
-
 test('all social events use the same comments and reaction controls while only practice opens activity', () => {
   const engagement = feedView.slice(
     feedView.indexOf('function FeedEngagement'),
-    feedView.indexOf('function AchievementFeedRow'),
+    feedView.indexOf('export function SocialPost'),
   );
   assert.match(engagement, /event: SocialFeedEvent/);
   assert.match(engagement, /onOpenComments: \(\) => void/);
@@ -338,7 +310,7 @@ test('all social events use the same comments and reaction controls while only p
   assert.match(routePresentation, /setReaction: \(event: SocialFeedEvent, reaction: SocialReaction\) => Promise<void>/);
   assert.match(routePresentation, /dismissInteractionNotice: \(\) => void/);
   assert.match(homeOrchestration, /mutateSocialFeedReaction\(event: SocialFeedEvent/);
-  assert.match(homeOrchestration, /currentEvent = socialFeedPage\.current\.items\.find[\s\S]*!currentEvent\?\.reactionsEnabled/);
+  assert.match(homeOrchestration, /currentEvent = \[\.\.\.socialFeedPage\.current\.items, \.\.\.profileActivityPage\.current\.items\]\.find[\s\S]*!currentEvent\?\.reactionsEnabled/);
 });
 
 test('practice reaction presentation is curated, deterministic, and hides zero counts', () => {

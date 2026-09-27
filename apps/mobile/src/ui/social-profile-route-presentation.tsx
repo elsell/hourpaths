@@ -1,5 +1,6 @@
 import type { MessageKey } from '@hourpaths/i18n';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import type { SocialFeedState, SocialFeedRoutePresentation } from './social-feed-route-presentation';
 import type { SocialPublicProfile } from './social-profile-presentation';
 
 export type SocialProfileSearchState = {
@@ -40,6 +41,14 @@ export type SocialFollowRequestState = {
 };
 
 export type SocialProfileRoutePresentation = {
+  activity: SocialFeedState;
+  loadMoreActivity: () => void;
+  retryActivity: () => void;
+  openActivity: SocialFeedRoutePresentation['openActivity'];
+  openComments: SocialFeedRoutePresentation['openComments'];
+  setReaction: SocialFeedRoutePresentation['setReaction'];
+  removeReaction: SocialFeedRoutePresentation['removeReaction'];
+  dismissActivityNotice: () => void;
   loadMore: () => void;
   loadFollowRequests: (refreshing?: boolean) => void;
   loadMoreFollowRequests: () => void;
@@ -73,6 +82,27 @@ export function SocialProfileRouteSource(props: SocialProfileRoutePresentation &
     ...props,
     owner: owner.current,
     sessionKey,
+    loadMoreActivity: (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.loadMoreActivity(...arguments_);
+    },
+    retryActivity: (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.retryActivity(...arguments_);
+    },
+    openActivity: (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.openActivity(...arguments_);
+    },
+    openComments: (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.openComments(...arguments_);
+    },
+    setReaction: async (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) await props.setReaction(...arguments_);
+    },
+    removeReaction: async (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) await props.removeReaction(...arguments_);
+    },
+    dismissActivityNotice: (...arguments_) => {
+      if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.dismissActivityNotice(...arguments_);
+    },
     mutateRelationship: (...arguments_) => {
       if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.mutateRelationship(...arguments_);
     },
@@ -97,6 +127,7 @@ export function SocialProfileRouteSource(props: SocialProfileRoutePresentation &
     currentPresentation = publish();
     emitChange();
   }, [
+    props.activity, props.loadMoreActivity, props.retryActivity, props.openActivity, props.openComments, props.setReaction, props.removeReaction, props.dismissActivityNotice,
     props.loadMore,
     props.isCurrent,
     props.loadFollowRequests,

@@ -48,7 +48,7 @@ test('active following mapping retains only grouped public current-state fields'
 
   assert.deepEqual(Object.keys(mapped).sort(), ['participant', 'timers']);
   assert.deepEqual(Object.keys(mapped.participant).sort(), ['displayName', 'profilePictureURL', 'userId', 'username']);
-  assert.deepEqual(Object.keys(mapped.timers[0] ?? {}).sort(), ['id', 'path', 'startedAt']);
+  assert.deepEqual(Object.keys(mapped.timers[0] ?? {}).sort(), ['id', 'path', 'progress', 'startedAt']);
   assert.equal('privateNote' in mapped, false);
   assert.equal('occurrenceTimeZone' in (mapped.timers[0] ?? {}), false);
 });
@@ -100,7 +100,7 @@ test('an empty failed Recent Activity feed exposes an accessible full-size retry
   assert.match(unavailable, /<NativeButton label=\{i18n\.t\('common\.retry'\)\}/);
   assert.match(unavailable, /onPress=\{onRetry\}/);
   assert.match(feedView, /<FeedUnavailable i18n=\{i18n\} onRetry=\{onRetry\} state=\{state\} \/>/);
-  assert.match(feedView, /state\.status === 'error' && hasEvents[\s\S]*?<NativeButton[\s\S]*?onPress=\{onRetry\}/);
+  assert.match(feedView, /state\.status === 'error' && state\.items\.length > 0[\s\S]*?<NativeButton[\s\S]*?onPress=\{onRetry\}/);
 });
 
 test('published active state owns initial load, refresh, retry, pagination, and stale responses', () => {
@@ -111,7 +111,7 @@ test('published active state owns initial load, refresh, retry, pagination, and 
   assert.match(routePresentation, /retryActive/);
   assert.match(orchestration, /socialActiveFollowingOperations\.issue\(\)/);
   assert.match(orchestration, /socialActiveFollowingTarget\.current/);
-  assert.match(orchestration, /\.socialActiveFollowing\(cursor \|\| undefined\)/);
+  assert.match(orchestration, /\.socialActiveFollowing\(requestedCursor \|\| undefined\)/);
   assert.match(orchestration, /loadSocialActiveFollowing/);
   assert.match(followingRoute, /useFocusEffect/);
   assert.match(followingRoute, /presentationRef\.current/);

@@ -45,13 +45,16 @@ export function SocialProfileDetailView({
 
   return <View style={styles.content}>
     <View style={styles.identity}>
+      <View style={styles.identityRow}>
       <SocialProfileAvatar
+        profilePictureURL={profile.profilePictureUrl}
         accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
-        size={88}
+        size={64}
       />
       <View style={styles.names}>
         <Text accessibilityRole="header" style={styles.displayName}>{profile.displayName}</Text>
         <Text style={styles.username}>@{profile.username}</Text>
+      </View>
       </View>
       {profile.description ? <Text style={styles.description}>{profile.description}</Text> : null}
       {profile.relationship !== 'self' ? <NativePrimaryButton
@@ -109,7 +112,7 @@ const styles = StyleSheet.create({
     padding: mobileTheme.spacing.md,
   },
   blockingStatus: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
     gap: mobileTheme.spacing.xs,
     minHeight: mobileTheme.sizes.minimumTouchTarget,
@@ -119,9 +122,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
   },
+  identityRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: mobileTheme.spacing.md,
+  },
   content: {
-    gap: mobileTheme.spacing.xl,
-    padding: mobileTheme.spacing.lg,
+    gap: mobileTheme.spacing.md,
   },
   count: {
     alignItems: 'flex-start',
@@ -153,27 +160,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     maxWidth: 520,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   displayName: {
     fontSize: 24,
     fontWeight: '700',
     lineHeight: 30,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   identity: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: mobileTheme.spacing.md,
   },
   names: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: mobileTheme.spacing.xxs,
   },
   mutationError: {
     color: mobileTheme.colors.error,
     fontSize: 14,
     lineHeight: 19,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   username: {
     color: mobileTheme.colors.textMuted,

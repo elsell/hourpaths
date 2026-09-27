@@ -1,12 +1,15 @@
 import { getLocales } from 'expo-localization';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createDeviceTranslator } from '../../../src/i18n';
 import { scheduleSocialRouteBootstrap } from '../../../src/social-route-recovery';
 import { FollowingHeaderActions } from '../../../src/ui/following-header-actions';
 import { shouldRefreshActiveFollowing } from '../../../src/ui/social-active-following-presentation';
 import { useSocialFeedRoutePresentation } from '../../../src/ui/social-feed-route-presentation';
+import { LiveActivityViewer } from '../../../src/ui/live-activity-viewer';
+import { defaultPathAppearance } from '../../../src/ui/path-appearance';
+import type { LiveActivityPage } from '../../../src/live-activity-pages';
 import { SocialFeedView } from '../../../src/ui/social-feed-view';
 import { useSocialRouteRecovery } from '../../../src/ui/social-route-recovery-presentation';
 import { SocialRouteRecoveryView } from '../../../src/ui/social-route-recovery-view';
@@ -15,6 +18,30 @@ const i18n = createDeviceTranslator(getLocales);
 
 export default function FollowingScreen() {
   const presentation = useSocialFeedRoutePresentation();
+  const [liveTimerID, setLiveTimerID] = useState<string | null>(null);
+  useEffect(() => {
+    if (!presentation || presentation.active.status === 'error') setLiveTimerID(null);
+  }, [presentation?.active.status, Boolean(presentation)]);
+  useEffect(() => {
+    if (!liveTimerID) return;
+    const refresh = () => { if (AppState.currentState === 'active') presentationRef.current?.refreshActive(); };
+    refresh();
+    const timer = setInterval(refresh, 15000);
+    const subscription = AppState.addEventListener('change', (state) => { if (state === 'active') refresh(); });
+    return () => { clearInterval(timer); subscription.remove(); };
+  }, [liveTimerID]);
+  const livePages: LiveActivityPage[] = presentation?.active.items.flatMap(({ participant, timers }) => timers.map((timer) => {
+    const progress = timer.progress;
+    const interval = progress?.interval;
+    const overall = progress?.overallTargetSeconds ? { recordedSeconds: progress.accumulatedSeconds, targetSeconds: progress.overallTargetSeconds, label: i18n.t('path.progress.overallLabel') } : undefined;
+    return {
+      timerId: timer.id, personId: participant.userId, displayName: participant.displayName, username: participant.username,
+      profilePictureURL: participant.profilePictureURL, pathId: timer.path.id, pathName: timer.path.name, startedAt: timer.startedAt,
+      appearance: defaultPathAppearance(timer.path.id),
+      goal: interval ? { recordedSeconds: interval.recordedSeconds, targetSeconds: interval.targetSeconds, intervalStart: interval.startedAt, intervalEnd: interval.endedAt, label: i18n.t(interval.recurrence === 'hourly' ? 'pathDetails.period.hourly' : interval.recurrence === 'daily' ? 'pathDetails.period.daily' : interval.recurrence === 'weekly' ? 'pathDetails.period.weekly' : interval.recurrence === 'monthly' ? 'pathDetails.period.monthly' : interval.recurrence === 'yearly' ? 'pathDetails.period.yearly' : 'path.progress.intervalLabel') } : overall,
+      overallGoal: interval ? overall : undefined,
+    };
+  })) ?? [];
   const recovery = useSocialRouteRecovery({ kind: 'following', routeKey: 'social:following' });
   const presentationRef = useRef(presentation);
   const focusedRef = useRef(false);
@@ -67,6 +94,8 @@ export default function FollowingScreen() {
     />
     {presentation ? <SocialFeedView
       active={presentation.active}
+      onOpenActive={(item) => { if (item.timers[0]) setLiveTimerID(item.timers[0].id); }}
+      onOpenProfile={(username) => router.push({ pathname: '/profile/[username]', params: { username } })}
       onDismissInteractionNotice={presentation.dismissInteractionNotice}
       i18n={i18n}
       onLoadMoreActive={presentation.loadMoreActive}
@@ -89,5 +118,14 @@ export default function FollowingScreen() {
       onRetry={recovery?.onRetry}
       state={recovery?.state ?? 'loading'}
     />}
+    {liveTimerID && presentation && presentation.active.status !== 'error' ? <LiveActivityViewer
+      pages={livePages} initialTimerId={liveTimerID} translator={i18n}
+      onClose={() => setLiveTimerID(null)} onRefresh={presentation.refreshActive}
+      onOpenProfile={(personID) => {
+        const person = presentation.active.items.find(({ participant }) => participant.userId === personID)?.participant;
+        setLiveTimerID(null);
+        if (person) router.push({ pathname: '/profile/[username]', params: { username: person.username } });
+      }}
+    /> : null}
   </>;
 }

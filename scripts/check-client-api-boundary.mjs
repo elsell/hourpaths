@@ -52,7 +52,7 @@ const providerImports = new Map([
 const allProviderImports = new Set([...providerImports.values()].flatMap((values) => [...values]));
 const safeGlobals = new Set([
   'Array', 'Boolean', 'Date', 'Error', 'Intl', 'JSON', 'Map', 'Math', 'Number', 'Object', 'Promise', 'Set', 'Symbol', 'URL',
-  'clearTimeout', 'crypto', 'encodeURIComponent', 'setTimeout', 'WeakSet',
+  'clearTimeout', 'clearInterval', 'crypto', 'encodeURIComponent', 'setTimeout', 'setInterval', 'WeakSet',
 ]);
 const safeWindowMembers = new Set(['location', 'sessionStorage']);
 const browserGlobalReferences = new Set([
@@ -220,6 +220,7 @@ const approvedExpoUIImports = new Map([
   ])],
 ]);
 const approvedSafeAreaImports = new Set([
+  'apps/mobile/src/ui/live-activity-viewer.tsx',
   'apps/mobile/app/index.tsx',
   'apps/mobile/src/ui/native-route-presentation.tsx',
   'apps/mobile/src/ui/primitives.tsx',
@@ -964,6 +965,9 @@ function inspectSource(relative, file, source, index) {
       if (specifier === 'react-native') {
         const allowed = new Set(['AccessibilityInfo', 'Button', 'SafeAreaView', 'ScrollView', 'Switch', 'Text', 'TextInput', 'View']);
         const uiAllowed = new Set(['ActivityIndicator', 'Alert', 'Button', 'FlatList', 'KeyboardAvoidingView', 'Modal', 'Platform', 'Pressable', 'RefreshControl', 'SafeAreaView', 'ScrollView', 'StyleSheet', 'Switch', 'Text', 'TextInput', 'View', 'useWindowDimensions']);
+        if (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx') {
+          for (const name of ['AccessibilityInfo', 'Animated', 'StatusBar']) uiAllowed.add(name);
+        }
         if (relative === 'apps/mobile/src/ui/home-view.tsx') {
           uiAllowed.add('AccessibilityInfo');
           uiAllowed.add('findNodeHandle');
@@ -1164,9 +1168,10 @@ function inspectSource(relative, file, source, index) {
       if (specifier === 'react-native-safe-area-context') {
         const exactSafeAreaImport = approvedSafeAreaImports.has(relative) && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
-          clause.namedBindings.elements.length === 1 &&
-          !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
-          clause.namedBindings.elements[0].name.text === (relative === 'apps/mobile/src/ui/practice-comments-view.tsx' ? 'useSafeAreaInsets' : 'SafeAreaView');
+          clause.namedBindings.elements.length === (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx' ? 2 : 1) &&
+          clause.namedBindings.elements.every(element => !element.isTypeOnly && !element.propertyName &&
+            (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx' ? ['SafeAreaProvider', 'SafeAreaView'].includes(element.name.text) :
+              element.name.text === (relative === 'apps/mobile/src/ui/practice-comments-view.tsx' ? 'useSafeAreaInsets' : 'SafeAreaView')));
         if (!exactSafeAreaImport) violation = true;
       }
     }
