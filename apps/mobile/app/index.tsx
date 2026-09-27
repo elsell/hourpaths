@@ -1,3 +1,5 @@
+import { initialStatsSelection, type StatsSelection, type StatsState } from '@hourpaths/client-core';
+import { StatsRouteSource } from '../src/ui/stats-route-presentation';
 import { usePathAppearances } from '../src/use-path-appearances';
 import { PathAppearanceEditor } from '../src/ui/path-appearance-editor';
 import * as SecureStore from 'expo-secure-store';
@@ -868,6 +870,9 @@ export function HomeScreen() {
     pathID: string;
     session: Session;
   } | null>(null);
+  const [statsState, setStatsState] = useState<StatsState>({ status: 'idle', selection: initialStatsSelection(), refreshing: false });
+  const statsRequest = useRef(0);
+  const statsSelection = useRef(initialStatsSelection());
   const notificationLifecycleState = useRef<{ destination: Destination | null; session: Session | null }>({
     destination: null,
     session: null,
@@ -1203,6 +1208,9 @@ export function HomeScreen() {
   }
 
   function resetSocialProfileDiscovery() {
+    statsRequest.current += 1;
+    statsSelection.current = initialStatsSelection();
+    setStatsState({ status: 'idle', selection: statsSelection.current, refreshing: false });
     clearAllPracticeCommentDrafts();
     socialPresentationGeneration.current += 1;
     socialRelationshipSubmitting.current = false;
@@ -3626,6 +3634,29 @@ export function HomeScreen() {
       }));
     } finally {
       if (currentTarget()) socialFollowRequestSubmitting.current = null;
+    }
+  }
+
+  async function loadStats(selection: StatsSelection = statsSelection.current) {
+    const active = notificationLifecycleState.current;
+    if (!active.session || active.destination?.kind !== 'home') return;
+    const currentSession = active.session;
+    const ownerID = active.destination.profile.id;
+    const request = ++statsRequest.current;
+    const sameSelection = JSON.stringify(selection) === JSON.stringify(statsSelection.current);
+    statsSelection.current = { ...selection, pathIds: [...selection.pathIds] };
+    const current = () => request === statsRequest.current && notificationLifecycleState.current.destination?.kind === 'home' &&
+      notificationLifecycleState.current.destination.profile.id === ownerID;
+    setStatsState(previous => ({ selection: statsSelection.current, status: sameSelection && previous.data ? 'ready' : 'loading', refreshing: true, paths: previous.paths, data: sameSelection ? previous.data : undefined }));
+    try {
+      const result = await validateSessionCredential<import('@hourpaths/api-client').StatsSummary>(currentSession,
+        async credential => generatedResponse(await createSessionApiClient(apiURL, () => credential.token).stats({ range: selection.range, anchor: selection.anchor, pathIds: selection.pathIds.join(',') || undefined })));
+      if (!current()) return;
+      setStatsState({ status: 'ready', selection: statsSelection.current, data: result, paths: result.availablePaths, refreshing: false });
+    } catch (cause) {
+      if (!current()) return;
+      await handleFeatureSessionFailure(cause, currentSession, { current });
+      if (current()) setStatsState(previous => ({ ...previous, status: 'error', refreshing: false, data: undefined }));
     }
   }
 
@@ -8541,6 +8572,14 @@ export function HomeScreen() {
       onRetry={() => void retryAuthenticatedHome()}
       sessionKey={socialPresentationKey}
       state={accessState === 'authenticated_offline' ? 'offline' : 'loading'}
+    /> : null}
+    {ready && ownedHomeDestination ? <StatsRouteSource
+      state={statsState}
+      sessionKey={socialPresentationKey}
+      isCurrent={() => notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === ownedHomeDestination.profile.id}
+      onSelect={selection => void loadStats(selection)}
+      onRefresh={() => void loadStats()}
+      appearance={appearances.appearance}
     /> : null}
     {ready && ownedHomeDestination ? <SocialFeedRouteSource
       active={socialActiveFollowing}

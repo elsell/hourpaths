@@ -278,6 +278,13 @@ importers:
         version: 5.9.3
 
   packages/client-core:
+    dependencies:
+      '@hourpaths/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@hourpaths/i18n':
+        specifier: workspace:*
+        version: link:../i18n
     devDependencies:
       '@types/node':
         specifier: 24.13.1

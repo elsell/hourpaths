@@ -11,5 +11,9 @@
     "@types/node": "24.13.1",
     "tsx": "4.22.4",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@hourpaths/api-client": "workspace:*",
+    "@hourpaths/i18n": "workspace:*"
   }
 }
