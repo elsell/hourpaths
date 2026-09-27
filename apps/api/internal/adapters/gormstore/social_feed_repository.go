@@ -2,6 +2,7 @@ package gormstore
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -22,14 +23,14 @@ func NewSocialFeedRepository(db *gorm.DB) *SocialFeedRepository {
 }
 
 func (repository *SocialFeedRepository) ListPracticeCandidates(ctx context.Context, viewer string, page socialapp.FeedPageRequest) (socialapp.FeedCandidatePage, error) {
-	return repository.listPracticeCandidates(ctx, viewer, page, "")
+	return repository.listPracticeCandidates(ctx, viewer, page, "", "")
 }
 
 func (repository *SocialFeedRepository) GetPracticeCandidate(ctx context.Context, viewer, eventID string, snapshot time.Time) (socialapp.PracticeFeedItem, error) {
 	if !validOpaquePersistenceID(eventID) {
 		return socialapp.PracticeFeedItem{}, ports.ErrInvalidArgument
 	}
-	page, err := repository.listPracticeCandidates(ctx, viewer, socialapp.FeedPageRequest{Snapshot: snapshot, Limit: 1}, eventID)
+	page, err := repository.listPracticeCandidates(ctx, viewer, socialapp.FeedPageRequest{Snapshot: snapshot, Limit: 1}, eventID, "")
 	if err != nil {
 		return socialapp.PracticeFeedItem{}, err
 	}
@@ -39,7 +40,7 @@ func (repository *SocialFeedRepository) GetPracticeCandidate(ctx context.Context
 	return page.Items[0], nil
 }
 
-func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Context, viewer string, page socialapp.FeedPageRequest, eventID string) (socialapp.FeedCandidatePage, error) {
+func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Context, viewer string, page socialapp.FeedPageRequest, eventID, profileID string) (socialapp.FeedCandidatePage, error) {
 	if repository == nil || repository.db == nil || strings.TrimSpace(viewer) == "" || page.Limit < 1 || page.Limit > 100 || page.Snapshot.IsZero() || page.Snapshot.Location() != time.UTC ||
 		(page.AfterID == "") != page.AfterPublished.IsZero() || (!page.AfterPublished.IsZero() && (page.AfterPublished.Location() != time.UTC || page.AfterPublished.After(page.Snapshot))) {
 		return socialapp.FeedCandidatePage{}, ports.ErrInvalidArgument
@@ -109,8 +110,9 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
   WHERE visibility_member.path_id = path.id AND visibility_member.user_id = ?) OR path.visibility = 'public' OR (
   path.visibility = 'followers' AND EXISTS (SELECT 1 FROM follow_models visibility_follow
     WHERE visibility_follow.follower_user_id = ? AND visibility_follow.following_user_id = path.owner_user_id)
-)`, viewer, viewer, viewer).
-		Where(`(
+)`, viewer, viewer, viewer)
+	if eventID == "" && profileID == "" {
+		query = query.Where(`(
   EXISTS (SELECT 1 FROM follow_models feed_follow
     WHERE feed_follow.follower_user_id = ? AND feed_follow.following_user_id = event.participant_user_id)
   OR (
@@ -123,8 +125,11 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
         AND source_membership.role IN ('administrator', 'participant')))
   )
 )`, viewer, viewer, viewer)
+	}
 	if eventID != "" {
 		query = query.Where("event.id = ?", eventID)
+	} else if profileID != "" {
+		query = query.Where("event.participant_user_id = ?", profileID)
 	} else {
 		query = query.Where("event.participant_user_id <> ?", viewer)
 	}
@@ -179,6 +184,18 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
 }
 
 func (repository *SocialFeedRepository) ListActiveTimerCandidates(ctx context.Context, viewer string, page socialapp.ActiveFollowingPageRequest) (socialapp.ActiveFollowingCandidatePage, error) {
+	if repository == nil || repository.db == nil {
+		return socialapp.ActiveFollowingCandidatePage{}, ports.ErrInvalidArgument
+	}
+	var result socialapp.ActiveFollowingCandidatePage
+	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var err error
+		result, err = (&SocialFeedRepository{db: tx}).listActiveTimerCandidates(ctx, viewer, page)
+		return err
+	}, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true})
+	return result, err
+}
+func (repository *SocialFeedRepository) listActiveTimerCandidates(ctx context.Context, viewer string, page socialapp.ActiveFollowingPageRequest) (socialapp.ActiveFollowingCandidatePage, error) {
 	if repository == nil || repository.db == nil || strings.TrimSpace(viewer) == "" || page.Limit < 1 || page.Limit > 100 {
 		return socialapp.ActiveFollowingCandidatePage{}, ports.ErrInvalidArgument
 	}
@@ -268,9 +285,25 @@ ORDER BY participant.id ASC, timer.started_at ASC, timer.id ASC
 		if index >= len(items) {
 			continue
 		}
+		var progress *socialapp.ActivePathProgress
+		if !page.AsOf.IsZero() {
+			var err error
+			progress, err = repository.activePathProgress(ctx, row.ParticipantID, row.PathID, page.AsOf)
+			if err != nil {
+				return socialapp.ActiveFollowingCandidatePage{}, err
+			}
+		}
 		items[index].Timers = append(items[index].Timers, socialapp.ActiveFollowingTimer{
-			ID: row.TimerID, PathID: row.PathID, PathName: row.PathName, StartedAt: row.StartedAt.UTC(),
+			Progress: progress,
+			ID:       row.TimerID, PathID: row.PathID, PathName: row.PathName, StartedAt: row.StartedAt.UTC(),
 		})
 	}
 	return socialapp.ActiveFollowingCandidatePage{Items: items, HasMore: hasMore}, nil
+}
+
+func (repository *SocialFeedRepository) ListProfilePracticeCandidates(ctx context.Context, viewer, profileID string, page socialapp.FeedPageRequest) (socialapp.FeedCandidatePage, error) {
+	if strings.TrimSpace(profileID) == "" {
+		return socialapp.FeedCandidatePage{}, ports.ErrInvalidArgument
+	}
+	return repository.listPracticeCandidates(ctx, viewer, page, "", profileID)
 }

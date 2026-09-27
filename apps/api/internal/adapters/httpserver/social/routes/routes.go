@@ -20,6 +20,7 @@ type Service interface {
 	SendNudge(context.Context, string, string, string, domain.NudgeContent, string) (domain.Nudge, error)
 	GetInteractionSettings(context.Context, string) (application.InteractionSettings, error)
 	UpdateInteractionSettings(context.Context, string, string, application.InteractionSettings) (application.InteractionSettings, error)
+	ListProfileActivity(context.Context, string, string, string, int) ([]application.PracticeFeedItem, string, error)
 	ListPracticeFeed(context.Context, string, string, int) ([]application.PracticeFeedItem, string, error)
 	GetPracticeFeedEvent(context.Context, string, string) (application.PracticeFeedItem, error)
 	ListActiveFollowing(context.Context, string, string, int) ([]application.ActiveFollowingCandidate, string, error)
@@ -244,6 +245,12 @@ type blockedAccountsOutput struct {
 		} `json:"meta"`
 	}
 }
+type profileActivityInput struct {
+	Authorization string `header:"Authorization"`
+	Cursor        string `query:"cursor"`
+	Limit         int    `query:"limit" default:"25" minimum:"1" maximum:"100"`
+	Username      string `path:"username" minLength:"1" maxLength:"32"`
+}
 type practiceFeedData struct {
 	Items []dto.PracticeFeedItem `json:"items" nullable:"false"`
 }
@@ -435,6 +442,19 @@ func Register(api huma.API, service Service) {
 		out.Body.Meta.NextCursor = cursor
 		for _, item := range items {
 			out.Body.Data.Items = append(out.Body.Data.Items, mapActiveFollowingItem(item))
+		}
+		return out, nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "list-profile-activity", Method: http.MethodGet, Path: "/v1/profiles/{username}/activity", Summary: "List chronological feed events", Security: security}, func(ctx context.Context, input *profileActivityInput) (*practiceFeedOutput, error) {
+		items, cursor, err := service.ListProfileActivity(ctx, input.Authorization, input.Username, input.Cursor, input.Limit)
+		if err != nil {
+			return nil, shared.MapError(err, true)
+		}
+		out := &practiceFeedOutput{}
+		out.Body.Data.Items = make([]dto.PracticeFeedItem, 0, len(items))
+		out.Body.Meta.NextCursor = cursor
+		for _, item := range items {
+			out.Body.Data.Items = append(out.Body.Data.Items, mapPracticeFeedItem(item))
 		}
 		return out, nil
 	})
@@ -685,7 +705,14 @@ func mapActiveFollowingItem(item application.ActiveFollowingCandidate) dto.Activ
 		Timers:      make([]dto.ActiveFollowingTimer, 0, len(item.Timers)),
 	}
 	for _, timer := range item.Timers {
-		out.Timers = append(out.Timers, dto.ActiveFollowingTimer{ID: timer.ID, Path: dto.PracticeFeedPath{ID: timer.PathID, Name: timer.PathName}, StartedAt: timer.StartedAt})
+		entry := dto.ActiveFollowingTimer{ID: timer.ID, Path: dto.PracticeFeedPath{ID: timer.PathID, Name: timer.PathName}, StartedAt: timer.StartedAt}
+		if p := timer.Progress; p != nil {
+			entry.Progress = &dto.ActivePathProgress{AsOf: p.AsOf, AccumulatedSeconds: p.AccumulatedSeconds, OverallTargetSeconds: p.OverallTargetSeconds}
+			if v := p.Interval; v != nil {
+				entry.Progress.Interval = &dto.ActivePathIntervalProgress{RecordedSeconds: v.RecordedSeconds, TargetSeconds: v.TargetSeconds, StartedAt: v.StartedAt, EndedAt: v.EndedAt, Recurrence: v.Recurrence}
+			}
+		}
+		out.Timers = append(out.Timers, entry)
 	}
 	return out
 }

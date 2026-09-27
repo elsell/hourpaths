@@ -166,11 +166,7 @@ WHERE (block.blocker_user_id = ? AND block.blocked_user_id = event.participant_u
     SELECT 1 FROM follow_models visibility_follow
     WHERE visibility_follow.follower_user_id = ?
       AND visibility_follow.following_user_id = path.owner_user_id
-  )))`, viewer, viewer, viewer).
-		Where(`(event.participant_user_id = ? OR
-  EXISTS (SELECT 1 FROM follow_models follow WHERE follow.follower_user_id = ? AND follow.following_user_id = event.participant_user_id) OR
-  ((path.owner_user_id = ? OR EXISTS (SELECT 1 FROM path_membership_models vm WHERE vm.path_id = path.id AND vm.user_id = ? AND vm.role IN ('administrator', 'participant')))
-   AND (path.owner_user_id = event.participant_user_id OR EXISTS (SELECT 1 FROM path_membership_models om WHERE om.path_id = path.id AND om.user_id = event.participant_user_id AND om.role IN ('administrator', 'participant')))))`, viewer, viewer, viewer, viewer)
+  )))`, viewer, viewer, viewer)
 	if err := query.Take(&target).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return socialapp.ReactionTarget{}, ports.ErrNotFound

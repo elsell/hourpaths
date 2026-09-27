@@ -117,6 +117,36 @@ func TestPostgresActiveFollowingReturnsOnlyCurrentDirectEligibleFollowTimersAtPa
 	})
 
 	repository := NewSocialFeedRepository(runtimeStore.DB)
+	if err := migrationStore.DB.Table("path_models").Where("id = ?", firstPath).Updates(map[string]any{"overall_target_seconds": 7200, "interval_goal_target_seconds": 3600, "interval_goal_recurrence": "daily", "interval_goal_start_hour": 0}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := migrationStore.DB.Table("user_preference_models").Create(map[string]any{"user_id": first.ID, "current_time_zone": "Etc/UTC", "updated_at": now, "created_at": now, "first_day_of_week": 1}).Error; err != nil {
+		t.Fatal(err)
+	}
+	boundary := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if err := migrationStore.DB.Table("recorded_activity_models").Create(map[string]any{"id": "progress-" + newTestID(), "path_id": firstPath, "participant_id": first.ID, "started_at": boundary.Add(-time.Minute), "ended_at": boundary.Add(time.Minute), "created_at": now, "updated_at": now, "occurrence_time_zone": "Etc/UTC"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	progressPage, err := repository.ListActiveTimerCandidates(context.Background(), viewer.ID, socialapp.ActiveFollowingPageRequest{Limit: 100, AsOf: now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, person := range progressPage.Items {
+		for _, timer := range person.Timers {
+			if timer.ID == firstTimer {
+				found = true
+				p := timer.Progress
+				if p == nil || p.OverallTargetSeconds == nil || *p.OverallTargetSeconds != 7200 || p.Interval == nil || p.Interval.TargetSeconds != 3600 || p.AccumulatedSeconds != 120 || p.Interval.RecordedSeconds != 60 || !p.Interval.StartedAt.Equal(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)) {
+					t.Fatalf("live projection: %+v", p)
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing active progress")
+	}
+
 	eligible := []string{first.ID, second.ID}
 	sort.Strings(eligible)
 	pageOne, err := repository.ListActiveTimerCandidates(context.Background(), viewer.ID, socialapp.ActiveFollowingPageRequest{Limit: 1})

@@ -100,6 +100,10 @@ type FeedCandidatePage struct {
 	HasMore bool
 }
 
+type ProfileFeedRepository interface {
+	ListProfilePracticeCandidates(context.Context, string, string, FeedPageRequest) (FeedCandidatePage, error)
+}
+
 type FeedRepository interface {
 	ListPracticeCandidates(context.Context, string, FeedPageRequest) (FeedCandidatePage, error)
 	GetPracticeCandidate(context.Context, string, string, time.Time) (PracticeFeedItem, error)
@@ -146,6 +150,22 @@ func (service *Service) GetPracticeFeedEvent(ctx context.Context, authorization,
 }
 
 func (service *Service) ListPracticeFeed(ctx context.Context, authorization, cursor string, limit int) ([]PracticeFeedItem, string, error) {
+	return service.listPracticeFeed(ctx, authorization, "", cursor, limit)
+}
+
+func (service *Service) ListProfileActivity(ctx context.Context, authorization, username, cursor string, limit int) ([]PracticeFeedItem, string, error) {
+	profile, err := service.Get(ctx, authorization, username)
+	if err != nil {
+		return nil, "", err
+	}
+	return service.listPracticeFeed(ctx, authorization, profile.ID, cursor, limit)
+}
+
+func (service *Service) listPracticeFeed(ctx context.Context, authorization, profileID, cursor string, limit int) ([]PracticeFeedItem, string, error) {
+	cursorDomain := feedCursorDomain
+	if profileID != "" {
+		cursorDomain += ":profile:" + profileID
+	}
 	principal, err := service.authenticate(ctx, authorization)
 	if err != nil {
 		return nil, "", err
@@ -166,7 +186,7 @@ func (service *Service) ListPracticeFeed(ctx context.Context, authorization, cur
 	request := FeedPageRequest{Snapshot: now, Limit: limit}
 	if cursor != "" {
 		payload, decodeErr := shared.DecodeCursor(service.CursorSigningKey, cursor)
-		if decodeErr != nil || payload.Owner != principal.UserID || payload.Domain != feedCursorDomain {
+		if decodeErr != nil || payload.Owner != principal.UserID || payload.Domain != cursorDomain {
 			return nil, "", ports.ErrInvalidArgument
 		}
 		request.AfterID = payload.AfterID
@@ -178,9 +198,24 @@ func (service *Service) ListPracticeFeed(ctx context.Context, authorization, cur
 	hasMore := true
 	for len(items) < limit && hasMore {
 		request.Limit = limit - len(items)
-		page, listErr := service.Feed.ListPracticeCandidates(ctx, principal.UserID, request)
+		var page FeedCandidatePage
+		var listErr error
+		if profileID == "" {
+			page, listErr = service.Feed.ListPracticeCandidates(ctx, principal.UserID, request)
+		} else {
+			repository, ok := service.Feed.(ProfileFeedRepository)
+			if !ok {
+				return nil, "", errInvalidDependencies
+			}
+			page, listErr = repository.ListProfilePracticeCandidates(ctx, principal.UserID, profileID, request)
+		}
 		if listErr != nil {
 			return nil, "", listErr
+		}
+		for _, item := range page.Items {
+			if profileID != "" && item.ParticipantID != profileID {
+				return nil, "", errInvalidDependencies
+			}
 		}
 		if !validFeedCandidatePage(page, request) {
 			return nil, "", errInvalidDependencies
@@ -206,7 +241,7 @@ func (service *Service) ListPracticeFeed(ctx context.Context, authorization, cur
 	next := ""
 	if hasMore {
 		next, err = shared.EncodeCursor(service.CursorSigningKey, shared.CursorPayload{
-			Version: 1, Owner: principal.UserID, Domain: feedCursorDomain,
+			Version: 1, Owner: principal.UserID, Domain: cursorDomain,
 			AfterID: request.AfterID, AfterCreated: request.AfterPublished, Snapshot: request.Snapshot,
 		})
 		if err != nil {

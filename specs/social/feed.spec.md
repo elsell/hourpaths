@@ -515,3 +515,17 @@ motivation, and encouragement.
 - The hierarchy and controls must reflow at maximum Dynamic Type and remain
   operable with VoiceOver, Reduce Motion, Reduce Transparency, and Increase
   Contrast without relying on custom glass, animation, or color alone.
+
+### Profile activity history
+
+An authenticated viewer must be able to page newest-first through a discoverable
+profile's visible published activity and goal achievements without following that
+profile. The history must use the feed event projection and publication ordering,
+current profile/block visibility and authoritative path-view authorization. It must
+exclude private notes and personal appearance. Cursors must bind the viewer and
+selected profile. Existing Following feed eligibility must remain unchanged.
+
+Profile-visible events must support the same reaction and comment operations as
+Following-visible events. Direct event and engagement endpoints must check current
+source membership, block status and path visibility without requiring Following
+feed membership. This does not broaden the Following list's inclusion rules.
