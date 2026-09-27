@@ -70,6 +70,11 @@ export type PracticeCommentEdit = Omit<components['schemas']['PracticeCommentEdi
 export type PracticeCommentVersion = components['schemas']['CommentVersion'];
 export type PracticeCommentHeartState = components['schemas']['CommentHeartSummary'];
 export type PracticeCommentHeartRosterItem = components['schemas']['PublicProfile'];
+export type StatsSummary = components['schemas']['StatsSummary'];
+export type StatsPath = components['schemas']['StatsPath'];
+export type StatsDistribution = components['schemas']['StatsDistribution'];
+export type StatsBucket = components['schemas']['StatsBucket'];
+export type StatsCalendarDay = components['schemas']['StatsCalendarDay'];
 export type ActiveFollowingItem = components['schemas']['ActiveFollowingItem'];
 export type ActiveFollowingTimer = components['schemas']['ActiveFollowingTimer'];
 export type BlockTarget = components['schemas']['BlockTarget'];
@@ -279,6 +284,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     removeSocialFeedReaction: (eventId: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/social/feed/{eventId}/reaction', {
       params: { path: { eventId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
+    stats: (query: { range?: 'day' | 'week' | 'month' | 'year' | 'all_time'; anchor?: string; pathIds?: string } = {}) => authenticatedClient.GET('/v1/stats', { params: { query } }),
     socialActiveFollowing: (cursor?: string) => authenticatedClient.GET('/v1/social/feed/active', {
       params: { query: { cursor, limit: 25 } },
     }),

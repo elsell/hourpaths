@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	statsroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/stats"
+	statsapp "github.com/elsell/hour-paths/apps/api/internal/app/stats"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver"
@@ -16,6 +18,7 @@ import (
 
 func main() {
 	registrations := generated.Registrations(generated.Dependencies{})
+	registrations = append(registrations, func(api huma.API) { statsroutes.Register(api, &statsapp.Service{}) })
 	registrations = append(registrations, func(api huma.API) {
 		socialroutes.Register(api, socialapp.New(socialapp.Dependencies{}))
 	})
