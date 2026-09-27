@@ -1,4 +1,7 @@
 <script lang="ts">
+  import StatsView from '$lib/StatsView.svelte';
+  import { createPathAppearancePort, type StatsSummary } from '@hourpaths/api-client';
+  import { createPathAppearanceStore, defaultPathAppearance, initialStatsSelection, type StatsState, type StatsSelection } from '@hourpaths/client-core';
   import PathAppearanceSurface from '$lib/path-appearance.svelte';
   import { onMount } from 'svelte';
   import { createPathSubmissionOwner, createSessionApiClient, createTimerOperationOwner, formatTimerDuration, generatedResponse, sessionExpiryAdvanced, sessionRefreshDelay, sessionRefreshLeadMs, timerMutationPresentation, type ActivityDeletionResult, type ActivityDetail, type ActivityMutationResult, type ActivityRevision, type GeneratedOperationResult, type ManualActivityDefaults, type MemberRemovalReceipt, type MemberRemovalReview as GeneratedMemberRemovalReview, type OwnershipTransfer, type OwnershipTransferCandidate, type OwnershipTransferResult, type PathArchiveStateDraft, type PathCreateDraft, type PathGoalMutationResult, type PathGoalUpdateDraft, type PathMember, type PathRecurrence, type SessionPath, type TimerState, type TimerStopResult } from '@hourpaths/api-client';
@@ -22,7 +25,7 @@
   type CursorPage<T> = { items: T[]; nextCursor?: string };
   type CursorEnvelope<T> = { data: T[]; meta: { nextCursor?: string } };
   type VisibilitySessionPath = Omit<SessionPath, 'visibility'> & { visibility: PathVisibility };
-  type PrimarySurface = 'home' | 'following';
+  type PrimarySurface = 'home' | 'following' | 'stats';
   type PresentedPathMember = PathMember & { canChangeRole: boolean; canGrantAdministrator: boolean; canRevokeAdministrator: boolean; canStepDownAdministrator: boolean; isViewer: boolean };
   type PresentedOwnershipTransfer = OwnershipTransfer & {
     counterpart: { displayName: string; userId: string; username: string };
@@ -73,6 +76,12 @@
   let archivedPaths: SessionPath[] = [];
   let showingArchived = false;
   let primarySurface: PrimarySurface = 'home';
+  let statsState: StatsState = { status: 'idle', selection: initialStatsSelection(), refreshing: false };
+  let statsRequest = 0;
+  let statsAppearanceStore: ReturnType<typeof createPathAppearanceStore> | null = null;
+  let statsAppearanceOwner = '';
+  const statsAppearance = (id: string) => statsAppearanceStore?.appearance(id) ?? defaultPathAppearance(id);
+
   let socialQuery = '';
   let socialSearch: ProfileSearchState = { query: '', items: [], nextCursor: '' };
   let socialSearchState: 'hint' | 'loading' | 'empty' | 'error' | 'results' = 'hint';
@@ -453,6 +462,12 @@
   }
 
   function resetSocialProfileDiscovery() {
+    statsRequest += 1;
+    statsState = { status: 'idle', selection: initialStatsSelection(), refreshing: false };
+    statsAppearanceStore?.dispose();
+    statsAppearanceStore = null;
+    statsAppearanceOwner = '';
+
     socialProfileSearchOwner.cancel();
     socialProfileSearchOperations.invalidate();
     socialProfileDetailOperations.invalidate();
@@ -819,6 +834,7 @@
   });
 
   function requestCurrentNotificationRefresh() {
+    if (primarySurface === 'stats') void loadStats();
     if (profile) void notificationRefreshLatch.request(profile.id);
   }
 
@@ -2940,8 +2956,35 @@
     finally { if (ticket.current()) manualBusy = false; }
   }
 
+  async function loadStats(selection: StatsSelection = statsState.selection) {
+    if (!session || !profile) return;
+    const current = session;
+    const ownerID = profile.id;
+    const request = ++statsRequest;
+    const ticket = { current: () => request === statsRequest && profile?.id === ownerID && Boolean(session) };
+    const sameSelection = JSON.stringify(selection) === JSON.stringify(statsState.selection);
+    statsState = { selection: { ...selection, pathIds: [...selection.pathIds] }, status: sameSelection && statsState.data ? 'ready' : 'loading', refreshing: true, paths: statsState.paths, data: sameSelection ? statsState.data : undefined };
+    try {
+      const summary = await validateSessionCredential<StatsSummary>(current, async credential => generatedResponse(
+        await createSessionApiClient(data.config.apiURL, () => credential.token).stats({ range: selection.range, anchor: selection.anchor, pathIds: selection.pathIds.join(',') || undefined })));
+      if (!ticket.current()) return;
+      statsState = { status: 'ready', selection: statsState.selection, data: summary, paths: summary.availablePaths, refreshing: false };
+      if (statsAppearanceOwner !== ownerID) {
+        statsAppearanceStore?.dispose();
+        statsAppearanceOwner = ownerID;
+        statsAppearanceStore = createPathAppearanceStore(createPathAppearancePort(data.config.apiURL, () => profile?.id === ownerID ? session?.token ?? null : null), () => crypto.randomUUID(), () => { statsState = { ...statsState }; });
+      }
+      void statsAppearanceStore?.refresh(summary.availablePaths.map(path => path.id));
+    } catch (cause) {
+      if (!ticket.current()) return;
+      handleFailure(cause, current, current.expiresAt, 'profile', ticket);
+      if (ticket.current()) statsState = { ...statsState, status: 'error', refreshing: false, data: undefined };
+    }
+  }
+
   function showPrimarySurface(surface: PrimarySurface) {
     primarySurface = surface;
+    if (surface === 'stats') void loadStats();
     if (surface === 'following') return;
     socialProfileDetailOperations.invalidate();
     selectedSocialProfile = null;
@@ -3297,8 +3340,11 @@
         aria-current={primarySurface === 'following' ? 'page' : undefined}
         onclick={() => showPrimarySurface('following')}
       >{i18n.t('social.following')}</button>
+      <button type="button" aria-current={primarySurface === 'stats' ? 'page' : undefined} onclick={() => showPrimarySurface('stats')}>{i18n.t('stats.title')}</button>
     </nav>
-    {#if primarySurface === 'following'}
+    {#if primarySurface === 'stats'}
+      <StatsView state={statsState} {i18n} onSelect={(selection) => void loadStats(selection)} onRefresh={() => void loadStats()} appearance={statsAppearance} />
+    {:else if primarySurface === 'following'}
       <SocialProfileDiscovery
         {i18n}
         query={socialQuery}
@@ -4195,4 +4241,4 @@
   </dialog>
   {/if}
 </main>
-    <style>main{font:16px system-ui;max-width:42rem;margin:10vh auto;padding:2rem}.primary-tabs{display:grid;grid-template-columns:1fr 1fr;gap:.2rem;margin:1rem 0 1.5rem;padding:.2rem;border-radius:.75rem;background:#e5e5ea}.primary-tabs button{background:transparent;color:#1c1c1e}.primary-tabs button[aria-current="page"]{background:#fff;box-shadow:0 1px 3px #0002}button{display:inline-block;padding:.65rem 1rem;border:0;border-radius:.5rem;background:#111;color:white}.destructive-action{background:transparent;color:#b42318}.destructive-copy{color:#b42318}input,select{display:block;margin:.5rem 0;padding:.65rem}fieldset{margin:1rem 0;border:1px solid #ccc;border-radius:.5rem}.leave-choice{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 0}.leave-choice input{flex:0 0 auto;margin:.2rem 0}.leave-choice span{display:flex;flex-direction:column;gap:.2rem}.leave-choice small{color:#636366}.duration-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}.duration-fields input{width:calc(100% - 1.3rem)}.hint{color:#555}.path-list,.activity-day ul,.notification-list,.ownership-list,.managed-invitation-list{list-style:none;padding:0}.path-list li,.activity-day,.notification-list li{margin:1rem 0}.path-link,.activity-row,.notification-link{background:transparent;color:#111;padding:.25rem 0;text-align:left;text-decoration:underline}.path-link{font-size:1.1rem;font-weight:700}.notification-link{display:block}.notification-list time{display:block;color:#555;margin-top:.25rem}dt{font-weight:700}dd{margin:0 0 .75rem}.ownership-card,.managed-invitations{margin:1rem 0;padding:1rem;border:1px solid #d8d8dc;border-radius:1rem;background:#f7f7f8}.ownership-list,.managed-invitation-list{margin:.75rem 0}.ownership-list>li+li,.managed-invitation-list>li+li{border-top:1px solid #d8d8dc}.ownership-row,.managed-invitation-row{display:flex;width:100%;min-height:3.5rem;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem .25rem}.managed-invitation-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:.2rem}.managed-invitation-copy span,.managed-invitation-copy time{color:#636366;font-size:.875rem}.ownership-row{border-radius:0;background:transparent;color:#111;text-align:left}.ownership-row-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:.2rem}.ownership-row-copy span{color:#636366;font-size:.875rem}.ownership-row-copy .ownership-role{color:#8a6b00;font-weight:600}.ownership-row-actions{display:flex;flex-wrap:wrap;gap:.5rem}.ownership-action{padding:.5rem .75rem;background:#f2c94c;color:#1c1c1e}.ownership-action.destructive{background:transparent;color:#b42318}.ownership-review{margin:1rem 0;padding:.75rem;background:white;border-radius:.75rem}dialog{max-width:min(32rem,calc(100vw - 3rem));padding:1.5rem;border:1px solid #d8d8dc;border-radius:1rem}dialog::backdrop{background:#0008}.dialog-actions{display:flex;flex-direction:column;gap:.5rem;margin-top:1.5rem}@media(prefers-color-scheme:dark){main{color:#f5f5f7;background:#111}.primary-tabs{background:#2c2c2e}.primary-tabs button{color:#f5f5f7}.primary-tabs button[aria-current="page"]{background:#48484a}.ownership-card,.managed-invitations{border-color:#3a3a3c;background:#1c1c1e}.ownership-row{color:#f5f5f7}.managed-invitation-copy span,.managed-invitation-copy time{color:#aaa}.ownership-review{background:#2c2c2e}.path-link,.activity-row,.notification-link{color:#f5f5f7}.hint,.leave-choice small{color:#aaa}dialog{border-color:#3a3a3c;background:#1c1c1e;color:#f5f5f7}}</style>
+    <style>main{font:16px system-ui;max-width:42rem;margin:10vh auto;padding:2rem}.primary-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:.2rem;margin:1rem 0 1.5rem;padding:.2rem;border-radius:.75rem;background:#e5e5ea}.primary-tabs button{background:transparent;color:#1c1c1e}.primary-tabs button[aria-current="page"]{background:#fff;box-shadow:0 1px 3px #0002}button{display:inline-block;padding:.65rem 1rem;border:0;border-radius:.5rem;background:#111;color:white}.destructive-action{background:transparent;color:#b42318}.destructive-copy{color:#b42318}input,select{display:block;margin:.5rem 0;padding:.65rem}fieldset{margin:1rem 0;border:1px solid #ccc;border-radius:.5rem}.leave-choice{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 0}.leave-choice input{flex:0 0 auto;margin:.2rem 0}.leave-choice span{display:flex;flex-direction:column;gap:.2rem}.leave-choice small{color:#636366}.duration-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem}.duration-fields input{width:calc(100% - 1.3rem)}.hint{color:#555}.path-list,.activity-day ul,.notification-list,.ownership-list,.managed-invitation-list{list-style:none;padding:0}.path-list li,.activity-day,.notification-list li{margin:1rem 0}.path-link,.activity-row,.notification-link{background:transparent;color:#111;padding:.25rem 0;text-align:left;text-decoration:underline}.path-link{font-size:1.1rem;font-weight:700}.notification-link{display:block}.notification-list time{display:block;color:#555;margin-top:.25rem}dt{font-weight:700}dd{margin:0 0 .75rem}.ownership-card,.managed-invitations{margin:1rem 0;padding:1rem;border:1px solid #d8d8dc;border-radius:1rem;background:#f7f7f8}.ownership-list,.managed-invitation-list{margin:.75rem 0}.ownership-list>li+li,.managed-invitation-list>li+li{border-top:1px solid #d8d8dc}.ownership-row,.managed-invitation-row{display:flex;width:100%;min-height:3.5rem;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem .25rem}.managed-invitation-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:.2rem}.managed-invitation-copy span,.managed-invitation-copy time{color:#636366;font-size:.875rem}.ownership-row{border-radius:0;background:transparent;color:#111;text-align:left}.ownership-row-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:.2rem}.ownership-row-copy span{color:#636366;font-size:.875rem}.ownership-row-copy .ownership-role{color:#8a6b00;font-weight:600}.ownership-row-actions{display:flex;flex-wrap:wrap;gap:.5rem}.ownership-action{padding:.5rem .75rem;background:#f2c94c;color:#1c1c1e}.ownership-action.destructive{background:transparent;color:#b42318}.ownership-review{margin:1rem 0;padding:.75rem;background:white;border-radius:.75rem}dialog{max-width:min(32rem,calc(100vw - 3rem));padding:1.5rem;border:1px solid #d8d8dc;border-radius:1rem}dialog::backdrop{background:#0008}.dialog-actions{display:flex;flex-direction:column;gap:.5rem;margin-top:1.5rem}@media(prefers-color-scheme:dark){main{color:#f5f5f7;background:#111}.primary-tabs{background:#2c2c2e}.primary-tabs button{color:#f5f5f7}.primary-tabs button[aria-current="page"]{background:#48484a}.ownership-card,.managed-invitations{border-color:#3a3a3c;background:#1c1c1e}.ownership-row{color:#f5f5f7}.managed-invitation-copy span,.managed-invitation-copy time{color:#aaa}.ownership-review{background:#2c2c2e}.path-link,.activity-row,.notification-link{color:#f5f5f7}.hint,.leave-choice small{color:#aaa}dialog{border-color:#3a3a3c;background:#1c1c1e;color:#f5f5f7}}</style>

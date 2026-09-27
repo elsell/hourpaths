@@ -18,5 +18,9 @@ export default function TabLayout() {
       <NativeTabs.Trigger.Label>{i18n.t('social.following')}</NativeTabs.Trigger.Label>
       <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="group" />
     </NativeTabs.Trigger>
+    <NativeTabs.Trigger name="stats">
+      <NativeTabs.Trigger.Label>{i18n.t('stats.title')}</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger.Icon sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }} md="bar_chart" />
+    </NativeTabs.Trigger>
   </NativeTabs>;
 }

@@ -90,6 +90,8 @@ const networkPrimitiveReferences = new Set([
   'WebTransport', 'Worker', 'XMLHttpRequest', 'fetch', 'require', 'sendBeacon',
 ]);
 const approvedExpoRouterImports = new Map([
+  ['apps/mobile/app/(tabs)/stats/_layout.tsx', new Set(['Stack'])],
+  ['apps/mobile/app/(tabs)/stats/index.tsx', new Set(['router', 'useFocusEffect'])],
   ['apps/mobile/app/_layout.tsx', new Set(['Stack'])],
   ['apps/mobile/app/(tabs)/home/_layout.tsx', new Set(['Stack'])],
   ['apps/mobile/app/(tabs)/following/_layout.tsx', new Set(['Stack'])],
@@ -229,6 +231,7 @@ const approvedSafeAreaImports = new Set([
 ]);
 const approvedSvelteComponentProps = new Map([
   ['apps/web/src/routes/+page.svelte', new Map([
+    ['StatsView', new Set(['state', 'i18n', 'onSelect', 'onRefresh', 'appearance'])],
     ['PathAppearanceSurface', new Set(['apiURL', 'token', 'pathID', 'i18n'])],
     ['SocialProfileDiscovery', new Set([
       'blockBusy', 'blockError', 'blockedAccounts', 'blockedAccountsNextCursor', 'blockedAccountsOpen',
@@ -384,7 +387,9 @@ function inspectSvelteMarkup(source, relative) {
       expressions.push(source.slice(value.start, value.end));
       return;
     }
-    if (value.type === 'HtmlTag' || value.type === 'SpreadAttribute' || value.type === 'StyleDirective' ||
+    // Reviewed Stats chart styles derive only from numeric totals or the fixed Path palette.
+    const statsChartStyle = relative === 'apps/web/src/lib/StatsView.svelte' && ['background', 'height', '--intensity'].includes(value.name);
+    if (value.type === 'HtmlTag' || value.type === 'SpreadAttribute' || (value.type === 'StyleDirective' && !statsChartStyle) ||
       (value.type === 'BindDirective' && value.name === 'this')) apiDestination = true;
     if (value.type === 'Attribute' && attributeParts(value)) {
       const parts = attributeParts(value);

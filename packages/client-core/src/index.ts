@@ -902,3 +902,4 @@ export {
 } from './path-visibility';
 
 export * from './path-appearance';
+export * from './stats-presentation';

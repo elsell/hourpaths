@@ -262,7 +262,7 @@ test('mobile routes are hosted by a localized native stack with iOS back gesture
   assert.match(page, /actions=\{\[[\s\S]*pathDetails\.openHistory[\s\S]*pathManage\.action/);
 });
 
-test('implemented Home and Following surfaces share the native tab shell without a Stats placeholder', () => {
+test('implemented Home, Following and Stats surfaces share the native tab shell', () => {
   assert.match(layout, /<Stack\.Screen name="index" options=\{\{ headerShown: false \}\} \/>/);
   assert.match(layout, /<Stack\.Screen name="\(tabs\)" options=\{\{ headerShown: false \}\} \/>/);
   assert.match(tabLayout, /import \{ NativeTabs \} from 'expo-router\/unstable-native-tabs';/);
@@ -270,8 +270,8 @@ test('implemented Home and Following surfaces share the native tab shell without
   assert.match(tabLayout, /<NativeTabs\.Trigger\.Label>\{i18n\.t\('home\.heading'\)\}<\/NativeTabs\.Trigger\.Label>/);
   assert.match(tabLayout, /<NativeTabs\.Trigger name="following">/);
   assert.match(tabLayout, /<NativeTabs\.Trigger\.Label>\{i18n\.t\('social\.following'\)\}<\/NativeTabs\.Trigger\.Label>/);
-  assert.equal((tabLayout.match(/<NativeTabs\.Trigger name=/g) ?? []).length, 2);
-  assert.doesNotMatch(tabLayout, /Stats|stats/);
+  assert.equal((tabLayout.match(/<NativeTabs\.Trigger name=/g) ?? []).length, 3);
+  assert.match(tabLayout, /<NativeTabs\.Trigger name="stats">/);
   assert.match(tabHomeLayout, /<Stack\.Screen name="index" options=\{\{ title: i18n\.t\('home\.heading'\) \}\} \/>/);
   assert.match(tabHome, /export \{ HomeScreen as default \} from '\.\.\/\.\.\/index';/);
   assert.match(page, /export default function IndexRedirect\(\)[\s\S]*return <HomeScreen \/>/);
