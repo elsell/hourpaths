@@ -95,13 +95,14 @@ export function PathCreateForm({
     animationType={reduceMotion === false ? 'slide' : 'none'}
     compact
     dismissible={!busy}
-    leadingAction={{ disabled: busy, label: i18n.t('common.cancel'), onPress: onCancel }}
+    leadingAction={{ disabled: busy, label: i18n.t('common.cancel'), onPress: onCancel, systemImage: 'xmark' }}
     onRequestClose={requestClose}
     title={i18n.t('pathCreate.heading')}
     trailingAction={{
       disabled: busy || !canCreate,
       label: i18n.t(errorText ? 'pathCreate.retry' : 'pathCreate.submit'),
       onPress: onCreate,
+      systemImage: errorText ? 'arrow.clockwise' : 'checkmark',
     }}
     visible={visible}
   >

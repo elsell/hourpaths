@@ -109,11 +109,11 @@ export function NativeSheet({
   children: ReactNode;
   compact?: boolean;
   dismissible?: boolean;
-  leadingAction?: { disabled?: boolean; label: string; onPress: () => void };
+  leadingAction?: { disabled?: boolean; label: string; onPress: () => void; systemImage?: string };
   onRequestClose: () => void;
   scrollable?: boolean;
   title?: string;
-  trailingAction?: { disabled?: boolean; label: string; onPress: () => void };
+  trailingAction?: { disabled?: boolean; label: string; onPress: () => void; systemImage?: string };
   visible: boolean;
 }) {
 
