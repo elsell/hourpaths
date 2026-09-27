@@ -39,7 +39,7 @@
     finally { if (!disposed) busy = false; }
   }
 </script>
-<div class={`appearance tone-${appearance.color}`}>
+<div class="appearance" class:tone-coral={appearance.color === 'coral'} class:tone-lavender={appearance.color === 'lavender'} class:tone-gold={appearance.color === 'gold'} class:tone-mint={appearance.color === 'mint'} class:tone-blue={appearance.color === 'blue'} class:tone-pink={appearance.color === 'pink'}>
   <span class="emoji" aria-hidden="true">{appearance.emoji}</span>
   <slot />
   <button class="edit" onclick={() => void openEditor()}>{i18n.t('home.appearance.title')}</button>
