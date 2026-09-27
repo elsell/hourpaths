@@ -7,6 +7,7 @@ export type ActiveFollowingTimer = {
     name: string;
   };
   startedAt: string;
+  progress?: ActiveFollowingAPIItem['timers'][number]['progress'];
 };
 
 export type ActiveFollowingItem = {
@@ -44,6 +45,7 @@ export function activeFollowingItemFromAPI(item: ActiveFollowingAPIItem): Active
       id: timer.id,
       path: { id: timer.path.id, name: timer.path.name },
       startedAt: timer.startedAt,
+      progress: timer.progress,
     })),
   };
 }

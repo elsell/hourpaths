@@ -16,7 +16,7 @@ test('reaction commits fail closed across session, owner, and event replacement'
   assert.match(page, /const ticket = operationOwner\.issue\(\)/);
   assert.match(page, /createSocialSessionTarget\(ownerID, currentSession, reactionIntentKey\)/);
   assert.match(page, /ownsCurrentSocialOperation\([\s\S]*ownerID,[\s\S]*reactionIntentKey,[\s\S]*currentSession/);
-  assert.match(page, /socialFeedPage\.current\.items\.some\(\(\{ id \}\) => id === event\.id\)/);
+  assert.match(page, /\[\.\.\.socialFeedPage\.current\.items, \.\.\.profileActivityPage\.current\.items\]\.some\(\(\{ id \}\) => id === event\.id\)/);
   assert.match(page, /if \(!currentTarget\(\)\) return;/);
   assert.match(page, /handleFeatureSessionFailure\(cause, currentSession, \{ current: currentTarget \}\)/);
 });

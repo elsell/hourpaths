@@ -419,6 +419,7 @@ const socialProfileDetailOperations = createSessionOperationOwner();
 const socialFollowRequestOperations = createSessionOperationOwner();
 const socialActiveFollowingOperations = createSessionOperationOwner();
 const socialFeedOperations = createSessionOperationOwner();
+const profileActivityOperations = createSessionOperationOwner();
 const socialDeepEventOperations = createSessionOperationOwner();
 const interactionDisabledEventOperations = createSessionOperationOwner();
 const practiceCommentOperations = createSessionOperationOwner();
@@ -807,6 +808,9 @@ export function HomeScreen() {
   const [socialFeed, setSocialFeed] = useState<SocialFeedState>({
     items: [], loadingMore: false, refreshing: false, status: 'idle',
   });
+  const profileActivityPage = useRef<SocialFeedPage>({ items: [], nextCursor: '' });
+  const profileActivityTarget = useRef<SocialSessionTarget<Session> | null>(null);
+  const [profileActivity, setProfileActivity] = useState<SocialFeedState>({ items: [], loadingMore: false, refreshing: false, status: 'idle' });
   const socialFeedPage = useRef<SocialFeedPage>({ items: [], nextCursor: '' });
   const socialFeedTarget = useRef<SocialSessionTarget<Session> | null>(null);
   const [socialDeepEvent, setSocialDeepEvent] = useState<{
@@ -1206,6 +1210,10 @@ export function HomeScreen() {
     socialProfileSearchOwner.cancel();
     socialProfileSearchOperations.invalidate();
     socialProfileDetailOperations.invalidate();
+    profileActivityOperations.invalidate();
+    profileActivityTarget.current = null;
+    profileActivityPage.current = { items: [], nextCursor: '' };
+    setProfileActivity({ items: [], loadingMore: false, refreshing: false, status: 'idle' });
     socialFollowRequestOperations.invalidate();
     socialActiveFollowingOperations.invalidate();
     socialFeedOperations.invalidate();
@@ -1256,6 +1264,9 @@ export function HomeScreen() {
   }
 
   function hideBlockedUserFromSocialSurfaces(userId: string) {
+    profileActivityOperations.invalidate();
+    profileActivityPage.current = { ...profileActivityPage.current, items: profileActivityPage.current.items.filter(({ participant }) => participant.userId !== userId) };
+    setProfileActivity((current) => ({ ...current, items: profileActivityPage.current.items }));
     socialSearchPage.current = {
       ...socialSearchPage.current,
       items: socialSearchPage.current.items.filter((profile) => profile.userId !== userId),
@@ -1786,6 +1797,7 @@ export function HomeScreen() {
         const socialTargets = [
           socialProfileSearchTarget,
           socialProfileDetailTarget,
+          profileActivityTarget,
           socialFollowRequestTarget,
           socialActiveFollowingTarget,
           socialFeedTarget,
@@ -3425,6 +3437,12 @@ export function HomeScreen() {
     const ownerID = destination.profile.id;
     const ticket = socialProfileDetailOperations.issue();
     const intentKey = `social:profile:${username.toLowerCase()}`;
+    if (socialProfileUsernameRef.current?.toLowerCase() !== username.toLowerCase()) {
+      profileActivityOperations.invalidate();
+      profileActivityTarget.current = null;
+      profileActivityPage.current = { items: [], nextCursor: '' };
+      setProfileActivity({ items: [], loadingMore: false, refreshing: false, status: 'loading' });
+    }
     socialProfileDetailTarget.current = createSocialSessionTarget(ownerID, currentSession, intentKey);
     const currentTarget = () => ticket.current() && ownsCurrentSocialOperation(
       socialProfileDetailTarget.current,
@@ -3448,6 +3466,7 @@ export function HomeScreen() {
       const profile = publicProfileFromAPI(await response.json());
       if (!currentTarget() || profile.username.toLowerCase() !== username.toLowerCase()) return;
       setSocialProfile({ profile, refreshing: false, status: 'ready', username: profile.username });
+      void loadProfileActivity(profile.username);
     } catch (cause) {
       if (!currentTarget()) return;
       await handleSocialOperationFailure(cause, currentSession, currentTarget);
@@ -3504,6 +3523,10 @@ export function HomeScreen() {
         items: current.items.map((profile) => profile.userId === mutation.profile.userId ? mutation.profile : profile),
       }));
       setSocialProfile({ profile: mutation.profile, refreshing: false, status: 'ready', username: mutation.profile.username, mutating: false });
+      profileActivityOperations.invalidate();
+      profileActivityPage.current = { items: [], nextCursor: '' };
+      setProfileActivity({ items: [], loadingMore: false, refreshing: false, status: 'loading' });
+      void loadProfileActivity(mutation.profile.username);
     } catch (cause) {
       if (!currentTarget()) return;
       await handleSocialOperationFailure(cause, currentSession, currentTarget);
@@ -3606,6 +3629,33 @@ export function HomeScreen() {
     }
   }
 
+  async function loadProfileActivity(username: string, cursor = '') {
+    const latest = notificationLifecycleState.current;
+    if (!latest.session || latest.destination?.kind !== 'home') return;
+    const currentSession = latest.session;
+    const ownerID = latest.destination.profile.id;
+    const ticket = profileActivityOperations.issue();
+    const intentKey = `social:profile-activity:${username.toLowerCase()}`;
+    profileActivityTarget.current = createSocialSessionTarget(ownerID, currentSession, intentKey);
+    const currentTarget = () => ticket.current() && ownsCurrentSocialOperation(profileActivityTarget.current, ownerID, intentKey, currentSession);
+    const admittedReactionRevisions = new Map(socialFeedReactionRevisions);
+    setProfileActivity((current) => ({ ...current, errorKey: undefined, loadingMore: Boolean(cursor), refreshing: !cursor && current.items.length > 0, status: current.items.length ? 'ready' : 'loading' }));
+    try {
+      const response = generatedResponse(await createSessionApiClient(apiURL, () => currentSession.token).profileActivity(username, cursor || undefined));
+      if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+      const envelope = await response.json();
+      if (!envelope || !currentTarget()) return;
+      const incoming = preserveNewerSocialReactionSummaries({ items: envelope.data.items.map(socialFeedEventFromAPI), nextCursor: envelope.meta.nextCursor ?? '' }, profileActivityPage.current, admittedReactionRevisions, socialFeedReactionRevisions);
+      const next = mergeSocialFeedPage(profileActivityPage.current, incoming, cursor || undefined);
+      profileActivityPage.current = next;
+      setProfileActivity({ items: next.items, nextCursor: next.nextCursor || undefined, loadingMore: false, refreshing: false, status: 'ready' });
+    } catch (cause) {
+      if (!currentTarget()) return;
+      await handleSocialOperationFailure(cause, currentSession, currentTarget);
+      if (currentTarget()) setProfileActivity((current) => ({ ...current, errorKey: 'social.feedUnavailableDescription', loadingMore: false, refreshing: false, status: 'error' }));
+    }
+  }
+
   async function loadSocialFeed(cursor = '', refreshing = false) {
     if (!session || destination?.kind !== 'home' || socialFeed.loadingMore) return;
     const currentSession = session;
@@ -3695,7 +3745,7 @@ export function HomeScreen() {
   }
 
   async function mutateSocialFeedReaction(event: SocialFeedEvent, reaction: SocialReaction | null) {
-    const currentEvent = socialFeedPage.current.items.find(({ id }) => id === event.id);
+    const currentEvent = [...socialFeedPage.current.items, ...profileActivityPage.current.items].find(({ id }) => id === event.id);
     if (!event.reactionsEnabled || !currentEvent?.reactionsEnabled || !session || destination?.kind !== 'home') return;
     const currentSession = session;
     const ownerID = destination.profile.id;
@@ -3724,7 +3774,7 @@ export function HomeScreen() {
       reactionIntentKey,
       currentSession,
     ) &&
-      socialFeedPage.current.items.some(({ id }) => id === event.id);
+      [...socialFeedPage.current.items, ...profileActivityPage.current.items].some(({ id }) => id === event.id);
     try {
       const api = createSessionApiClient(apiURL, () => currentSession.token);
       const result = reaction
@@ -3741,7 +3791,10 @@ export function HomeScreen() {
         socialReactionSummaryFromAPI(envelope.data),
       );
       socialFeedReactionRetries.delete(event.id);
-      if (next === socialFeedPage.current) return;
+      const nextProfile = applySocialReactionSummary(profileActivityPage.current, event.id, socialReactionSummaryFromAPI(envelope.data));
+      if (next === socialFeedPage.current && nextProfile === profileActivityPage.current) return;
+      profileActivityPage.current = nextProfile;
+      setProfileActivity((current) => ({ ...current, items: nextProfile.items }));
       socialFeedReactionRevisions.set(
         event.id,
         (socialFeedReactionRevisions.get(event.id) ?? 0) + 1,
@@ -4004,6 +4057,7 @@ export function HomeScreen() {
     const ownerID = destination.profile.id;
     const ticket = socialActiveFollowingOperations.issue();
     const intentKey = 'social:active';
+    const refreshCount = refreshing && !cursor ? socialActiveFollowingPage.current.items.length : 0;
     socialActiveFollowingTarget.current = createSocialSessionTarget(ownerID, currentSession, intentKey);
     const currentTarget = () => ticket.current() && ownsCurrentSocialOperation(
       socialActiveFollowingTarget.current,
@@ -4019,22 +4073,28 @@ export function HomeScreen() {
       status: cursor || (refreshing && current.items.length > 0) ? 'ready' : 'loading',
     }));
     try {
-      const response = generatedResponse(
-        await createSessionApiClient(apiURL, () => currentSession.token)
-          .socialActiveFollowing(cursor || undefined),
-      );
-      if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
-      const envelope = await response.json();
-      if (!envelope) throw new Error('invalid_social_active_following_response');
-      const incoming: ActiveFollowingPage = {
-        items: envelope.data.items.map(activeFollowingItemFromAPI),
-        nextCursor: envelope.meta.nextCursor ?? '',
-      };
-      const next = mergeActiveFollowingPage(
-        socialActiveFollowingPage.current,
-        incoming,
-        cursor || undefined,
-      );
+      const client = createSessionApiClient(apiURL, () => currentSession.token);
+      let requestedCursor = cursor;
+      let next: ActiveFollowingPage = cursor
+        ? socialActiveFollowingPage.current
+        : { items: [], nextCursor: '' };
+      const visitedCursors = new Set<string>();
+      do {
+        if (visitedCursors.has(requestedCursor)) throw new Error('invalid_social_active_following_cursor');
+        visitedCursors.add(requestedCursor);
+        const response = generatedResponse(await client.socialActiveFollowing(requestedCursor || undefined));
+        if (!currentTarget()) return;
+        if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+        const envelope = await response.json();
+        if (!currentTarget()) return;
+        if (!envelope) throw new Error('invalid_social_active_following_response');
+        const incoming: ActiveFollowingPage = {
+          items: envelope.data.items.map(activeFollowingItemFromAPI),
+          nextCursor: envelope.meta.nextCursor ?? '',
+        };
+        next = mergeActiveFollowingPage(next, incoming, requestedCursor || undefined);
+        requestedCursor = next.nextCursor;
+      } while (refreshCount > next.items.length && requestedCursor);
       if (!currentTarget()) return;
       socialActiveFollowingPage.current = next;
       setSocialActiveFollowing({
@@ -4506,6 +4566,7 @@ export function HomeScreen() {
     };
     setSocialFeedActivity(null);
     setSocialFeed((current) => ({ ...current, detailErrorKey: undefined }));
+    setProfileActivity((current) => ({ ...current, detailErrorKey: undefined }));
 
     const currentTarget = () => ticket.current() &&
       socialFeedActivityTarget.current?.activityID === event.activity.id &&
@@ -4538,15 +4599,16 @@ export function HomeScreen() {
             revisions,
           });
           setSocialFeed((current) => ({ ...current, detailErrorKey: undefined }));
+    setProfileActivity((current) => ({ ...current, detailErrorKey: undefined }));
         }
       },
     });
     if (result.kind === 'failed' && currentTarget()) {
       await handleFeatureSessionFailure(result.cause, currentSession, ticket);
-      if (currentTarget()) setSocialFeed((current) => ({
-        ...current,
-        detailErrorKey: 'social.feedUnavailableDescription',
-      }));
+      if (currentTarget()) {
+        setSocialFeed((current) => ({ ...current, detailErrorKey: 'social.feedUnavailableDescription' }));
+        setProfileActivity((current) => ({ ...current, detailErrorKey: 'social.feedUnavailableDescription' }));
+      }
     }
   }
 
@@ -7511,7 +7573,7 @@ export function HomeScreen() {
     if (currentSocialRouteIntent.kind !== 'activity' && currentSocialRouteIntent.kind !== 'comments' &&
       currentSocialRouteIntent.kind !== 'comment-hearts') return;
     const event = currentSocialRouteIntent.kind === 'activity'
-      ? socialFeedPage.current.items.find((candidate) => candidate.type === 'practice_session' &&
+      ? [...socialFeedPage.current.items, ...profileActivityPage.current.items].find((candidate) => candidate.type === 'practice_session' &&
         candidate.path.id === currentSocialRouteIntent.pathID && candidate.activity.id === currentSocialRouteIntent.activityID)
       : socialDeepEvent.eventID === currentSocialRouteIntent.eventID && socialDeepEvent.status === 'ready'
         ? socialDeepEvent.event
@@ -7713,7 +7775,7 @@ export function HomeScreen() {
     (currentSocialRouteIntent.kind === 'activity' || currentSocialRouteIntent.kind === 'comments' ||
       currentSocialRouteIntent.kind === 'comment-hearts')
     ? currentSocialRouteIntent.kind === 'activity'
-      ? socialFeedPage.current.items.find((candidate) => candidate.type === 'practice_session' &&
+      ? [...socialFeedPage.current.items, ...profileActivityPage.current.items].find((candidate) => candidate.type === 'practice_session' &&
         candidate.path.id === currentSocialRouteIntent.pathID && candidate.activity.id === currentSocialRouteIntent.activityID)
       : socialDeepEvent.eventID === currentSocialRouteIntent.eventID && socialDeepEvent.status === 'ready'
         ? socialDeepEvent.event
@@ -8575,6 +8637,14 @@ export function HomeScreen() {
         />
       : null}
     {ready && ownedHomeDestination ? <SocialProfileRouteSource
+      activity={profileActivity}
+      loadMoreActivity={() => { if (socialProfile.username && profileActivityPage.current.nextCursor && !profileActivity.loadingMore) void loadProfileActivity(socialProfile.username, profileActivityPage.current.nextCursor); }}
+      retryActivity={() => { if (socialProfile.username) void loadProfileActivity(socialProfile.username); }}
+      openActivity={(event) => void openSocialFeedActivity(event)}
+      openComments={(event) => openPracticeComments(event.id, event.participant.userId)}
+      setReaction={(event, reaction) => mutateSocialFeedReaction(event, reaction)}
+      removeReaction={(event) => mutateSocialFeedReaction(event, null)}
+      dismissActivityNotice={() => setProfileActivity((current) => ({ ...current, interactionNoticeKey: undefined }))}
       isCurrent={() => socialPresentationKey === `${notificationLifecycleState.current.destination?.kind === 'home'
         ? notificationLifecycleState.current.destination.profile.id
         : 'unavailable'}:${socialPresentationGeneration.current}`}

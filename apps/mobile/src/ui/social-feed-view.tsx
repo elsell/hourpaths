@@ -2,7 +2,8 @@ import type { Translator } from '@hourpaths/i18n';
 import { activeTimerSeconds } from '@hourpaths/client-core';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { formatCompactDuration } from './compact-duration';
+import { defaultPathAppearance, pathPalette } from './path-appearance';
+import { formatGoalDuration, formatCompactDuration } from './compact-duration';
 import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { ThemedText as Text } from './primitives';
@@ -26,48 +27,30 @@ import {
 } from './social-reaction-presentation';
 import { mobileTheme } from './tokens';
 
-function ActiveFollowingRow({
-  i18n,
-  item,
-  now,
-}: {
-  i18n: Translator;
-  item: ActiveFollowingItem;
-  now: number;
+function ActiveFollowingRow({ i18n, item, now, onOpen }: {
+  i18n: Translator; item: ActiveFollowingItem; now: number; onOpen: () => void;
 }) {
   const timerLabels = item.timers.map((timer) => i18n.t('social.activeTimer', {
-    duration: formatCompactDuration(activeTimerSeconds(timer.startedAt, now), i18n),
-    path: timer.path.name,
+    duration: formatGoalDuration(activeTimerSeconds(timer.startedAt, now), i18n), path: timer.path.name,
   }));
-
-  return <View
-    accessible
-    accessibilityLabel={i18n.t('social.activeGroupAccessibility', {
-      participant: item.participant.displayName,
-      timers: timerLabels.join(', '),
-    })}
-    style={styles.activeRow}
-  >
-    <SocialProfileAvatar
-      accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
-      size={40}
-    />
-    <View style={styles.copy}>
-      <Text style={styles.summary}>{item.participant.displayName}</Text>
-      {timerLabels.map((label, index) => <Text key={item.timers[index]?.id} style={styles.activeTimer}>
-        {label}
-      </Text>)}
-    </View>
-  </View>;
+  return <Pressable accessibilityRole="button"
+    accessibilityLabel={i18n.t('social.activeGroupAccessibility', { participant: item.participant.displayName, timers: timerLabels.join(', ') })}
+    onPress={onOpen} style={({ pressed }) => [styles.story, pressed ? styles.pressed : null]}>
+    <View style={styles.storyRing}><SocialProfileAvatar accessibilityLabel={i18n.t('social.neutralAvatarLabel')} profilePictureURL={item.participant.profilePictureURL} size={56} /></View>
+    <Text style={styles.storyName}>{item.participant.displayName}</Text>
+    <Text style={styles.secondary}>{i18n.t('social.story.activePaths', { count: item.timers.length })}</Text>
+  </Pressable>;
 }
 
 function ActiveFollowingSection({
+  onOpen,
   i18n,
   onLoadMore,
   onRetry,
   state,
 }: {
   i18n: Translator;
+  onOpen: (item: ActiveFollowingItem) => void;
   onLoadMore: () => void;
   onRetry: () => void;
   state: ActiveFollowingState;
@@ -93,12 +76,9 @@ function ActiveFollowingSection({
 
   return <View style={styles.activeSection}>
     <Text accessibilityRole="header" style={styles.sectionHeading}>{i18n.t('social.activeHeading')}</Text>
-    {state.items.length > 0 ? <View style={styles.activeList}>
-      {state.items.map((item, index) => <View key={item.participant.userId}>
-        {index > 0 ? <View style={styles.separator} /> : null}
-        <ActiveFollowingRow i18n={i18n} item={item} now={now} />
-      </View>)}
-    </View> : state.status === 'loading' || state.status === 'idle'
+    {state.items.length > 0 ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyList}>
+      {state.items.map((item) => <ActiveFollowingRow key={item.participant.userId} i18n={i18n} item={item} now={now} onOpen={() => onOpen(item)} />)}
+    </ScrollView> : state.status === 'loading' || state.status === 'idle'
       ? <View accessibilityLabel={i18n.t('social.activeLoading')} accessibilityRole="progressbar" style={styles.activeState}>
           <ActivityIndicator color={mobileTheme.colors.accent} size="small" />
           <Text style={styles.secondary}>{i18n.t('social.activeLoading')}</Text>
@@ -253,130 +233,47 @@ function FeedEngagement({
   </View>;
 }
 
-function AchievementFeedRow({
-  event,
-  i18n,
-  onOpenComments,
-  onRemoveReaction,
-  onSetReaction,
-}: {
-  event: GoalAchievementFeedEvent;
+export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments, onRemoveReaction, onSetReaction }: {
+  event: SocialFeedEvent;
   i18n: Translator;
-  onOpenComments: () => void;
+  onOpen: (event: PracticeSessionFeedEvent) => void;
+  onOpenProfile: (username: string) => void;
+  onOpenComments: (event: SocialFeedEvent) => void;
   onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
   onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
 }) {
-  const target = formatCompactDuration(event.achievement.targetSeconds, i18n);
+  const appearance = defaultPathAppearance(event.path.id);
+  const tone = pathPalette[event.type === 'goal_achievement' ? 'gold' : appearance.color];
   const publishedAt = new Date(event.publishedAt);
   const date = i18n.date(publishedAt, { dateStyle: 'medium' });
   const time = i18n.time(publishedAt, { timeStyle: 'short' });
-  const summaryKey = event.achievement.kind === 'interval'
-    ? 'social.feedAchievementInterval'
-    : 'social.feedAchievementOverall';
-  const rowKey = event.achievement.kind === 'interval'
-    ? 'social.feedAchievementRowInterval'
-    : 'social.feedAchievementRowOverall';
-
-  return <View>
-    <View
-      accessible
-      accessibilityLabel={i18n.t(rowKey, {
-        duration: target,
-        participant: event.participant.displayName,
-        path: event.path.name,
-        time,
-      })}
-      style={styles.achievementRow}
-    >
-      <SocialProfileAvatar
-        accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
-        profilePictureURL={event.participant.profilePictureURL}
-        size={40}
-      />
+  const duration = formatGoalDuration(event.type === 'practice_session' ? event.activity.durationSeconds : event.achievement.targetSeconds, i18n);
+  const summary = event.type === 'practice_session'
+    ? i18n.t('social.post.practice', { path: event.path.name, duration })
+    : i18n.t(event.achievement.kind === 'interval' ? 'social.post.intervalAchievement' : 'social.post.overallAchievement');
+  return <View style={styles.post}>
+    <Pressable accessibilityRole="button" accessibilityLabel={i18n.t('social.post.openProfile', { name: event.participant.displayName })}
+      onPress={() => onOpenProfile(event.participant.username)} style={({ pressed }) => [styles.author, pressed ? styles.pressed : null]}>
+      <SocialProfileAvatar accessibilityLabel={i18n.t('social.neutralAvatarLabel')} profilePictureURL={event.participant.profilePictureURL} size={40} />
       <View style={styles.copy}>
-        <Text style={styles.summary}>{i18n.t(summaryKey, {
-          participant: event.participant.displayName,
-          path: event.path.name,
-        })}</Text>
-        <View style={styles.metadata}>
-          <Text style={styles.achievementTarget}>{i18n.t('social.feedAchievementTarget', { duration: target })}</Text>
-          <Text style={styles.secondary}>{date}</Text>
-          <Text style={styles.secondary}>{time}</Text>
-        </View>
+        <Text style={styles.summary}>{event.participant.displayName}</Text>
+        <Text style={styles.secondary}>{i18n.t('social.post.metadata', { username: event.participant.username, date, time })}</Text>
       </View>
-      <SettingsIcon systemName="trophy.fill" />
-    </View>
-    <FeedEngagement
-      event={event}
-      i18n={i18n}
-      onOpenComments={onOpenComments}
-      onRemoveReaction={onRemoveReaction}
-      onSetReaction={onSetReaction}
-    />
-  </View>;
-}
-
-function FeedRow({
-  event,
-  i18n,
-  onOpen,
-  onOpenComments,
-  onRemoveReaction,
-  onSetReaction,
-}: {
-  event: PracticeSessionFeedEvent;
-  i18n: Translator;
-  onOpen: () => void;
-  onOpenComments: () => void;
-  onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
-  onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
-}) {
-  const duration = formatCompactDuration(event.activity.durationSeconds, i18n);
-  const publishedAt = new Date(event.publishedAt);
-  const date = i18n.date(publishedAt, { dateStyle: 'medium' });
-  const time = i18n.time(publishedAt, { timeStyle: 'short' });
-  const labelKey = event.activity.edited ? 'social.feedRowEdited' : 'social.feedRow';
-
-  return <View>
-    <Pressable
-      accessibilityLabel={i18n.t(labelKey, {
-        duration,
-        participant: event.participant.displayName,
-        path: event.path.name,
-        time,
-      })}
-      accessibilityRole="button"
-      onPress={onOpen}
-      style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
-    >
-      <SocialProfileAvatar
-        accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
-        profilePictureURL={event.participant.profilePictureURL}
-        size={40}
-      />
-      <View style={styles.copy}>
-        <Text style={styles.summary}>
-          {i18n.t('social.feedPracticeOnPath', {
-            participant: event.participant.displayName,
-            path: event.path.name,
-          })}
-        </Text>
-        <View style={styles.metadata}>
-          <Text style={styles.duration}>{duration}</Text>
-          <Text style={styles.secondary}>{date}</Text>
-          <Text style={styles.secondary}>{time}</Text>
-          {event.activity.edited ? <Text style={styles.edited}>{i18n.t('social.edited')}</Text> : null}
-        </View>
-      </View>
-      <SettingsIcon systemName="chevron.right" variant="disclosure" />
     </Pressable>
-    <FeedEngagement
-      event={event}
-      i18n={i18n}
-      onOpenComments={onOpenComments}
-      onRemoveReaction={onRemoveReaction}
-      onSetReaction={onSetReaction}
-    />
+    <Text style={styles.postSummary}>{summary}</Text>
+    <Pressable accessibilityRole={event.type === 'practice_session' ? 'button' : undefined}
+      accessibilityLabel={summary} disabled={event.type !== 'practice_session'}
+      onPress={() => { if (event.type === 'practice_session') onOpen(event); }}
+      style={({ pressed }) => [styles.attachment, { backgroundColor: tone.background }, pressed ? styles.pressed : null]}>
+      <Text accessibilityElementsHidden style={styles.pathEmoji}>{event.type === 'goal_achievement' ? '🏆' : appearance.emoji}</Text>
+      <View style={styles.copy}>
+        <Text style={[styles.summary, { color: tone.foreground }]}>{event.path.name}</Text>
+        <Text style={[styles.postDuration, { color: tone.foreground }]}>{duration}</Text>
+        <Text style={[styles.secondary, { color: tone.foreground }]}>{i18n.t(event.type === 'practice_session' ? 'social.post.session' : 'social.post.goalCompleted')}</Text>
+      </View>
+    </Pressable>
+    {event.type === 'practice_session' && event.activity.edited ? <Text style={styles.edited}>{i18n.t('social.edited')}</Text> : null}
+    <FeedEngagement event={event} i18n={i18n} onOpenComments={() => onOpenComments(event)} onRemoveReaction={onRemoveReaction} onSetReaction={onSetReaction} />
   </View>;
 }
 
@@ -439,107 +336,64 @@ function InteractionNotice({
   </View>;
 }
 
-export function SocialFeedView({
-  active,
-  i18n,
-  onLoadMoreActive,
-  onLoadMore,
-  onDismissInteractionNotice,
-  onOpen,
-  onOpenComments,
-  onRemoveReaction,
-  onRefresh,
-  onRetry,
-  onRetryActive,
-  onSetReaction,
-  state,
-}: {
-  active: ActiveFollowingState;
+export type SocialTimelineProps = {
   i18n: Translator;
-  onLoadMoreActive: () => void;
   onLoadMore: () => void;
   onDismissInteractionNotice: () => void;
   onOpen: (event: PracticeSessionFeedEvent) => void;
+  onOpenProfile: (username: string) => void;
   onOpenComments: (event: SocialFeedEvent) => void;
   onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
-  onRefresh: () => void;
   onRetry: () => void;
-  onRetryActive: () => void;
   onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
   state: SocialFeedState;
-}) {
-  const hasActive = active.items.length > 0;
-  const hasEvents = state.items.length > 0;
-  const noticeEventVisible = state.items.some(({ id }) => id === state.interactionNoticeEventID);
-  const footer = state.status === 'error' && hasEvents
-    ? <View accessibilityRole="alert" style={styles.footer}>
-        <Text style={styles.error}>{i18n.t(state.errorKey ?? 'social.feedUnavailableDescription')}</Text>
-        <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
-      </View>
-    : state.nextCursor
-      ? <NativeButton busy={state.loadingMore} disabled={state.loadingMore} label={i18n.t(state.loadingMore ? 'social.loadingMore' : 'social.loadMore')} onPress={onLoadMore} variant="quiet" />
-      : null;
+  profile?: boolean;
+};
 
-  return <ScrollView
-    alwaysBounceVertical
-    automaticallyAdjustContentInsets
-    contentContainerStyle={[styles.content, !hasActive && !hasEvents ? styles.emptyContent : null]}
-    contentInsetAdjustmentBehavior="automatic"
-    refreshControl={<RefreshControl
-      colors={[mobileTheme.colors.accent]}
-      onRefresh={onRefresh}
-      refreshing={state.refreshing || active.refreshing}
-      tintColor={mobileTheme.colors.accent}
-    />}
-    style={styles.screen}
-  >
-    <ActiveFollowingSection
-      i18n={i18n}
-      onLoadMore={onLoadMoreActive}
-      onRetry={onRetryActive}
-      state={active}
-    />
-    {state.interactionNoticeKey && !noticeEventVisible ? <InteractionNotice
-      i18n={i18n}
-      messageKey={state.interactionNoticeKey}
-      onDismiss={onDismissInteractionNotice}
-    /> : null}
-    {hasEvents
-      ? <View style={styles.list}>{state.items.map((event, index) => <View key={event.id}>
-          {index > 0 ? <View style={styles.separator} /> : null}
-          {state.interactionNoticeKey && state.interactionNoticeEventID === event.id
-            ? <InteractionNotice
-                i18n={i18n}
-                messageKey={state.interactionNoticeKey}
-                onDismiss={onDismissInteractionNotice}
-              />
-            : null}
-          {event.type === 'goal_achievement'
-            ? <AchievementFeedRow
-                event={event}
-                i18n={i18n}
-                onOpenComments={() => onOpenComments(event)}
-                onRemoveReaction={onRemoveReaction}
-                onSetReaction={onSetReaction}
-              />
-            : <FeedRow
-                event={event}
-                i18n={i18n}
-                onOpen={() => onOpen(event)}
-                onOpenComments={() => onOpenComments(event)}
-                onRemoveReaction={onRemoveReaction}
-                onSetReaction={onSetReaction}
-              />}
-        </View>)}</View>
-      : <FeedUnavailable i18n={i18n} onRetry={onRetry} state={state} />}
-    {state.detailErrorKey ? <View accessibilityRole="alert" style={styles.footer}>
-      <Text style={styles.error}>{i18n.t(state.detailErrorKey)}</Text>
-    </View> : null}
-    {footer}
+export function SocialTimeline(props: SocialTimelineProps) {
+  const { i18n, onLoadMore, onDismissInteractionNotice, onRetry, state, profile } = props;
+  return <View>
+    {state.interactionNoticeKey ? <InteractionNotice i18n={i18n} messageKey={state.interactionNoticeKey} onDismiss={onDismissInteractionNotice} /> : null}
+    {state.items.length > 0 ? <View style={styles.list}>{state.items.map((event, index) => <View key={event.id}>
+      {index > 0 ? <View style={styles.separator} /> : null}
+      <SocialPost event={event} i18n={props.i18n} onOpen={props.onOpen} onOpenProfile={props.onOpenProfile} onOpenComments={props.onOpenComments} onRemoveReaction={props.onRemoveReaction} onSetReaction={props.onSetReaction} />
+    </View>)}</View> : profile && state.status === 'ready' ? <Text style={styles.activeEmpty}>{i18n.t('social.profileActivityEmpty')}</Text> : <FeedUnavailable i18n={i18n} onRetry={onRetry} state={state} />}
+    {state.detailErrorKey ? <Text accessibilityRole="alert" style={styles.error}>{i18n.t(state.detailErrorKey)}</Text> : null}
+    {state.status === 'error' && state.items.length > 0 ? <View style={styles.footer}>
+      <Text accessibilityRole="alert" style={styles.error}>{i18n.t(state.errorKey ?? 'social.feedUnavailableDescription')}</Text>
+      <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" />
+    </View> : state.nextCursor ? <NativeButton busy={state.loadingMore} disabled={state.loadingMore} label={i18n.t(state.loadingMore ? 'social.loadingMore' : 'social.loadMore')} onPress={onLoadMore} variant="quiet" /> : null}
+  </View>;
+}
+
+export function SocialFeedView({ active, onOpenActive, onLoadMoreActive, onRetryActive, onRefresh, ...props }: SocialTimelineProps & {
+  active: ActiveFollowingState;
+  onOpenActive: (item: ActiveFollowingItem) => void;
+  onLoadMoreActive: () => void;
+  onRetryActive: () => void;
+  onRefresh: () => void;
+}) {
+  return <ScrollView alwaysBounceVertical automaticallyAdjustContentInsets contentContainerStyle={styles.content}
+    contentInsetAdjustmentBehavior="automatic" style={styles.screen}
+    refreshControl={<RefreshControl colors={[mobileTheme.colors.accent]} tintColor={mobileTheme.colors.accent} onRefresh={onRefresh} refreshing={props.state.refreshing || active.refreshing} />}>
+    <ActiveFollowingSection i18n={props.i18n} onOpen={onOpenActive} onLoadMore={onLoadMoreActive} onRetry={onRetryActive} state={active} />
+    <Text accessibilityRole="header" style={styles.sectionHeading}>{props.i18n.t('social.post.latest')}</Text>
+    <SocialTimeline i18n={props.i18n} onLoadMore={props.onLoadMore} onDismissInteractionNotice={props.onDismissInteractionNotice} onOpen={props.onOpen} onOpenProfile={props.onOpenProfile} onOpenComments={props.onOpenComments} onRemoveReaction={props.onRemoveReaction} onRetry={props.onRetry} onSetReaction={props.onSetReaction} state={props.state} profile={props.profile} />
   </ScrollView>;
 }
 
 const styles = StyleSheet.create({
+  story: { alignItems: 'center', gap: mobileTheme.spacing.xxs, width: 88 },
+  storyRing: { borderWidth: 2, borderColor: mobileTheme.colors.accent, borderRadius: mobileTheme.radii.pill, padding: mobileTheme.spacing.xxs },
+  storyList: { gap: mobileTheme.spacing.sm, paddingVertical: mobileTheme.spacing.xs },
+  storyName: { ...mobileTheme.typography.caption, color: mobileTheme.colors.text, textAlign: 'center' },
+  post: { padding: mobileTheme.spacing.md, gap: mobileTheme.spacing.sm },
+  author: { flexDirection: 'row', alignItems: 'center', gap: mobileTheme.spacing.sm, minHeight: mobileTheme.sizes.minimumTouchTarget },
+  postSummary: { ...mobileTheme.typography.body, color: mobileTheme.colors.text },
+  attachment: { flexDirection: 'row', alignItems: 'center', gap: mobileTheme.spacing.sm, borderRadius: mobileTheme.radii.lg, borderCurve: 'continuous', padding: mobileTheme.spacing.sm },
+  pathEmoji: { fontSize: 32 },
+  postDuration: { ...mobileTheme.typography.heading, fontVariant: ['tabular-nums'] },
+  pressed: { opacity: 0.65 },
   achievementRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -621,7 +475,7 @@ const styles = StyleSheet.create({
     gap: mobileTheme.spacing.xxs,
     minWidth: 0,
   },
-  engagement: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: mobileTheme.spacing.sm, paddingLeft: 68, paddingRight: mobileTheme.spacing.md, paddingBottom: mobileTheme.spacing.sm },
+  engagement: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: mobileTheme.spacing.sm, paddingVertical: mobileTheme.spacing.xxs },
   commentsAction: {
     alignItems: 'center',
     alignSelf: 'flex-start',
