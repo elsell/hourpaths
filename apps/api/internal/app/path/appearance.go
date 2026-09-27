@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	platformapp "github.com/elsell/hour-paths/apps/api/internal/app"
 	shared "github.com/elsell/hour-paths/apps/api/internal/app/shared"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
@@ -43,14 +44,18 @@ func (s *Service) appearanceActor(ctx context.Context, authorization string, id 
 		return principal, now, err
 	}
 	if !allowed {
-		event := shared.NewAuditEvent(ctx, s.Clock, principal.UserID, principal.UserID, audit.ResourceAccessDenied, "path_appearance", string(id), audit.Denied)
-		event.OccurredAt = now
-		if err := s.Audits.AppendAuditEvent(ctx, event); err != nil {
-			return principal, now, err
-		}
-		return principal, now, ports.ErrNotFound
+		return principal, now, s.denyAppearance(ctx, principal.UserID, id, now)
 	}
 	return principal, now, nil
+}
+
+func (s *Service) denyAppearance(ctx context.Context, userID string, id domain.ID, now time.Time) error {
+	event := shared.NewAuditEvent(ctx, s.Clock, userID, userID, audit.ResourceAccessDenied, "path_appearance", string(id), audit.Denied)
+	event.OccurredAt = now
+	if err := s.Audits.AppendAuditEvent(ctx, event); err != nil {
+		return err
+	}
+	return ports.ErrNotFound
 }
 
 func (s *Service) ReadAppearance(ctx context.Context, authorization string, id domain.ID) (domain.Appearance, error) {
@@ -59,6 +64,9 @@ func (s *Service) ReadAppearance(ctx context.Context, authorization string, id d
 		return domain.Appearance{}, err
 	}
 	result, err := s.Repository.ReadAppearance(ctx, principal.UserID, id)
+	if errors.Is(err, ports.ErrNotFound) {
+		return domain.Appearance{}, s.denyAppearance(ctx, principal.UserID, id, now)
+	}
 	if err != nil {
 		return domain.Appearance{}, err
 	}
@@ -88,6 +96,10 @@ func (s *Service) SaveAppearance(ctx context.Context, authorization, key string,
 	digest := sha256.Sum256(payload)
 	event := shared.NewAuditEvent(ctx, s.Clock, principal.UserID, principal.UserID, audit.ResourceUpdated, "path_appearance", string(id), audit.Succeeded)
 	event.OccurredAt = now
-	return s.Repository.SaveAppearance(ctx, AppearanceCommand{UserID: principal.UserID, PathID: id, Appearance: value, UpdatedAt: now,
+	result, err := s.Repository.SaveAppearance(ctx, AppearanceCommand{UserID: principal.UserID, PathID: id, Appearance: value, UpdatedAt: now,
 		Idempotency: ports.Idempotency{PrincipalID: principal.UserID, Operation: "path.appearance.update", Key: key, RequestHash: digest[:]}, Audit: event})
+	if errors.Is(err, ports.ErrNotFound) {
+		return domain.Appearance{}, s.denyAppearance(ctx, principal.UserID, id, now)
+	}
+	return result, err
 }

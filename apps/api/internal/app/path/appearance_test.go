@@ -3,6 +3,7 @@ package path
 import (
 	"context"
 	"errors"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"testing"
@@ -38,5 +39,24 @@ func TestPersonalAppearanceRequiresSessionAndViewPermission(t *testing.T) {
 	}
 	if _, err := New(dependencies).SaveAppearance(context.Background(), "Bearer valid", "appearance-key-0002", "path", domain.Appearance{Color: "mint", Emoji: "not emoji"}); !errors.Is(err, ports.ErrInvalidArgument) {
 		t.Fatalf("invalid emoji err=%v", err)
+	}
+}
+
+func TestAppearanceMembershipDenialIsAuditedAfterPublicViewPermission(t *testing.T) {
+	for _, save := range []bool{false, true} {
+		dependencies := configuredDependencies()
+		dependencies.Repository = controlledRepository{err: ports.ErrNotFound}
+		var events []audit.Event
+		dependencies.Audits = controlledAudits{events: &events}
+		service := New(dependencies)
+		var err error
+		if save {
+			_, err = service.SaveAppearance(context.Background(), "Bearer valid", "appearance-public-001", "public-path", domain.Appearance{Color: "mint", Emoji: "🌱"})
+		} else {
+			_, err = service.ReadAppearance(context.Background(), "Bearer valid", "public-path")
+		}
+		if !errors.Is(err, ports.ErrNotFound) || len(events) != 1 || events[0].Action != audit.ResourceAccessDenied {
+			t.Fatalf("save=%v err=%v events=%+v", save, err, events)
+		}
 	}
 }
