@@ -682,6 +682,7 @@ type OwnershipTransferRepository interface {
 }
 
 type Repository interface {
+	AppearanceRepository
 	HomePreferencesRepository
 	InvitationDirectory
 	InvitationRepository

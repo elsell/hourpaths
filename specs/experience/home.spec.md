@@ -187,7 +187,7 @@ progress must be labeled distinctly from a currently running timer.
   Path emoji. The editor must preview the chosen appearance using the same tile
   component as Home, retain Cancel and Save actions, and reject an empty or
   multi-emoji value. Cancel must preserve the saved appearance. Ownership and
-  persistence of these choices remain open below.
+  persistence of these choices follow the personal appearance rules below.
 
 ## Ordering and pinning
 
@@ -273,9 +273,33 @@ progress must be labeled distinctly from a currently running timer.
 - A running Path must remain in the filtered grid and appear in the Running
   shortcuts. Starting or stopping must not mutate saved pinning or ordering.
 
+## Personal appearance (approved September 2026)
+
+- Each user's color and emoji choices must belong to that user and Path, never
+  to the shared Path itself. Participants and supporters may customize their own
+  appearance without changing anyone else's view.
+- Choices must persist on the server and be read across iOS, Android, and web
+  clients for the same account. Local-only storage must not be authoritative.
+- The palette must provide coral, lavender, gold, mint, blue, and lilac choices.
+  The emoji must be one bounded emoji sequence, including joined or skin-tone
+  emoji. An unset appearance must use the shared deterministic default.
+- Reads and saves must require an application session, Path view authorization,
+  and current ownership or membership. Inaccessible Paths must not be disclosed.
+- A save must compare the version the user edited, reject stale overwrites,
+  preserve the draft after failure, and allow retry. Repeating an admitted save
+  with its idempotency key must return the original result.
+- Saving must atomically persist the personal choice and its audit event. Read
+  and denied events must use the existing principal audit limiter.
+- Removal of membership, deletion of the Path, or deletion of the account must
+  remove the applicable stored appearance. Sign-out or account replacement must
+  discard pending client appearance state and ignore late results.
+- A transient appearance load failure must not clear valid saved appearance or
+  prevent time tracking; clients must expose retry. A missing appearance from a
+  successful read must resolve to the deterministic default.
+
 ## Open questions
 
-- Are color and emoji personal appearance preferences or shared Path metadata?
+None for this slice.
 
 ## Acceptance examples
 

@@ -242,6 +242,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/path-appearances/{pathID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["read-path-appearance"];
+        put: operations["save-path-appearance"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/time-zone": {
         parameters: {
             query?: never;
@@ -1388,6 +1404,28 @@ export interface components {
             data: components["schemas"]["ActivityRevision"][];
             meta: components["schemas"]["MetaStruct"];
         };
+        AppearanceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AppearanceOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["PathAppearance"];
+        };
+        AppearanceSaveInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AppearanceSaveInputBody.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            color: "coral" | "lavender" | "gold" | "mint" | "blue" | "pink";
+            emoji: string;
+            /** Format: int64 */
+            expectedRevision: number;
+        };
         AuditEventDTO: {
             action: string;
             actorUserId: string;
@@ -2148,6 +2186,13 @@ export interface components {
         };
         PaginationMeta: {
             nextCursor?: string;
+        };
+        PathAppearance: {
+            /** @enum {string} */
+            color?: "coral" | "lavender" | "gold" | "mint" | "blue" | "pink";
+            emoji?: string;
+            /** Format: int64 */
+            revision: number;
         };
         PathArchiveStateUpdate: {
             /**
@@ -3458,6 +3503,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NudgeNotificationChannelOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "read-path-appearance": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                pathID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "save-path-appearance": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                pathID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppearanceSaveInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppearanceOutputBody"];
                 };
             };
             /** @description Error */

@@ -364,6 +364,12 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } },
       body,
     }),
+    pathAppearance: (pathID: string) => authenticatedClient.GET('/v1/me/path-appearances/{pathID}', {
+      params: { path: { pathID } },
+    }),
+    savePathAppearance: (pathID: string, body: components['schemas']['AppearanceSaveInputBody'], idempotencyKey: string) => authenticatedClient.PUT('/v1/me/path-appearances/{pathID}', {
+      params: { path: { pathID }, header: { 'Idempotency-Key': idempotencyKey } }, body,
+    }),
     currentTimer: (pathId: string) => authenticatedClient.GET('/v1/paths/{pathId}/timer', {
       params: { path: { pathId } },
     }),
@@ -398,5 +404,21 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     }),
     declineDuplicateEmailRecovery: () => authenticatedClient.POST('/v1/onboarding/duplicate-email-recovery/decline'),
     revoke: () => authenticatedClient.DELETE('/v1/session'),
+  };
+}
+
+export function createPathAppearancePort(baseUrl: string, tokenProvider: TokenProvider) {
+  const client = createSessionApiClient(baseUrl, tokenProvider);
+  return {
+    async read(id: string) {
+      const result = await client.pathAppearance(id);
+      if (!result.data) throw { status: result.response.status };
+      return result.data.data;
+    },
+    async save(id: string, appearance: { color: 'coral' | 'lavender' | 'gold' | 'mint' | 'blue' | 'pink'; emoji: string }, revision: number, key: string) {
+      const result = await client.savePathAppearance(id, { ...appearance, expectedRevision: revision }, key);
+      if (!result.data) throw { status: result.response.status };
+      return result.data.data;
+    },
   };
 }

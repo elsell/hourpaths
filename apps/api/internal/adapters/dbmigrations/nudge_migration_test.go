@@ -85,7 +85,7 @@ func TestNudgeDownMigrationRefusesToDiscardNudgesOrReplayEvidence(t *testing.T) 
 }
 
 func TestNudgeMigrationAdvancesReadinessVersion(t *testing.T) {
-	if dbmigrations.LatestVersion != 66 {
-		t.Fatalf("LatestVersion=%d, want 66", dbmigrations.LatestVersion)
+	if dbmigrations.LatestVersion < 66 {
+		t.Fatalf("LatestVersion=%d, want at least 66", dbmigrations.LatestVersion)
 	}
 }
