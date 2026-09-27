@@ -37,6 +37,6 @@ for (const build of result.data) {
 }
 
 for (const group of groups.data) {
-  const builds = await read(`/v1/betaGroups/${encodeURIComponent(group.id)}/builds`, { 'filter[version]': buildNumber, limit: '200' });
-  console.log(JSON.stringify({ group: groupSummary(group), assignedBuilds: builds.data.map((build) => ({ id: build.id, version: build.attributes.version })) }));
+  const builds = await read(`/v1/betaGroups/${encodeURIComponent(group.id)}/builds`, { 'fields[builds]': 'version', limit: '200' });
+  console.log(JSON.stringify({ group: groupSummary(group), assignedBuilds: builds.data.filter((build) => build.attributes.version === buildNumber).map((build) => ({ id: build.id, version: build.attributes.version })) }));
 }
