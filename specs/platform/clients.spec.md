@@ -159,3 +159,11 @@ native builds verify this exact existing combination.
   tile. The shared native button may use SwiftUI `contentShape` and `shapes`
   modifiers to preserve a complete minimum touch target. These presentation-only
   imports must not permit client transport outside generated adapters.
+
+## TestFlight delivery evidence
+
+- An upload receipt must not be described as availability to testers.
+- Release diagnostics must distinguish Apple's build processing state from
+  internal/external beta distribution state and existing tester-group assignment.
+- Diagnostics must use the existing App Store Connect credential inside the
+  protected release environment and must not log credentials or tester details.
