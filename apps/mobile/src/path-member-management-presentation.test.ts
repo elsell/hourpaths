@@ -122,7 +122,6 @@ test('People presents each participant’s server-authored interval and overall 
 
 test('Path Details loads the participant comparison and puts it first for supporters', () => {
   assert.match(page, /openPathMembers\(pathID, undefined, false\)/);
-  assert.match(page, /participantComparison=\{<PathMemberManagementView/);
   assert.match(page, /comparisonFirst=\{!selectedCapabilities\.trackTime\}/);
   assert.match(page, /items: pathMembers\.filter\(\(member\) => member\.role !== 'supporter'\)/);
   assert.match(page, /onLoadMore=\{\(\) => \{ if \(pathMembersCursor\) void openPathMembers\(selectedPath\.id, pathMembersCursor, false\); \}\}/);

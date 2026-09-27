@@ -51,3 +51,5 @@ They supplement the authoritative domain requirements and the derived
 September 2026 Home revision: approved stable colorful mobile tiles, native flat
 controls, consistent period totals, and Running jump shortcuts. Appearance choices are personal to each user and persist server-side across
 all clients, as approved in the Home specification.
+
+Approved mobile refinement: compact one-page Path detail/edit surface and Home tile navigation; see [Path details](experience/path-details.spec.md#compact-mobile-detailedit-page-approved-september-2026).

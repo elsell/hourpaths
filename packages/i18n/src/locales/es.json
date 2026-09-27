@@ -893,5 +893,21 @@
   "home.appearance.emojiHint": "Elige un emoji con el teclado",
   "home.appearance.invalidEmoji": "Introduce un solo emoji.",
   "home.appearance.loadFailed": "No se pudieron actualizar tus colores y emojis guardados.",
-  "home.appearance.saveFailed": "No se pudo guardar. Tu borrador se conserva. Reintenta para aplicarlo a la última apariencia guardada."
+  "home.appearance.saveFailed": "No se pudo guardar. Tu borrador se conserva. Reintenta para aplicarlo a la última apariencia guardada.",
+  "pathDetails.recentActivity": "Actividad reciente",
+  "pathDetails.settings": "Ajustes",
+  "pathDetails.seeAll": "Ver todo",
+  "pathDetails.editPath": "Editar",
+  "pathDetails.sharing": "Compartir",
+  "pathDetails.notifications": "Notificaciones",
+  "pathDetails.appearancePersonal": "Tu color y emoji",
+  "pathDetails.period.hourly": "Esta hora",
+  "pathDetails.period.daily": "Hoy",
+  "pathDetails.period.weekly": "Esta semana",
+  "pathDetails.period.monthly": "Este mes",
+  "pathDetails.period.yearly": "Este año",
+  "duration.compactSeconds": "{{seconds}}s",
+  "duration.compactHours": "{{hours}}h",
+  "duration.compactHoursMinutes": "{{hours}}h {{minutes}}m",
+  "pathDetails.goalTarget": "de {{target}} de objetivo"
 }

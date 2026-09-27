@@ -23,7 +23,13 @@ export function formatCompactDuration(totalSeconds: number, translator: Translat
 
 export function formatGoalDuration(totalSeconds: number, translator: Translator): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
-  if (seconds < 60 || seconds >= 3600) return formatCompactDuration(seconds, translator);
+  if (seconds < 60) return translator.t('duration.compactSeconds', { seconds: translator.number(seconds) });
+  if (seconds >= 3600) {
+    const hours = translator.number(Math.floor(seconds / 3600));
+    const minutes = Math.floor(seconds % 3600 / 60);
+    return minutes ? translator.t('duration.compactHoursMinutes', { hours, minutes: translator.number(minutes) })
+      : translator.t('duration.compactHours', { hours });
+  }
   return translator.t('duration.minutes', { minutes: translator.number(Math.floor(seconds / 60)) });
 }
 

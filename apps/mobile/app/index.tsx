@@ -86,6 +86,7 @@ import { ActivityHistoryView } from '../src/ui/activity-history-view';
 import { DuplicateEmailRecoveryScreen } from '../src/ui/duplicate-email-recovery-screen';
 import { ManualActivityForm } from '../src/ui/manual-activity-form';
 import { PathCreateForm } from '../src/ui/path-create-form';
+import { RecentPathActivity } from '../src/ui/recent-path-activity';
 import { PathDetailView } from '../src/ui/path-detail-view';
 import { PathGoalManagementForm } from '../src/ui/path-goal-management-form';
 import { PathArchiveConfirmationSheet } from '../src/ui/path-archive-confirmation-sheet';
@@ -695,6 +696,7 @@ export function HomeScreen() {
   const [pathRenameErrorKey, setPathRenameErrorKey] = useState<MessageKey | null>(null);
   const [pathRenameSavedName, setPathRenameSavedName] = useState<string | null>(null);
   const pathRenameTarget = useRef<PathAdministrationTarget<Session> | null>(null);
+  const [managementScreen, setManagementScreen] = useState<'overview' | 'name' | 'goals' | 'delete'>('overview');
   const [goalManagementPathID, setGoalManagementPathID] = useState<string | null>(null);
   const [goalManagementCurrent, setGoalManagementCurrent] = useState<SessionPath | null>(null);
   const [goalManagementForm, setGoalManagementForm] = useState<PathGoalForm | null>(null);
@@ -5395,11 +5397,19 @@ export function HomeScreen() {
     goalManagementOwnerID.current = destination.profile.id;
     setGoalManagementPathID(path.id);
     setGoalManagementCurrent(path);
+    setManagementScreen('overview');
     setGoalManagementForm(pathGoalFormFromPath(path));
     if (capabilities.renamePath) {
       setPathRenamePathID(path.id);
       setPathRenameName(path.name);
     }
+    return true;
+  }
+
+  function openFocusedPathManagement(path: SessionPath, screen: 'name' | 'goals' | 'delete') {
+    if (!openPathManagement(path)) return;
+    setManagementScreen(screen);
+    if (screen === 'delete' && effectivePathCapabilities(path).manageLifecycle) setPathDeletionReview(reviewPathDeletion(path));
   }
 
   function updateGoalManagementForm(update: Partial<PathGoalForm>) {
@@ -6193,6 +6203,9 @@ export function HomeScreen() {
     applyOwnedTimerState(ownerID, currentSession, pathID, presentation.state);
     if (state.running && result.state.running === false && 'saved' in result.state && result.state.saved === true) {
       await refreshHomeOrganizationPath(pathID, currentSession, ownerID, true);
+      if (pathDetailTarget.current?.pathID === pathID && !pathDetailTarget.current.activityID && ownsActivePathDetail(pathID)) {
+        void openActivityHistory(pathID, undefined, false, true);
+      }
     }
     if (presentation.notice === 'subsecond') setTimerNoticeKey('timer.subsecondNotice');
     } finally {
@@ -6276,7 +6289,11 @@ export function HomeScreen() {
       ?? currentDestination.profile.archivedPaths.find(({ id }) => id === pathID);
     if (path) void openOwnershipTransfer(path, Boolean(focusedOwnershipTransferID), focusedOwnershipTransferID);
     if (loadMembers) void openPathMembers(pathID, undefined, false);
-    if (navigate) router.push({ pathname: '/path/[pathID]', params: { pathID } });
+    void openActivityHistory(pathID, undefined, false, true);
+    if (navigate) {
+      pathRouteTarget.current = createPathRouteTarget(currentDestination.profile.id, current.session.token, `path:${pathID}`);
+      router.push({ pathname: '/path/[pathID]', params: { pathID } });
+    }
   }
 
   async function recoverPathRoute(intent: PathRouteIntent) {
@@ -7005,7 +7022,7 @@ export function HomeScreen() {
     }
   }
 
-  async function openActivityHistory(pathID: string, cursor?: string, navigate = true) {
+  async function openActivityHistory(pathID: string, cursor?: string, navigate = true, preview = false) {
     if (!session || destination?.kind !== 'home') return;
     if (navigate && !cursor && !activityHistoryOpen) {
       router.push({ pathname: '/path/[pathID]/history', params: { pathID } });
@@ -7017,7 +7034,7 @@ export function HomeScreen() {
     const currentTarget = pathDetailTarget.current;
     const activityID = currentTarget?.pathID === pathID ? currentTarget.activityID : undefined;
     if (!bindPathDetailTarget(ownerID, currentSession.token, pathID, activityID)) return;
-    setActivityHistoryOpen(true);
+    if (!preview) setActivityHistoryOpen(true);
     setPathDetailBusy(true);
     setActivityHistoryErrorKey(null);
     try {
@@ -7598,17 +7615,18 @@ export function HomeScreen() {
       appearance={appearance}
       headline={state ? formatGoalDuration(currentIntervalProgress?.accumulatedSeconds ?? state.accumulatedSeconds, i18n) : undefined}
       intervalSummary={currentIntervalProgress && path.intervalGoal ? i18n.t(`home.tile.${path.intervalGoal.recurrence}`, { target: formatGoalDuration(currentIntervalProgress.targetSeconds, i18n) }) : state ? i18n.t('path.progress.accumulatedLabel') : undefined}
-      actions={[{ label: i18n.t('home.appearance.title'), systemImage: 'paintpalette', onPress: () => appearances.open(path.id) }, {
+      actions={[{
         disabled: homePreferenceBusy,
         label: i18n.t(pinned ? 'home.arrange.unpin' : 'home.arrange.pin', { pathName: path.name }),
         onPress: () => void updateHomePreferences(pinned
           ? unpinHomePath(homePreferences, path.id)
           : pinHomePath(homePreferences, path.id)),
         systemImage: pinned ? 'pin.slash' : 'pin',
-      }]}
+      }, { label: i18n.t('pathDetails.editPath'), systemImage: 'pencil', onPress: () => openPathDetail(path.id) },
+      ...(pathCapabilities.manageLifecycle ? [{ label: i18n.t('pathDelete.action'), systemImage: 'trash' as const, destructive: true, onPress: () => { openPathDetail(path.id); openFocusedPathManagement(path, 'delete'); } }] : [])] }
       actionsAccessibilityLabel={i18n.t('home.pathActions', { pathName: path.name })}
       accumulatedText={state && currentIntervalProgress ? i18n.t('path.progress.accumulatedCompact', {
-        duration: formatCompactDuration(state.accumulatedSeconds, i18n),
+        duration: formatGoalDuration(state.accumulatedSeconds, i18n),
       }) : undefined}
       key={path.id}
       name={path.name}
@@ -7774,7 +7792,7 @@ export function HomeScreen() {
   };
   return <SafeAreaView
     edges={destination ? ['left', 'right'] : ['top', 'left', 'right', 'bottom']}
-    style={styles.screen}
+    style={[styles.screen, ownedHomeDestination ? { paddingTop: 0 } : null]}
   >
     {ownedHomeDestination && !selectedPath ? <HomeHeaderActions
       activeLabel={i18n.t('home.activePaths')}
@@ -7888,7 +7906,7 @@ export function HomeScreen() {
     /> : null}
     {ready && ownedHomeDestination ? <>
       {appearances.failed ? <StatusBanner text={i18n.t('home.appearance.loadFailed')} tone="error" actionLabel={i18n.t('common.retry')} onAction={appearances.retry} /> : null}
-      {appearances.editor ? <PathAppearanceEditor key={appearances.editor.pathID} initial={appearances.appearance(appearances.editor.pathID)} name={[...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].find((path) => path.id === appearances.editor!.pathID)?.name ?? ''} i18n={i18n} busy={appearances.editor.busy} errorText={appearances.editor.failed ? i18n.t('home.appearance.saveFailed') : undefined} onCancel={appearances.close} onSave={(value) => void appearances.save(value)} /> : null}
+
       {selectedPath ? <NativeRouteSource
         actions={[
           {
@@ -7933,23 +7951,60 @@ export function HomeScreen() {
         ]}
         onDismiss={() => {
           if (pathLeaveBusy) return;
-          resetGoalManagement(); resetManualActivity(); resetPathDetail();
+          appearances.close(); resetGoalManagement(); resetManualActivity(); resetPathDetail();
         }}
         pathID={selectedPath.id}
-        title={selectedPath.name}
+        title={i18n.t('pathDetails.genericTitle')}
       ><>
+      {appearances.editor && appearances.editor.pathID === selectedPath.id && !appearances.editor.inline ? <PathAppearanceEditor key={appearances.editor.pathID} initial={appearances.editor.draft ?? appearances.appearance(appearances.editor.pathID)} name={[...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].find((path) => path.id === appearances.editor!.pathID)?.name ?? ''} i18n={i18n} busy={appearances.editor.busy} errorText={appearances.editor.failed ? i18n.t('home.appearance.saveFailed') : undefined} onCancel={appearances.close} onSave={(value) => void appearances.save(value)} /> : null}
+      {appearances.failed ? <StatusBanner text={i18n.t('home.appearance.loadFailed')} tone="error" actionLabel={i18n.t('common.retry')} onAction={appearances.retry} /> : null}
       <PathDetailView
-        accumulatedSeconds={selectedTimerState?.accumulatedSeconds}
         actionDisabled={pathLeaveBusy || pathRenamePathID === selectedPath.id || manualBusy || goalManagementPathID === selectedPath.id}
+        comparisonFirst={!selectedCapabilities.trackTime}
+        name={selectedPath.name}
+        appearance={appearances.appearance(selectedPath.id)}
+        appearanceBusy={Boolean(appearances.editor?.busy)}
+        onAppearance={() => void appearances.open(selectedPath.id)}
+        onColorChange={(color) => void appearances.selectColor(selectedPath.id, color)}
+        onRename={selectedCapabilities.renamePath ? () => openFocusedPathManagement(selectedPath, 'name') : undefined}
+        headline={selectedTimerState ? formatGoalDuration(selectedIntervalProgress?.accumulatedSeconds ?? selectedTimerState.accumulatedSeconds, i18n) : undefined}
+        periodLabel={selectedIntervalProgress && selectedPath.intervalGoal ? i18n.t(`pathDetails.period.${selectedPath.intervalGoal.recurrence}`) : i18n.t('path.progress.accumulatedLabel')}
+        goalText={selectedIntervalProgress ? i18n.t('pathDetails.goalTarget', { target: formatGoalDuration(selectedIntervalProgress.targetSeconds, i18n) }) : undefined}
+        accumulatedText={selectedTimerState && selectedIntervalProgress ? i18n.t('path.progress.accumulatedCompact', { duration: formatGoalDuration(selectedTimerState.accumulatedSeconds, i18n) }) : undefined}
+        progress={<>
+          {selectedIntervalProgress ? <ProgressIndicator compact hideText tone={pathPalette[appearances.appearance(selectedPath.id).color]} accessibilityLabel={i18n.t('path.progress.intervalLabelForPath', { path: selectedPath.name })} targetValue={selectedIntervalProgress.targetSeconds} visualValue={selectedIntervalProgress.visualSeconds} text={intervalProgressMessage(selectedIntervalProgress)} /> : null}
+          {selectedOverallProgress ? <ProgressIndicator compact tone={pathPalette[appearances.appearance(selectedPath.id).color]} accessibilityLabel={i18n.t('path.progress.overallLabelForPath', { path: selectedPath.name })} targetValue={selectedOverallProgress.targetSeconds} visualValue={selectedOverallProgress.visualSeconds} text={overallProgressMessage(selectedOverallProgress)} /> : null}
+        </>}
+        timer={selectedCapabilities.trackTime && selectedTimerState ? <TimerControl
+          prominent
+          tone={pathPalette[appearances.appearance(selectedPath.id).color]}
+          actionLabel={i18n.t(timerMutationPresentation(selectedTimerState).controlMessage)}
+          busy={Boolean(timerBusy[selectedPath.id]) || pathLeaveBusy || manualBusy || goalManagementPathID === selectedPath.id}
+          elapsedText={selectedTimerState.running ? i18n.t('home.timer.stopElapsed', { duration: formatSessionClock(activeTimerSeconds(selectedTimerState.timer?.startedAt, now), i18n) }) : undefined}
+          errorText={timerErrorKeys[selectedPath.id] ? i18n.t(timerErrorKeys[selectedPath.id]!) : undefined}
+          onPress={() => void toggleTimer(selectedPath.id)}
+          running={selectedTimerState.running}
+        /> : undefined}
         archived={Boolean(selectedPath.archivedAt)}
         busy={manualBusy}
-        canTrackTime={selectedCapabilities.trackTime}
-        comparisonFirst={!selectedCapabilities.trackTime}
-        intervalProgress={selectedIntervalProgress ? <IntervalProgressIndicator progress={selectedIntervalProgress} /> : undefined}
-        onAddActivity={() => void openManualActivity(selectedPath.id)}
-        onOpenHistory={() => void openActivityHistory(selectedPath.id)}
-        overallProgress={selectedOverallProgress ? <OverallProgressIndicator progress={selectedOverallProgress} /> : undefined}
-        participantComparison={<PathMemberManagementView
+        recentActivity={<RecentPathActivity
+          activities={activityHistory}
+          busy={pathDetailBusy}
+          errorText={activityHistoryErrorKey ? i18n.t(activityHistoryErrorKey) : undefined}
+          i18n={i18n}
+          ownerID={ownedHomeDestination.profile.id}
+          participantName={(id) => pathMembers.find((member) => member.userId === id)?.displayName ?? (id === ownedHomeDestination.profile.id ? ownedHomeDestination.profile.displayName : i18n.t('pathMembers.participant'))}
+          onRetry={() => void openActivityHistory(selectedPath.id, undefined, false, true)}
+          onSeeAll={() => void openActivityHistory(selectedPath.id)}
+          onOpen={(id) => { setActivityHistoryOpen(true); void inspectActivity(selectedPath.id, id); }}
+          onAdd={selectedCapabilities.trackTime && !selectedPath.archivedAt && !pathLeaveBusy && !manualBusy ? () => void openManualActivity(selectedPath.id) : undefined}
+        />}
+        settings={[
+          ...(selectedCapabilities.manageGoals ? [{ label: i18n.t('pathDetails.goals'), value: selectedPath.intervalGoal ? i18n.t('pathManage.intervalSummary', { duration: formatGoalDuration(selectedPath.intervalGoal.targetSeconds, i18n), recurrence: i18n.t(`path.goal.recurrence.${selectedPath.intervalGoal.recurrence}`) }) : undefined, systemImage: 'target', onPress: () => openFocusedPathManagement(selectedPath, 'goals') }] : []),
+          ...((selectedCapabilities.inviteMembers || selectedCapabilities.manageVisibility || selectedCapabilities.manageMembers) ? [{ label: i18n.t('pathDetails.sharing'), value: i18n.t(`pathVisibility.option.${selectedPath.visibility}`), systemImage: 'person.2', onPress: () => openPathSharing(selectedPath) }] : []),
+          ...(selectedCapabilities.trackTime && !selectedPath.archivedAt ? [{ label: i18n.t('pathDetails.notifications'), value: i18n.t('nudge.audience.heading'), systemImage: 'bell', onPress: () => void loadPathNudgePreference(selectedPath.id) }] : []),
+        ]}
+        participantComparison={pathMembers.length > 1 || !selectedCapabilities.trackTime ? <PathMemberManagementView
           i18n={i18n}
           onLoadMore={() => { if (pathMembersCursor) void openPathMembers(selectedPath.id, pathMembersCursor, false); }}
           onOpen={(member) => void inspectPathMember(member)}
@@ -7961,7 +8016,7 @@ export function HomeScreen() {
             loadingMore: pathMembersLoadingMore,
             nextCursor: pathMembersCursor ?? undefined,
           } satisfies PathMemberListState}
-        />}
+        /> : undefined}
       />
       {pathLeaveBusy ? <StatusBanner text={i18n.t('pathLeave.leaving')} /> : null}
       {pathLeaveErrorKey ? <StatusBanner text={i18n.t(pathLeaveErrorKey)} tone="error" /> : null}
@@ -8067,6 +8122,7 @@ export function HomeScreen() {
       {(selectedCapabilities.manageGoals || selectedCapabilities.renamePath || selectedCapabilities.manageLifecycle ||
         selectedCapabilities.transferOwnership || (ownershipTransferPathID === selectedPath.id && Boolean(pendingOwnershipTransfer))) &&
         goalManagementPathID && goalManagementForm ? <PathGoalManagementForm
+        initialScreen={managementScreen}
         archived={Boolean(selectedPath.archivedAt)}
         busy={goalManagementBusy}
         canDelete={selectedCapabilities.manageLifecycle}

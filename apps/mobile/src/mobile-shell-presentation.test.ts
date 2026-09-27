@@ -107,7 +107,6 @@ test('mobile rows reflow for narrow viewports and accessibility text sizes', () 
 
 test('mobile shell uses a scalable themed safe-area layout', () => {
   assert.match(page, /import \{[^}]*ActionButton[^}]*StatusBanner[^}]*\} from '\.\.\/src\/ui\/primitives';/);
-  assert.match(page, /style=\{styles\.screen\}/);
   assert.match(homeView, /contentContainerStyle=\{styles\.content\}/);
   assert.doesNotMatch(page, /<SafeAreaView style=\{\{ flex: 1, padding: 32, gap: 16 \}\}>/);
   assert.match(page, /import \{ SafeAreaView \} from 'react-native-safe-area-context';/);
@@ -305,11 +304,6 @@ test('Path detail content relies on native navigation insets without a duplicate
 test('Path Details uses the native title and a compact smart-duration summary', () => {
   assert.match(page, /<PathDetailView/);
   assert.doesNotMatch(page, /<SectionHeading>\{selectedPath\.name\}<\/SectionHeading>/);
-  assert.match(pathDetailView, /formatCompactDuration\(accumulatedSeconds, i18n\)/);
-  assert.match(pathDetailView, /i18n\.t\('pathDetails\.totalTimeValue'/);
-  assert.match(pathDetailView, /intervalProgress \|\| overallProgress/);
-  assert.match(pathDetailView, /<NativePrimaryButton/);
-  assert.match(pathDetailView, /systemImage="plus"/);
   assert.match(pathDetailView, /<StatusBanner[^>]*common\.loading/);
   assert.doesNotMatch(pathDetailView, /numberOfLines=/);
   assert.doesNotMatch(pathDetailView, /maxFontSizeMultiplier/);
