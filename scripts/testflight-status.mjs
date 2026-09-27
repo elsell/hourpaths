@@ -26,13 +26,17 @@ const groupSummary = (group) => ({ id: group.id, internal: group.attributes.isIn
 console.log(JSON.stringify({ requestedBuild: buildNumber, foundBuilds: result.data.length, availableGroups: groups.data.map(groupSummary) }));
 for (const build of result.data) {
   const related = (name) => result.included?.find((value) => value.id === build.relationships?.[name]?.data?.id && value.type === build.relationships?.[name]?.data?.type);
-  const assigned = await read(`/v1/builds/${encodeURIComponent(build.id)}/betaGroups`, { limit: '200' });
   console.log(JSON.stringify({
     id: build.id, buildNumber: build.attributes.version,
     marketingVersion: related('preReleaseVersion')?.attributes.version,
     uploadedDate: build.attributes.uploadedDate, processingState: build.attributes.processingState,
     expired: build.attributes.expired, usesNonExemptEncryption: build.attributes.usesNonExemptEncryption,
     beta: related('buildBetaDetail')?.attributes,
-    assignedGroups: assigned.data.map(groupSummary),
+
   }));
+}
+
+for (const group of groups.data) {
+  const builds = await read(`/v1/betaGroups/${encodeURIComponent(group.id)}/builds`, { 'filter[version]': buildNumber, limit: '200' });
+  console.log(JSON.stringify({ group: groupSummary(group), assignedBuilds: builds.data.map((build) => ({ id: build.id, version: build.attributes.version })) }));
 }
