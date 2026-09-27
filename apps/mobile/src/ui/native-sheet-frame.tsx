@@ -5,7 +5,7 @@ import { needsCompactVerticalLayout } from './adaptive-layout';
 import { NativeSheetAction } from './native-sheet-action';
 import { mobileShellStyles } from './shell-styles';
 
-type Action = { disabled?: boolean; label: string; onPress: () => void };
+type Action = { disabled?: boolean; label: string; onPress: () => void; systemImage?: string };
 export function NativeSheetFrame({ children, title, leadingAction, trailingAction }: { children: ReactNode; title?: string; leadingAction?: Action; trailingAction?: Action }) {
   const { fontScale, width } = useWindowDimensions();
   const stackSheetHeader = needsCompactVerticalLayout(width, fontScale);
@@ -14,6 +14,7 @@ export function NativeSheetFrame({ children, title, leadingAction, trailingActio
       disabled={leadingAction.disabled}
       label={leadingAction.label}
       onPress={leadingAction.onPress}
+      systemImage={leadingAction.systemImage}
     /> : null}
   </View>;
   const trailingHeaderAction = <View style={[mobileShellStyles.sheetHeaderAction, mobileShellStyles.sheetHeaderTrailing]}>
@@ -21,6 +22,7 @@ export function NativeSheetFrame({ children, title, leadingAction, trailingActio
       disabled={trailingAction.disabled}
       label={trailingAction.label}
       onPress={trailingAction.onPress}
+      systemImage={trailingAction.systemImage}
     /> : null}
   </View>;
 

@@ -15,6 +15,26 @@ const choicePicker = readFileSync(
   fileURLToPath(new URL('./ui/native-choice-picker.tsx', import.meta.url)),
   'utf8',
 );
+const nativeSheetActionIOS = readFileSync(
+  fileURLToPath(new URL('./ui/native-sheet-action.ios.tsx', import.meta.url)),
+  'utf8',
+);
+const nativeSheetActionFallback = readFileSync(
+  fileURLToPath(new URL('./ui/native-sheet-action.tsx', import.meta.url)),
+  'utf8',
+);
+const nativeSheetFrameIOS = readFileSync(
+  fileURLToPath(new URL('./ui/native-sheet-frame.ios.tsx', import.meta.url)),
+  'utf8',
+);
+const nativeSheetFrameFallback = readFileSync(
+  fileURLToPath(new URL('./ui/native-sheet-frame.tsx', import.meta.url)),
+  'utf8',
+);
+const primitives = readFileSync(
+  fileURLToPath(new URL('./ui/primitives.tsx', import.meta.url)),
+  'utf8',
+);
 
 test('Create Path uses one compact adaptive sheet hierarchy with persistent native actions', () => {
   assert.match(form, /<NativeSheet[\s\S]*compact[\s\S]*dismissible=\{!busy\}/);
@@ -24,6 +44,22 @@ test('Create Path uses one compact adaptive sheet hierarchy with persistent nati
   assert.match(form, /<PathGoalFields[\s\S]*compact/);
   assert.doesNotMatch(form, /<SectionHeading|<ActionButton|home\.empty\.explanation/);
   assert.doesNotMatch(form, /numberOfLines|maxFontSizeMultiplier|allowFontScaling=\{false\}/);
+});
+
+test('Create Path uses accessible native icon actions in compact sheet chrome', () => {
+  assert.match(form, /leadingAction=\{\{[\s\S]*label: i18n\.t\('common\.cancel'\)[\s\S]*systemImage: 'xmark'/);
+  assert.match(form, /trailingAction=\{\{[\s\S]*label: i18n\.t\(errorText[\s\S]*systemImage: errorText \? 'arrow\.clockwise' : 'checkmark'/);
+  assert.match(primitives, /systemImage\?: string/);
+  for (const frame of [nativeSheetFrameIOS, nativeSheetFrameFallback]) {
+    assert.match(frame, /systemImage\?: string/);
+    assert.match(frame, /systemImage=\{leadingAction\.systemImage\}/);
+    assert.match(frame, /systemImage=\{trailingAction\.systemImage\}/);
+  }
+  for (const action of [nativeSheetActionIOS, nativeSheetActionFallback]) {
+    assert.match(action, /systemImage\?: string/);
+    assert.match(action, /<NativeHeaderButton/);
+    assert.match(action, /accessibilityLabel=\{label\}/);
+  }
 });
 
 test('a trimmed name is the only presentation gate while optional goals stay progressive', () => {

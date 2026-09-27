@@ -70,6 +70,10 @@ record time where permitted.
   Type is enabled, or the software keyboard is visible. Submitting must prevent
   duplicate creation while communicating progress without removing either
   action from the sheet chrome.
+- In compact native sheet chrome, Path creation must present Cancel as an
+  icon-only `xmark`, Create as an icon-only `checkmark`, and Retry as an
+  icon-only `arrow.clockwise`. Each icon action must retain its complete
+  localized action name for assistive technology.
 - A failed creation attempt must preserve the entered draft, identify the
   problem in text, move accessibility focus or announce the failure as
   appropriate for the platform, and expose Retry without requiring the user to
