@@ -879,5 +879,17 @@
   "path.progress.accumulatedLabel": "Tiempo total",
   "duration.minutes": "{{minutes}}m",
   "duration.clockHours": "{{hours}}:{{minutes}}:{{seconds}}",
-  "duration.clockMinutes": "{{minutes}}:{{seconds}}"
+  "duration.clockMinutes": "{{minutes}}:{{seconds}}",
+  "home.appearance.title": "Apariencia del camino",
+  "home.appearance.preview": "Vista previa",
+  "home.appearance.color": "Color",
+  "home.appearance.color.coral": "Coral",
+  "home.appearance.color.lavender": "Lavanda",
+  "home.appearance.color.gold": "Dorado",
+  "home.appearance.color.mint": "Menta",
+  "home.appearance.color.blue": "Azul",
+  "home.appearance.color.pink": "Lila",
+  "home.appearance.emoji": "Emoji",
+  "home.appearance.emojiHint": "Elige un emoji con el teclado",
+  "home.appearance.invalidEmoji": "Introduce un solo emoji."
 }

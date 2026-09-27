@@ -184,7 +184,10 @@ progress must be labeled distinctly from a currently running timer.
 - Color must not be the sole indication of running state. Controls must retain
   at least 44-point targets, text scaling, and logical screen-reader order.
 - Users must be able to choose a tile background from a preset palette and a
-  Path emoji. Ownership of these appearance choices is an open question below.
+  Path emoji. The editor must preview the chosen appearance using the same tile
+  component as Home, retain Cancel and Save actions, and reject an empty or
+  multi-emoji value. Cancel must preserve the saved appearance. Ownership and
+  persistence of these choices remain open below.
 
 ## Ordering and pinning
 

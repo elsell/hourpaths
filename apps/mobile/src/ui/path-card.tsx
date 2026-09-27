@@ -14,7 +14,7 @@ export type PathCardProps = {
   headline?: string;
   intervalSummary?: string;
   name: string;
-  onOpen: () => void;
+  onOpen?: () => void;
   progress?: ReactNode;
   timer?: ReactNode;
 };
@@ -23,7 +23,7 @@ export function PathCard({ onFocusTarget, actions, actionsAccessibilityLabel, ac
   const tone = pathPalette[appearance.color];
   return <View style={[styles.card, { backgroundColor: tone.background }]}>
     <View style={styles.identity}>
-      <Pressable ref={onFocusTarget} accessibilityLabel={name} accessibilityRole="button" onPress={onOpen}
+      <Pressable ref={onFocusTarget} accessibilityLabel={name} accessibilityRole={onOpen ? "button" : undefined} disabled={!onOpen} onPress={onOpen}
         style={({ pressed }) => [styles.nameLink, pressed ? styles.pressed : null]}>
         <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.emoji}>{appearance.emoji}</Text>
         <Text style={[styles.name, { color: tone.foreground }]}>{name}</Text>
