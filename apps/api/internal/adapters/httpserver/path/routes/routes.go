@@ -14,6 +14,7 @@ import (
 )
 
 type Service interface {
+	AppearanceService
 	InvitationService
 	Create(context.Context, string, string, domain.Attributes) (domain.Entity, error)
 	ListProjected(context.Context, string, string, int) ([]pathapp.Projection, string, error)
@@ -188,6 +189,7 @@ func Register(api huma.API, service Service) {
 	RegisterInvitations(api, service)
 	path := "/v1/paths"
 	security := []map[string][]string{{"oidc": {}}}
+	registerAppearance(api, service, security)
 	huma.Register(api, huma.Operation{OperationID: "create-path", Method: http.MethodPost, Path: path, DefaultStatus: http.StatusCreated, Security: security}, func(ctx context.Context, input *PathCreateInput) (*PathProjectionOutput, error) {
 		attributes, err := mapper.Attributes(input.Body)
 		if err != nil {

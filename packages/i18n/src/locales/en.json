@@ -879,5 +879,17 @@
   "path.progress.accumulatedLabel": "Total time",
   "duration.minutes": "{{minutes}}m",
   "duration.clockHours": "{{hours}}:{{minutes}}:{{seconds}}",
-  "duration.clockMinutes": "{{minutes}}:{{seconds}}"
+  "duration.clockMinutes": "{{minutes}}:{{seconds}}",
+  "home.appearance.title": "Path appearance",
+  "home.appearance.preview": "Preview",
+  "home.appearance.color": "Color",
+  "home.appearance.color.coral": "Coral",
+  "home.appearance.color.lavender": "Lavender",
+  "home.appearance.color.gold": "Gold",
+  "home.appearance.color.mint": "Mint",
+  "home.appearance.color.blue": "Blue",
+  "home.appearance.color.pink": "Lilac",
+  "home.appearance.emoji": "Emoji",
+  "home.appearance.emojiHint": "Choose an emoji with your keyboard",
+  "home.appearance.invalidEmoji": "Enter one emoji."
 }
