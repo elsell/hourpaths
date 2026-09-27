@@ -19,3 +19,21 @@ export function formatCompactDuration(totalSeconds: number, translator: Translat
     minutes: translator.number(minutes % 60),
   });
 }
+
+
+export function formatGoalDuration(totalSeconds: number, translator: Translator): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  if (seconds < 60 || seconds >= 3600) return formatCompactDuration(seconds, translator);
+  return translator.t('duration.minutes', { minutes: translator.number(Math.floor(seconds / 60)) });
+}
+
+export function formatSessionClock(totalSeconds: number, translator: Translator): string {
+  const seconds = Math.max(0, Math.floor(Number.isFinite(totalSeconds) ? totalSeconds : 0));
+  const hours = Math.floor(seconds / 3600);
+  const twoDigits = (value: number) => translator.number(value, { minimumIntegerDigits: 2, useGrouping: false });
+  return translator.t(hours ? 'duration.clockHours' : 'duration.clockMinutes', {
+    hours: translator.number(hours, { useGrouping: false }),
+    minutes: hours ? twoDigits(Math.floor(seconds % 3600 / 60)) : translator.number(Math.floor(seconds / 60)),
+    seconds: twoDigits(seconds % 60),
+  });
+}

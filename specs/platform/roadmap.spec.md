@@ -2,13 +2,11 @@
 
 ## Current focus
 
-Deliver UI-28L as the sole active product slice under UI-28 and the core
-experience epic. The existing Path nudge composer and per-Path audience
-destination must use inherited native chrome, standard single-choice controls,
-safe dismissal, retained retry state, authoritative session-owned operations,
-and nonblank cold-route recovery. SOC-07 and incomplete notification,
-reporting, profile/provider, deletion, and Stats functionality remain deferred
-to their owning functional slices.
+Ship the approved September 2026 mobile Home tile redesign as the sole active
+product slice: stable grid and integrated tracking first, then palette/emoji
+customization. Use small PRs and focused useful behavioral checks. The user
+explicitly authorized merging without waiting for PR CI and reviewing main CI
+after every two or three PRs; release workflows retain their own gates.
 
 ## UI-28 Apple-native audit matrix
 

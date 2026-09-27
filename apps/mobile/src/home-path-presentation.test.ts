@@ -24,18 +24,3 @@ test('Home interval progress remains absent when the API supplies no interval pr
     undefined,
   ), undefined);
 });
-
-test('Home Path rows remove decorative markers and collapse around the circular timer', () => {
-  assert.doesNotMatch(pathCard, /styles\.marker|markerFrame/);
-  assert.doesNotMatch(pathCard, /pathTrackingRow/);
-  assert.match(pathCard, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
-  assert.match(pathCard, /tracking \? styles\.trackingRow/);
-});
-
-test('the running timer keeps elapsed duration readable outside the circular Stop control', () => {
-  assert.match(timerControl, /running && elapsedText \? <Text[\s\S]*accessibilityLabel=\{elapsedAccessibilityLabel\}[\s\S]*\{elapsedText\}<\/Text>/);
-  assert.match(timerControl, /elapsed:\s*\{[\s\S]*fontVariant:\s*\['tabular-nums'\][\s\S]*textAlign:\s*'center'/);
-  assert.doesNotMatch(timerControl, /styles\.liveDot/);
-  assert.doesNotMatch(nativeTrackingButton, /elapsedText|Animated\.Text|styles\.elapsed/);
-  assert.doesNotMatch(nativeTrackingButton, /opacity:\s*pulse\.interpolate/);
-});

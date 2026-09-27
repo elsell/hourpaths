@@ -10,14 +10,16 @@ type SwiftButtonImage = ComponentProps<typeof Button>['systemImage'];
 export function NativeActionMenu({
   accessibilityLabel,
   actions,
+  color,
 }: {
   accessibilityLabel: string;
+  color?: string;
   actions: readonly NativeMenuAction[];
 }) {
   return <View style={styles.container}>
     <Host style={styles.host}>
       <Menu
-        label={<SwiftUIImage size={20} systemName="ellipsis" />}
+        label={<SwiftUIImage color={color} size={20} systemName="ellipsis" />}
         modifiers={[nativeAccessibilityLabel(accessibilityLabel)]}
       >
         {actions.map((action) => <Button

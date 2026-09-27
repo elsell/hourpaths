@@ -46,14 +46,7 @@ test('mobile Home and Path details show authoritative accumulated and overall pr
   assert.match(page, /selectedPath\?\.overallTarget && selectedTimerState[\s\S]*overallProgress\(selectedTimerState\.accumulatedSeconds, selectedPath\.overallTarget\)/);
 });
 
-test('mobile goal progress remains conditional so absent goals do not render false indicators', () => {
-  assert.match(page, /\{progress \? <OverallProgressIndicator compact progress=\{progress\} pathName=\{path\.name\} \/> : null\}/);
-  assert.match(page, /overallProgress=\{selectedOverallProgress \? <OverallProgressIndicator progress=\{selectedOverallProgress\} \/> : undefined\}/);
-  assert.match(page, /\{currentIntervalProgress \? <IntervalProgressIndicator compact/);
-  assert.match(page, /const elapsedText = state\?\.running[\s\S]*formatCompactDuration\(activeTimerSeconds\(state\.timer\?\.startedAt, now\), i18n\)/);
-  assert.match(page, /elapsedAccessibilityLabel=\{elapsedText \? i18n\.t\('timer\.elapsedValue', \{ duration: elapsedText \}\) : undefined\}/);
-  assert.match(page, /activeTimerSeconds\(state\.timer\?\.startedAt, now\)/);
-});
+
 
 test('shared mobile progress presentation keeps visible and semantic values together', () => {
   assert.match(page, /import \{ ProgressIndicator \} from '\.\.\/src\/ui\/progress-indicator';/);

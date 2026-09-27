@@ -4,6 +4,7 @@ export type NativeButtonProps = {
   disabled?: boolean;
   fullWidth?: boolean;
   label: string;
+  tone?: { background: string; foreground: string };
   onPress: () => void;
   selected?: boolean;
   systemImage?: string;

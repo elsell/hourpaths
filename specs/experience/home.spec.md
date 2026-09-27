@@ -138,9 +138,8 @@ record time where permitted.
 - Create Path, Notifications, and Account must remain recognizable native
   header actions. Path-view, ordering, and arrangement actions must use compact
   progressive disclosure rather than crowding or wrapping the primary toolbar.
-- Empty, active, pinned, trackable, and supporter-only content must use a flat,
-  compact grouped hierarchy with clear localized section headings and restrained
-  separators. Repeated elevated cards, decorative borders, or spacing must not
+- Empty, active, pinned, trackable, and supporter-only content must use a compact grouped tile hierarchy with clear localized section headings and restrained
+  separators. Decorative elevation, borders, or spacing must not
   obscure the Path name, progress, disclosure action, or direct timer control.
 - The initial Home load must pair localized status text with native progress
   semantics. It must not present an empty-Path result before the authoritative
@@ -159,47 +158,33 @@ record time where permitted.
   preserve logical reading order and at least 44-by-44-point touch targets.
 
 Home's native navigation title must remain visible and distinct from collection
-section headings. A Path's name, summary, and progress must share one disclosure
-hit area, with its timer and menu remaining separate controls. Recorded interval
+section headings. A Path's name and emoji must share one disclosure hit area,
+with its timer and menu remaining separate controls. Recorded interval
 progress must be labeled distinctly from a currently running timer.
 
-## Native Home control and row fidelity
+## Native Home tiles (approved September 2026)
 
-- Home navigation and global actions must remain in the system navigation and
-  tab bars. Home must not place an oversized floating toolbar, pill, or custom
-  control island over the Path collection or reserve content space for one.
-- Standard bars and their actions must inherit Liquid Glass automatically while
-  Path content remains on the ordinary content layer. Custom glass, blur,
-  shadows, borders, or backgrounds must not be added behind Home rows or
-  filters.
-- Home filters must use a standard native filter control. A system segmented
-  picker may expose all four values where they fit; compact width or Dynamic
-  Type reflow must use a native menu that exposes the selected value. Home must
-  not imitate these components with hand-drawn filter chips.
-- Ordering, arrangement, and other secondary collection actions must use a
-  standard toolbar menu or picker with native selected-state semantics. They
-  must not compete visually with Create Path, Notifications, Account, or the
-  direct timer action.
-- Active, pinned, ordinary, and supporter-only Paths must render as flat native
-  rows with restrained system separators and intrinsic height. Heavy custom
-  Path cards, repeated rounded containers, decorative elevation, and nested
-  card backgrounds must not surround each Path.
-- A trackable Path row must establish one stable reading hierarchy: Path name,
-  accumulated time, configured interval and overall progress, then the direct
-  Start-or-Stop action. Disclosure and secondary metadata must not interrupt or
-  duplicate that sequence.
-- Accumulated, interval-goal, and overall-target values must each have one
-  localized label-and-value representation. A progress indicator must not
-  overlay its label or value, and overlapping goal or progress copy must never
-  be used to compress the row.
-- At larger Dynamic Type sizes, the progress cluster and trailing actions must
-  stack or move onto additional intrinsic-height lines rather than overlap,
-  clip, truncate required values, or use absolute positioning. The timer action
-  must retain its minimum touch target without covering Path content.
-- VoiceOver reading order must follow the same Path-name, progress, status, and
-  action hierarchy, with each configured goal exposed once. Reduced Motion,
-  Reduce Transparency, and Increase Contrast must preserve the grouping and
-  selected filter without depending on animated or translucent effects.
+- Mobile Home must use a stable two-column grid of colorful Path tiles, with a
+  single-column reflow on narrow screens and at accessibility text sizes.
+- Tiles must use shared palette, spacing, continuous corner, progress, and
+  tracking-control primitives. Flat controls must not use decorative gradients,
+  bevels, or shadows. Native navigation, menus, sheets, and tab bars remain.
+- Each tile must show its emoji and name, one dominant time value, configured
+  progress, understated lifetime time, and a direct Start or Stop control.
+- For an interval goal the dominant value must always mean current interval
+  accumulated time, whether stopped or running. Without an interval goal it must
+  retain the existing clearly labeled accumulated-time behavior. A timer must
+  never substitute session elapsed time for the dominant value.
+- The running control must combine elapsed session time and Stop in one labeled
+  touch target. Starting and stopping must preserve the tile layout and position.
+- Overall targets must remain visible when configured; absent goals must not
+  appear as zero targets. Server-projected progress remains authoritative.
+- Path identity must open details independently of the tracking action. Existing
+  pinning, filtering, arrangement, and supporter visibility rules remain.
+- Color must not be the sole indication of running state. Controls must retain
+  at least 44-point targets, text scaling, and logical screen-reader order.
+- Users must be able to choose a tile background from a preset palette and a
+  Path emoji. Ownership of these appearance choices is an open question below.
 
 ## Ordering and pinning
 
@@ -238,42 +223,19 @@ progress must be labeled distinctly from a currently running timer.
   filter classification must be based on explicit Path membership.
 - Filtering must not change the user's saved pinning or ordering choices.
 
-## Active timer position
+## Active timer shortcuts
 
-- A Path with a running timer must move into a temporary active-timer section at
-  the top of Home, above pinned Paths.
-- When multiple Paths have running timers, the temporary active-timer section
-  must order them by timer start time with the most recently started timer
-  first.
-- When its timer stops, the path must return to the position determined by the
-  user's pinning and selected ordering method.
-- Moving a running path temporarily must not change the user's saved pinning or
-  manual ordering.
-
-### Active Home acceptance slice (`EXP-02A`)
-
-- Home must place every trackable Path with a valid running timer in one compact
-  native **Active** section above the ordinary trackable-Path list.
-- The Active section must appear only while at least one valid running timer is
-  present. A supporter-only or otherwise non-trackable Path must never enter it.
-- Active Paths must be ordered by authoritative timer start time, most recently
-  started first. Equal start times must preserve the ordinary list's stable
-  relative order.
-- Each Path must appear exactly once across the Active and ordinary sections.
-  Temporarily elevating an active Path must not mutate the ordinary list order
-  that will apply after its timer stops.
-- A successful start must move only that Path into Active without disturbing
-  another running Path. A successful stop must return only that Path to its
-  ordinary position while every other timer continues independently.
-- A missing or invalid timer start instant must not elevate a Path. A failed,
-  stale, or superseded start or stop response must not replace newer Home state
-  or move a card according to an operation that did not become authoritative.
-- Active cards must retain the existing live elapsed duration and prominent
-  accessible stop control. The section heading and reading order must remain
-  localized, text-scalable, and meaningful without relying on color.
-- Pinning, saved ordering controls, Home filters, supporter grouping, and web
-  presentation remain in later `EXP-02` slices. Home must continue to exclude
-  social feed content and social interaction controls.
+- Starting a timer must not lift its Path out of the ordinary or pinned grid.
+- A compact Running strip must appear above the grid while visible trackable
+  Paths have valid running timers. It must repeat their emoji, color, and name.
+- Selecting a shortcut must scroll to its existing tile without starting,
+  stopping, or opening the Path. Reduced Motion must disable animated scrolling;
+  assistive technology focus must move to the target tile.
+- Shortcut order must follow authoritative timer start time, most recent first,
+  preserving ordinary order for ties. Invalid and non-trackable timers must not
+  appear. Each Path must retain exactly one full tile.
+- The Running strip must share the tile corner geometry and flat styling.
+- Failed or stale timer responses must not overwrite newer authoritative state.
 
 ### Home organization acceptance slice (`EXP-02B`)
 
@@ -302,6 +264,17 @@ progress must be labeled distinctly from a currently running timer.
 - Home organization preferences must be stored per signed-in user, survive an
   application restart, reject malformed stored data without changing the Path
   collection, and never be applied to another account on the device.
-- A running Path must still temporarily lead the filtered Home according to
-  `EXP-02A`. Starting or stopping it must not mutate its saved pinned or manual
-  position.
+- A running Path must remain in the filtered grid and appear in the Running
+  shortcuts. Starting or stopping must not mutate saved pinning or ordering.
+
+## Open questions
+
+- Are color and emoji personal appearance preferences or shared Path metadata?
+
+## Acceptance examples
+
+- Piano at 1h 42m of its weekly 4h goal keeps 1h 42m dominant after starting;
+  elapsed session time appears in its Stop control and Piano remains in place.
+- With Piano and Walking running, selecting Walking in Running scrolls to its
+  existing tile; Piano continues and no duplicate tracking tile appears.
+- A supporter-only Path remains in Supporting without tracking controls.

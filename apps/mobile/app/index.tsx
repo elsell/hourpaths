@@ -141,6 +141,7 @@ import {
 } from '../src/notification-session-target';
 import { shouldHandleSettingsOperationFailure } from '../src/settings-operation-ownership';
 import { ProgressIndicator } from '../src/ui/progress-indicator';
+import { defaultPathAppearance, pathPalette } from '../src/ui/path-appearance';
 import { PathCard } from '../src/ui/path-card';
 import { HomeHeaderActions } from '../src/ui/home-header-actions';
 import { homePresentation } from '../src/ui/home-presentation';
@@ -156,7 +157,7 @@ import { SettingsPresentationSource, type SignOutPresentationResult, type SignOu
 import { NativeRouteSource, type NativeRouteAction } from '../src/ui/native-route-presentation';
 import { NativeRouteRecoveryView } from '../src/ui/native-route-recovery-view';
 import { PathInvitationVisibilityWarningSheet } from '../src/ui/path-invitation-visibility-warning-sheet';
-import { formatCompactDuration } from '../src/ui/compact-duration';
+import { formatCompactDuration, formatGoalDuration, formatSessionClock } from '../src/ui/compact-duration';
 import {
   InvitationRouteSource,
   NotificationJourneyRecoverySource,
@@ -7584,10 +7585,15 @@ export function HomeScreen() {
       : undefined;
     const currentIntervalProgress = homeIntervalProgress(state?.intervalProgress);
     const elapsedText = state?.running
-      ? formatCompactDuration(activeTimerSeconds(state.timer?.startedAt, now), i18n)
+      ? formatSessionClock(activeTimerSeconds(state.timer?.startedAt, now), i18n)
       : undefined;
+    const appearance = defaultPathAppearance(path.id);
+    const tone = pathPalette[appearance.color];
     const pinned = homePreferences.pinnedPathIDs.includes(path.id);
     return <PathCard
+      appearance={appearance}
+      headline={state ? formatGoalDuration(currentIntervalProgress?.accumulatedSeconds ?? state.accumulatedSeconds, i18n) : undefined}
+      intervalSummary={currentIntervalProgress && path.intervalGoal ? i18n.t(`home.tile.${path.intervalGoal.recurrence}`, { target: formatGoalDuration(currentIntervalProgress.targetSeconds, i18n) }) : state ? i18n.t('path.progress.accumulatedLabel') : undefined}
       actions={[{
         disabled: homePreferenceBusy,
         label: i18n.t(pinned ? 'home.arrange.unpin' : 'home.arrange.pin', { pathName: path.name }),
@@ -7597,28 +7603,29 @@ export function HomeScreen() {
         systemImage: pinned ? 'pin.slash' : 'pin',
       }]}
       actionsAccessibilityLabel={i18n.t('home.pathActions', { pathName: path.name })}
-      accumulatedText={state ? i18n.t('path.progress.accumulatedCompact', {
+      accumulatedText={state && currentIntervalProgress ? i18n.t('path.progress.accumulatedCompact', {
         duration: formatCompactDuration(state.accumulatedSeconds, i18n),
       }) : undefined}
       key={path.id}
       name={path.name}
       onOpen={() => void openPathDetail(path.id)}
       progress={currentIntervalProgress || progress ? <>
-        {currentIntervalProgress ? <IntervalProgressIndicator compact progress={currentIntervalProgress} pathName={path.name} /> : null}
-        {progress ? <OverallProgressIndicator compact progress={progress} pathName={path.name} /> : null}
+        {currentIntervalProgress ? <ProgressIndicator compact hideText tone={tone} accessibilityLabel={i18n.t('path.progress.intervalLabelForPath', { path: path.name })} targetValue={currentIntervalProgress.targetSeconds} visualValue={currentIntervalProgress.visualSeconds} text={intervalProgressMessage(currentIntervalProgress)} /> : null}
+        {progress ? <ProgressIndicator compact tone={tone} accessibilityLabel={i18n.t('path.progress.overallLabelForPath', { path: path.name })} targetValue={progress.targetSeconds} visualValue={progress.visualSeconds} text={overallProgressMessage(progress)} /> : null}
       </> : undefined}
       timer={pathCapabilities.trackTime && state ? <TimerControl
+        tone={tone}
         actionLabel={i18n.t(timerMutationPresentation(state).controlMessage)}
         busy={Boolean(timerBusy[path.id])}
-        elapsedAccessibilityLabel={elapsedText ? i18n.t('timer.elapsedValue', { duration: elapsedText }) : undefined}
-        elapsedText={elapsedText}
+        elapsedAccessibilityLabel={elapsedText ? i18n.t('home.timer.stopAccessible', { duration: elapsedText, pathName: path.name }) : i18n.t('home.timer.startAccessible', { pathName: path.name })}
+        elapsedText={elapsedText ? i18n.t('home.timer.stopElapsed', { duration: elapsedText }) : undefined}
         errorText={timerErrorKeys[path.id] ? i18n.t(timerErrorKeys[path.id]!) : undefined}
         onPress={() => void toggleTimer(path.id)}
         running={state.running}
       /> : undefined}
     />;
   };
-  const activeHomeVisibleCount = homeSections.active.length + homeSections.pinned.length +
+  const activeHomeVisibleCount = homeSections.pinned.length +
     homeSections.trackable.length + homeSections.supporting.length;
   const homeViewSections: readonly HomeViewSection[] = (() => {
     if (!ownedHomeDestination) return [];
@@ -7633,11 +7640,6 @@ export function HomeScreen() {
       />),
     }] : [];
     const sections: HomeViewSection[] = [];
-    if (homeSections.active.length > 0) sections.push({
-      key: 'active',
-      title: i18n.t('home.activeTimersHeading'),
-      items: homeSections.active.map(renderHomePath),
-    });
     if (homeSections.pinned.length > 0) sections.push({
       key: 'pinned',
       title: i18n.t('home.arrange.pinnedHeading'),
@@ -7877,6 +7879,7 @@ export function HomeScreen() {
       onRetry={() => void retryAuthenticatedHome()}
       presentation={currentHomePresentation}
       sections={homeViewSections}
+      running={archivedPathsOpen ? [] : homeSections.active.map((path) => ({ id: path.id, name: path.name, appearance: defaultPathAppearance(path.id) }))}
     /> : null}
     {ready && ownedHomeDestination ? <>
       {selectedPath ? <NativeRouteSource

@@ -81,9 +81,8 @@ export function organizeHomePaths<P extends HomePath>(
   const trackable = visible.filter((path) => path.home.classification !== 'supporting' && effectivePathCapabilities(path).trackTime);
   const supporting = visible.filter((path) => path.home.classification === 'supporting');
   const sections = homePathSections(trackable, timers);
-  const activeIDs = new Set(sections.active.map(({ id }) => id));
   const pinnedIDs = new Set(preferences.pinnedPathIDs);
-  const ordinary = sections.ordinary.filter(({ id }) => !activeIDs.has(id));
+  const ordinary = trackable;
   const pinned = ordered(ordinary.filter(({ id }) => pinnedIDs.has(id)), {
     ...preferences,
     order: 'manual',

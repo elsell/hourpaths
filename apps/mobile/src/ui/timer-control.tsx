@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { NativeTrackingButton } from './native-tracking-button';
+import { NativeButton } from './native-button';
+import type { PathTone } from './path-appearance';
 import { mobileTheme } from './tokens';
 
 type TimerControlProps = {
@@ -10,52 +11,25 @@ type TimerControlProps = {
   errorText?: string;
   onPress: () => void;
   running: boolean;
+  tone?: PathTone;
 };
 
-export function TimerControl({
-  actionLabel,
-  busy,
-  elapsedAccessibilityLabel,
-  elapsedText,
-  errorText,
-  onPress,
-  running,
-}: TimerControlProps) {
-  return <View style={[styles.container, running ? styles.runningContainer : null]}>
-    {running && elapsedText ? <Text
-      accessibilityLabel={elapsedAccessibilityLabel}
-      style={styles.elapsed}
-    >{elapsedText}</Text> : null}
-    <NativeTrackingButton
+export function TimerControl({ actionLabel, busy, elapsedAccessibilityLabel, elapsedText, errorText, onPress, running, tone }: TimerControlProps) {
+  return <View style={styles.container}>
+    <NativeButton
+      accessibilityLabel={elapsedAccessibilityLabel ?? actionLabel}
       busy={busy}
-      label={actionLabel}
+      fullWidth
+      label={elapsedText ?? actionLabel}
       onPress={onPress}
-      running={running}
+      systemImage={running ? 'stop.fill' : 'play.fill'}
+      tone={{ background: '#FFFFFFD9', foreground: running ? '#AD1830' : tone?.accent ?? '#235F9E' }}
+      variant="secondary"
     />
-    {errorText ? <Text accessibilityRole="alert" style={styles.error}>{errorText}</Text> : null}
+    {errorText ? <Text accessibilityRole="alert" style={[styles.error, tone ? { color: tone.foreground } : null]}>{errorText}</Text> : null}
   </View>;
 }
-
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 88,
-  },
-  elapsed: {
-    color: mobileTheme.colors.text,
-    fontVariant: ['tabular-nums'],
-    paddingBottom: mobileTheme.spacing.xxs,
-    textAlign: 'center',
-    ...mobileTheme.typography.caption,
-  },
-  error: {
-    color: mobileTheme.colors.error,
-    maxWidth: 120,
-    textAlign: 'center',
-    ...mobileTheme.typography.caption,
-  },
-  runningContainer: {
-    minWidth: 88,
-  },
+  container: { alignSelf: 'stretch', gap: mobileTheme.spacing.xxs },
+  error: { color: mobileTheme.colors.error, ...mobileTheme.typography.caption },
 });
