@@ -4931,5 +4931,6 @@
   "social.profilePaths": "Rutas",
   "social.profileOpenActive": "Ver las rutas activas de {name} ({count})",
   "social.profileCountUnavailable": "—",
-  "social.profileCountLabel": "{count} {label}"
+  "social.profileCountLabel": "{count} {label}",
+  "home.arrange.dragHint": "Mantén pulsado y arrastra para reordenar. También puedes usar Organizar rutas."
 }

@@ -150,6 +150,7 @@ import { defaultPathAppearance, pathPalette } from '../src/ui/path-appearance';
 import { PathCard } from '../src/ui/path-card';
 import { HomeHeaderActions } from '../src/ui/home-header-actions';
 import { homePresentation } from '../src/ui/home-presentation';
+import { mergeVisibleTileOrder } from '../src/tile-reordering';
 import { HomeView, type HomeViewSection } from '../src/ui/home-view';
 import { HomeArrangementView, type HomeArrangementCollection } from '../src/ui/home-arrangement-view';
 import { organizeHomePaths, pinHomePath, reorderVisibleHomePaths, unpinHomePath, type HomeFilter, type HomePath, type HomePreferences } from '../src/ui/home-organization';
@@ -2195,6 +2196,7 @@ export function HomeScreen() {
       orderMethod: requested.order,
       pinnedPathIds: requested.pinnedPathIDs,
     };
+    setHomePreferences(requested);
     setHomePreferenceBusy(true);
     setHomePreferenceErrorKey(null);
     const result = await homePreferenceOperations.submit(current, requestedSnapshot, (body, idempotencyKey) =>
@@ -8058,6 +8060,16 @@ export function HomeScreen() {
       onCreate={beginPathCreation}
       onRetry={() => void retryAuthenticatedHome()}
       presentation={currentHomePresentation}
+      reorderDisabled={homePreferenceBusy || archivedPathsOpen}
+      reorderGroup={id => homePreferences.pinnedPathIDs.includes(id) ? 'pinned' : 'manual'}
+      onReorder={(section, ids) => {
+        const pinned = new Set(homePreferences.pinnedPathIDs);
+        void updateHomePreferences({
+          order: section === 'pinned' ? homePreferences.order : 'manual',
+          pinnedPathIDs: mergeVisibleTileOrder(homePreferences.pinnedPathIDs, ids.filter(id => pinned.has(id))),
+          manualPathIDs: mergeVisibleTileOrder(homePreferences.manualPathIDs, ids.filter(id => !pinned.has(id))),
+        });
+      }}
       sections={homeViewSections}
       running={archivedPathsOpen ? [] : homeSections.active.map((path) => ({ id: path.id, name: path.name, appearance: appearances.appearance(path.id) }))}
     /> : null}

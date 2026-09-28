@@ -978,6 +978,9 @@ function inspectSource(relative, file, source, index) {
         if (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx') {
           for (const name of ['AccessibilityInfo', 'Animated', 'StatusBar']) uiAllowed.add(name);
         }
+        if (relative === 'apps/mobile/src/ui/sortable-path-grid.tsx') {
+          for (const name of ['AccessibilityInfo', 'Animated', 'PanResponder']) uiAllowed.add(name);
+        }
         if (relative === 'apps/mobile/src/ui/home-view.tsx') {
           uiAllowed.add('AccessibilityInfo');
           uiAllowed.add('findNodeHandle');

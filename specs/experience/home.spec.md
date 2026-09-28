@@ -323,3 +323,25 @@ None for this slice.
 - With Piano and Walking running, selecting Walking in Running scrolls to its
   existing tile; Piano continues and no duplicate tracking tile appears.
 - A supporter-only Path remains in Supporting without tracking controls.
+
+## Direct tile arrangement
+
+- Users must be able to long press and drag a Home tile to rearrange its current
+  section. Dragging must lift the held tile and continuously animate neighboring
+  tiles into their proposed positions before the user releases it.
+- Dropping an unpinned tile must select manual ordering and persist the new order
+  in the existing per-user Home preferences. Pinned tiles must remain pinned;
+  dragging must not implicitly change roles, pinning, or section membership.
+- Reordering a filtered subset must preserve the placement of hidden Paths.
+  Preferences must include the complete accessible Path set, including archived
+  Paths, and sync through the existing revision-checked preferences endpoint.
+- Normal scrolling, opening a tile, its menu, and timer controls must retain their
+  behavior. Dragging must not start a timer or open Path details on release.
+- Dragging near the top or bottom edge must scroll the collection so off-screen
+  destinations can be reached. Canceling a gesture must restore its original
+  order without saving. A changed account, collection, or layout must cancel it.
+- A completed drop must save once, not on each hover. While saving, additional
+  drags must be disabled. Failure must retain the proposed local order with an
+  explicit retry action; it must not claim the change was saved.
+- Reduced-motion users must see immediate placement instead of spring motion.
+  Screen-reader users must retain the existing native arrangement controls.
