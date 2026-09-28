@@ -67,6 +67,16 @@ paths and over time.
 - A range with no activity must show a plain zero-activity state while retaining
   the selected filters and range controls; it must not fabricate chart values.
 
+- The daily calendar must use a contribution grid: seven weekday rows, chronological
+  week columns, and discrete color intensity for recorded duration. It must include
+  zero-activity dates within the selected period, respect the configured week start,
+  and expose each date and exact duration through accessible text and selection.
+- The contribution grid must be the default calendar presentation for every date
+  range; weekly, monthly, and yearly summaries remain selectable.
+- Horizontally scrolling activity charts must initially show the most recent
+  dates when a range or Path filter changes. Refreshes must preserve manual
+  exploration of earlier dates.
+
 ## Historical calendar attribution
 
 - Calendar statistics must attribute recorded activity using the participant's

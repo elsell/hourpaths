@@ -359,7 +359,7 @@ test('social notifications retain only actor and optional follow-request context
   ), /invalid notification/);
 });
 
-test('practice-reaction notifications retain only curated informational Path context', () => {
+test('practice-reaction notifications retain safe curated and Unicode informational context', () => {
   const page = mergeNotificationHistoryPage(
     { items: [], nextCursor: '', unreadCount: 0 },
     { items: [practiceReaction], nextCursor: '', unreadCount: 1 },
@@ -367,6 +367,13 @@ test('practice-reaction notifications retain only curated informational Path con
   );
   assert.deepEqual(page.items, [practiceReaction]);
   assert.equal(notificationPresentationMessageKey(practiceReaction), 'notification.practiceReaction.heart');
+  const unicode = { ...practiceReaction, reaction: '🧑🏽‍💻' };
+  const unicodePage = mergeNotificationHistoryPage(
+    { items: [], nextCursor: '', unreadCount: 0 },
+    { items: [unicode], nextCursor: '', unreadCount: 1 }, '',
+  );
+  assert.deepEqual(unicodePage.items, [unicode]);
+  assert.equal(notificationPresentationMessageKey(unicode), 'notification.practiceReaction.emoji');
 
   for (const reaction of ['heart', 'applause', 'fire', 'strong', 'celebrate'] as const) {
     assert.equal(

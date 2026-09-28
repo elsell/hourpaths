@@ -1,3 +1,7 @@
+import { EmojiPicker } from './emoji-picker';
+import { ReactionPeopleSheet, type ReactionPeopleLoader } from './reaction-people-sheet';
+import { SegmentedAvatarRing } from './segmented-avatar-ring';
+import { PathEmoji } from './path-emoji';
 import type { Translator } from '@hourpaths/i18n';
 import { activeTimerSeconds } from '@hourpaths/client-core';
 import { useEffect, useRef, useState } from 'react';
@@ -8,21 +12,15 @@ import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { ThemedText as Text } from './primitives';
 import {
-  optimisticSocialReactionSummary,
   type GoalAchievementFeedEvent,
   type PracticeSessionFeedEvent,
   type SocialFeedEvent,
-  type SocialReactionSummary,
 } from './social-feed-presentation';
 import type { ActiveFollowingItem } from './social-active-following-presentation';
 import type { ActiveFollowingState, SocialFeedState } from './social-feed-route-presentation';
 import { SocialProfileAvatar } from './social-profile-avatar';
 import { SettingsIcon } from './settings-icon';
-import { SocialReactionMenu } from './social-reaction-menu';
 import {
-  SOCIAL_REACTIONS,
-  socialReactionDefinition,
-  type SocialReaction,
   visibleReactionCounts,
 } from './social-reaction-presentation';
 import { mobileTheme } from './tokens';
@@ -36,9 +34,8 @@ function ActiveFollowingRow({ i18n, item, now, onOpen }: {
   return <Pressable accessibilityRole="button"
     accessibilityLabel={i18n.t('social.activeGroupAccessibility', { participant: item.participant.displayName, timers: timerLabels.join(', ') })}
     onPress={onOpen} style={({ pressed }) => [styles.story, pressed ? styles.pressed : null]}>
-    <View style={styles.storyRing}><SocialProfileAvatar accessibilityLabel={i18n.t('social.neutralAvatarLabel')} profilePictureURL={item.participant.profilePictureURL} size={56} /></View>
+    <SegmentedAvatarRing count={item.timers.length}><SocialProfileAvatar accessibilityLabel={i18n.t('social.neutralAvatarLabel')} profilePictureURL={item.participant.profilePictureURL} size={56} /></SegmentedAvatarRing>
     <Text style={styles.storyName}>{item.participant.displayName}</Text>
-    <Text style={styles.secondary}>{i18n.t('social.story.activePaths', { count: item.timers.length })}</Text>
   </Pressable>;
 }
 
@@ -97,150 +94,96 @@ function ActiveFollowingSection({
   </View>;
 }
 
-function ReactionStrip({
-  event,
-  i18n,
-  onRemoveReaction,
-  onSetReaction,
-}: {
-  event: SocialFeedEvent;
-  i18n: Translator;
-  onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
-  onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
+function ReactionStrip({ event, i18n, onRemoveReaction, onSetReaction, loadReactionPeople, onOpenProfile }: {
+  event: SocialFeedEvent; i18n: Translator;
+  onRemoveReaction: (event: SocialFeedEvent, emoji?: string) => Promise<void>;
+  onSetReaction: (event: SocialFeedEvent, emoji: string) => Promise<void>;
+  loadReactionPeople: ReactionPeopleLoader;
+  onOpenProfile: (username: string) => void;
 }) {
+  const [picker, setPicker] = useState(false);
+  const [peopleEmoji, setPeopleEmoji] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [optimistic, setOptimistic] = useState<SocialReactionSummary>();
   const busyRef = useRef(false);
-  const projection = optimistic ?? event;
-  const selectedDefinition = projection.viewerReaction
-    ? socialReactionDefinition(projection.viewerReaction)
-    : undefined;
-  useEffect(() => {
-    if (optimistic && event.viewerReaction === optimistic.viewerReaction) setOptimistic(undefined);
-  }, [event.viewerReaction, optimistic]);
-
-  const updateReaction = async (
-    nextReaction: SocialReaction | null,
-    operation: () => Promise<void>,
-  ) => {
+  const reactions = event.emojiReactions ?? visibleReactionCounts(event.reactions).map(value => ({ emoji: value.emoji, count: value.count, reacted: value.type === event.viewerReaction }));
+  async function toggle(emoji: string) {
     if (busyRef.current) return;
-    busyRef.current = true;
-    setOptimistic(optimisticSocialReactionSummary(event, nextReaction));
-    setBusy(true);
-    setFailed(false);
+    busyRef.current = true; setBusy(true); setFailed(false);
     try {
-      await operation();
-    } catch {
-      setOptimistic(undefined);
-      setFailed(true);
-    } finally {
-      busyRef.current = false;
-      setBusy(false);
-    }
-  };
-
-  return <>
-    <View style={styles.reactionStrip}>
-      <View style={styles.reactionCounts}>
-        {visibleReactionCounts(projection.reactions).map((reaction) => {
-          const selected = reaction.type === projection.viewerReaction;
-          return <View
-            accessible
-            accessibilityLabel={i18n.t('social.reactionCount', {
-              count: reaction.count,
-              reaction: i18n.t(reaction.labelKey),
-            })}
-            accessibilityState={{ selected }}
-            key={reaction.type}
-            style={[styles.reactionCount, selected ? styles.reactionCountSelected : null]}
-          >
-            <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
-            <Text style={[styles.reactionNumber, selected ? styles.reactionNumberSelected : null]}>
-              {i18n.number(reaction.count)}
-            </Text>
-          </View>;
-        })}
-      </View>
-      <SocialReactionMenu
-        accessibilityLabel={selectedDefinition
-          ? i18n.t('social.reactionPickerSelected', { reaction: i18n.t(selectedDefinition.labelKey) })
-          : i18n.t('social.reactionPicker', { participant: event.participant.displayName })}
-        busy={busy}
-        cancelLabel={i18n.t('common.cancel')}
-        choices={SOCIAL_REACTIONS.map((reaction) => ({
-          emoji: reaction.emoji,
-          label: i18n.t(reaction.labelKey),
-          menuLabel: i18n.t('social.reactionMenuChoice', {
-            emoji: reaction.emoji,
-            reaction: i18n.t(reaction.labelKey),
-          }),
-          onPress: () => { void updateReaction(
-            reaction.type,
-            () => onSetReaction(event, reaction.type),
-          ); },
-          selected: reaction.type === projection.viewerReaction,
-          type: reaction.type,
-        }))}
-        onRemove={projection.viewerReaction
-          ? () => { void updateReaction(null, () => onRemoveReaction(event)); }
-          : undefined}
-        removeLabel={i18n.t('social.reactionRemove')}
-        selectedEmoji={selectedDefinition?.emoji}
-      />
-      {busy ? <Text
-        accessibilityLiveRegion="polite"
-        style={styles.reactionStatus}
-      >{i18n.t('social.reactionUpdating')}</Text> : null}
-    </View>
-    {failed ? <Text
-      accessibilityLiveRegion="assertive"
-      accessibilityRole="alert"
-      style={styles.reactionError}
-    >{i18n.t('social.reactionUnavailable')}</Text> : null}
-  </>;
+      if (reactions.some(value => value.emoji === emoji && value.reacted)) await onRemoveReaction(event, emoji);
+      else await onSetReaction(event, emoji);
+    } catch { setFailed(true); }
+    finally { busyRef.current = false; setBusy(false); }
+  }
+  return <View style={styles.reactionStrip}>
+    {reactions.map(reaction => <Pressable key={reaction.emoji} accessibilityRole="button"
+      accessibilityLabel={i18n.t('social.reactionCount', { count: reaction.count, reaction: reaction.emoji })}
+      accessibilityState={{ selected: reaction.reacted }} onPress={() => setPeopleEmoji(reaction.emoji)}
+      style={[styles.reactionCount, reaction.reacted ? styles.reactionCountSelected : null]}>
+      <Text style={styles.reactionEmoji}>{reaction.emoji}</Text><Text style={styles.reactionNumber}>{i18n.number(reaction.count)}</Text>
+    </Pressable>)}
+    <Pressable accessibilityRole="button" accessibilityLabel={i18n.t('reactions.addAction')} disabled={busy}
+      onPress={() => setPicker(true)} style={styles.reactionCount}>
+      <SettingsIcon systemName="face.smiling" variant="inline" /><Text style={styles.reactionNumber}>+</Text>
+    </Pressable>
+    <EmojiPicker i18n={i18n} visible={picker} onClose={() => setPicker(false)} selectedEmojis={reactions.filter(value => value.reacted).map(value => value.emoji)}
+      onSelect={emoji => { setPicker(false); void toggle(emoji); }} />
+    {peopleEmoji ? <ReactionPeopleSheet key={peopleEmoji} eventId={event.id} emoji={peopleEmoji} i18n={i18n}
+      loadPeople={loadReactionPeople} onClose={() => setPeopleEmoji(undefined)} onOpenProfile={onOpenProfile}
+      reacted={reactions.some(value => value.emoji === peopleEmoji && value.reacted)} busy={busy}
+      onToggle={() => { void toggle(peopleEmoji); }} /> : null}
+    {failed ? <Text accessibilityRole="alert" style={styles.reactionError}>{i18n.t('social.reactionUnavailable')}</Text> : null}
+  </View>;
 }
 
 function FeedEngagement({
   event,
   i18n,
   onOpenComments,
+  loadReactionPeople,
+  onOpenProfile,
   onRemoveReaction,
   onSetReaction,
 }: {
   event: SocialFeedEvent;
   i18n: Translator;
   onOpenComments: () => void;
-  onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
-  onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
+  loadReactionPeople: ReactionPeopleLoader;
+  onOpenProfile: (username: string) => void;
+  onRemoveReaction: (event: SocialFeedEvent, emoji?: string) => Promise<void>;
+  onSetReaction: (event: SocialFeedEvent, reaction: string) => Promise<void>;
 }) {
   return <View style={styles.engagement}>
     {event.commentsEnabled ? <Pressable
-      accessibilityLabel={i18n.t('social.commentsOpen')}
+      accessibilityLabel={i18n.t('social.commentCount', { count: event.commentCount ?? 0 })}
       accessibilityRole="button"
       onPress={onOpenComments}
       style={({ pressed }) => [styles.commentsAction, pressed ? styles.rowPressed : null]}
     >
       <SettingsIcon systemName="bubble.left" variant="inline" />
-      <Text style={styles.commentsActionLabel}>{i18n.t('social.commentsHeading')}</Text>
+      <Text style={styles.commentsActionLabel}>{i18n.t('social.commentCount', { count: event.commentCount ?? 0 })}</Text>
     </Pressable> : null}
     {event.reactionsEnabled ? <ReactionStrip
       event={event}
       i18n={i18n}
       onRemoveReaction={onRemoveReaction}
       onSetReaction={onSetReaction}
+      loadReactionPeople={loadReactionPeople}
+      onOpenProfile={onOpenProfile}
     /> : null}
   </View>;
 }
 
-export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments, onRemoveReaction, onSetReaction }: {
+export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments, onRemoveReaction, onSetReaction, loadReactionPeople }: {
   event: SocialFeedEvent;
   i18n: Translator;
   onOpen: (event: PracticeSessionFeedEvent) => void;
   onOpenProfile: (username: string) => void;
   onOpenComments: (event: SocialFeedEvent) => void;
-  onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
-  onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
+  loadReactionPeople: ReactionPeopleLoader;
+  onRemoveReaction: (event: SocialFeedEvent, emoji?: string) => Promise<void>;
+  onSetReaction: (event: SocialFeedEvent, reaction: string) => Promise<void>;
 }) {
   const appearance = defaultPathAppearance(event.path.id);
   const tone = pathPalette[event.type === 'goal_achievement' ? 'gold' : appearance.color];
@@ -265,7 +208,7 @@ export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments,
       accessibilityLabel={summary} disabled={event.type !== 'practice_session'}
       onPress={() => { if (event.type === 'practice_session') onOpen(event); }}
       style={({ pressed }) => [styles.attachment, { backgroundColor: tone.background }, pressed ? styles.pressed : null]}>
-      <Text accessibilityElementsHidden style={styles.pathEmoji}>{event.type === 'goal_achievement' ? '🏆' : appearance.emoji}</Text>
+      <PathEmoji emoji={event.type === 'goal_achievement' ? '🏆' : appearance.emoji} size={44} />
       <View style={styles.copy}>
         <Text style={[styles.summary, { color: tone.foreground }]}>{event.path.name}</Text>
         <Text style={[styles.postDuration, { color: tone.foreground }]}>{duration}</Text>
@@ -273,7 +216,7 @@ export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments,
       </View>
     </Pressable>
     {event.type === 'practice_session' && event.activity.edited ? <Text style={styles.edited}>{i18n.t('social.edited')}</Text> : null}
-    <FeedEngagement event={event} i18n={i18n} onOpenComments={() => onOpenComments(event)} onRemoveReaction={onRemoveReaction} onSetReaction={onSetReaction} />
+    <FeedEngagement loadReactionPeople={loadReactionPeople} onOpenProfile={onOpenProfile} event={event} i18n={i18n} onOpenComments={() => onOpenComments(event)} onRemoveReaction={onRemoveReaction} onSetReaction={onSetReaction} />
   </View>;
 }
 
@@ -343,9 +286,10 @@ export type SocialTimelineProps = {
   onOpen: (event: PracticeSessionFeedEvent) => void;
   onOpenProfile: (username: string) => void;
   onOpenComments: (event: SocialFeedEvent) => void;
-  onRemoveReaction: (event: SocialFeedEvent) => Promise<void>;
+  loadReactionPeople: ReactionPeopleLoader;
+  onRemoveReaction: (event: SocialFeedEvent, emoji?: string) => Promise<void>;
   onRetry: () => void;
-  onSetReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
+  onSetReaction: (event: SocialFeedEvent, reaction: string) => Promise<void>;
   state: SocialFeedState;
   profile?: boolean;
 };
@@ -356,7 +300,7 @@ export function SocialTimeline(props: SocialTimelineProps) {
     {state.interactionNoticeKey ? <InteractionNotice i18n={i18n} messageKey={state.interactionNoticeKey} onDismiss={onDismissInteractionNotice} /> : null}
     {state.items.length > 0 ? <View style={styles.list}>{state.items.map((event, index) => <View key={event.id}>
       {index > 0 ? <View style={styles.separator} /> : null}
-      <SocialPost event={event} i18n={props.i18n} onOpen={props.onOpen} onOpenProfile={props.onOpenProfile} onOpenComments={props.onOpenComments} onRemoveReaction={props.onRemoveReaction} onSetReaction={props.onSetReaction} />
+      <SocialPost loadReactionPeople={props.loadReactionPeople} event={event} i18n={props.i18n} onOpen={props.onOpen} onOpenProfile={props.onOpenProfile} onOpenComments={props.onOpenComments} onRemoveReaction={props.onRemoveReaction} onSetReaction={props.onSetReaction} />
     </View>)}</View> : profile && state.status === 'ready' ? <Text style={styles.activeEmpty}>{i18n.t('social.profileActivityEmpty')}</Text> : <FeedUnavailable i18n={i18n} onRetry={onRetry} state={state} />}
     {state.detailErrorKey ? <Text accessibilityRole="alert" style={styles.error}>{i18n.t(state.detailErrorKey)}</Text> : null}
     {state.status === 'error' && state.items.length > 0 ? <View style={styles.footer}>
@@ -378,7 +322,7 @@ export function SocialFeedView({ active, onOpenActive, onLoadMoreActive, onRetry
     refreshControl={<RefreshControl colors={[mobileTheme.colors.accent]} tintColor={mobileTheme.colors.accent} onRefresh={onRefresh} refreshing={props.state.refreshing || active.refreshing} />}>
     <ActiveFollowingSection i18n={props.i18n} onOpen={onOpenActive} onLoadMore={onLoadMoreActive} onRetry={onRetryActive} state={active} />
     <Text accessibilityRole="header" style={styles.sectionHeading}>{props.i18n.t('social.post.latest')}</Text>
-    <SocialTimeline i18n={props.i18n} onLoadMore={props.onLoadMore} onDismissInteractionNotice={props.onDismissInteractionNotice} onOpen={props.onOpen} onOpenProfile={props.onOpenProfile} onOpenComments={props.onOpenComments} onRemoveReaction={props.onRemoveReaction} onRetry={props.onRetry} onSetReaction={props.onSetReaction} state={props.state} profile={props.profile} />
+    <SocialTimeline loadReactionPeople={props.loadReactionPeople} i18n={props.i18n} onLoadMore={props.onLoadMore} onDismissInteractionNotice={props.onDismissInteractionNotice} onOpen={props.onOpen} onOpenProfile={props.onOpenProfile} onOpenComments={props.onOpenComments} onRemoveReaction={props.onRemoveReaction} onRetry={props.onRetry} onSetReaction={props.onSetReaction} state={props.state} profile={props.profile} />
   </ScrollView>;
 }
 
@@ -536,10 +480,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileTheme.spacing.xxs,
-    minHeight: 32,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: mobileTheme.colors.border,
+    borderRadius: mobileTheme.radii.pill,
     paddingHorizontal: mobileTheme.spacing.sm,
   },
   reactionCountSelected: {
+    borderColor: mobileTheme.colors.accent,
     backgroundColor: mobileTheme.colors.surfacePressed,
   },
   reactionCounts: {

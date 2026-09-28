@@ -1,6 +1,7 @@
 import { getLocales } from 'expo-localization';
 import { cloneElement, isValidElement, useRef, type ReactNode } from 'react';
 import { AccessibilityInfo, findNodeHandle, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { PathEmoji } from './path-emoji';
 import { pathPalette, type PathAppearance } from './path-appearance';
 import { createDeviceTranslator } from '../i18n';
 import type { PathCardProps } from './path-card';
@@ -129,7 +130,8 @@ export function HomeView({
           accessibilityLabel={i18n.t('home.jumpToPath', { pathName: path.name })}
           onPress={() => void jumpToPath(path.id)}
           style={({ pressed }) => [styles.shortcut, { backgroundColor: pathPalette[path.appearance.color].background }, pressed ? { opacity: 0.65 } : null]}>
-          <Text style={[styles.shortcutText, { color: pathPalette[path.appearance.color].foreground }]}>{path.appearance.emoji} {path.name}</Text>
+          <PathEmoji emoji={path.appearance.emoji} size={mobileTheme.spacing.xl} />
+          <Text style={[styles.shortcutText, { color: pathPalette[path.appearance.color].foreground }]}>{path.name}</Text>
         </Pressable>)}
       </ScrollView>
     </View> : null}
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
   running: { backgroundColor: mobileTheme.colors.surface, borderRadius: mobileTheme.radii.lg, borderCurve: 'continuous', padding: mobileTheme.spacing.sm, gap: mobileTheme.spacing.xs },
   runningTitle: { ...mobileTheme.typography.body, fontWeight: '600' },
   shortcuts: { gap: mobileTheme.spacing.xs },
-  shortcut: { borderRadius: mobileTheme.radii.md, minHeight: mobileTheme.sizes.minimumTouchTarget, justifyContent: 'center', paddingHorizontal: mobileTheme.spacing.sm },
+  shortcut: { flexDirection: 'row', alignItems: 'center', gap: mobileTheme.spacing.xs, borderRadius: mobileTheme.radii.md, minHeight: mobileTheme.sizes.minimumTouchTarget, justifyContent: 'center', paddingHorizontal: mobileTheme.spacing.sm },
   shortcutText: { ...mobileTheme.typography.body, fontWeight: '600' },
   stateContent: {
     flexGrow: 1,

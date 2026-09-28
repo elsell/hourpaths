@@ -179,6 +179,12 @@ progress must be labeled distinctly from a currently running timer.
   accumulated time, whether stopped or running. Without an interval goal it must
   retain the existing clearly labeled accumulated-time behavior. A timer must
   never substitute session elapsed time for the dominant value.
+- While a timer runs, Home must update lifetime and goal-period totals every
+  second from saved activity plus the unsaved timer contribution. Stopping or
+  refreshing must replace the saved base, never add the session twice.
+- Live interval contributions must be clipped to the server-provided half-open
+  period bounds. Clients must refresh an expired period, omit stale interval
+  progress until refreshed, and must not carry its total into a new period.
 - The running control must combine elapsed session time and Stop in one labeled
   touch target. Starting and stopping must preserve the tile layout and position.
 - Overall targets must remain visible when configured; absent goals must not

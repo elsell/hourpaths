@@ -46,6 +46,7 @@ export type SocialProfileRoutePresentation = {
   retryActivity: () => void;
   openActivity: SocialFeedRoutePresentation['openActivity'];
   openComments: SocialFeedRoutePresentation['openComments'];
+  loadReactionPeople: SocialFeedRoutePresentation['loadReactionPeople'];
   setReaction: SocialFeedRoutePresentation['setReaction'];
   removeReaction: SocialFeedRoutePresentation['removeReaction'];
   dismissActivityNotice: () => void;
@@ -94,6 +95,12 @@ export function SocialProfileRouteSource(props: SocialProfileRoutePresentation &
     openComments: (...arguments_) => {
       if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) props.openComments(...arguments_);
     },
+    loadReactionPeople: async (...arguments_) => {
+      if (!props.isCurrent() || currentPresentation?.sessionKey !== sessionKey) throw new Error('stale_social_session');
+      const result = await props.loadReactionPeople(...arguments_);
+      if (!props.isCurrent() || currentPresentation?.sessionKey !== sessionKey) throw new Error('stale_social_session');
+      return result;
+    },
     setReaction: async (...arguments_) => {
       if (props.isCurrent() && currentPresentation?.sessionKey === sessionKey) await props.setReaction(...arguments_);
     },
@@ -127,7 +134,7 @@ export function SocialProfileRouteSource(props: SocialProfileRoutePresentation &
     currentPresentation = publish();
     emitChange();
   }, [
-    props.activity, props.loadMoreActivity, props.retryActivity, props.openActivity, props.openComments, props.setReaction, props.removeReaction, props.dismissActivityNotice,
+    props.loadReactionPeople, props.activity, props.loadMoreActivity, props.retryActivity, props.openActivity, props.openComments, props.setReaction, props.removeReaction, props.dismissActivityNotice,
     props.loadMore,
     props.isCurrent,
     props.loadFollowRequests,

@@ -65,6 +65,7 @@ export default function FollowingScreen() {
     focusedRef.current = true;
     const current = presentationRef.current;
     if (current?.active.status !== 'idle') current?.refreshActive();
+    if (current?.feed.status === 'ready') current.refresh();
     return () => {
       focusedRef.current = false;
     };
@@ -109,7 +110,7 @@ export default function FollowingScreen() {
       }}
       onRetry={presentation.retry}
       onRetryActive={presentation.retryActive}
-      onSetReaction={presentation.setReaction}
+      loadReactionPeople={presentation.loadReactionPeople} onSetReaction={presentation.setReaction}
       state={presentation.feed}
     /> : <SocialRouteRecoveryView
       i18n={i18n}

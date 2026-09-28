@@ -1,3 +1,4 @@
+import { validPathEmoji } from './path-appearance';
 import { NUDGE_PRESETS, type NudgeContent, type NudgePreset } from './nudges';
 
 export type PathInvitationNotificationType =
@@ -14,7 +15,7 @@ export type PathDeletionNotificationType = 'path_deleted';
 export type PathMemberAccessNotificationType = 'path_member_role_changed' | 'path_member_removed';
 export type PathVisibilityChangedNotificationType = 'path_visibility_changed';
 export type NudgeNotificationType = 'nudge_received';
-export type NotificationPracticeReaction = 'heart' | 'applause' | 'fire' | 'strong' | 'celebrate';
+export type NotificationPracticeReaction = string;
 export type SocialNotificationType =
   | 'new_follower'
   | 'follow_request_received'
@@ -179,6 +180,7 @@ export type NotificationPresentationMessageKey =
   | 'notification.newFollower'
   | 'notification.followRequestReceived'
   | 'notification.followRequestAccepted'
+  | 'notification.practiceReaction.emoji'
   | 'notification.practiceReaction.heart'
   | 'notification.practiceReaction.applause'
   | 'notification.practiceReaction.fire'
@@ -222,7 +224,7 @@ const nudgeNotificationKeys = [...notificationBaseKeys, 'content', 'pathId', 'pa
 
 function validPracticeReaction(value: unknown): value is NotificationPracticeReaction {
   return value === 'heart' || value === 'applause' || value === 'fire' ||
-    value === 'strong' || value === 'celebrate';
+    value === 'strong' || value === 'celebrate' || (typeof value === 'string' && validPathEmoji(value));
 }
 
 function validatedNudgeContent(value: unknown): NudgeContent | undefined {
@@ -529,7 +531,11 @@ export function notificationPresentationMessageKey(
   case 'follow_request_accepted':
     return 'notification.followRequestAccepted';
   case 'practice_reaction':
-    return `notification.practiceReaction.${notification.reaction}`;
+    switch (notification.reaction) {
+    case 'heart': case 'applause': case 'fire': case 'strong': case 'celebrate':
+      return `notification.practiceReaction.${notification.reaction}`;
+    default: return 'notification.practiceReaction.emoji';
+    }
   case 'practice_comment':
     return 'notification.practiceComment';
   case 'comment_heart':

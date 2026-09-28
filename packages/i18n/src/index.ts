@@ -1,3 +1,4 @@
+import emojiCatalog from './emoji-catalog.json';
 import { createInstance, type TOptions } from 'i18next';
 import en from './locales/en.json';
 import es from './locales/es.json';
@@ -113,3 +114,5 @@ export function createTranslator(candidates: readonly (string | null | undefined
     time: (value, options) => new Intl.DateTimeFormat(locale, options).format(value)
   };
 }
+
+export const emojiChoices = emojiCatalog as readonly { emoji: string; key: MessageKey }[];

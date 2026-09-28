@@ -6,6 +6,7 @@ import { adjacentLiveActivity, projectLiveActivity, type LiveActivityPage } from
 import { formatGoalDuration, formatSessionClock } from './compact-duration';
 import { pathPalette } from './path-appearance';
 import { PlatformSymbol } from './platform-symbol';
+import { PathEmoji } from './path-emoji';
 import { SocialProfileAvatar } from './social-profile-avatar';
 import { mobileTheme } from './tokens';
 
@@ -48,7 +49,8 @@ export function LiveActivityViewer({ pages, initialTimerId, translator, onClose,
     const next = adjacentLiveActivity(pages, selected, direction);
     if (!next) { onClose(); return; }
     if (next === selected) return;
-    if (reduceMotion) { setSelected(next); return; }
+    const nextPage = pages.find(candidate => candidate.timerId === next);
+    if (reduceMotion || nextPage?.personId === currentPage.personId) { setSelected(next); return; }
     busy.current = true;
     motion.setValue(0);
     setTransition({ previous: currentPage, direction });
@@ -120,7 +122,7 @@ function ActivityPage({ page, pages, now, translator, onClose, onOpenProfile, st
         if (stepPage && start && Math.abs(event.nativeEvent.pageX - start.x) < 10 && Math.abs(event.nativeEvent.pageY - start.y) < 10) stepPage(start.x < viewportWidth / 2 ? -1 : 1);
       }}>
       <View style={styles.content} accessible accessibilityRole="adjustable" accessibilityActions={[{ name: 'increment', label: translator.t('social.live.next') }, { name: 'decrement', label: translator.t('social.live.previous') }]} onAccessibilityAction={event => stepPage?.(event.nativeEvent.actionName === 'decrement' ? -1 : 1)}>
-        <Text style={styles.emoji}>{page.appearance.emoji}</Text>
+        <PathEmoji emoji={page.appearance.emoji} size={96} />
         <Text style={[styles.pathName, foreground]}>{page.pathName}</Text>
         <Text style={[styles.sessionLabel, foreground]}>{translator.t('social.live.session')}</Text>
         <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.clock, foreground]}>{formatSessionClock(projection.sessionSeconds, translator)}</Text>
@@ -146,7 +148,6 @@ const styles = StyleSheet.create({
   close: { height: mobileTheme.sizes.minimumTouchTarget, width: mobileTheme.sizes.minimumTouchTarget, justifyContent: 'center', alignItems: 'center' },
   body: { flexGrow: 1, justifyContent: 'center', padding: mobileTheme.spacing.xl },
   content: { alignItems: 'center', width: '100%', gap: mobileTheme.spacing.sm },
-  emoji: { fontSize: 72, marginBottom: mobileTheme.spacing.sm },
   pathName: { ...mobileTheme.typography.title, textAlign: 'center' },
   sessionLabel: { ...mobileTheme.typography.body, marginTop: mobileTheme.spacing.lg },
   clock: { fontSize: 64, fontWeight: '700', fontVariant: ['tabular-nums'], textAlign: 'center', width: '100%' },

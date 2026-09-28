@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPathAppearanceStore, type SavedPathAppearance } from './path-appearance';
+import { createPathAppearanceStore, pathPalette, type SavedPathAppearance } from './path-appearance';
 
 test('appearance saves retain retry identity, reject stale refreshes, and discard late account results', async () => {
   let resolveRead: ((value: SavedPathAppearance) => void) | undefined;
@@ -52,4 +52,22 @@ test('an open draft saves against its original revision after another client cha
   assert.equal(server.color, 'blue');
   assert.equal(await store.save('path', draft, store.revision('path')), true);
   assert.equal(server.color, 'coral');
+});
+
+// Palette edits must preserve readable controls on every personalized tile.
+test('Path palette meets AA text and meaningful progress contrast', () => {
+  const luminance = (hex: string) => {
+    const channels = [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16) / 255)
+      .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722;
+  };
+  const contrast = (a: string, b: string) => {
+    const [low, high] = [luminance(a), luminance(b)].sort((x, y) => x - y);
+    return (high! + 0.05) / (low! + 0.05);
+  };
+  for (const tone of Object.values(pathPalette)) {
+    assert.ok(contrast(tone.foreground, tone.background) >= 4.5);
+    assert.ok(contrast(tone.accent, tone.background) >= 4.5);
+    assert.ok(contrast(tone.accent, tone.track) >= 3);
+  }
 });

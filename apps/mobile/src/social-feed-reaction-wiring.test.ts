@@ -6,7 +6,8 @@ import { fileURLToPath, URL } from 'node:url';
 const page = readFileSync(fileURLToPath(new URL('../app/index.tsx', import.meta.url)), 'utf8');
 
 test('reaction mutations use generated set/remove contracts and authoritative summaries', () => {
-  assert.match(page, /api\.setSocialFeedReaction\(event\.id, reaction, idempotencyKey\)/);
+  assert.match(page, /api\.addSocialFeedEmojiReaction\(event\.id, reaction, idempotencyKey\)/);
+  assert.match(page, /api\.removeSocialFeedEmojiReaction\(event\.id, removedEmoji, idempotencyKey\)/);
   assert.match(page, /api\.removeSocialFeedReaction\(event\.id, idempotencyKey\)/);
   assert.match(page, /applySocialReactionSummary\([\s\S]*socialReactionSummaryFromAPI\(envelope\.data\)/);
   assert.match(page, /socialFeedPage\.current = next;[\s\S]*setSocialFeed\(\(current\) => \(\{ \.\.\.current, items: next\.items \}\)\)/);

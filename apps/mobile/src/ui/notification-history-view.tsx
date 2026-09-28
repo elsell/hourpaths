@@ -25,6 +25,7 @@ function NotificationRow({
   onOpen?: () => void;
 }) {
   const message = i18n.t(notificationPresentationMessageKey(item), {
+    emoji: item.type === 'practice_reaction' ? item.reaction : '',
     displayName: item.actor.displayName,
     pathName: 'pathName' in item ? item.pathName : '',
     username: item.actor.username,

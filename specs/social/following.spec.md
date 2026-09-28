@@ -218,3 +218,22 @@ Clients must add only the running session's overlap with those boundaries and
 refresh at the interval end. Progress must not include private notes or another
 user's personal appearance. Existing active-following eligibility and authorization
 must apply to every returned path.
+
+### Active-path avatar rings and navigation
+
+- Each active person's highlighted avatar outline must contain one segment for
+  each currently visible active Path. One active Path must render a continuous
+  outline. The strip must not print a separate active-Path count below the name;
+  accessible labels must still identify the person's active Paths.
+- The full-screen viewer must change instantly between Paths belonging to the
+  same person. Horizontal slide transitions may occur only when navigation
+  crosses to another person, and must be disabled when Reduce Motion is enabled.
+- The viewer's top progress segments must represent the selected person's Paths,
+  not the total number of active people. Navigation must remain manual.
+
+### Prominent profile relationship action
+
+- Another user's profile must show a prominent full-width Follow, Requested,
+  or Unfollow button beneath their identity and biography, preserving current
+  request, confirmation, authorization, busy, and failure behavior.
+- The current user's own profile must not show a follow control.
