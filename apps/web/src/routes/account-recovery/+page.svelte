@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { createSessionApiClient, generatedResponse } from '@hourpaths/api-client';
-  import { isSessionFailure, validateSessionMutation, type ClientRuntimeConfig, type SessionFailure } from '@hourpaths/client-core';
+  import { scheduleSessionDeadline, isSessionFailure, validateSessionMutation, type ClientRuntimeConfig, type SessionFailure } from '@hourpaths/client-core';
   import { createTranslator, type MessageKey, type SupportedLocale, type Translator } from '@hourpaths/i18n';
   import { applicationDestination, applicationSession, applicationSessionExpired, applicationSessionOperations, clearApplicationSession, declineApplicationRecovery, revokeApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
   import { replaceApplicationLocation } from '$lib/provider-auth';
@@ -21,7 +21,7 @@
   }
 
   onMount(() => {
-    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelExpiry: (() => void) | undefined;
     try {
       session = applicationSession();
       const nextAction = session?.nextAction ?? 'home';
@@ -30,7 +30,7 @@
       } else if (session && applicationSessionExpired(session)) {
         expireSession();
       } else if (session) {
-        expiryTimer = setTimeout(expireSession, Math.max(0, Date.parse(session.expiresAt) - Date.now()));
+        cancelExpiry = scheduleSessionDeadline(expireSession, Date.parse(session.expiresAt));
       }
     } catch (cause) {
       const failure: SessionFailure = isSessionFailure(cause)
@@ -46,7 +46,7 @@
     } finally {
       ready = true;
     }
-    return () => { if (expiryTimer !== undefined) clearTimeout(expiryTimer); };
+    return () => { cancelExpiry?.(); };
   });
 
   async function signOut() {

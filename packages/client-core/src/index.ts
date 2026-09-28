@@ -1,3 +1,4 @@
+export { scheduleSessionDeadline } from './session-deadline';
 export {
   authenticatedProfileFromAPI,
   type AuthenticatedProfile,

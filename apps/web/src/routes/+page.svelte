@@ -5,7 +5,7 @@
   import PathAppearanceSurface from '$lib/path-appearance.svelte';
   import { onMount } from 'svelte';
   import { createPathSubmissionOwner, createSessionApiClient, createTimerOperationOwner, formatTimerDuration, generatedResponse, sessionExpiryAdvanced, sessionRefreshDelay, sessionRefreshLeadMs, timerMutationPresentation, type ActivityDeletionResult, type ActivityDetail, type ActivityMutationResult, type ActivityRevision, type GeneratedOperationResult, type ManualActivityDefaults, type MemberRemovalReceipt, type MemberRemovalReview as GeneratedMemberRemovalReview, type OwnershipTransfer, type OwnershipTransferCandidate, type OwnershipTransferResult, type PathArchiveStateDraft, type PathCreateDraft, type PathGoalMutationResult, type PathGoalUpdateDraft, type PathMember, type PathRecurrence, type SessionPath, type TimerState, type TimerStopResult } from '@hourpaths/api-client';
-  import { liveTimerProgress, createTimerPeriodRefresher, activeTimerSeconds, applyGoalMutationResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, applyPathVisibilityResult, authenticatedProfileFromAPI, compareGoalConfigurations, createAsyncMutationBarrier, createManualActivityFormState, createNotificationRefreshLatch, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createPathVisibilityOperationOwner, createProfileSearchOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, followRequestPageFromAPI, followRequestReviewResultFromAPI, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeFollowRequestPage, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, notificationPresentationMessageKey, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, pathsRequiringTimerRestore, pathVisibilityFromAPI, pathVisibilityOptions, profileSearchPageFromAPI, profileSearchQuery, publicProfileFromAPI, relationshipMutationResultFromAPI, removeResolvedFollowRequest, retainedSessionExpiry, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPathVisibilityChange, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, type AuthenticatedProfile, type ClientRuntimeConfig, type FollowRequestState, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitation, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PathVisibility, type PathVisibilityChangeReview, type PendingPathInvitation, type PendingPathInvitationState, type ProfileSearchState, type PublicProfile, type RunningTimerSnapshot, type SessionAccessState, type SessionFailure, type SessionOperationTicket, type SignOutTimerResolution } from '@hourpaths/client-core';
+  import { scheduleSessionDeadline, liveTimerProgress, createTimerPeriodRefresher, activeTimerSeconds, applyGoalMutationResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, applyPathVisibilityResult, authenticatedProfileFromAPI, compareGoalConfigurations, createAsyncMutationBarrier, createManualActivityFormState, createNotificationRefreshLatch, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createPathVisibilityOperationOwner, createProfileSearchOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, followRequestPageFromAPI, followRequestReviewResultFromAPI, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeFollowRequestPage, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, notificationPresentationMessageKey, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, pathsRequiringTimerRestore, pathVisibilityFromAPI, pathVisibilityOptions, profileSearchPageFromAPI, profileSearchQuery, publicProfileFromAPI, relationshipMutationResultFromAPI, removeResolvedFollowRequest, retainedSessionExpiry, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPathVisibilityChange, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, type AuthenticatedProfile, type ClientRuntimeConfig, type FollowRequestState, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitation, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PathVisibility, type PathVisibilityChangeReview, type PendingPathInvitation, type PendingPathInvitationState, type ProfileSearchState, type PublicProfile, type RunningTimerSnapshot, type SessionAccessState, type SessionFailure, type SessionOperationTicket, type SignOutTimerResolution } from '@hourpaths/client-core';
   import { blockedAccountPageFromAPI, blockReviewFromAPI, blockResultFromAPI, mergeBlockedAccountPage, unblockResultFromAPI, type BlockedAccount, type BlockedAccountPage, type BlockReview } from '@hourpaths/client-core';
   import { createTranslator, type MessageKey, type SupportedLocale, type Translator } from '@hourpaths/i18n';
   import { applicationDestination, applicationSession, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, refreshApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
@@ -114,7 +114,7 @@
   let ready = false;
   let errorKey: MessageKey | null = null;
   let accessState: SessionAccessState = 'authentication_required';
-  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  let cancelSessionDeadline: (() => void) | undefined;
   let refreshAttempt = 0;
   let sessionOperationBusy = false;
   let retryOperation: 'refresh' | 'profile' = 'refresh';
@@ -610,8 +610,8 @@
   }
 
   function scheduleExpiration(expiresAt: string) {
-    if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => {
+    cancelSessionDeadline?.();
+    cancelSessionDeadline = scheduleSessionDeadline(() => {
       applicationSessionOperations.invalidate();
       clearApplicationSession();
       session = null;
@@ -627,7 +627,7 @@
       resetPathDetails();
       resetInvitations();
       errorKey = 'errors.sessionExpired';
-    }, Math.max(0, Date.parse(expiresAt) - Date.now()));
+    }, Date.parse(expiresAt));
   }
 
   function scheduleRetry(expiresAt: string, operation: 'refresh' | 'profile') {
@@ -635,11 +635,11 @@
     const delay = sessionRetryDelay(refreshAttempt, expiresAt);
     refreshAttempt += 1;
     if (delay <= 0) { scheduleExpiration(expiresAt); return; }
-    if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => {
+    cancelSessionDeadline?.();
+    cancelSessionDeadline = scheduleSessionDeadline(() => {
       if (retryOperation === 'profile' && session) void attemptProfile(session, expiresAt);
       else void attemptRefresh(expiresAt);
-    }, delay);
+    }, Date.now() + delay);
   }
 
   async function loadProfile(session: ApplicationSession) {
@@ -789,8 +789,8 @@
   }
 
   function scheduleRefresh(expiresAt: string) {
-    if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => void attemptRefresh(expiresAt), sessionRefreshDelay(expiresAt));
+    cancelSessionDeadline?.();
+    cancelSessionDeadline = scheduleSessionDeadline(() => void attemptRefresh(expiresAt), Date.now() + sessionRefreshDelay(expiresAt));
   }
 
   onMount(async () => {
@@ -873,7 +873,7 @@
   }
 
   async function signOut() {
-    if (refreshTimer) clearTimeout(refreshTimer);
+    cancelSessionDeadline?.();
     applicationSessionOperations.invalidate();
     resetManualActivity();
     resetPathDetails();
@@ -2489,7 +2489,7 @@
     const idempotencyKey = goalUpdateIdempotencyKey;
     const body = { confirmed: true, expectedGoals: goalReview.current, ...goalReview.proposed } as PathGoalUpdateDraft;
     goalUpdateBusy = true;
-    if (refreshTimer) clearTimeout(refreshTimer);
+    cancelSessionDeadline?.();
     goalUpdateErrorKey = null;
     try {
       const result = await validateSessionCredential<PathGoalMutationResult>(current, async (credential) => generatedResponse(

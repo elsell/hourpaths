@@ -253,3 +253,20 @@ func TestMigrationDatabaseValidationUsesSameTLSBoundary(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestThirtyDaySessionConfiguration(t *testing.T) {
+	c := validSecureConfig()
+	c.SessionTTLMinutes = 30 * 24 * 60
+	c.SessionAbsoluteTTLMinutes = 30 * 24 * 60
+	if err := c.validate(); err != nil {
+		t.Fatalf("30-day session rejected: %v", err)
+	}
+	c.SessionAbsoluteTTLMinutes++
+	if err := c.validate(); err == nil {
+		t.Fatal("session longer than 30 days accepted")
+	}
+	c.SessionTTLMinutes++
+	if err := c.validate(); err == nil {
+		t.Fatal("credential longer than 30 days accepted")
+	}
+}

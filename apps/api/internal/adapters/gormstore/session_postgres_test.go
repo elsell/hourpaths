@@ -79,3 +79,58 @@ func TestSessionScopeMustMatchAccountLifecycleStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestThirtyDaySessionSurvivesInactivityButNotRotationReplayRevocationOrDeadline(t *testing.T) {
+	if *postgresTestDSN == "" {
+		t.Skip("-database-dsn is required for PostgreSQL integration")
+	}
+	store, err := Open("postgres", *postgresTestDSN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	tx := store.DB.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		t.Fatal(tx.Error)
+	}
+	t.Cleanup(func() { _ = tx.Rollback().Error })
+	repository := &Store{DB: tx}
+	now := time.Now().UTC().Truncate(time.Second)
+	deadline := now.Add(30 * 24 * time.Hour)
+	userID := newTestID()
+	if err := tx.Create(&userModel{ID: userID, Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+		t.Fatal(err)
+	}
+	event := func(action audit.Action, at time.Time) audit.Event {
+		return audit.Event{ID: newTestID(), OwnerUserID: userID, ActorUserID: userID, Action: action, TargetType: "user", TargetID: userID, Outcome: audit.Succeeded, CorrelationID: newTestID(), OccurredAt: at}
+	}
+	oldHash, nextHash, providerHash := activationHash(101), activationHash(102), activationHash(103)
+	if err := repository.SaveSession(ctx, ports.SessionRecord{TokenHash: oldHash, IdentityTokenHash: providerHash, UserID: userID, Scopes: []string{"api:user"}, ExpiresAt: deadline, AbsoluteExpiresAt: deadline}, event(audit.SessionCreated, now)); err != nil {
+		t.Fatal(err)
+	}
+	day29 := now.Add(29 * 24 * time.Hour)
+	if principal, err := repository.ResolveSession(ctx, oldHash, day29); err != nil || principal.UserID != userID {
+		t.Fatalf("inactive session: %v, %v", principal, err)
+	}
+	replacement := ports.SessionRecord{TokenHash: nextHash, UserID: userID, Scopes: []string{"api:user"}, ExpiresAt: day29.Add(30 * 24 * time.Hour)}
+	expires, err := repository.RotateSessionHash(ctx, oldHash, day29, replacement, event(audit.SessionRevoked, day29), event(audit.SessionCreated, day29))
+	if err != nil || !expires.Equal(deadline) {
+		t.Fatalf("rotation extended deadline: %v, %v", expires, err)
+	}
+	if _, err := repository.ResolveSession(ctx, oldHash, day29); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("old token survived rotation: %v", err)
+	}
+	if _, err := repository.ResolveSession(ctx, nextHash, deadline); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("token survived exact deadline: %v", err)
+	}
+	if err := repository.RevokeSessionHash(ctx, nextHash, day29, event(audit.SessionRevoked, day29)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.ResolveSession(ctx, nextHash, day29); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("token survived logout: %v", err)
+	}
+	replacement.TokenHash = activationHash(104)
+	if _, err := repository.RotateSessionHash(ctx, nextHash, day29, replacement, event(audit.SessionRevoked, day29), event(audit.SessionCreated, day29)); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("revoked token refreshed: %v", err)
+	}
+}

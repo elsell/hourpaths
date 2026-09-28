@@ -13,7 +13,8 @@ endpoint returns only events visible to the current actor or resource owner.
 OIDC tokens are exchanged once for rotating opaque application sessions. Set
 `HOURPATHS_SESSION_TTL_MINUTES` for each credential and
 `HOURPATHS_SESSION_ABSOLUTE_TTL_MINUTES` for the non-extendable session-family
-deadline. Once that deadline is reached, the user signs in with OIDC again. Set
+deadline. Both default to 43,200 minutes (30 days); existing sessions retain
+their original expiry. Once that deadline is reached, the user signs in with OIDC again. Set
 `HOURPATHS_OWNERSHIP_TRANSFER_EXPIRATION_MINUTES` to a positive whole number of
 minutes for newly created ownership transfers; it defaults to 10,080 minutes
 (seven days). Existing transfers retain their stored expiration timestamp. Set

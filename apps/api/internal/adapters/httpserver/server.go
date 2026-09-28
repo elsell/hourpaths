@@ -30,7 +30,8 @@ type MeInput struct {
 }
 type SessionExchangeInput struct {
 	Body struct {
-		IdentityToken string `json:"identityToken" minLength:"1"`
+		IdentityToken    string `json:"identityToken" minLength:"1"`
+		LongLivedSession bool   `json:"longLivedSession,omitempty"`
 	}
 }
 type DataStruct struct {
@@ -225,7 +226,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 		mux.HandleFunc("POST /oidc/token", docsOIDCToken(options.OIDCTokenURL, options.OIDCDocsClientID, options.OIDCDocsRedirectURI, application))
 	}
 	huma.Register(api, huma.Operation{OperationID: "exchange-session", Method: http.MethodPost, Path: "/v1/sessions", Summary: "Exchange a verified OIDC ID token for an application session"}, func(ctx context.Context, input *SessionExchangeInput) (*SessionExchangeOutput, error) {
-		outcome, err := application.ExchangeIdentityToken(ctx, input.Body.IdentityToken)
+		outcome, err := application.ExchangeIdentityTokenForClient(ctx, input.Body.IdentityToken, input.Body.LongLivedSession)
 		if err != nil {
 			return nil, mapSessionExchangeError(err)
 		}

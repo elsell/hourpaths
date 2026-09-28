@@ -127,13 +127,26 @@ Web and native adapters schedule the next rotation while the application remains
 open and also refresh near-expiry credentials during restored-session startup.
 Every rotation preserves the session family's original absolute expiry. The
 absolute lifetime is environment-configurable, must be at least the rotating
-session lifetime, and cannot exceed seven days. A requested rotation is capped
+session lifetime, and must not exceed 30 days. Both lifetimes must default to
+30 days for new sessions, allowing an inactive client to return without daily
+interactive sign-in. This uses the existing server-revocable opaque application
+credential, not a provider token or a separate refresh token. Existing sessions
+must retain their originally issued deadlines. Updated clients must opt in with
+`longLivedSession: true` during identity exchange. Exchanges without that
+capability must cap credentials at one hour and the family at 12 hours for
+compatibility with older deadline scheduling; smaller configured limits still
+apply. The capability must not bypass identity verification or account policy. A requested rotation is capped
 at that deadline; once it is reached, the user must authenticate with OIDC again.
 Web and mobile treat a non-advancing replacement expiry as the end of the
 renewable family: they retain that replacement only until its stated expiry,
 then clear it and require OIDC authentication. Clients must not rapidly rotate
 inside the final refresh window; short configured session lifetimes use a
 bounded midpoint refresh instead.
+Client scheduling must safely handle deadlines beyond the JavaScript timer
+limit without firing expiry or rotation immediately. Backgrounding and restarting
+a native client must retain an unexpired securely stored credential. Explicit
+logout, revoked credentials, disabled accounts, and the exact absolute deadline
+must still deny access. Rotation on day 29 must not extend access beyond day 30.
 
 The generated interactive API documentation uses the same OIDC discovery
 metadata and a dedicated public documentation client. Its authorization flow is

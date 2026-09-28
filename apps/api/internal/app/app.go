@@ -143,8 +143,18 @@ type OnboardingIdentityExchange struct {
 
 func (OnboardingIdentityExchange) identityExchangeOutcome() {}
 
+// ExchangeIdentityTokenForClient keeps legacy timer implementations within their
+// original session bounds. Capability selection cannot weaken identity checks.
+func (a App) ExchangeIdentityTokenForClient(ctx context.Context, token string, longLivedSession bool) (IdentityExchangeOutcome, error) {
+	if !longLivedSession {
+		a.SessionTTL = min(a.SessionTTL, time.Hour)
+		a.SessionAbsoluteTTL = min(a.SessionAbsoluteTTL, 12*time.Hour)
+	}
+	return a.ExchangeIdentityToken(ctx, token)
+}
+
 func (a App) ExchangeIdentityToken(ctx context.Context, token string) (IdentityExchangeOutcome, error) {
-	if a.IdentityVerifier == nil || a.Sessions == nil || a.SessionTTL < time.Minute || a.SessionTTL > 24*time.Hour || a.SessionAbsoluteTTL < a.SessionTTL || a.SessionAbsoluteTTL > 7*24*time.Hour {
+	if a.IdentityVerifier == nil || a.Sessions == nil || a.SessionTTL < time.Minute || a.SessionTTL > 30*24*time.Hour || a.SessionAbsoluteTTL < a.SessionTTL || a.SessionAbsoluteTTL > 30*24*time.Hour {
 		return nil, errors.New("session dependencies are invalid")
 	}
 	claims, err := a.IdentityVerifier.Verify(ctx, token)
