@@ -3,6 +3,7 @@ package social
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 )
 
 type controlledReactions struct {
+	roster                        ReactionRosterPage
+	rosterErr                     error
 	target                        ReactionTarget
 	result                        ReactionMutationResult
 	err, resolveErr, mutationErr  error
@@ -63,7 +66,7 @@ func TestSetAchievementReactionAuthorizesAndReturnsAuthoritativeProjection(t *te
 	service, authorizer := reactionService(repository)
 	service.Clock = fixedClock{now: now}
 	got, err := service.SetPracticeReaction(context.Background(), "Bearer session", "achievement:goal", domain.ReactionFire, "0123456789abcdef")
-	if err != nil || got != want {
+	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Fatalf("summary=%+v err=%v", got, err)
 	}
 	if repository.set == nil || repository.removed != nil || repository.set.ActorUserID != "viewer" || repository.set.Reaction != domain.ReactionFire || repository.set.NotificationEligibleAt != now.Add(5*time.Second) {
@@ -106,7 +109,7 @@ func TestPracticeReactionFailsOpaqueForMissingBlockedOrInaccessibleEvent(t *test
 			service.Audits = audits
 			test.configure(repository, authorizer)
 			got, err := service.SetPracticeReaction(context.Background(), "Bearer session", "practice:activity", domain.ReactionHeart, "0123456789abcdef")
-			if !errors.Is(err, ports.ErrNotFound) || got != (domain.ReactionSummary{}) || (repository.set != nil) != test.wantCall {
+			if !errors.Is(err, ports.ErrNotFound) || !reflect.DeepEqual(got, domain.ReactionSummary{}) || (repository.set != nil) != test.wantCall {
 				t.Fatalf("summary=%+v err=%v command=%+v", got, err, repository.set)
 			}
 			if len(audits.events) != 1 || audits.events[0].Action != audit.ResourceAccessDenied || audits.events[0].TargetType != "practice_reaction" || audits.events[0].TargetID != "hidden" || audits.events[0].Outcome != audit.Denied {
@@ -133,7 +136,7 @@ func TestPracticeReactionDenialFailsClosedWhenAuditCannotPersist(t *testing.T) {
 			service.Audits = audits
 			test.configure(repository, authorizer)
 			got, err := service.SetPracticeReaction(context.Background(), "Bearer session", "practice:activity", domain.ReactionHeart, "0123456789abcdef")
-			if !errors.Is(err, auditFailure) || got != (domain.ReactionSummary{}) || len(audits.events) != 1 {
+			if !errors.Is(err, auditFailure) || !reflect.DeepEqual(got, domain.ReactionSummary{}) || len(audits.events) != 1 {
 				t.Fatalf("summary=%+v err=%v audits=%+v", got, err, audits.events)
 			}
 			if test.name != "access changed before transaction" && repository.set != nil {
@@ -148,7 +151,7 @@ func TestPracticeReactionRequiresAuditPersistenceBeforeRepositoryAccess(t *testi
 	service, _ := reactionService(repository)
 	service.Audits = nil
 	got, err := service.SetPracticeReaction(context.Background(), "Bearer session", "practice:activity", domain.ReactionHeart, "0123456789abcdef")
-	if !errors.Is(err, errInvalidDependencies) || got != (domain.ReactionSummary{}) || repository.resolvedEvent != "" || repository.set != nil {
+	if !errors.Is(err, errInvalidDependencies) || !reflect.DeepEqual(got, domain.ReactionSummary{}) || repository.resolvedEvent != "" || repository.set != nil {
 		t.Fatalf("summary=%+v err=%v repository=%+v", got, err, repository)
 	}
 }
@@ -166,4 +169,8 @@ func TestPracticeReactionRejectsInvalidInputsAndRateLimitsBeforeMutation(t *test
 	if repository.set != nil {
 		t.Fatalf("mutated while limited: %+v", repository.set)
 	}
+}
+
+func (repository *controlledReactions) ListPracticeReactions(_ context.Context, viewer, event string, reaction domain.Reaction, request ReactionRosterPageRequest) (ReactionRosterPage, error) {
+	return repository.roster, repository.rosterErr
 }

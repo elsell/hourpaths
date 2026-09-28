@@ -34,3 +34,21 @@ func TestReactionSummaryValidatesCountsAndViewerSelection(t *testing.T) {
 		t.Fatalf("custom viewer reaction accepted: %+v", summary)
 	}
 }
+
+func TestEmojiReactionCanonicalizationAndBounds(t *testing.T) {
+	for _, emoji := range []string{"❤️", "👏", "🔥", "💪", "🎉", "🧑🏽‍🚀", "🇪🇸", "1️⃣", "🦊"} {
+		reaction, ok := CanonicalEmojiReaction(emoji)
+		if !ok || !reaction.ValidStored() {
+			t.Fatalf("valid emoji rejected: %q", emoji)
+		}
+	}
+	reaction, ok := CanonicalEmojiReaction("❤️")
+	if !ok || reaction != ReactionHeart {
+		t.Fatalf("curated alias not canonical: %q", reaction)
+	}
+	for _, emoji := range []string{"", "text", "🦊🦊", "🏽", "🇪", " heart ", "<script>"} {
+		if _, ok := CanonicalEmojiReaction(emoji); ok {
+			t.Fatalf("invalid emoji accepted: %q", emoji)
+		}
+	}
+}

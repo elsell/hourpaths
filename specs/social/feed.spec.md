@@ -252,18 +252,19 @@ motivation, and encouragement.
 
 - An authorized user must be able to react to a practice-session event.
 - An authorized user must be able to react to a goal-achievement event.
-- Available reactions must come from a curated, positive-only set intended to
-  encourage the participant.
-- The initial feed-event reaction set must be `Heart`, `Applause`, `Fire`,
-  `Strong`, and `Celebrate`, presented respectively as ❤️, 👏, 🔥, 💪, and 🎉.
-- The initial product must not allow custom reaction types outside that set.
-- The product must not offer negative or discouraging reactions.
-- A user may hold at most one reaction on a feed event. Selecting a different
-  reaction must replace that user's existing reaction without affecting other
-  users' reactions, and removing it must leave no reaction from that user.
-- A reaction replacement must update the visible counts immediately without
-  moving the event in chronological order or creating an additional
-  notification for the superseded reaction.
+- Reactions must support Unicode emoji through an emoji picker, including flags,
+  modifiers, and joined emoji sequences. Custom uploaded images are not supported.
+- Each user may add multiple distinct emoji to an event, at most once per emoji.
+  Selecting an already-selected emoji must remove only that emoji; other reactions
+  by that user and other users must remain unchanged.
+- Counts and the viewer's selected state must be authoritative per emoji. The five
+  original curated reactions and their equivalent Unicode emoji must share counts.
+- Existing singular reaction endpoints must retain replacement and remove-all
+  semantics for older clients; new per-emoji endpoints add/remove independently.
+- Reaction changes must not move events chronologically. One notification per actor
+  and event must remain, reflecting the latest remaining reaction. Removing the
+  last reaction must remove that notification; removing one of several must retain
+  it without resetting its eligibility time or sending a removal notice.
 - An authorized user must be able to comment on a practice-session event.
 - An authorized user must be able to comment on a goal-achievement event.
 - An authorized user must be able to heart an individual comment.
@@ -281,20 +282,19 @@ motivation, and encouragement.
 
 ### Practice-event reaction acceptance slice (`SOC-04A`)
 
-- An authorized user may add, replace, or remove one of the five curated
-  reactions on an eligible practice-session event.
+- An authorized user may add or remove supported emoji reactions on an eligible practice-session event.
 - The feed must return authoritative per-reaction counts and the current user's
-  selected reaction without exposing private reaction-roster data.
+  selected emoji reactions without exposing private reaction-roster data.
 - Missing, deleted, blocked, or newly inaccessible events must fail opaquely and
   must not create, replace, or remove a reaction or reveal that an event exists.
 - Adding or replacing a reaction must not change the event's identity,
   publication time, or chronological position. Idempotent retries must converge
-  on one reaction from that user.
+  on at most one instance of each emoji from that user.
 - A reaction by someone other than the event owner must become eligible for one
   owner notification only after the five-second social-interaction grace period.
   Replacing it during that period must retain one pending notification for the
-  current reaction; removing it before eligibility must prevent delivery, and
-  removing it later must delete its in-application notification without sending
+  latest remaining reaction; removing all reactions before eligibility must prevent delivery, and
+  removing the last reaction later must delete its in-application notification without sending
   a removal notice.
 - A user must not receive a notification for reacting to their own event.
 - Following must expose reaction selection as a compact, localized, accessible
@@ -529,3 +529,29 @@ Profile-visible events must support the same reaction and comment operations as
 Following-visible events. Direct event and engagement endpoints must check current
 source membership, block status and path visibility without requiring Following
 feed membership. This does not broaden the Following list's inclusion rules.
+
+### Visible interaction totals and reaction people
+
+- Feed and profile activity entries must include the current count of comments
+  visible to the requesting viewer. Deleted comments, inactive authors, and
+  authors blocked in either direction must not contribute. Disabled comments
+  must have a displayed count of zero.
+- A viewer may inspect the people behind each supported reaction on an event
+  they can currently view. The paginated roster must filter by reaction and
+  expose only public profile fields; it must exclude inactive and either-way
+  blocked accounts. Disabling event-owner reactions must make the roster
+  unavailable under the same non-disclosing rules as reaction mutations.
+- Every roster read must recheck current event and Path access, use a cursor
+  bound to the viewer, event and reaction, apply the principal limiter, and
+  record successful reads and denied access through the audit boundary.
+
+### Notification representation compatibility
+
+- Clients must explicitly request Unicode emoji notification representation.
+  Requests without that capability must omit unsupported Unicode reaction
+  notifications before pagination and unread counting; they must not substitute
+  a different emoji or fail the inbox. Curated reactions remain unchanged.
+- Read, delete, and mark-all operations in legacy representation must leave
+  unsupported notifications untouched. Single unsupported lookups must return
+  the existing non-disclosing unavailable result. Pagination cursors must bind
+  to the requested representation as well as the recipient.

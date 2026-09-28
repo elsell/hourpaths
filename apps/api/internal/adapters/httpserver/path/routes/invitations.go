@@ -92,18 +92,21 @@ type PathInvitationRejectInput struct {
 }
 
 type NotificationListInput struct {
-	Authorization string `header:"Authorization"`
-	Cursor        string `query:"cursor"`
-	Limit         int    `query:"limit" default:"25" minimum:"1" maximum:"100"`
+	EmojiReactions bool   `query:"emojiReactions" default:"false"`
+	Authorization  string `header:"Authorization"`
+	Cursor         string `query:"cursor"`
+	Limit          int    `query:"limit" default:"25" minimum:"1" maximum:"100"`
 }
 
 type NotificationMutationInput struct {
+	EmojiReactions bool   `query:"emojiReactions" default:"false"`
 	Authorization  string `header:"Authorization"`
 	NotificationID string `path:"notificationId"`
 }
 
 type NotificationMarkAllInput struct {
-	Authorization string `header:"Authorization"`
+	EmojiReactions bool   `query:"emojiReactions" default:"false"`
+	Authorization  string `header:"Authorization"`
 }
 
 type PathInvitationOutput struct {
@@ -251,7 +254,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationListInput) (*NotificationListOutput, error) {
 		notifications, nextCursor, unreadCount, err := service.ListNotifications(
-			ctx, input.Authorization, input.Cursor, input.Limit,
+			pathapp.WithNotificationEmojiRepresentation(ctx, input.EmojiReactions), input.Authorization, input.Cursor, input.Limit,
 		)
 		if err != nil {
 			return nil, shared.MapError(err, false)
@@ -273,7 +276,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMutationInput) (*NotificationOutput, error) {
 		notification, err := service.GetNotification(
-			ctx, input.Authorization, input.NotificationID,
+			pathapp.WithNotificationEmojiRepresentation(ctx, input.EmojiReactions), input.Authorization, input.NotificationID,
 		)
 		if err != nil {
 			return nil, shared.MapError(err, true)
@@ -288,7 +291,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Path:        "/v1/notifications/{notificationId}/read",
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMutationInput) (*NotificationMutationOutput, error) {
-		result, err := service.MarkNotificationRead(ctx, input.Authorization, input.NotificationID)
+		result, err := service.MarkNotificationRead(pathapp.WithNotificationEmojiRepresentation(ctx, input.EmojiReactions), input.Authorization, input.NotificationID)
 		if err != nil {
 			return nil, shared.MapError(err, false)
 		}
@@ -302,7 +305,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Path:        "/v1/notifications/{notificationId}",
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMutationInput) (*NotificationMutationOutput, error) {
-		result, err := service.DeleteNotification(ctx, input.Authorization, input.NotificationID)
+		result, err := service.DeleteNotification(pathapp.WithNotificationEmojiRepresentation(ctx, input.EmojiReactions), input.Authorization, input.NotificationID)
 		if err != nil {
 			return nil, shared.MapError(err, false)
 		}
@@ -316,7 +319,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Path:        "/v1/notifications/read-all",
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMarkAllInput) (*NotificationMutationOutput, error) {
-		result, err := service.MarkAllNotificationsRead(ctx, input.Authorization)
+		result, err := service.MarkAllNotificationsRead(pathapp.WithNotificationEmojiRepresentation(ctx, input.EmojiReactions), input.Authorization)
 		if err != nil {
 			return nil, shared.MapError(err, false)
 		}

@@ -187,7 +187,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { query: { cursor, limit: 25 } },
     }),
     notifications: (cursor?: string) => authenticatedClient.GET('/v1/notifications', {
-      params: { query: { cursor, limit: 25 } },
+      params: { query: { cursor, limit: 25, emojiReactions: true } },
     }),
     getNudgeNotificationChannel: () => authenticatedClient.GET('/v1/me/notification-channels/nudges'),
     updateNudgeNotificationChannel: (body: NudgeNotificationChannelPreferenceInput, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/notification-channels/nudges', {
@@ -277,6 +277,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     practiceCommentHearts: (eventId: string, commentId: string, cursor?: string) => authenticatedClient.GET('/v1/social/feed/{eventId}/comments/{commentId}/hearts', {
       params: { path: { eventId, commentId }, query: { cursor, limit: 25 } },
     }),
+    addSocialFeedEmojiReaction: (eventId: string, emoji: string, idempotencyKey: string) => authenticatedClient.PUT('/v1/social/feed/{eventId}/reactions/{emoji}', {
+ params: { path: { eventId, emoji }, header: { 'Idempotency-Key': idempotencyKey } },
+ }),
+ removeSocialFeedEmojiReaction: (eventId: string, emoji: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/social/feed/{eventId}/reactions/{emoji}', {
+ params: { path: { eventId, emoji }, header: { 'Idempotency-Key': idempotencyKey } },
+ }),
+    socialFeedReactionPeople: (eventId: string, reaction: string, cursor?: string) => authenticatedClient.GET('/v1/social/feed/{eventId}/reactions', {
+      params: { path: { eventId }, query: { reaction, cursor, limit: 25 } },
+    }),
     setSocialFeedReaction: (eventId: string, reaction: PracticeReaction, idempotencyKey: string) => authenticatedClient.PUT('/v1/social/feed/{eventId}/reaction', {
       params: { path: { eventId }, header: { 'Idempotency-Key': idempotencyKey } },
       body: { reaction },
@@ -295,15 +304,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { requestId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     getNotification: (notificationId: string) => authenticatedClient.GET('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId } },
+      params: { path: { notificationId }, query: { emojiReactions: true } },
     }),
     markNotificationRead: (notificationId: string) => authenticatedClient.PATCH('/v1/notifications/{notificationId}/read', {
-      params: { path: { notificationId } },
+      params: { path: { notificationId }, query: { emojiReactions: true } },
     }),
     deleteNotification: (notificationId: string) => authenticatedClient.DELETE('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId } },
+      params: { path: { notificationId }, query: { emojiReactions: true } },
     }),
-    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all'),
+    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true } } }),
     ownershipTransferCandidates: (pathId: string, cursor?: string) => authenticatedClient.GET('/v1/paths/{pathId}/ownership-transfer-candidates', {
       params: { path: { pathId }, query: { cursor, limit: 25 } },
     }),

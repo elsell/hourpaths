@@ -139,6 +139,13 @@ A daily interval ends at midnight. A timer runs from 11:50 PM until 12:20 AM.
 Ten minutes count toward the ending day, twenty minutes count toward the new day,
 and thirty minutes count once toward accumulated time.
 
+### Live client projections
+
+- Timer interval projections must expose the authoritative period start and end
+  instants alongside saved accumulated and target seconds. Saved totals exclude
+  the active timer. Clients may add the active timer overlap for live display,
+  without changing persisted activity, and must refresh expired period bounds.
+
 ## Goals as projections over recorded activity
 
 - Recorded activity is defined in

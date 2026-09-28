@@ -104,23 +104,44 @@ func (repository *SocialFeedRepository) mutatePracticeReaction(ctx context.Conte
 			if !enabled {
 				return ports.ErrNotFound
 			}
-			reaction := socialReactionModel{SocialFeedEventID: command.Target.EventID, ActorUserID: command.ActorUserID, ReactionType: string(command.Reaction), CreatedAt: command.OccurredAt, UpdatedAt: command.OccurredAt}
-			if err := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "social_feed_event_id"}, {Name: "actor_user_id"}}, DoUpdates: clause.Assignments(map[string]any{"reaction_type": string(command.Reaction), "updated_at": command.OccurredAt})}).Create(&reaction).Error; err != nil {
-				return err
+			if command.Idempotency.Operation == socialapp.SetPracticeReactionOperation {
+				if err := tx.Where("social_feed_event_id = ? AND actor_user_id = ?", command.Target.EventID, command.ActorUserID).Delete(&socialReactionModel{}).Error; err != nil {
+					return err
+				}
 			}
-			if command.ActorUserID != command.Target.OwnerUserID {
+			reaction := socialReactionModel{SocialFeedEventID: command.Target.EventID, ActorUserID: command.ActorUserID, ReactionType: string(command.Reaction), CreatedAt: command.OccurredAt, UpdatedAt: command.OccurredAt}
+			inserted := tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "social_feed_event_id"}, {Name: "actor_user_id"}, {Name: "reaction_type"}}, DoNothing: true}).Create(&reaction)
+			if inserted.Error != nil {
+				return inserted.Error
+			}
+
+			if inserted.RowsAffected > 0 && command.ActorUserID != command.Target.OwnerUserID {
 				if err := upsertReactionNotification(tx, command); err != nil {
 					return err
 				}
 			}
 		} else {
-			if err := tx.Where("social_feed_event_id = ? AND actor_user_id = ?", command.Target.EventID, command.ActorUserID).Delete(&socialReactionModel{}).Error; err != nil {
+			remove := tx.Where("social_feed_event_id = ? AND actor_user_id = ?", command.Target.EventID, command.ActorUserID)
+			if command.Idempotency.Operation == socialapp.RemovePracticeEmojiReactionOperation {
+				remove = remove.Where("reaction_type = ?", string(command.Reaction))
+			}
+			if err := remove.Delete(&socialReactionModel{}).Error; err != nil {
 				return err
 			}
-			if err := tx.Where("kind = 'practice_reaction' AND social_feed_event_id = ? AND actor_user_id = ? AND recipient_user_id = ?", command.Target.EventID, command.ActorUserID, command.Target.OwnerUserID).Delete(&socialReactionNotificationModel{}).Error; err != nil {
+			notification := tx.Where("kind = 'practice_reaction' AND social_feed_event_id = ? AND actor_user_id = ? AND recipient_user_id = ?", command.Target.EventID, command.ActorUserID, command.Target.OwnerUserID)
+			var remaining socialReactionModel
+			err := tx.Where("social_feed_event_id = ? AND actor_user_id = ?", command.Target.EventID, command.ActorUserID).Order("updated_at DESC, reaction_type ASC").Take(&remaining).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				if err := notification.Delete(&socialReactionNotificationModel{}).Error; err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
+			} else if err := notification.Model(&socialReactionNotificationModel{}).Update("reaction_type", remaining.ReactionType).Error; err != nil {
 				return err
 			}
 		}
+
 		if err := tx.Create(&socialReactionReplayModel{ActorUserID: command.ActorUserID, Operation: command.Idempotency.Operation, IdempotencyKey: command.Idempotency.Key, RequestHash: append([]byte(nil), command.Idempotency.RequestHash...), SocialFeedEventID: command.Target.EventID, CreatedAt: command.OccurredAt}).Error; err != nil {
 			return err
 		}
@@ -213,13 +234,17 @@ COUNT(*) FILTER (WHERE reaction_type = 'applause') AS applause,
 COUNT(*) FILTER (WHERE reaction_type = 'fire') AS fire,
 COUNT(*) FILTER (WHERE reaction_type = 'strong') AS strong,
 COUNT(*) FILTER (WHERE reaction_type = 'celebrate') AS celebrate,
-COALESCE(MAX(reaction_type) FILTER (WHERE actor_user_id = ?), '') AS viewer_reaction`, viewer).
+COALESCE(MAX(reaction_type) FILTER (WHERE actor_user_id = ? AND reaction_type IN ('heart','applause','fire','strong','celebrate')), '') AS viewer_reaction`, viewer).
 		Where("social_feed_event_id = ?", eventID).
 		Where(`NOT EXISTS (SELECT 1 FROM block_models reaction_block
 WHERE (reaction_block.blocker_user_id = ? AND reaction_block.blocked_user_id = social_practice_reaction_models.actor_user_id)
    OR (reaction_block.blocker_user_id = social_practice_reaction_models.actor_user_id AND reaction_block.blocked_user_id = ?))`, viewer, viewer).
 		Scan(&row).Error
-	return socialdomain.ReactionSummary{Counts: socialdomain.ReactionCounts{Heart: row.Heart, Applause: row.Applause, Fire: row.Fire, Strong: row.Strong, Celebrate: row.Celebrate}, ViewerReaction: socialdomain.Reaction(row.ViewerReaction)}, err
+	if err != nil {
+		return socialdomain.ReactionSummary{}, err
+	}
+	emoji, err := socialEmojiReactionSummaries(tx, []string{eventID}, viewer)
+	return socialdomain.ReactionSummary{Counts: socialdomain.ReactionCounts{Heart: row.Heart, Applause: row.Applause, Fire: row.Fire, Strong: row.Strong, Celebrate: row.Celebrate}, ViewerReaction: socialdomain.Reaction(row.ViewerReaction), EmojiReactions: emoji[eventID]}, err
 }
 
 func upsertReactionNotification(tx *gorm.DB, command socialapp.ReactionCommand) error {
@@ -257,8 +282,18 @@ func validReactionCommand(repository *SocialFeedRepository, command socialapp.Re
 	if set {
 		wantOperation, wantAction = socialapp.SetPracticeReactionOperation, audit.ResourceUpdated
 	}
+	if set && command.Idempotency.Operation == socialapp.AddPracticeEmojiReactionOperation {
+		wantOperation = socialapp.AddPracticeEmojiReactionOperation
+	}
+	if !set && command.Idempotency.Operation == socialapp.RemovePracticeEmojiReactionOperation {
+		wantOperation = socialapp.RemovePracticeEmojiReactionOperation
+	}
+	validReaction := (set && command.Reaction.Valid()) || (!set && command.Reaction == "")
+	if wantOperation == socialapp.AddPracticeEmojiReactionOperation || wantOperation == socialapp.RemovePracticeEmojiReactionOperation {
+		validReaction = command.Reaction.ValidStored()
+	}
 	return repository != nil && repository.db != nil && command.ActorUserID != "" && command.Target.EventID != "" && command.Target.PathID != "" && command.Target.OwnerUserID != "" &&
-		((set && command.Reaction.Valid()) || (!set && command.Reaction == "")) && !command.OccurredAt.IsZero() && command.NotificationEligibleAt.Equal(command.OccurredAt.Add(5*time.Second)) &&
+		validReaction && !command.OccurredAt.IsZero() && command.NotificationEligibleAt.Equal(command.OccurredAt.Add(5*time.Second)) &&
 		command.Idempotency.PrincipalID == command.ActorUserID && command.Idempotency.Operation == wantOperation && command.Idempotency.Key != "" && len(command.Idempotency.RequestHash) == sha256.Size &&
 		validMutationAudit(command.Audit, wantAction, "practice_reaction", command.Target.EventID, command.ActorUserID) && command.Audit.ActorUserID == command.ActorUserID && command.Audit.OccurredAt.Equal(command.OccurredAt)
 }
@@ -278,4 +313,33 @@ func classifySocialReactionError(err error) error {
 	default:
 		return fmt.Errorf("social reaction persistence: %w: %v", ports.ErrUnavailable, err)
 	}
+}
+
+// Event visibility is checked by the caller; each reaction count additionally
+// excludes the viewer's bilateral blocked actors. Fetch a page in one query.
+func socialEmojiReactionSummaries(tx *gorm.DB, eventIDs []string, viewer string) (map[string][]socialdomain.EmojiReaction, error) {
+	result := make(map[string][]socialdomain.EmojiReaction, len(eventIDs))
+	if len(eventIDs) == 0 {
+		return result, nil
+	}
+	var rows []struct {
+		SocialFeedEventID, ReactionType string
+		Count                           int64
+		Reacted                         bool
+	}
+	err := tx.Table("social_practice_reaction_models").Select("social_feed_event_id, reaction_type, COUNT(*) AS count, BOOL_OR(actor_user_id = ?) AS reacted", viewer).
+		Where("social_feed_event_id IN ?", eventIDs).
+		Where(`NOT EXISTS (SELECT 1 FROM block_models b WHERE (b.blocker_user_id = ? AND b.blocked_user_id = social_practice_reaction_models.actor_user_id) OR (b.blocker_user_id = social_practice_reaction_models.actor_user_id AND b.blocked_user_id = ?))`, viewer, viewer).
+		Group("social_feed_event_id, reaction_type").Order("social_feed_event_id, reaction_type").Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		reaction := socialdomain.Reaction(row.ReactionType)
+		if !reaction.ValidStored() {
+			return nil, ports.ErrUnavailable
+		}
+		result[row.SocialFeedEventID] = append(result[row.SocialFeedEventID], socialdomain.EmojiReaction{Emoji: reaction.Emoji(), Count: row.Count, Reacted: row.Reacted})
+	}
+	return result, nil
 }

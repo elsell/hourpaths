@@ -219,11 +219,12 @@ func (r *Repository) ListNotifications(
 	}
 	var result application.NotificationPage
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		count, err := visibleUnreadNotificationCount(tx, recipientUserID, page.Snapshot)
+		count, err := visibleUnreadNotificationCount(tx, recipientUserID, page.Snapshot, page.EmojiReactions)
 		if err != nil {
 			return err
 		}
 		query := notificationProjectionQuery(tx).
+			Where(notificationRepresentationPredicate(page.EmojiReactions)).
 			Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND "+visibleNotificationPredicate,
 				recipientUserID, page.Snapshot)
 		if page.AfterID != "" {
@@ -322,7 +323,7 @@ func invitationNotificationFromRow(
 		row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.OfferedRole == "" && row.Channel == "following"
 	reaction := socialdomain.Reaction(row.ReactionType)
 	reactionSemantics := kind == application.NotificationPracticeReaction && presentation == application.NotificationInformational &&
-		row.Channel == "reactions" && row.SocialFeedEventID != "" && reaction.Valid() && row.PathID != "" &&
+		row.Channel == "reactions" && row.SocialFeedEventID != "" && reaction.ValidStored() && row.PathID != "" &&
 		row.RecipientUserID != row.ActorUserID && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" &&
 		row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.OfferedRole == "" && row.CommentID == ""
 	commentSemantics := kind == application.NotificationPracticeComment && presentation == application.NotificationInformational &&

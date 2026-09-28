@@ -121,7 +121,7 @@ func TestIntervalProgressOpenAPIIsOptionalAndOmitsInternalWindow(t *testing.T) {
 	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, controlledService{}) }}})
 	schemas := api.OpenAPI().Components.Schemas.Map()
 	progress := schemas["IntervalProgress"]
-	if progress == nil || len(progress.Properties) != 2 || progress.Properties["accumulatedSeconds"] == nil || progress.Properties["targetSeconds"] == nil || progress.Properties["window"] != nil {
+	if progress == nil || len(progress.Properties) != 4 || progress.Properties["accumulatedSeconds"] == nil || progress.Properties["targetSeconds"] == nil || progress.Properties["startedAt"] == nil || progress.Properties["endedAt"] == nil || progress.Properties["window"] != nil {
 		t.Fatalf("public interval progress schema leaked or omitted fields: %+v", progress)
 	}
 	for _, field := range []string{"accumulatedSeconds", "targetSeconds"} {

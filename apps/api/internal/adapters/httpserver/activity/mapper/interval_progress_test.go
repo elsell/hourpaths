@@ -43,11 +43,13 @@ func TestActivityMappersPreserveOptionalUncappedIntervalProgress(t *testing.T) {
 			}
 			var body struct {
 				IntervalProgress *struct {
-					AccumulatedSeconds int64 `json:"accumulatedSeconds"`
-					TargetSeconds      int64 `json:"targetSeconds"`
+					AccumulatedSeconds int64     `json:"accumulatedSeconds"`
+					TargetSeconds      int64     `json:"targetSeconds"`
+					StartedAt          time.Time `json:"startedAt"`
+					EndedAt            time.Time `json:"endedAt"`
 				} `json:"intervalProgress"`
 			}
-			if err := json.Unmarshal(encoded, &body); err != nil || body.IntervalProgress == nil || body.IntervalProgress.AccumulatedSeconds != test.want || body.IntervalProgress.TargetSeconds != 60 {
+			if err := json.Unmarshal(encoded, &body); err != nil || body.IntervalProgress == nil || body.IntervalProgress.AccumulatedSeconds != test.want || body.IntervalProgress.TargetSeconds != 60 || (test.name != "activity delete" && (!body.IntervalProgress.StartedAt.Equal(window.StartedAt) || !body.IntervalProgress.EndedAt.Equal(window.EndedAt))) {
 				t.Fatalf("mapped interval progress=%+v error=%v body=%s", body.IntervalProgress, err, encoded)
 			}
 			if string(encoded) == "" || json.Valid(encoded) == false {

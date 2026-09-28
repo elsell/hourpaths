@@ -30,7 +30,7 @@ func TestPracticeReactionNotificationDTOUsesExactPublicContext(t *testing.T) {
 
 	typeField, _ := reflect.TypeOf(value).FieldByName("Type")
 	reactionField, _ := reflect.TypeOf(value).FieldByName("Reaction")
-	if !strings.Contains(typeField.Tag.Get("enum"), "practice_reaction") || reactionField.Tag.Get("enum") != "heart,applause,fire,strong,celebrate" {
+	if !strings.Contains(typeField.Tag.Get("enum"), "practice_reaction") || reactionField.Tag.Get("maxLength") != "32" {
 		t.Fatalf("notification enums type=%q reaction=%q", typeField.Tag.Get("enum"), reactionField.Tag.Get("enum"))
 	}
 }

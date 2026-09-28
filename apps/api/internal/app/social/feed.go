@@ -66,6 +66,7 @@ type PracticeFeedItem struct {
 	Edited            bool
 	Achievement       *GoalAchievement
 	Reactions         domain.ReactionSummary
+	CommentCount      int64
 	CommentsEnabled   bool
 	ReactionsEnabled  bool
 }
@@ -73,7 +74,7 @@ type PracticeFeedItem struct {
 func (item PracticeFeedItem) valid() bool {
 	common := strings.TrimSpace(item.ID) != "" && !item.PublishedAt.IsZero() && item.PublishedAt.Location() == time.UTC &&
 		strings.TrimSpace(item.ParticipantID) != "" && strings.TrimSpace(item.Username) != "" && strings.TrimSpace(item.DisplayName) != "" &&
-		strings.TrimSpace(item.PathID) != "" && strings.TrimSpace(item.PathName) != "" && item.Reactions.Valid()
+		strings.TrimSpace(item.PathID) != "" && strings.TrimSpace(item.PathName) != "" && item.Reactions.Valid() && item.CommentCount >= 0
 	if !common {
 		return false
 	}

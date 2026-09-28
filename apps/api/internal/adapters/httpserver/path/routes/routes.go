@@ -279,6 +279,8 @@ func Register(api huma.API, service Service) {
 		out.Body.Data.AccumulatedSeconds = result.AccumulatedSeconds
 		if result.IntervalProgress != nil {
 			out.Body.Data.IntervalProgress = &activitydto.IntervalProgress{
+				StartedAt:          &result.IntervalProgress.StartedAt,
+				EndedAt:            &result.IntervalProgress.EndedAt,
 				AccumulatedSeconds: result.IntervalProgress.AccumulatedSeconds,
 				TargetSeconds:      result.IntervalProgress.TargetSeconds,
 			}

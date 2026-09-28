@@ -47,6 +47,7 @@ func TestListInvitationNotificationsIsRecipientScopedNewestFirstRateLimitedAndAu
 	if len(requests) != 1 || requests[0].Limit != 25 || !requests[0].Snapshot.Equal(now) {
 		t.Fatalf("notification page requests = %+v", requests)
 	}
+    if _, _, _, err := NewInvitationService(dependencies).ListNotifications(WithNotificationEmojiRepresentation(context.Background(), true), "Bearer valid", cursor, 25); !errors.Is(err, ports.ErrInvalidArgument) { t.Fatalf("cursor allowed a representation change: %v", err) }
 	payload, err := shared.DecodeCursor(dependencies.CursorSigningKey, cursor)
 	if err != nil || payload.Owner != "recipient" || payload.Domain != "path-notification" ||
 		payload.AfterID != "notification-2" || !payload.AfterCreated.Equal(now.Add(-time.Minute)) ||

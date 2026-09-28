@@ -37,7 +37,7 @@ func (service *InvitationService) GetNotification(
 	item, err := service.Invitations.GetNotification(
 		ctx, principal.UserID, notificationID,
 	)
-	if err == nil && item.CreatedAt.After(now) {
+	if err == nil && (item.CreatedAt.After(now) || (!notificationEmojiRepresentation(ctx) && item.Kind == NotificationPracticeReaction && item.Reaction.ValidStored() && !item.Reaction.Valid())) {
 		err = ports.ErrNotFound
 	}
 	if err == nil {

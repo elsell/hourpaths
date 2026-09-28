@@ -3,6 +3,7 @@ package social
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -103,7 +104,7 @@ func TestGetPracticeFeedEventAppliesAuthoritativePathCheckAndAudits(t *testing.T
 	audits := &controlledAudits{}
 	service := feedService(&controlledFeed{event: item}, &feedAuthorizer{allowed: map[string]bool{"path": true}}, audits)
 	got, err := service.GetPracticeFeedEvent(context.Background(), "Bearer session", item.ID)
-	if err != nil || got != item || len(audits.events) != 1 || audits.events[0].TargetType != "social_feed_event" || audits.events[0].TargetID != item.ID {
+	if err != nil || !reflect.DeepEqual(got, item) || len(audits.events) != 1 || audits.events[0].TargetType != "social_feed_event" || audits.events[0].TargetID != item.ID {
 		t.Fatalf("got=%+v err=%v audits=%+v", got, err, audits.events)
 	}
 }

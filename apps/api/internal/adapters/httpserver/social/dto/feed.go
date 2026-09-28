@@ -35,7 +35,14 @@ type PracticeReactionCounts struct {
 	Celebrate int64 `json:"celebrate" minimum:"0"`
 }
 
+type EmojiReaction struct {
+	Emoji   string `json:"emoji"`
+	Count   int64  `json:"count" minimum:"1"`
+	Reacted bool   `json:"reacted"`
+}
+
 type PracticeReactionSummary struct {
+	EmojiReactions []EmojiReaction        `json:"emojiReactions" nullable:"false"`
 	Reactions      PracticeReactionCounts `json:"reactions"`
 	ViewerReaction *string                `json:"viewerReaction" enum:"heart,applause,fire,strong,celebrate" nullable:"true"`
 }
@@ -45,6 +52,7 @@ type PracticeReactionInput struct {
 }
 
 type PracticeFeedItem struct {
+	EmojiReactions   []EmojiReaction         `json:"emojiReactions" nullable:"false"`
 	ID               string                  `json:"id"`
 	Type             string                  `json:"type" enum:"practice_session,goal_achievement"`
 	PublishedAt      time.Time               `json:"publishedAt"`
@@ -54,6 +62,7 @@ type PracticeFeedItem struct {
 	Achievement      *GoalAchievement        `json:"achievement,omitempty"`
 	Reactions        PracticeReactionCounts  `json:"reactions"`
 	ViewerReaction   *string                 `json:"viewerReaction" enum:"heart,applause,fire,strong,celebrate" nullable:"true"`
+	CommentCount     int64                   `json:"commentCount" minimum:"0"`
 	CommentsEnabled  bool                    `json:"commentsEnabled" required:"true"`
 	ReactionsEnabled bool                    `json:"reactionsEnabled" required:"true"`
 }

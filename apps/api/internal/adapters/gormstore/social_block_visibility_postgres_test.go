@@ -2,12 +2,14 @@ package gormstore
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	socialdomain "github.com/elsell/hour-paths/apps/api/internal/domain/social"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
 )
 
 func TestPostgresBlockHidesRetainedSocialEngagementOnlyFromTheBlockedPair(t *testing.T) {
@@ -79,14 +81,23 @@ func TestPostgresBlockHidesRetainedSocialEngagementOnlyFromTheBlockedPair(t *tes
 	repository := NewSocialFeedRepository(runtimeStore.DB)
 	snapshot := now.Add(time.Minute)
 	ownerFeed, err := repository.GetPracticeCandidate(context.Background(), owner.ID, eventID, snapshot)
-	if err != nil || ownerFeed.Reactions.Counts != (socialdomain.ReactionCounts{}) || ownerFeed.Reactions.ViewerReaction != "" {
+	if err != nil || ownerFeed.Reactions.Counts != (socialdomain.ReactionCounts{}) || ownerFeed.Reactions.ViewerReaction != "" || ownerFeed.CommentCount != 1 {
 		t.Fatalf("blocked-pair owner feed=%+v err=%v", ownerFeed, err)
 	}
 	unrelatedFeed, err := repository.GetPracticeCandidate(context.Background(), unrelated.ID, eventID, snapshot)
-	if err != nil || unrelatedFeed.Reactions.Counts.Fire != 1 {
+	if err != nil || unrelatedFeed.Reactions.Counts.Fire != 1 || unrelatedFeed.CommentCount != 2 {
 		t.Fatalf("unrelated viewer feed=%+v err=%v", unrelatedFeed, err)
 	}
 
+	for _, check := range []struct {
+		viewer string
+		want   int
+	}{{owner.ID, 0}, {unrelated.ID, 1}} {
+		roster, rosterErr := repository.ListPracticeReactions(context.Background(), check.viewer, eventID, socialdomain.ReactionFire, socialapp.ReactionRosterPageRequest{Snapshot: snapshot, Limit: 10})
+		if rosterErr != nil || len(roster.Items) != check.want {
+			t.Fatalf("reaction roster=%+v err=%v", roster, rosterErr)
+		}
+	}
 	ownerComments, err := repository.ListPracticeComments(context.Background(), owner.ID, eventID, socialapp.CommentPageRequest{Snapshot: snapshot, Limit: 10})
 	if err != nil || len(ownerComments.Items) != 1 || ownerComments.Items[0].Comment.ID != unrelatedComment.ID || ownerComments.Items[0].HeartCount != 0 {
 		t.Fatalf("blocked-pair owner comments=%+v err=%v", ownerComments, err)
@@ -111,4 +122,15 @@ func TestPostgresBlockHidesRetainedSocialEngagementOnlyFromTheBlockedPair(t *tes
 	if err != nil || len(restoredComments.Items) != 2 || restoredComments.Items[1].HeartCount != 1 {
 		t.Fatalf("restored owner comments=%+v err=%v", restoredComments, err)
 	}
+	if err := migrationStore.DB.Create(&socialInteractionSettingModel{UserID: owner.ID, CommentsEnabled: false, ReactionsEnabled: false, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+		t.Fatal(err)
+	}
+	disabledFeed, err := repository.GetPracticeCandidate(context.Background(), unrelated.ID, eventID, snapshot)
+	if err != nil || disabledFeed.CommentCount != 0 {
+		t.Fatalf("disabled comment count=%d err=%v", disabledFeed.CommentCount, err)
+	}
+	if roster, err := repository.ListPracticeReactions(context.Background(), unrelated.ID, eventID, socialdomain.ReactionFire, socialapp.ReactionRosterPageRequest{Snapshot: snapshot, Limit: 10}); !errors.Is(err, ports.ErrNotFound) || len(roster.Items) != 0 {
+		t.Fatalf("disabled roster leaked=%+v err=%v", roster, err)
+	}
+
 }

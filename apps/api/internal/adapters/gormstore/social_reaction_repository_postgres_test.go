@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -85,6 +86,31 @@ func TestPostgresAchievementEventSupportsReactionsCommentsHeartsGraceAndOpaqueAu
 		t.Fatalf("achievement reaction=%+v err=%v", reacted, err)
 	}
 	assertReactionPersistence(t, migrationStore, eventID, actor.ID, owner.ID, "celebrate", 1, now.Add(5*time.Second))
+
+	emojiCommand := socialReactionTestCommand(actor.ID, reactionTarget, socialdomain.Reaction("🦊"), socialapp.AddPracticeEmojiReactionOperation, "achievement-emoji", now.Add(time.Second))
+	multiple, err := repository.SetPracticeReaction(context.Background(), emojiCommand)
+	if err != nil || len(multiple.Summary.EmojiReactions) != 2 || multiple.Summary.Counts.Celebrate != 1 {
+		t.Fatalf("multiple reaction summary=%+v err=%v", multiple, err)
+	}
+	replayed, err := repository.SetPracticeReaction(context.Background(), emojiCommand)
+	if err != nil || !replayed.Replayed || len(replayed.Summary.EmojiReactions) != 2 {
+		t.Fatalf("emoji replay=%+v err=%v", replayed, err)
+	}
+	removeEmoji := socialReactionTestCommand(actor.ID, reactionTarget, socialdomain.Reaction("🦊"), socialapp.RemovePracticeEmojiReactionOperation, "achievement-emoji-remove", now.Add(2*time.Second))
+	removedEmoji, err := repository.RemovePracticeReaction(context.Background(), removeEmoji)
+	if err != nil || len(removedEmoji.Summary.EmojiReactions) != 1 || removedEmoji.Summary.Counts.Celebrate != 1 {
+		t.Fatalf("emoji removal=%+v err=%v", removedEmoji, err)
+	}
+	assertReactionPersistence(t, migrationStore, eventID, actor.ID, owner.ID, "celebrate", 1, now.Add(5*time.Second))
+	emojiCommand = socialReactionTestCommand(actor.ID, reactionTarget, socialdomain.Reaction("🦊"), socialapp.AddPracticeEmojiReactionOperation, "achievement-emoji-again", now.Add(3*time.Second))
+	if _, err := repository.SetPracticeReaction(context.Background(), emojiCommand); err != nil {
+		t.Fatal(err)
+	}
+	replacement := socialReactionTestCommand(actor.ID, reactionTarget, socialdomain.ReactionCelebrate, socialapp.SetPracticeReactionOperation, "achievement-legacy-replacement", now.Add(3*time.Second))
+	replaced, err := repository.SetPracticeReaction(context.Background(), replacement)
+	if err != nil || len(replaced.Summary.EmojiReactions) != 1 || replaced.Summary.EmojiReactions[0].Emoji != "🎉" {
+		t.Fatalf("legacy replacement=%+v err=%v", replaced, err)
+	}
 	commentTarget := socialapp.PracticeCommentTarget{EventID: eventID, PathID: pathID, OwnerUserID: owner.ID}
 	resolvedComment, err := repository.ResolvePracticeCommentTarget(context.Background(), actor.ID, eventID)
 	if err != nil || resolvedComment != commentTarget {
@@ -126,11 +152,11 @@ func TestPostgresAchievementEventSupportsReactionsCommentsHeartsGraceAndOpaqueAu
 	}
 	feed, err := repository.ListPracticeCandidates(context.Background(), actor.ID, socialapp.FeedPageRequest{Snapshot: now, Limit: 1})
 	if err != nil || len(feed.Items) != 1 || feed.Items[0].ID != eventID || feed.Items[0].Type != socialapp.FeedEventGoalAchievement ||
-		feed.Items[0].Reactions != reacted.Summary || !feed.Items[0].PublishedAt.Equal(now.Add(-time.Second)) {
+		!reflect.DeepEqual(feed.Items[0].Reactions, reacted.Summary) || !feed.Items[0].PublishedAt.Equal(now.Add(-time.Second)) {
 		t.Fatalf("achievement feed engagement=%+v err=%v", feed, err)
 	}
 	detail, err := repository.GetPracticeCandidate(context.Background(), actor.ID, eventID, now)
-	if err != nil || detail.ID != eventID || !detail.CommentsEnabled || !detail.ReactionsEnabled || detail.Reactions != reacted.Summary {
+	if err != nil || detail.ID != eventID || !detail.CommentsEnabled || !detail.ReactionsEnabled || !reflect.DeepEqual(detail.Reactions, reacted.Summary) {
 		t.Fatalf("achievement detail=%+v err=%v", detail, err)
 	}
 
@@ -357,7 +383,7 @@ has_table_privilege(current_user, 'public.social_feed_event_models', 'TRUNCATE')
 func socialReactionTestCommand(actor string, target socialapp.ReactionTarget, reaction socialdomain.Reaction, operation, key string, at time.Time) socialapp.ReactionCommand {
 	digest := sha256.Sum256([]byte(operation + "\x00" + target.EventID + "\x00" + string(reaction)))
 	action := audit.ResourceUpdated
-	if operation == socialapp.RemovePracticeReactionOperation {
+	if operation == socialapp.RemovePracticeReactionOperation || operation == socialapp.RemovePracticeEmojiReactionOperation {
 		action = audit.ResourceDeleted
 	}
 	return socialapp.ReactionCommand{ActorUserID: actor, Target: target, Reaction: reaction, OccurredAt: at, NotificationEligibleAt: at.Add(5 * time.Second),

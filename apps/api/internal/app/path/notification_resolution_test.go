@@ -162,3 +162,18 @@ func TestGetNotificationAcceptsPrivacySafeDisabledInteractionContext(t *testing.
 		t.Fatalf("GetNotification()=%+v err=%v", got, err)
 	}
 }
+
+func TestUnicodeNotificationResolutionRequiresRepresentationCapability(t *testing.T) {
+	now := time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC)
+	item := InvitationNotificationProjection{ID: "unicode-notice", Kind: NotificationPracticeReaction, Presentation: NotificationInformational, CreatedAt: now, Actor: InvitationPublicIdentity{UserID: "actor", Username: "Reader.One", DisplayName: "Reader"}, PathID: "path-1", PathName: "Piano", SocialFeedEventID: "practice:activity-1", Reaction: "🦊"}
+	dependencies := invitationDependencies(now)
+	dependencies.Invitations = controlledInvitationRepository{notificationPage: NotificationPage{Items: []InvitationNotificationProjection{item}}}
+	service := NewInvitationService(dependencies)
+	if _, err := service.GetNotification(context.Background(), "Bearer valid", item.ID); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("legacy lookup=%v", err)
+	}
+	got, err := service.GetNotification(WithNotificationEmojiRepresentation(context.Background(), true), "Bearer valid", item.ID)
+	if err != nil || got.Reaction != "🦊" {
+		t.Fatalf("Unicode lookup=%+v %v", got, err)
+	}
+}

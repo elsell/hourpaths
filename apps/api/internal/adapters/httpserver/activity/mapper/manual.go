@@ -19,7 +19,13 @@ func Updated(value application.UpdateActivityResult) dto.ActivityMutationResult 
 }
 
 func Deleted(value application.DeleteActivityResult) dto.ActivityDeletionResult {
-	return dto.ActivityDeletionResult{AccumulatedSeconds: value.AccumulatedSeconds, SessionCount: value.SessionCount, UnreadNotificationCount: value.UnreadNotificationCount, RemovedFeedEventIDs: append([]string(nil), value.RemovedFeedEventIDs...), IntervalProgress: IntervalProgress(value.IntervalProgress)}
+	// Shipped clients validate deletion receipts exactly. Keep that receipt
+	// stable; live clients obtain period bounds from the current-timer read.
+	progress := IntervalProgress(value.IntervalProgress)
+	if progress != nil {
+		progress.StartedAt, progress.EndedAt = nil, nil
+	}
+	return dto.ActivityDeletionResult{AccumulatedSeconds: value.AccumulatedSeconds, SessionCount: value.SessionCount, UnreadNotificationCount: value.UnreadNotificationCount, RemovedFeedEventIDs: append([]string(nil), value.RemovedFeedEventIDs...), IntervalProgress: progress}
 }
 
 func Detail(entry domain.RecordedActivity, version int64) dto.ActivityDetail {

@@ -24,6 +24,9 @@ type Service interface {
 	ListPracticeFeed(context.Context, string, string, int) ([]application.PracticeFeedItem, string, error)
 	GetPracticeFeedEvent(context.Context, string, string) (application.PracticeFeedItem, error)
 	ListActiveFollowing(context.Context, string, string, int) ([]application.ActiveFollowingCandidate, string, error)
+	AddPracticeEmojiReaction(context.Context, string, string, string, string) (domain.ReactionSummary, error)
+	RemovePracticeEmojiReaction(context.Context, string, string, string, string) (domain.ReactionSummary, error)
+	ListPracticeReactions(context.Context, string, string, domain.Reaction, string, int) ([]domain.PublicProfile, string, error)
 	SetPracticeReaction(context.Context, string, string, domain.Reaction, string) (domain.ReactionSummary, error)
 	RemovePracticeReaction(context.Context, string, string, string) (domain.ReactionSummary, error)
 	ListPracticeComments(context.Context, string, string, string, int) ([]application.PracticeCommentItem, string, error)
@@ -122,6 +125,19 @@ type activeFollowingInput struct {
 	Authorization string `header:"Authorization"`
 	Cursor        string `query:"cursor"`
 	Limit         int    `query:"limit" default:"25" minimum:"1" maximum:"100"`
+}
+type practiceEmojiReactionInput struct {
+	Authorization  string `header:"Authorization"`
+	EventID        string `path:"eventId" minLength:"1" maxLength:"128"`
+	Emoji          string `path:"emoji" minLength:"1" maxLength:"128"`
+	IdempotencyKey string `header:"Idempotency-Key" minLength:"16" maxLength:"128" required:"true"`
+}
+type practiceReactionRosterInput struct {
+	Authorization string `header:"Authorization"`
+	EventID       string `path:"eventId" minLength:"1" maxLength:"128"`
+	Reaction      string `query:"reaction" required:"true" minLength:"1" maxLength:"128"`
+	Cursor        string `query:"cursor" maxLength:"2048"`
+	Limit         int    `query:"limit" default:"20" minimum:"1" maximum:"100"`
 }
 type practiceReactionInput struct {
 	Authorization  string `header:"Authorization"`
@@ -418,6 +434,33 @@ func Register(api huma.API, service Service) {
 		out.Body.Meta.NextCursor = cursor
 		return out, nil
 	})
+	huma.Register(api, huma.Operation{OperationID: "add-practice-emoji-reaction", Method: http.MethodPut, Path: "/v1/social/feed/{eventId}/reactions/{emoji}", Summary: "Add an emoji reaction to an event", Security: security}, func(ctx context.Context, input *practiceEmojiReactionInput) (*practiceReactionOutput, error) {
+		summary, err := service.AddPracticeEmojiReaction(ctx, input.Authorization, input.EventID, input.Emoji, input.IdempotencyKey)
+		if err != nil {
+			return nil, shared.MapError(err, true)
+		}
+		return mapPracticeReactionOutput(summary), nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "remove-practice-emoji-reaction", Method: http.MethodDelete, Path: "/v1/social/feed/{eventId}/reactions/{emoji}", Summary: "Remove one emoji reaction from an event", Security: security}, func(ctx context.Context, input *practiceEmojiReactionInput) (*practiceReactionOutput, error) {
+		summary, err := service.RemovePracticeEmojiReaction(ctx, input.Authorization, input.EventID, input.Emoji, input.IdempotencyKey)
+		if err != nil {
+			return nil, shared.MapError(err, true)
+		}
+		return mapPracticeReactionOutput(summary), nil
+	})
+	huma.Register(api, huma.Operation{OperationID: "list-practice-reactions", Method: http.MethodGet, Path: "/v1/social/feed/{eventId}/reactions", Summary: "List people with a reaction on an event", Security: security}, func(ctx context.Context, input *practiceReactionRosterInput) (*practiceCommentHeartRosterOutput, error) {
+		profiles, cursor, err := service.ListPracticeReactions(ctx, input.Authorization, input.EventID, domain.Reaction(input.Reaction), input.Cursor, input.Limit)
+		if err != nil {
+			return nil, shared.MapError(err, true)
+		}
+		out := &practiceCommentHeartRosterOutput{}
+		out.Body.Data.Items = make([]dto.PublicProfile, 0, len(profiles))
+		for _, profile := range profiles {
+			out.Body.Data.Items = append(out.Body.Data.Items, mapProfile(profile))
+		}
+		out.Body.Meta.NextCursor = cursor
+		return out, nil
+	})
 	huma.Register(api, huma.Operation{OperationID: "set-practice-reaction", Method: http.MethodPut, Path: "/v1/social/feed/{eventId}/reaction", Summary: "Set a reaction on a practice event", Security: security}, func(ctx context.Context, input *practiceReactionInput) (*practiceReactionOutput, error) {
 		summary, err := service.SetPracticeReaction(ctx, input.Authorization, input.EventID, domain.Reaction(input.Body.Reaction), input.IdempotencyKey)
 		if err != nil {
@@ -635,7 +678,9 @@ func mapPracticeFeedItem(item application.PracticeFeedItem) dto.PracticeFeedItem
 		Participant:      dto.PracticeFeedParticipant{UserID: item.ParticipantID, Username: item.Username, DisplayName: item.DisplayName, ProfilePictureURL: picture},
 		Path:             dto.PracticeFeedPath{ID: item.PathID, Name: item.PathName},
 		Reactions:        mapPracticeReactionCounts(item.Reactions.Counts),
+		EmojiReactions:   mapEmojiReactions(item.Reactions.EmojiReactions),
 		ViewerReaction:   mapViewerReaction(item.Reactions.ViewerReaction),
+		CommentCount:     item.CommentCount,
 		CommentsEnabled:  item.CommentsEnabled,
 		ReactionsEnabled: item.ReactionsEnabled,
 	}
@@ -654,7 +699,7 @@ func mapPracticeFeedItem(item application.PracticeFeedItem) dto.PracticeFeedItem
 
 func mapPracticeReactionOutput(summary domain.ReactionSummary) *practiceReactionOutput {
 	out := &practiceReactionOutput{}
-	out.Body.Data = dto.PracticeReactionSummary{Reactions: mapPracticeReactionCounts(summary.Counts), ViewerReaction: mapViewerReaction(summary.ViewerReaction)}
+	out.Body.Data = dto.PracticeReactionSummary{EmojiReactions: mapEmojiReactions(summary.EmojiReactions), Reactions: mapPracticeReactionCounts(summary.Counts), ViewerReaction: mapViewerReaction(summary.ViewerReaction)}
 	return out
 }
 
@@ -715,4 +760,12 @@ func mapActiveFollowingItem(item application.ActiveFollowingCandidate) dto.Activ
 		out.Timers = append(out.Timers, entry)
 	}
 	return out
+}
+
+func mapEmojiReactions(items []domain.EmojiReaction) []dto.EmojiReaction {
+	result := make([]dto.EmojiReaction, 0, len(items))
+	for _, item := range items {
+		result = append(result, dto.EmojiReaction{Emoji: item.Emoji, Count: item.Count, Reacted: item.Reacted})
+	}
+	return result
 }

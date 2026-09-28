@@ -3,7 +3,6 @@ package routes
 import (
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +11,7 @@ import (
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
 )
 
-func TestPracticeReactionNotificationOpenAPIIsCuratedAndPathAddressable(t *testing.T) {
+func TestPracticeReactionNotificationOpenAPISupportsEmojiAndPathContext(t *testing.T) {
 	_, openapi := invitationHandler(controlledInvitationHTTPService{})
 	schema := openapi.OpenAPI().Components.Schemas.Map()["PathInvitationNotification"]
 	if schema == nil || schema.Properties["pathId"] == nil || schema.Properties["pathName"] == nil || schema.Properties["socialFeedEventId"] == nil || schema.Properties["reaction"] == nil {
@@ -22,7 +21,7 @@ func TestPracticeReactionNotificationOpenAPIIsCuratedAndPathAddressable(t *testi
 	for _, value := range schema.Properties["type"].Enum {
 		hasType = hasType || value == "practice_reaction"
 	}
-	if !hasType || !reflect.DeepEqual(schema.Properties["reaction"].Enum, []any{"heart", "applause", "fire", "strong", "celebrate"}) {
+	if !hasType || len(schema.Properties["reaction"].Enum) != 0 || schema.Properties["reaction"].MaxLength == nil || *schema.Properties["reaction"].MaxLength != 32 {
 		t.Fatalf("reaction notification enums type=%#v reaction=%#v", schema.Properties["type"].Enum, schema.Properties["reaction"].Enum)
 	}
 }

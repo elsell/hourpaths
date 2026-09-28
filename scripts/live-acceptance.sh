@@ -2920,13 +2920,14 @@ practice=[item for item in path_items if item["type"]=="practice_session"]
 achievements=[item for item in path_items if item["type"]=="goal_achievement"]
 assert len(practice)==int(os.environ["SOC03B_PRACTICE_COUNT"]), (len(practice),path_items)
 assert len(achievements)==int(os.environ["SOC03B_ACHIEVEMENT_COUNT"]), (len(achievements),path_items)
-common={"id","type","publishedAt","participant","path","reactions","viewerReaction","commentsEnabled","reactionsEnabled"}
+common={"id","type","publishedAt","participant","path","reactions","viewerReaction","commentsEnabled","reactionsEnabled","commentCount","emojiReactions"}
 for item in path_items:
   assert item["participant"]["userId"]==os.environ["SOC03B_OWNER_ID"]
   assert {"userId","username","displayName"} <= set(item["participant"]) <= {"userId","username","displayName","profilePictureURL"}
   assert item["path"]=={"id":os.environ["SOC03B_PATH_ID"],"name":"Goal achievement acceptance"}
   assert item["commentsEnabled"] is True and item["reactionsEnabled"] is True
   assert item["reactions"]=={"heart":0,"applause":0,"fire":0,"strong":0,"celebrate":0} and item["viewerReaction"] is None
+  assert item["commentCount"]==0 and item["emojiReactions"]==[]
   instant(item["publishedAt"])
 for item in practice:
   assert set(item)==common|{"activity"} and set(item["activity"])=={"id","durationSeconds","edited"}
@@ -3035,7 +3036,7 @@ curl -fsS -X PUT \
   -H 'Content-Type: application/json' \
   --data '{"reaction":"heart"}' \
   "http://localhost:8080/v1/social/feed/$soc04d_event_id/reaction" |
-  python3 -c 'import json,sys;d=json.load(sys.stdin)["data"];assert d=={"reactions":{"heart":1,"applause":0,"fire":0,"strong":0,"celebrate":0},"viewerReaction":"heart"}'
+  python3 -c 'import json,sys;d=json.load(sys.stdin)["data"];assert d=={"reactions":{"heart":1,"applause":0,"fire":0,"strong":0,"celebrate":0},"viewerReaction":"heart","emojiReactions":[{"emoji":"❤️","count":1,"reacted":True}]}'
 soc04d_comment_response="$(curl -fsS -X POST \
   -H "Authorization: Bearer $participant_token" \
   -H 'Idempotency-Key: soc04d-achievement-comment-key-001' \

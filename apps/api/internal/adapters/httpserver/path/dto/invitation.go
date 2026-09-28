@@ -82,7 +82,7 @@ type PathInvitationNotification struct {
 	OwnershipTransferID string                       `json:"ownershipTransferId,omitempty"`
 	FollowRequestID     string                       `json:"followRequestId,omitempty"`
 	SocialFeedEventID   string                       `json:"socialFeedEventId,omitempty"`
-	Reaction            string                       `json:"reaction,omitempty" enum:"heart,applause,fire,strong,celebrate"`
+	Reaction            string                       `json:"reaction,omitempty" maxLength:"32"`
 	CommentID           string                       `json:"commentId,omitempty"`
 	InteractionDisabled string                       `json:"interactionDisabled,omitempty" enum:"comments,reactions"`
 	Content             *NudgeNotificationContent    `json:"content,omitempty"`
