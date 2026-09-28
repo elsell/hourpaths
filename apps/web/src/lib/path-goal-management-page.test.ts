@@ -96,7 +96,7 @@ test('goal confirmation owns the web profile-refresh boundary', () => {
   const confirmation = sourceBetween('async function confirmGoalChanges', 'async function openPathHistory');
   assert.match(confirmation, /sessionOperationBusy/);
   assert.doesNotMatch(confirmation, /applicationSessionOperations\.invalidate\(\)/);
-  assert.match(confirmation, /if \(refreshTimer\) clearTimeout\(refreshTimer\);/);
+  assert.match(confirmation, /cancelSessionDeadline\?\.\(\);/);
   assert.match(confirmation, /session !== current/);
   assert.match(confirmation, /resetGoalManagement\(\);[\s\S]*scheduleOwnedSession\(\);/);
   assert.match(page, /disabled=\{goalUpdateBusy \|\| sessionOperationBusy \|\| !goalReview\.changed\}/);
