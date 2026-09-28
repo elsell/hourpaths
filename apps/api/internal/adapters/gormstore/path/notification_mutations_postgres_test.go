@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	application "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
@@ -139,4 +140,42 @@ func TestPostgresMarkAllNotificationsReadLeavesDelayedReactionUnreadUntilEligibl
 	).Count(&auditCount).Error; err != nil || auditCount != 2 {
 		t.Fatalf("mark-all audit count = %d, %v; want 2", auditCount, err)
 	}
+	// A new Unicode reaction must not break an older client's inbox or consume
+	// its page slot. Negotiated clients still receive the real emoji.
+	if err := migrationDB.Table("notification_models").Where("id = ?", notificationID).Updates(map[string]any{"reaction_type": "🦊", "read_at": nil}).Error; err != nil {
+		t.Fatal(err)
+	}
+	const legacyID = "reaction-compatible-follow-notice"
+	if err := migrationDB.Table("notification_models").Create(map[string]any{"id": legacyID, "recipient_user_id": owner, "actor_user_id": actor, "follow_subject_user_id": actor, "kind": "new_follower", "presentation_class": "informational", "channel": "following", "created_at": now}).Error; err != nil {
+		t.Fatal(err)
+	}
+	legacy, err := repository.ListNotifications(ctx, owner, application.NotificationPageRequest{Snapshot: eligibleAt, Limit: 1})
+	if err != nil || len(legacy.Items) != 1 || legacy.Items[0].ID != legacyID || legacy.HasMore || legacy.UnreadCount != 1 {
+		t.Fatalf("legacy inbox=%+v err=%v", legacy, err)
+	}
+	modern, err := repository.ListNotifications(ctx, owner, application.NotificationPageRequest{Snapshot: eligibleAt, Limit: 1, EmojiReactions: true})
+	if err != nil || len(modern.Items) != 1 || modern.Items[0].Reaction != "🦊" || !modern.HasMore || modern.UnreadCount != 2 {
+		t.Fatalf("emoji inbox=%+v err=%v", modern, err)
+	}
+	other, err := repository.ListNotifications(ctx, actor, application.NotificationPageRequest{Snapshot: eligibleAt, Limit: 1, EmojiReactions: true})
+	if err != nil || len(other.Items) != 0 || other.UnreadCount != 0 {
+		t.Fatalf("cross-user inbox=%+v err=%v", other, err)
+	}
+	if _, err := repository.MarkNotificationRead(ctx, notificationMutationCommand(owner, notificationID, eligibleAt, "legacy-hidden-read", audit.ResourceUpdated)); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("legacy Unicode read=%v", err)
+	}
+	if _, err := repository.MarkAllNotificationsRead(ctx, notificationMutationCommand(owner, "history", eligibleAt, "legacy-visible-read-all", audit.ResourceUpdated)); err != nil {
+		t.Fatal(err)
+	}
+	modern, err = repository.ListNotifications(ctx, owner, application.NotificationPageRequest{Snapshot: eligibleAt, Limit: 10, EmojiReactions: true})
+	if err != nil || modern.UnreadCount != 1 {
+		t.Fatalf("legacy mark-all touched Unicode: %+v %v", modern, err)
+	}
+	modernRead := notificationMutationCommand(owner, notificationID, eligibleAt, "modern-emoji-read", audit.ResourceUpdated)
+	modernRead.EmojiReactions = true
+	result, err := repository.MarkNotificationRead(ctx, modernRead)
+	if err != nil || result.UnreadCount != 0 {
+		t.Fatalf("modern Unicode read=%+v %v", result, err)
+	}
+
 }

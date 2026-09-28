@@ -361,10 +361,11 @@ type InvitationNotificationProjection struct {
 }
 
 type NotificationPageRequest struct {
-	AfterID      string
-	AfterCreated time.Time
-	Snapshot     time.Time
-	Limit        int
+	EmojiReactions bool
+	AfterID        string
+	AfterCreated   time.Time
+	Snapshot       time.Time
+	Limit          int
 }
 
 type NotificationPage struct {
@@ -374,6 +375,7 @@ type NotificationPage struct {
 }
 
 type NotificationMutationCommand struct {
+	EmojiReactions  bool
 	RecipientUserID string
 	NotificationID  string
 	ChangedAt       time.Time

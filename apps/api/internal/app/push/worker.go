@@ -285,7 +285,7 @@ func localizedPushMessage(
 			return ports.PushMessage{}, false
 		}
 	case projection.Kind == pathapp.NotificationPracticeReaction &&
-		projection.Presentation == pathapp.NotificationInformational && projection.Reaction.Valid():
+		projection.Presentation == pathapp.NotificationInformational && projection.Reaction.ValidStored():
 		message.Presentation = ports.PushInformational
 		if delivery.Locale == "es" {
 			message.Title = "Nuevo apoyo"
@@ -485,7 +485,7 @@ func validPushNotificationSubject(projection pathapp.InvitationNotificationProje
 		projection.InvitationID == "" && projection.OfferedRole == "" && projection.OwnershipTransferID == "" && projection.FollowRequestID == "" &&
 		projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == ""
 	reaction := projection.Kind == pathapp.NotificationPracticeReaction && projection.Presentation == pathapp.NotificationInformational &&
-		pathIDPresent && projection.SocialFeedEventID != "" && projection.Reaction.Valid() && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == ""
+		pathIDPresent && projection.SocialFeedEventID != "" && projection.Reaction.ValidStored() && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == ""
 	comment := projection.Kind == pathapp.NotificationPracticeComment && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.SocialFeedEventID != "" && projection.CommentID != "" && projection.Reaction == "" && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == ""
 	heart := projection.Kind == pathapp.NotificationCommentHeart && projection.Presentation == pathapp.NotificationInformational &&

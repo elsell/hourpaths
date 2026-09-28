@@ -56,6 +56,7 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
 		DurationSeconds                                                        int64
 		Edited                                                                 bool
 		HeartCount, ApplauseCount, FireCount, StrongCount, CelebrateCount      int64
+		CommentCount                                                           int64
 		ViewerReaction                                                         string
 		CommentsEnabled, ReactionsEnabled                                      bool
 	}
@@ -82,7 +83,15 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
   COUNT(reaction.actor_user_id) FILTER (WHERE reaction.reaction_type = 'fire') AS fire_count,
   COUNT(reaction.actor_user_id) FILTER (WHERE reaction.reaction_type = 'strong') AS strong_count,
   COUNT(reaction.actor_user_id) FILTER (WHERE reaction.reaction_type = 'celebrate') AS celebrate_count,
-  COALESCE(MAX(reaction.reaction_type) FILTER (WHERE reaction.actor_user_id = ?), '') AS viewer_reaction`, viewer).
+  CASE WHEN COALESCE(interaction_settings.comments_enabled, true) THEN (
+    SELECT COUNT(*) FROM social_practice_comment_models visible_comment
+    JOIN user_models comment_author ON comment_author.id = visible_comment.author_user_id AND comment_author.status = 'active' AND comment_author.username IS NOT NULL
+    WHERE visible_comment.social_feed_event_id = event.id
+      AND NOT EXISTS (SELECT 1 FROM block_models comment_count_block
+        WHERE (comment_count_block.blocker_user_id = ? AND comment_count_block.blocked_user_id = visible_comment.author_user_id)
+           OR (comment_count_block.blocker_user_id = visible_comment.author_user_id AND comment_count_block.blocked_user_id = ?))
+  ) ELSE 0 END AS comment_count,
+  COALESCE(MAX(reaction.reaction_type) FILTER (WHERE reaction.actor_user_id = ? AND reaction.reaction_type IN ('heart','applause','fire','strong','celebrate')), '') AS viewer_reaction`, viewer, viewer, viewer).
 		Joins("LEFT JOIN recorded_activity_models activity ON activity.id = event.source_activity_id AND activity.participant_id = event.participant_user_id AND activity.path_id = event.path_id").
 		Joins("LEFT JOIN social_goal_achievement_models achievement ON achievement.id = event.achievement_id AND achievement.participant_user_id = event.participant_user_id AND achievement.path_id = event.path_id").
 		Joins("JOIN user_models participant ON participant.id = event.participant_user_id AND participant.status = 'active' AND participant.username IS NOT NULL").
@@ -145,6 +154,16 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
 	if hasMore {
 		rows = rows[:page.Limit]
 	}
+	eventIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row.ReactionsEnabled {
+			eventIDs = append(eventIDs, row.ID)
+		}
+	}
+	emojiSummaries, emojiErr := socialEmojiReactionSummaries(repository.db.WithContext(ctx), eventIDs, viewer)
+	if emojiErr != nil {
+		return socialapp.FeedCandidatePage{}, fmt.Errorf("list feed emoji summaries: %w: %v", ports.ErrUnavailable, emojiErr)
+	}
 	items := make([]socialapp.PracticeFeedItem, 0, len(rows))
 	for _, row := range rows {
 		item := socialapp.PracticeFeedItem{
@@ -152,8 +171,9 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
 			Username: row.Username, DisplayName: row.DisplayName, ProfilePictureURL: row.ProfilePictureURL,
 			PathID: row.PathID, PathName: row.PathName, ActivityID: row.ActivityID,
 			DurationSeconds: row.DurationSeconds, Edited: row.Edited,
+			CommentCount:    row.CommentCount,
 			CommentsEnabled: row.CommentsEnabled, ReactionsEnabled: row.ReactionsEnabled,
-			Reactions: socialdomain.ReactionSummary{Counts: socialdomain.ReactionCounts{
+			Reactions: socialdomain.ReactionSummary{EmojiReactions: emojiSummaries[row.ID], Counts: socialdomain.ReactionCounts{
 				Heart: row.HeartCount, Applause: row.ApplauseCount, Fire: row.FireCount,
 				Strong: row.StrongCount, Celebrate: row.CelebrateCount,
 			}, ViewerReaction: socialdomain.Reaction(row.ViewerReaction)},

@@ -165,6 +165,9 @@ test('path invitation operations use generated routes, current credentials, and 
   const read = await api.markNotificationRead('notification-1');
   const deleted = await api.deleteNotification('notification-1');
   const allRead = await api.markAllNotificationsRead();
+  for (const request of requests.filter(request => new URL(request.url).pathname.startsWith('/v1/notifications'))) {
+    assert.equal(new URL(request.url).searchParams.get('emojiReactions'), 'true');
+  }
   const accepted = await api.acceptPathInvitation('invitation-1', 'accept-invite-key1');
   const acknowledgement: PathInvitationAccept = {
     visibilityWarningAcknowledgement: { pathVisibility: 'followers' },
@@ -197,7 +200,7 @@ test('path invitation operations use generated routes, current credentials, and 
   assert.equal(requests[1]!.headers.get('idempotency-key'), 'send-invite-key-01');
   assert.equal(requests[2]!.headers.get('idempotency-key'), 'send-invite-key-01');
   assert.equal(new URL(requests[3]!.url).search, '?cursor=signed-current-page&limit=25');
-  assert.equal(new URL(requests[4]!.url).search, '?cursor=signed-notification-current&limit=25');
+  assert.equal(new URL(requests[4]!.url).search, '?cursor=signed-notification-current&limit=25&emojiReactions=true');
   assert.equal(requests[8]!.headers.get('idempotency-key'), 'accept-invite-key1');
   assert.equal(await requests[8]!.text(), '');
   assert.equal(requests[9]!.headers.get('idempotency-key'), 'accept-confirm-key');

@@ -45,7 +45,7 @@ func IntervalProgress(value *application.IntervalProgress) *dto.IntervalProgress
 	if value == nil {
 		return nil
 	}
-	return &dto.IntervalProgress{AccumulatedSeconds: value.AccumulatedSeconds, TargetSeconds: value.TargetSeconds}
+	return &dto.IntervalProgress{StartedAt: &value.Window.StartedAt, EndedAt: &value.Window.EndedAt, AccumulatedSeconds: value.AccumulatedSeconds, TargetSeconds: value.TargetSeconds}
 }
 
 func Activity(entry domain.RecordedActivity) dto.Activity {

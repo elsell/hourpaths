@@ -407,11 +407,15 @@ func (service *InvitationService) ListNotifications(
 	if !service.AuditRateLimiter.Allow(principal.UserID, now) {
 		return nil, "", 0, platformapp.ErrRateLimited
 	}
-	request := NotificationPageRequest{Limit: limit, Snapshot: now}
+	request := NotificationPageRequest{Limit: limit, Snapshot: now, EmojiReactions: notificationEmojiRepresentation(ctx)}
+	cursorDomain := "path-notification"
+	if request.EmojiReactions {
+		cursorDomain = "path-notification-emoji"
+	}
 	if cursor != "" {
 		payload, decodeErr := shared.DecodeCursor(service.CursorSigningKey, cursor)
 		if decodeErr != nil || payload.Owner != principal.UserID ||
-			payload.Domain != "path-notification" || payload.Snapshot.After(now) {
+			payload.Domain != cursorDomain || payload.Snapshot.After(now) {
 			return nil, "", 0, ports.ErrInvalidArgument
 		}
 		request.AfterID = payload.AfterID
@@ -429,7 +433,7 @@ func (service *InvitationService) ListNotifications(
 	if page.HasMore {
 		last := page.Items[len(page.Items)-1]
 		nextCursor, err = shared.EncodeCursor(service.CursorSigningKey, shared.CursorPayload{
-			Version: 1, Owner: principal.UserID, Domain: "path-notification",
+			Version: 1, Owner: principal.UserID, Domain: cursorDomain,
 			AfterID: last.ID, AfterCreated: last.CreatedAt, Snapshot: request.Snapshot,
 		})
 		if err != nil {
@@ -479,7 +483,7 @@ func validNotificationPage(page NotificationPage, limit int, snapshot time.Time)
 			item.PathID == "" && item.PathName == "" && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" && noInteractionSubject && item.InteractionDisabled == ""
 		reactionSubject := item.Kind == NotificationPracticeReaction && item.Presentation == NotificationInformational &&
 			item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) &&
-			item.SocialFeedEventID != "" && strings.TrimSpace(item.SocialFeedEventID) == item.SocialFeedEventID && item.Reaction.Valid() &&
+			item.SocialFeedEventID != "" && strings.TrimSpace(item.SocialFeedEventID) == item.SocialFeedEventID && item.Reaction.ValidStored() &&
 			item.CommentID == "" && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" && item.FollowRequestID == "" && item.InteractionDisabled == ""
 		commentSubject := item.Kind == NotificationPracticeComment && item.Presentation == NotificationInformational &&
 			item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) &&

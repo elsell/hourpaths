@@ -1254,6 +1254,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/social/feed/{eventId}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List people with a reaction on an event */
+        get: operations["list-practice-reactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/social/feed/{eventId}/reactions/{emoji}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Add an emoji reaction to an event */
+        put: operations["add-practice-emoji-reaction"];
+        post?: never;
+        /** Remove one emoji reaction from an event */
+        delete: operations["remove-practice-emoji-reaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/stats": {
         parameters: {
             query?: never;
@@ -1627,6 +1662,12 @@ export interface components {
             expiresAt: string;
             token: string;
         };
+        EmojiReaction: {
+            /** Format: int64 */
+            count: number;
+            emoji: string;
+            reacted: boolean;
+        };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
             location?: string;
@@ -1759,6 +1800,10 @@ export interface components {
         IntervalProgress: {
             /** Format: int64 */
             accumulatedSeconds: number;
+            /** Format: date-time */
+            endedAt?: string;
+            /** Format: date-time */
+            startedAt?: string;
             /** Format: int64 */
             targetSeconds: number;
         };
@@ -2415,8 +2460,7 @@ export interface components {
             pathVisibility?: "private" | "followers" | "public";
             /** @enum {string} */
             presentation: "actionable" | "informational";
-            /** @enum {string} */
-            reaction?: "heart" | "applause" | "fire" | "strong" | "celebrate";
+            reaction?: string;
             read: boolean;
             socialFeedEventId?: string;
             /** @enum {string} */
@@ -2708,7 +2752,10 @@ export interface components {
         PracticeFeedItem: {
             achievement?: components["schemas"]["GoalAchievement"];
             activity?: components["schemas"]["PracticeFeedActivity"];
+            /** Format: int64 */
+            commentCount: number;
             commentsEnabled: boolean;
+            emojiReactions: components["schemas"]["EmojiReaction"][];
             id: string;
             participant: components["schemas"]["PracticeFeedParticipant"];
             path: components["schemas"]["PracticeFeedPath"];
@@ -2773,6 +2820,7 @@ export interface components {
             data: components["schemas"]["PracticeReactionSummary"];
         };
         PracticeReactionSummary: {
+            emojiReactions: components["schemas"]["EmojiReaction"][];
             reactions: components["schemas"]["PracticeReactionCounts"];
             /** @enum {string|null} */
             viewerReaction: "heart" | "applause" | "fire" | "strong" | "celebrate" | null;
@@ -3759,6 +3807,7 @@ export interface operations {
     "list-notifications": {
         parameters: {
             query?: {
+                emojiReactions?: boolean;
                 cursor?: string;
                 limit?: number;
             };
@@ -3792,7 +3841,9 @@ export interface operations {
     };
     "mark-all-notifications-read": {
         parameters: {
-            query?: never;
+            query?: {
+                emojiReactions?: boolean;
+            };
             header?: {
                 Authorization?: string;
             };
@@ -3823,7 +3874,9 @@ export interface operations {
     };
     "get-notification": {
         parameters: {
-            query?: never;
+            query?: {
+                emojiReactions?: boolean;
+            };
             header?: {
                 Authorization?: string;
             };
@@ -3856,7 +3909,9 @@ export interface operations {
     };
     "delete-notification": {
         parameters: {
-            query?: never;
+            query?: {
+                emojiReactions?: boolean;
+            };
             header?: {
                 Authorization?: string;
             };
@@ -3889,7 +3944,9 @@ export interface operations {
     };
     "mark-notification-read": {
         parameters: {
-            query?: never;
+            query?: {
+                emojiReactions?: boolean;
+            };
             header?: {
                 Authorization?: string;
             };
@@ -6401,6 +6458,113 @@ export interface operations {
             };
             path: {
                 eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeReactionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-practice-reactions": {
+        parameters: {
+            query: {
+                reaction: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeCommentHeartRosterOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "add-practice-emoji-reaction": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                eventId: string;
+                emoji: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeReactionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "remove-practice-emoji-reaction": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                eventId: string;
+                emoji: string;
             };
             cookie?: never;
         };

@@ -14,9 +14,11 @@ import (
 )
 
 const (
-	SetPracticeReactionOperation    = "social.practice_reaction.set"
-	RemovePracticeReactionOperation = "social.practice_reaction.remove"
-	reactionNotificationGrace       = 5 * time.Second
+	SetPracticeReactionOperation         = "social.practice_reaction.set"
+	RemovePracticeReactionOperation      = "social.practice_reaction.remove"
+	AddPracticeEmojiReactionOperation    = "social.practice_reaction.emoji_add"
+	RemovePracticeEmojiReactionOperation = "social.practice_reaction.emoji_remove"
+	reactionNotificationGrace            = 5 * time.Second
 )
 
 type ReactionTarget struct{ EventID, PathID, OwnerUserID string }
@@ -36,6 +38,7 @@ type ReactionMutationResult struct {
 }
 
 type ReactionRepository interface {
+	ListPracticeReactions(context.Context, string, string, domain.Reaction, ReactionRosterPageRequest) (ReactionRosterPage, error)
 	ResolvePracticeReactionTarget(context.Context, string, string) (ReactionTarget, error)
 	SetPracticeReaction(context.Context, ReactionCommand) (ReactionMutationResult, error)
 	RemovePracticeReaction(context.Context, ReactionCommand) (ReactionMutationResult, error)
@@ -50,6 +53,21 @@ func (service *Service) SetPracticeReaction(ctx context.Context, authorization, 
 
 func (service *Service) RemovePracticeReaction(ctx context.Context, authorization, eventID, idempotencyKey string) (domain.ReactionSummary, error) {
 	return service.mutatePracticeReaction(ctx, authorization, eventID, "", idempotencyKey, RemovePracticeReactionOperation)
+}
+
+func (service *Service) AddPracticeEmojiReaction(ctx context.Context, authorization, eventID, emoji, key string) (domain.ReactionSummary, error) {
+	reaction, ok := domain.CanonicalEmojiReaction(emoji)
+	if !ok {
+		return domain.ReactionSummary{}, ports.ErrInvalidArgument
+	}
+	return service.mutatePracticeReaction(ctx, authorization, eventID, reaction, key, AddPracticeEmojiReactionOperation)
+}
+func (service *Service) RemovePracticeEmojiReaction(ctx context.Context, authorization, eventID, emoji, key string) (domain.ReactionSummary, error) {
+	reaction, ok := domain.CanonicalEmojiReaction(emoji)
+	if !ok {
+		return domain.ReactionSummary{}, ports.ErrInvalidArgument
+	}
+	return service.mutatePracticeReaction(ctx, authorization, eventID, reaction, key, RemovePracticeEmojiReactionOperation)
 }
 
 func (service *Service) mutatePracticeReaction(ctx context.Context, authorization, eventID string, reaction domain.Reaction, key, operation string) (domain.ReactionSummary, error) {
@@ -85,7 +103,7 @@ func (service *Service) mutatePracticeReaction(ctx context.Context, authorizatio
 		return domain.ReactionSummary{}, service.reactionError(ctx, principal.UserID, ports.ErrNotFound, now)
 	}
 	action := audit.ResourceUpdated
-	if operation == RemovePracticeReactionOperation {
+	if operation == RemovePracticeReactionOperation || operation == RemovePracticeEmojiReactionOperation {
 		action = audit.ResourceDeleted
 	}
 	command := ReactionCommand{ActorUserID: principal.UserID, Target: target, Reaction: reaction, OccurredAt: now, NotificationEligibleAt: now.Add(reactionNotificationGrace)}
@@ -93,7 +111,7 @@ func (service *Service) mutatePracticeReaction(ctx context.Context, authorizatio
 	command.Audit = shared.NewAuditEvent(ctx, service.Clock, principal.UserID, principal.UserID, action, "practice_reaction", eventID, audit.Succeeded)
 	command.Audit.OccurredAt = now
 	var result ReactionMutationResult
-	if operation == SetPracticeReactionOperation {
+	if operation == SetPracticeReactionOperation || operation == AddPracticeEmojiReactionOperation {
 		result, err = service.Reactions.SetPracticeReaction(ctx, command)
 	} else {
 		result, err = service.Reactions.RemovePracticeReaction(ctx, command)
