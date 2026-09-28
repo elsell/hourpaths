@@ -179,4 +179,29 @@ func TestPostgresActiveFollowingReturnsOnlyCurrentDirectEligibleFollowTimersAtPa
 	if err != nil || len(remaining.Items) != 1 || remaining.Items[0].ParticipantID != second.ID {
 		t.Fatalf("after stop=%+v err=%v", remaining, err)
 	}
+	// The profile projection works independently of following and must not expose
+	// blocked, archived, private or supporter-only participation through counts.
+	for _, test := range []struct {
+		target string
+		count  int
+	}{
+		{first.ID, 0}, {second.ID, 2}, {arbitrary.ID, 1}, {blocked.ID, 0}, {viewerBlocked.ID, 0}, {inactive.ID, 0}, {archived.ID, 0}, {viewer.ID, 1},
+	} {
+		items, err := repository.ListProfilePathCandidates(context.Background(), viewer.ID, test.target, now)
+		if err != nil || len(items) != test.count {
+			t.Fatalf("profile %s: count=%d want=%d err=%v", test.target, len(items), test.count, err)
+		}
+	}
+	if err := migrationStore.DB.Table("path_membership_models").Where("path_id = ? AND user_id = ?", sharedPath, viewer.ID).Update("role", "supporter").Error; err != nil {
+		t.Fatal(err)
+	}
+	items, err := repository.ListProfilePathCandidates(context.Background(), viewer.ID, viewer.ID, now)
+	if err != nil || len(items) != 0 {
+		t.Fatalf("supporter-only count: %v %v", items, err)
+	}
+	self, err := repository.ListProfilePathCandidates(context.Background(), first.ID, first.ID, now)
+	if err != nil || len(self) != 1 || self[0].Timer != nil {
+		t.Fatalf("stopped own private path: %v %v", self, err)
+	}
+
 }

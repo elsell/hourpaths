@@ -2,7 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { getLocales } from 'expo-localization';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert } from 'react-native';
+import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import type { BlockReviewAcknowledgement, UserBlockingPort } from '@hourpaths/client-core';
 import { createDeviceTranslator } from '../../src/i18n';
 import { scheduleSocialRouteBootstrap } from '../../src/social-route-recovery';
@@ -16,11 +16,18 @@ import { useSocialRouteRecovery } from '../../src/ui/social-route-recovery-prese
 import { SocialRouteRecoveryView } from '../../src/ui/social-route-recovery-view';
 import { useUserBlockingRoutePresentation } from '../../src/ui/user-blocking-route-presentation';
 
+import { LiveActivityViewer } from '../../src/ui/live-activity-viewer';
+import { livePagesFromActivePeople } from '../../src/live-pages-from-active-people';
+
 const i18n = createDeviceTranslator(getLocales);
 
 export default function SocialProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const social = useSocialProfileRoutePresentation();
+  const [liveTimerID, setLiveTimerID] = useState<string | null>(null);
+  const livePages = livePagesFromActivePeople(social?.profile.username === username && social.profile.activePaths ? [social.profile.activePaths] : [], i18n);
+  useEffect(() => { setLiveTimerID(null); }, [username]);
+
   const presentation = useUserBlockingRoutePresentation();
   const recovery = useSocialRouteRecovery({
     kind: 'profile',
@@ -34,6 +41,13 @@ export default function SocialProfileScreen() {
   const requestedUsername = useRef<string | undefined>(undefined);
   const refreshRef = useRef<(() => void) | undefined>(undefined);
   refreshRef.current = social?.refreshProfile;
+  useFocusEffect(useCallback(() => {
+    const refresh = () => { if (AppState.currentState === 'active') refreshRef.current?.(); };
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
+    const timer = setInterval(refresh, 15000);
+    return () => { clearInterval(timer); subscription.remove(); };
+  }, []));
+
   useEffect(() => {
     if (!username || social || presentation || recovery) return;
     return scheduleSocialRouteBootstrap(
@@ -125,7 +139,7 @@ export default function SocialProfileScreen() {
   />;
   const profile = social.profile.username === username
     ? social.profile
-    : { refreshing: false, status: 'loading' as const, username };
+    : { refreshing: false, status: 'loading' as const, username, pathCount: undefined, activePaths: undefined };
   const actionProfile = profile.status === 'ready' && profile.profile?.relationship !== 'self'
     ? profile.profile
     : undefined;
@@ -164,6 +178,9 @@ export default function SocialProfileScreen() {
           }
           social.mutateRelationship(action, username, Crypto.randomUUID());
         }}
+        pathCount={profile.pathCount}
+        activePathCount={profile.activePaths?.timers.length ?? 0}
+        onOpenActive={() => { const timer = profile.activePaths?.timers[0]; if (timer) setLiveTimerID(timer.id); }}
         state={profile}
       />
       {profile.status === 'ready' ? <>
@@ -177,5 +194,8 @@ export default function SocialProfileScreen() {
         />
       </> : null}
     </NativeRouteScreen>
+    {liveTimerID && profile.activePaths ? <LiveActivityViewer pages={livePages} initialTimerId={liveTimerID}
+      translator={i18n} onClose={() => setLiveTimerID(null)} onRefresh={social.refreshProfile}
+      onOpenProfile={() => setLiveTimerID(null)} /> : null}
   </>;
 }

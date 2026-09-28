@@ -3464,7 +3464,7 @@ export function HomeScreen() {
   }
 
   async function loadSocialProfile(username: string, refreshing = false) {
-    if (!session || destination?.kind !== 'home') return;
+    if (!session || destination?.kind !== 'home' || socialRelationshipSubmitting.current) return;
     const currentSession = session;
     const ownerID = destination.profile.id;
     const ticket = socialProfileDetailOperations.issue();
@@ -3485,6 +3485,9 @@ export function HomeScreen() {
     setSocialProfile((current) => ({
       ...current,
       profile: refreshing ? current.profile : undefined,
+      activePaths: refreshing ? current.activePaths : undefined,
+      pathCount: refreshing ? current.pathCount : undefined,
+      pathsUnavailable: false,
       refreshing,
       status: refreshing && current.profile ? 'ready' : 'loading',
       username,
@@ -3497,8 +3500,23 @@ export function HomeScreen() {
       if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
       const profile = publicProfileFromAPI(await response.json());
       if (!currentTarget() || profile.username.toLowerCase() !== username.toLowerCase()) return;
-      setSocialProfile({ profile, refreshing: false, status: 'ready', username: profile.username });
+      setSocialProfile((current) => ({ ...current, profile, refreshing: false, status: 'ready', username: profile.username }));
       void loadProfileActivity(profile.username);
+      try {
+        const paths = await createSessionApiClient(apiURL, () => currentSession.token).profilePaths(username);
+        if (!currentTarget()) return;
+        if (paths.error || !paths.data) {
+          throw sessionFailureFromResponse(paths.response.status, paths.error);
+        }
+        if (paths.data.data.active.participant.userId !== profile.userId) throw new Error('mismatched_profile_paths');
+        setSocialProfile((current) => ({ ...current, pathCount: paths.data.data.pathCount,
+          activePaths: activeFollowingItemFromAPI(paths.data.data.active), pathsUnavailable: false }));
+      } catch (cause) {
+        if (!currentTarget()) return;
+        await handleSocialOperationFailure(cause, currentSession, currentTarget);
+        if (currentTarget()) setSocialProfile((current) => ({ ...current, activePaths: undefined, pathCount: undefined, pathsUnavailable: true }));
+      }
+
     } catch (cause) {
       if (!currentTarget()) return;
       await handleSocialOperationFailure(cause, currentSession, currentTarget);
@@ -3558,7 +3576,8 @@ export function HomeScreen() {
       profileActivityOperations.invalidate();
       profileActivityPage.current = { items: [], nextCursor: '' };
       setProfileActivity({ items: [], loadingMore: false, refreshing: false, status: 'loading' });
-      void loadProfileActivity(mutation.profile.username);
+      socialRelationshipSubmitting.current = false;
+      void loadSocialProfile(mutation.profile.username, true);
     } catch (cause) {
       if (!currentTarget()) return;
       await handleSocialOperationFailure(cause, currentSession, currentTarget);

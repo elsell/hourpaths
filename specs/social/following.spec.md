@@ -237,3 +237,26 @@ must apply to every returned path.
   or Unfollow button beneath their identity and biography, preserving current
   request, confirmation, authorization, busy, and failure behavior.
 - The current user's own profile must not show a follow control.
+
+### Profile header and active Paths
+
+- Mobile profile headers must place the avatar beside a compact row of Paths,
+  Followers, and Following counts, with identity and description below and the
+  existing prominent relationship action beneath them.
+- The avatar must reuse the Following strip’s segmented outline, one segment
+  per currently visible active Path. An inactive profile must have no outline.
+- Tapping an active profile avatar must open that person’s Paths in the shared
+  full-screen live viewer, preserving manual navigation and instant transitions
+  between Paths belonging to the same person.
+- Counts and active Paths must respect existing Path authorization and bilateral
+  blocks; the header must not reveal inaccessible Paths.
+
+- The Paths count must include distinct unarchived Paths in which the profile
+  owner currently participates (creator, administrator, or participant), excluding
+  supporter-only membership and Paths inaccessible to the viewer.
+- Profile active Paths must include authorized running timers regardless of
+  whether the viewer follows that person, including the viewer’s own profile.
+- A profile must refresh live state on focus, foreground, and while its viewer
+  is open. Stopped or newly inaccessible Paths must disappear on refresh.
+- Failure to load the Path summary must not display a fabricated zero or enable
+  a stale active outline; retry must be available through profile refresh.

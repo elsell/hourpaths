@@ -14,6 +14,9 @@ export type SocialProfileSearchState = {
 };
 
 export type SocialProfileDetailState = {
+  pathCount?: number;
+  activePaths?: import('./social-active-following-presentation').ActiveFollowingItem;
+  pathsUnavailable?: boolean;
   errorKey?: MessageKey;
   mutationErrorKey?: MessageKey;
   profile?: SocialPublicProfile;

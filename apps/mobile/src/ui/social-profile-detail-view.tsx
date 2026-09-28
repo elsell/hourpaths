@@ -1,9 +1,10 @@
 import type { Translator } from '@hourpaths/i18n';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { NativeButton } from './native-button';
 import { NativeContentUnavailable } from './native-content-unavailable';
 import { NativePrimaryButton } from './native-primary-button';
 import { ThemedText as Text } from './primitives';
+import { SegmentedAvatarRing } from './segmented-avatar-ring';
 import { SocialProfileAvatar } from './social-profile-avatar';
 import type { SocialProfileDetailState } from './social-profile-route-presentation';
 import { mobileTheme } from './tokens';
@@ -12,10 +13,16 @@ export function SocialProfileDetailView({
   i18n,
   blockingStatus,
   onRetry,
+  activePathCount = 0,
+  pathCount,
+  onOpenActive,
   onRelationshipAction,
   state,
 }: {
   i18n: Translator;
+  activePathCount?: number;
+  pathCount?: number;
+  onOpenActive?: () => void;
   blockingStatus?: 'reviewing' | 'blocking' | 'error';
   onRetry: () => void;
   onRelationshipAction: (action: 'follow' | 'cancel-request' | 'unfollow') => void;
@@ -46,15 +53,29 @@ export function SocialProfileDetailView({
   return <View style={styles.content}>
     <View style={styles.identity}>
       <View style={styles.identityRow}>
-      <SocialProfileAvatar
-        profilePictureURL={profile.profilePictureUrl}
-        accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
-        size={64}
-      />
+        <Pressable disabled={!activePathCount || !onOpenActive} onPress={onOpenActive}
+          accessibilityRole={activePathCount ? 'button' : undefined}
+          accessibilityLabel={activePathCount ? i18n.t('social.profileOpenActive', { name: profile.displayName, count: activePathCount }) : profile.displayName}>
+          <SegmentedAvatarRing count={activePathCount} avatarSize={64}>
+            <SocialProfileAvatar profilePictureURL={profile.profilePictureUrl}
+              accessibilityLabel={i18n.t('social.neutralAvatarLabel')} size={64} />
+          </SegmentedAvatarRing>
+        </Pressable>
+        <View style={styles.counts}>
+          {([
+            ['social.profilePaths', pathCount],
+            ['social.profileFollowers', profile.followerCount],
+            ['social.profileFollowing', profile.followingCount],
+          ] as const).map(([label, value]) => <View key={label} accessible
+            accessibilityLabel={value === undefined ? i18n.t(label) : i18n.t('social.profileCountLabel', { count: value, label: i18n.t(label) })} style={styles.count}>
+            <Text style={styles.countValue}>{value === undefined ? i18n.t('social.profileCountUnavailable') : i18n.number(value)}</Text>
+            <Text style={styles.countLabel}>{i18n.t(label)}</Text>
+          </View>)}
+        </View>
+      </View>
       <View style={styles.names}>
         <Text accessibilityRole="header" style={styles.displayName}>{profile.displayName}</Text>
         <Text style={styles.username}>@{profile.username}</Text>
-      </View>
       </View>
       {profile.description ? <Text style={styles.description}>{profile.description}</Text> : null}
       {profile.relationship !== 'self' ? <NativePrimaryButton
@@ -74,6 +95,7 @@ export function SocialProfileDetailView({
         systemImage={profile.relationship === 'none' ? 'person.badge.plus' : undefined}
         variant="prominent"
       /> : null}
+      {state.pathsUnavailable ? <NativeButton label={i18n.t('common.retry')} onPress={onRetry} variant="quiet" /> : null}
       {state.mutationErrorKey ? <Text accessibilityRole="alert" style={styles.mutationError}>
         {i18n.t(state.mutationErrorKey)}
       </Text> : null}
@@ -92,16 +114,6 @@ export function SocialProfileDetailView({
       {blockingStatus === 'error' ? <Text accessibilityRole="alert" style={styles.mutationError}>
         {i18n.t('blocking.blockUnavailable')}
       </Text> : null}
-    </View>
-    <View style={styles.counts}>
-      <View accessible accessibilityLabel={`${i18n.number(profile.followerCount)} ${i18n.t('social.profileFollowers')}`} style={styles.count}>
-        <Text style={styles.countValue}>{i18n.number(profile.followerCount)}</Text>
-        <Text style={styles.countLabel}>{i18n.t('social.profileFollowers')}</Text>
-      </View>
-      <View accessible accessibilityLabel={`${i18n.number(profile.followingCount)} ${i18n.t('social.profileFollowing')}`} style={styles.count}>
-        <Text style={styles.countValue}>{i18n.number(profile.followingCount)}</Text>
-        <Text style={styles.countLabel}>{i18n.t('social.profileFollowing')}</Text>
-      </View>
     </View>
   </View>;
 }
@@ -125,6 +137,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   identityRow: {
+    flexWrap: 'wrap',
     alignItems: 'center',
     flexDirection: 'row',
     gap: mobileTheme.spacing.md,
@@ -133,11 +146,9 @@ const styles = StyleSheet.create({
     gap: mobileTheme.spacing.md,
   },
   count: {
-    alignItems: 'flex-start',
-    borderTopColor: mobileTheme.colors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    flexBasis: 140,
-    flexGrow: 1,
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
     gap: mobileTheme.spacing.xxs,
     paddingVertical: mobileTheme.spacing.sm,
   },
@@ -149,8 +160,9 @@ const styles = StyleSheet.create({
   },
   counts: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: mobileTheme.spacing.md,
+    flexBasis: 200,
+    flexGrow: 1,
+    gap: mobileTheme.spacing.xs,
   },
   countValue: {
     fontSize: 20,
@@ -171,7 +183,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   identity: {
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     gap: mobileTheme.spacing.md,
   },
   names: {
