@@ -138,6 +138,7 @@ const approvedPlatformUIImports = new Map([
   ])],
 ]);
 const approvedNavigationImports = new Map([
+  ['apps/mobile/app/index.tsx', new Map([['@react-navigation/native', new Set(['CommonActions'])]])],
   ['apps/mobile/app/_layout.tsx', new Map([['@react-navigation/native', new Set(['ThemeProvider'])]])],
   ['apps/mobile/src/ui/navigation-theme.ts', new Map([['@react-navigation/native', new Set(['DarkTheme'])]])],
   ['apps/mobile/src/ui/native-sheet-frame.ios.tsx', new Map([

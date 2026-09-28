@@ -6,7 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { getCalendars, getLocales } from 'expo-localization';
-import type { NavigationProp } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import { router, useGlobalSearchParams, useNavigation, usePathname } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
@@ -595,7 +595,7 @@ export default function IndexRedirect() {
 
 export function HomeScreen() {
   const pathname = usePathname();
-  const rootNavigation = useNavigation<NavigationProp<{ index: undefined; '(tabs)': undefined }>>('/');
+  const rootNavigation = useNavigation('/');
   const routeParameters = useGlobalSearchParams<Record<string, string | string[]>>();
   const currentPathRouteIntent = pathRouteIntent(pathname, routeParameters);
   const currentSocialRouteIntent = socialRouteIntent(pathname, routeParameters);
@@ -931,8 +931,8 @@ export function HomeScreen() {
       pathname,
       ready,
     });
-    if (shellDestination === 'home-tabs') rootNavigation.reset({ index: 0, routes: [{ name: '(tabs)' }] });
-    if (shellDestination === 'account-entry') rootNavigation.reset({ index: 0, routes: [{ name: 'index' }] });
+    if (shellDestination === 'home-tabs') rootNavigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: '(tabs)' }] }));
+    if (shellDestination === 'account-entry') rootNavigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'index' }] }));
   }, [destination?.kind, session?.nextAction, pathname, ready, rootNavigation]);
   useEffect(() => {
     if (ownershipTransferOpen && pendingOwnershipTransfer?.viewerRole === 'creator' &&
