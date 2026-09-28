@@ -58,7 +58,7 @@ test('the recovery route clears expiry before decline and schedules the same bou
   assert.match(recovery, /applicationSessionExpired/);
   assert.match(recovery, /applicationSessionOperations\.invalidate\(\)/);
   assert.match(recovery, /clearApplicationSession\(\)/);
-  assert.match(recovery, /setTimeout\(expireSession/);
+  assert.match(recovery, /scheduleSessionDeadline\(expireSession, Date\.parse\(session\.expiresAt\)\)/);
   const decline = /function declineRecovery[\s\S]*?\n  }/.exec(recovery)?.[0];
   assert.ok(decline);
   assert.ok(
