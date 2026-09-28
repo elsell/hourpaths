@@ -138,7 +138,7 @@ test('session operations use the generated contract and the current credential',
   assert.equal(new URL(requests[14]!.url).searchParams.get('participantId'), 'participant-2');
   assert.equal(new URL(requests[15]!.url).searchParams.get('limit'), '25');
   assert.equal(new URL(requests[15]!.url).searchParams.get('cursor'), 'revision-page-cursor');
-  assert.deepEqual(await requests[0]?.json(), { identityToken: 'provider-id-token' });
+  assert.deepEqual(await requests[0]?.json(), { identityToken: 'provider-id-token', longLivedSession: true });
   assert.equal(requests[0]?.headers.get('authorization'), null);
   assert.equal(requests[1]?.headers.get('authorization'), 'Bearer application-token');
   assert.equal(requests[2]?.headers.get('authorization'), 'Bearer rotated-token');

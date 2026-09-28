@@ -89,8 +89,8 @@ func Load() (Config, error) {
 		DatabaseMaxIdleConns:           integer("HOURPATHS_DATABASE_MAX_IDLE_CONNS", 10),
 		DatabaseConnMaxLifetime:        integer("HOURPATHS_DATABASE_CONN_MAX_LIFETIME_SECONDS", 1800),
 		DatabaseConnMaxIdleTime:        integer("HOURPATHS_DATABASE_CONN_MAX_IDLE_SECONDS", 300),
-		SessionTTLMinutes:              integer("HOURPATHS_SESSION_TTL_MINUTES", 60),
-		SessionAbsoluteTTLMinutes:      integer("HOURPATHS_SESSION_ABSOLUTE_TTL_MINUTES", 720),
+		SessionTTLMinutes:              integer("HOURPATHS_SESSION_TTL_MINUTES", 43200),
+		SessionAbsoluteTTLMinutes:      integer("HOURPATHS_SESSION_ABSOLUTE_TTL_MINUTES", 43200),
 		AuthorizationMaxAttempts:       integer("HOURPATHS_AUTHORIZATION_MAX_ATTEMPTS", 5),
 		RequestsPerMinute:              integer("HOURPATHS_REQUESTS_PER_MINUTE", 300),
 		RequestLimiterSources:          integer("HOURPATHS_REQUEST_LIMITER_SOURCES", 10000),
@@ -121,8 +121,8 @@ func validateRawEnvironment() error {
 		{"HOURPATHS_DATABASE_MAX_IDLE_CONNS", 0, 100000},
 		{"HOURPATHS_DATABASE_CONN_MAX_LIFETIME_SECONDS", 1, 86400},
 		{"HOURPATHS_DATABASE_CONN_MAX_IDLE_SECONDS", 1, 86400},
-		{"HOURPATHS_SESSION_TTL_MINUTES", 5, 1440},
-		{"HOURPATHS_SESSION_ABSOLUTE_TTL_MINUTES", 5, 10080},
+		{"HOURPATHS_SESSION_TTL_MINUTES", 5, 43200},
+		{"HOURPATHS_SESSION_ABSOLUTE_TTL_MINUTES", 5, 43200},
 		{"HOURPATHS_AUTHORIZATION_MAX_ATTEMPTS", 1, 100},
 		{"HOURPATHS_REQUESTS_PER_MINUTE", 1, 100000},
 		{"HOURPATHS_REQUEST_LIMITER_SOURCES", 100, 1000000},
@@ -202,11 +202,11 @@ func (c Config) validate() error {
 	if c.AuditEventsPerMinute < 1 || c.AuditEventsPerMinute > 10000 || c.AuditLimiterPrincipals < 100 || c.AuditLimiterPrincipals > 1000000 {
 		return errors.New("audit rate limit configuration is out of range")
 	}
-	if c.SessionTTLMinutes != 0 && (c.SessionTTLMinutes < 5 || c.SessionTTLMinutes > 1440) {
-		return errors.New("session TTL must be between 5 and 1440 minutes")
+	if c.SessionTTLMinutes != 0 && (c.SessionTTLMinutes < 5 || c.SessionTTLMinutes > 43200) {
+		return errors.New("session TTL must be between 5 and 43200 minutes")
 	}
-	if c.SessionAbsoluteTTLMinutes != 0 && (c.SessionAbsoluteTTLMinutes < c.SessionTTLMinutes || c.SessionAbsoluteTTLMinutes > 10080) {
-		return errors.New("session absolute TTL must be at least the rotating TTL and at most seven days")
+	if c.SessionAbsoluteTTLMinutes != 0 && (c.SessionAbsoluteTTLMinutes < c.SessionTTLMinutes || c.SessionAbsoluteTTLMinutes > 43200) {
+		return errors.New("session absolute TTL must be at least the rotating TTL and at most 30 days")
 	}
 	if c.AuthorizationMaxAttempts != 0 && (c.AuthorizationMaxAttempts < 1 || c.AuthorizationMaxAttempts > 100) {
 		return errors.New("authorization max attempts is out of range")

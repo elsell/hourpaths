@@ -283,3 +283,14 @@ Profile setup after first sign-in is defined in
   session must not trigger interactive authentication.
 - Canceling fresh sign-in must leave the client signed out; a remembered provider
   browser session must not restore application credentials.
+
+## Remembered sign-in lifetime
+
+- New application sessions must remain valid for 30 days from sign-in, including
+  overnight inactivity and native app restarts, unless explicitly revoked.
+- Expiry and rotation must follow the fixed deadline in
+  [Identity Access](../identity-access/identity-access.spec.md); activity must not
+  extend that deadline. Signing out must continue to clear the local credential
+  and revoke server access.
+- Sessions issued before this policy change must retain their existing expiry;
+  a fresh sign-in establishes the new 30-day lifetime.

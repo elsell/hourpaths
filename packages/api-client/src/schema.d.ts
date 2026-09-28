@@ -2946,6 +2946,7 @@ export interface components {
              */
             readonly $schema?: string;
             identityToken: string;
+            longLivedSession?: boolean;
         };
         SessionExchangeOutputBody: {
             /**

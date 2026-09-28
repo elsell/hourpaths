@@ -13,6 +13,10 @@ The detailed `*.spec.md` files remain authoritative.
 4. **Precision:** calculations, boundary conditions, synchronization conflicts,
    and implementation-level behavioral details.
 
+Approved account-session precision: new sign-ins last 30 days with a fixed
+absolute deadline and immediate explicit revocation; see
+[Authentication](accounts/authentication.spec.md#remembered-sign-in-lifetime).
+
 ## Coverage map
 
 | Product area | Pass 1 | Pass 2 | Pass 3 | Pass 4 | Current authoritative specs |

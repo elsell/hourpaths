@@ -660,3 +660,46 @@ func TestHealthBoundsDependencyChecks(t *testing.T) {
 		t.Fatalf("health dependency did not receive bounded context: status=%d deadline=%v", response.Code, dependency.deadline)
 	}
 }
+
+func TestSessionExchangeNegotiatesLongDeadlineWithoutChangingAuthentication(t *testing.T) {
+	now := time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC)
+	for _, test := range []struct {
+		name, body string
+		lifetime   time.Duration
+		rejected   bool
+	}{
+		{"legacy omitted", `{"identityToken":"verified"}`, time.Hour, false},
+		{"legacy false", `{"identityToken":"verified","longLivedSession":false}`, time.Hour, false},
+		{"updated", `{"identityToken":"verified","longLivedSession":true}`, 30 * 24 * time.Hour, false},
+		{"rejected updated", `{"identityToken":"rejected","longLivedSession":true}`, 0, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			application := docsApp()
+			application.Clock = docsClock{now}
+			application.SessionTTL, application.SessionAbsoluteTTL = 30*24*time.Hour, 30*24*time.Hour
+			if test.rejected {
+				application.IdentityVerifier = rejectedIdentityVerifier{}
+			}
+			handler, _ := New(application, nil, Options{DisableDocs: true})
+			request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(test.body))
+			request.Header.Set("Content-Type", "application/json")
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if test.rejected {
+				if response.Code != http.StatusUnauthorized {
+					t.Fatalf("rejected identity got %d", response.Code)
+				}
+				return
+			}
+			var body struct {
+				Data SessionExchangeData `json:"data"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			if response.Code != http.StatusOK || !body.Data.ExpiresAt.Equal(now.Add(test.lifetime)) {
+				t.Fatalf("exchange status=%d body=%s", response.Code, response.Body.String())
+			}
+		})
+	}
+}

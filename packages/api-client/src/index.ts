@@ -134,7 +134,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
   const authenticatedClient = createApiClient(baseUrl, tokenProvider);
   return {
     exchange: (identityToken: string) => publicClient.POST('/v1/sessions', {
-      body: { identityToken },
+      body: { identityToken, longLivedSession: true },
     }),
     refresh: () => authenticatedClient.POST('/v1/session/refresh'),
     profile: () => authenticatedClient.GET('/v1/me'),

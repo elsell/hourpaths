@@ -286,3 +286,35 @@ func (f duplicateHintCounter) HasActiveEmailMatch(ctx context.Context, claims po
 	*f.calls++
 	return f.delegate.HasActiveEmailMatch(ctx, claims)
 }
+
+func TestIdentityExchangeIssuesThirtyDaySession(t *testing.T) {
+	now := time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC)
+	sessions := &recordingIdentityExchangeSessions{}
+	application := App{
+		Clock:            fakeClock{now: now},
+		IdentityVerifier: fakeIdentityVerifier{claims: ports.Claims{Issuer: "https://accounts.example", Subject: "returning"}},
+		Users:            fakeUsers{user: identity.User{ID: "active-user", Status: identity.StatusActive}},
+		Sessions:         sessions, SessionTTL: 30 * 24 * time.Hour, SessionAbsoluteTTL: 30 * 24 * time.Hour,
+		AuditRateLimiter: fakeAuditRateLimiter{},
+	}
+	outcome, err := application.ExchangeIdentityTokenForClient(context.Background(), "valid-provider-token", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	returning, ok := outcome.(ReturningUserIdentityExchange)
+	deadline := now.Add(30 * 24 * time.Hour)
+	if !ok || !returning.Session.ExpiresAt.Equal(deadline) || !sessions.absoluteExpiresAt.Equal(deadline) {
+		t.Fatalf("expected fixed 30-day session, got %#v, absolute %v", outcome, sessions.absoluteExpiresAt)
+	}
+	legacy, err := application.ExchangeIdentityTokenForClient(context.Background(), "legacy-provider-token", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !legacy.(ReturningUserIdentityExchange).Session.ExpiresAt.Equal(now.Add(time.Hour)) || !sessions.absoluteExpiresAt.Equal(now.Add(12*time.Hour)) {
+		t.Fatal("legacy exchange lost compatibility limits")
+	}
+	application.SessionAbsoluteTTL += time.Minute
+	if _, err := application.ExchangeIdentityToken(context.Background(), "another-provider-token"); err == nil {
+		t.Fatal("accepted a session beyond the 30-day maximum")
+	}
+}
