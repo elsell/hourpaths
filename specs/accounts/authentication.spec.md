@@ -266,3 +266,20 @@ passwords.
 
 Profile setup after first sign-in is defined in
 [Account Onboarding](onboarding.spec.md).
+
+## Account choice after sign-out
+
+- Explicit sign-in must show the identity provider’s sign-in experience even if
+  its browser session still remembers a previous HourPaths account. The user
+  must be able to choose another account instead of being silently signed back
+  into the account they just left.
+- Native clients must request fresh authentication (`prompt=login`). On iOS,
+  interactive authentication must also request an ephemeral browser session so
+  browser cookies from prior sign-ins are not reused. Web interactive sign-in
+  must likewise request fresh authentication.
+- Sign-out must retain existing application-session revocation, local credential
+  removal, account-data isolation, and running-timer resolution. Provider browser
+  availability must not prevent local sign-out. Restoring a valid application
+  session must not trigger interactive authentication.
+- Canceling fresh sign-in must leave the client signed out; a remembered provider
+  browser session must not restore application credentials.

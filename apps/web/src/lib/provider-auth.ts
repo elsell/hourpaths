@@ -26,7 +26,7 @@ function manager(issuer: string, clientId: string): UserManager {
 }
 
 export async function beginProviderSignIn(issuer: string, clientId: string): Promise<void> {
-  await manager(issuer, clientId).signinRedirect();
+  await manager(issuer, clientId).signinRedirect({ prompt: 'login' });
 }
 
 export async function completeProviderSignIn(issuer: string, clientId: string): Promise<string> {

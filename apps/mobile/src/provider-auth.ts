@@ -28,6 +28,7 @@ export function useProviderSignIn(issuer: string, clientId: string, scheme: stri
     redirectUri,
     scopes: ['openid', 'profile', 'email'],
     usePKCE: true,
+    prompt: AuthSession.Prompt.Login,
   }, discovery);
   const [identityToken, setIdentityToken] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -80,7 +81,7 @@ export function useProviderSignIn(issuer: string, clientId: string, scheme: stri
     setFailed(false);
     setIdentityToken(null);
     setBusy(true);
-    try { await prompt(); }
+    try { await prompt({ preferEphemeralSession: true }); }
     catch {
       setFailed(true);
       setBusy(false);
