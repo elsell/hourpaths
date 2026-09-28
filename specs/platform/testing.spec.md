@@ -412,3 +412,14 @@ runs do not exhaust a development or CI host.
   if the grant never becomes effective or a response other than the expected
   pending 404 occurs. Denial and notification cleanup assertions must not be
   weakened by this readiness wait.
+
+## Pinned Expo Updates compatibility
+
+The mobile validation gate must retain the reviewed `expo-updates` 55.0.31
+release while Expo 55.0.31 is installed. Expo's mutable online recommendation
+advanced to 55.0.32 during the 30-day-session release; it must not force an
+unreviewed dependency upgrade. This exact package may be excluded from that
+online recommendation only while the native-set gate verifies both the declared
+and installed 55.0.31 version and Expo's bundled `~55.0.30` compatibility range.
+Native build and signed release gates must remain enabled. An Expo or Updates
+upgrade must explicitly revisit this compatibility exception.
