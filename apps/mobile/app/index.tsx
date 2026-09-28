@@ -6,7 +6,8 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import Constants from 'expo-constants';
 import { getCalendars, getLocales } from 'expo-localization';
-import { router, useGlobalSearchParams, usePathname } from 'expo-router';
+import type { NavigationProp } from '@react-navigation/native';
+import { router, useGlobalSearchParams, useNavigation, usePathname } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -594,6 +595,7 @@ export default function IndexRedirect() {
 
 export function HomeScreen() {
   const pathname = usePathname();
+  const rootNavigation = useNavigation<NavigationProp<{ index: undefined; '(tabs)': undefined }>>('/');
   const routeParameters = useGlobalSearchParams<Record<string, string | string[]>>();
   const currentPathRouteIntent = pathRouteIntent(pathname, routeParameters);
   const currentSocialRouteIntent = socialRouteIntent(pathname, routeParameters);
@@ -925,12 +927,13 @@ export function HomeScreen() {
   useEffect(() => {
     const shellDestination = accountShellDestination({
       destinationKind: destination?.kind ?? null,
+      sessionNextAction: session?.nextAction ?? null,
       pathname,
       ready,
     });
-    if (shellDestination === 'home-tabs') router.replace('/(tabs)/home');
-    if (shellDestination === 'account-entry') router.replace('/');
-  }, [destination?.kind, pathname, ready]);
+    if (shellDestination === 'home-tabs') rootNavigation.reset({ index: 0, routes: [{ name: '(tabs)' }] });
+    if (shellDestination === 'account-entry') rootNavigation.reset({ index: 0, routes: [{ name: 'index' }] });
+  }, [destination?.kind, session?.nextAction, pathname, ready, rootNavigation]);
   useEffect(() => {
     if (ownershipTransferOpen && pendingOwnershipTransfer?.viewerRole === 'creator' &&
       ownershipTransferCandidates.length === 0 && !ownershipTransferCandidatesLoaded && !ownershipTransferCandidatesLoading &&

@@ -101,7 +101,7 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/app/following/comments/[eventID].tsx', new Set(['router', 'useLocalSearchParams', 'useNavigation'])],
   ['apps/mobile/app/following/comments/[eventID]/hearts/[commentID].tsx', new Set(['router', 'useLocalSearchParams'])],
   ['apps/mobile/app/follow-requests.tsx', new Set(['router'])],
-  ['apps/mobile/app/index.tsx', new Set(['router', 'useGlobalSearchParams', 'usePathname'])],
+  ['apps/mobile/app/index.tsx', new Set(['router', 'useGlobalSearchParams', 'useNavigation', 'usePathname'])],
   ['apps/mobile/app/settings/index.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/interactions.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/time-zone.tsx', new Set(['router'])],

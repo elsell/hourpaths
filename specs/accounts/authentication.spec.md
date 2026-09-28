@@ -294,3 +294,17 @@ Profile setup after first sign-in is defined in
   and revoke server access.
 - Sessions issued before this policy change must retain their existing expiry;
   a fresh sign-in establishes the new 30-day lifetime.
+
+## Repeated sign-in and navigation isolation
+
+- Signing out from any nested screen must replace the entire authenticated root
+  navigation state with account entry. Hidden copies of the authenticated shell
+  must not survive logout or continue fetching or publishing another session's UI.
+- Successful sign-in must replace account entry with one authenticated tab root;
+  repeated sign-out/sign-in cycles must not accumulate Home controllers.
+- A retained Home credential whose profile is still loading or temporarily
+  unavailable must remain on its recovery surface. A temporary failure must not
+  trigger account-entry/Home redirect loops or require an app restart.
+- Google sign-in must use the full Google authorization flow with
+  `prompt=select_account`. Google One Tap must be disabled so its remembered-
+  identity shortcut does not obscure account choice after explicit sign-out.

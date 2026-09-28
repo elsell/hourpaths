@@ -275,7 +275,7 @@ test('implemented Home, Following and Stats surfaces share the native tab shell'
   assert.match(tabHomeLayout, /<Stack\.Screen name="index" options=\{\{ title: i18n\.t\('home\.heading'\) \}\} \/>/);
   assert.match(tabHome, /export \{ HomeScreen as default \} from '\.\.\/\.\.\/index';/);
   assert.match(page, /export default function IndexRedirect\(\)[\s\S]*return <HomeScreen \/>/);
-  assert.match(page, /shellDestination === 'home-tabs'[\s\S]*router\.replace\('\/\(tabs\)\/home'\)/);
+  assert.match(page, /shellDestination === 'home-tabs'[\s\S]*rootNavigation\.reset\(\{ index: 0, routes: \[\{ name: '\(tabs\)' \}\]/);
 });
 
 test('Home creation, Path visibility, and account actions use native header controls', () => {
@@ -443,8 +443,8 @@ test('manual activity create and edit use an extracted native, accessible form',
 test('signed-out, loading, offline, and error states use explicit accessible presentation', () => {
   assert.match(page, /export default function IndexRedirect\(\)[\s\S]*return <HomeScreen \/>/);
   assert.match(page, /accountShellDestination\(\{[\s\S]*destinationKind: destination\?\.kind \?\? null,[\s\S]*pathname,[\s\S]*ready/);
-  assert.match(page, /shellDestination === 'home-tabs'[\s\S]*router\.replace\('\/\(tabs\)\/home'\)/);
-  assert.match(page, /shellDestination === 'account-entry'[\s\S]*router\.replace\('\/'\)/);
+  assert.match(page, /shellDestination === 'home-tabs'[\s\S]*rootNavigation\.reset\(\{ index: 0, routes: \[\{ name: '\(tabs\)' \}\]/);
+  assert.match(page, /shellDestination === 'account-entry'[\s\S]*rootNavigation\.reset\(\{ index: 0, routes: \[\{ name: 'index' \}\]/);
   assert.match(homeView, /presentation\.kind === 'loading'[\s\S]*text=\{i18n\.t\('home\.loading'\)\}/);
   assert.match(page, /const homeNotice[\s\S]*accessState === 'authenticated_offline' && !errorKey && !offlineStatusDismissed/);
   assert.match(page, /const homeNotice[\s\S]*<StatusBanner[\s\S]*onAction=[\s\S]*text=\{i18n\.t\('auth\.offline'\)\}/);

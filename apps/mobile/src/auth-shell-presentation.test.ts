@@ -35,3 +35,12 @@ describe('accountShellDestination', () => {
     assert.equal(accountShellDestination({ destinationKind: 'home', pathname: '/home', ready: true }), 'stay');
   });
 });
+
+for (const pathname of ['/settings/account', '/following', '/profile/john']) {
+  it(`leaves the whole signed-in shell when signing out at ${pathname}`, () => {
+    assert.equal(accountShellDestination({ destinationKind: null, pathname, ready: true }), 'account-entry');
+  });
+}
+it('retains Home recovery instead of remounting account entry during a transient failure', () => {
+  assert.equal(accountShellDestination({ destinationKind: null, sessionNextAction: 'home', pathname: '/home', ready: true }), 'stay');
+});
