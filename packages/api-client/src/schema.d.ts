@@ -1028,6 +1028,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/profiles/{username}/paths": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get visible profile Path count and active Paths */
+        get: operations["get-profile-paths"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/push-installations/{installationId}": {
         parameters: {
             query?: never;
@@ -2833,6 +2850,20 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["PublicProfile"];
+        };
+        ProfilePathsData: {
+            active: components["schemas"]["ActiveFollowingItem"];
+            /** Format: int64 */
+            pathCount: number;
+        };
+        ProfilePathsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProfilePathsOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["ProfilePathsData"];
         };
         PublicProfile: {
             description?: string;
@@ -5848,6 +5879,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RelationshipOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-profile-paths": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfilePathsOutputBody"];
                 };
             };
             /** @description Error */

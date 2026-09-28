@@ -4927,5 +4927,9 @@
   "reactions.addAction": "Añadir reacción",
   "social.commentCount_one": "{{count}} comentario",
   "social.commentCount_other": "{{count}} comentarios",
-  "notification.practiceReaction.emoji": "{{displayName}} reaccionó con {{emoji}} a tu actividad en {{pathName}}."
+  "notification.practiceReaction.emoji": "{{displayName}} reaccionó con {{emoji}} a tu actividad en {{pathName}}.",
+  "social.profilePaths": "Rutas",
+  "social.profileOpenActive": "Ver las rutas activas de {name} ({count})",
+  "social.profileCountUnavailable": "—",
+  "social.profileCountLabel": "{count} {label}"
 }

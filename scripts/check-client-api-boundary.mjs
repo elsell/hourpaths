@@ -1018,9 +1018,9 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings.elements[0].name.text === 'Alert';
         const exactSocialProfilePresentationImport = relative === 'apps/mobile/app/profile/[username].tsx' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
-          clause.namedBindings.elements.length === 2 &&
+          [2, 3].includes(clause.namedBindings.elements.length) &&
           clause.namedBindings.elements.every((element) =>
-            !element.isTypeOnly && !element.propertyName && ['AccessibilityInfo', 'Alert'].includes(element.name.text));
+            !element.isTypeOnly && !element.propertyName && ['AccessibilityInfo', 'Alert', 'AppState'].includes(element.name.text));
         const exactBlockedAccountsPresentationImport = relative === 'apps/mobile/app/settings/blocked-accounts.tsx' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
           clause.namedBindings.elements.length === 2 &&

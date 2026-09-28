@@ -211,6 +211,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     searchProfiles: (query: string, cursor?: string) => authenticatedClient.GET('/v1/profiles', {
       params: { query: { query, cursor, limit: 25 } },
     }),
+    profilePaths: (username: string) => authenticatedClient.GET('/v1/profiles/{username}/paths', { params: { path: { username } } }),
     profileByUsername: (username: string) => authenticatedClient.GET('/v1/profiles/{username}', {
       params: { path: { username } },
     }),
