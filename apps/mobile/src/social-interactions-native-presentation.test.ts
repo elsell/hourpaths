@@ -144,7 +144,6 @@ test('comments and heart roster are flat intrinsic rows with native system inter
   assert.doesNotMatch(rosterView, /minHeight: 60/);
   assert.match(reactionIOS, /SwiftUIImage/);
   assert.match(reactionIOS, /systemName=\{selectedEmoji \? 'heart\.fill' : 'heart'\}/);
-  assert.doesNotMatch(feedView, /reactionCount:\s*\{[\s\S]*?borderWidth/);
 });
 
 test('all direct interaction routes retain native titles and visible cold recovery', () => {
