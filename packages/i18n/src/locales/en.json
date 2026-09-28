@@ -4931,5 +4931,6 @@
   "social.profilePaths": "Paths",
   "social.profileOpenActive": "View {name}’s active paths ({count})",
   "social.profileCountUnavailable": "—",
-  "social.profileCountLabel": "{count} {label}"
+  "social.profileCountLabel": "{count} {label}",
+  "home.arrange.dragHint": "Long press and drag to rearrange. You can also use Arrange Paths."
 }

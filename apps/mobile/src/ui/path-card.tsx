@@ -1,12 +1,14 @@
 import { PathEmoji } from './path-emoji';
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { NativeActionMenu } from './native-action-menu';
 import type { NativeRouteAction } from './native-route-presentation';
 import { defaultPathAppearance, pathPalette, type PathAppearance } from './path-appearance';
 import { mobileTheme } from './tokens';
 
 export type PathCardProps = {
+  onLongPress?: (event: GestureResponderEvent) => void;
+  reorderHint?: string;
   onFocusTarget?: (node: View | null) => void;
   actions?: readonly NativeRouteAction[];
   actionsAccessibilityLabel?: string;
@@ -20,10 +22,10 @@ export type PathCardProps = {
   timer?: ReactNode;
 };
 
-export function PathCard({ onFocusTarget, actions, actionsAccessibilityLabel, accumulatedText, appearance = defaultPathAppearance(''), headline, intervalSummary, name, onOpen, progress, timer }: PathCardProps) {
+export function PathCard({ onLongPress, reorderHint, onFocusTarget, actions, actionsAccessibilityLabel, accumulatedText, appearance = defaultPathAppearance(''), headline, intervalSummary, name, onOpen, progress, timer }: PathCardProps) {
   const tone = pathPalette[appearance.color];
   return <View style={[styles.card, { backgroundColor: tone.background }]}>
-    {onOpen ? <Pressable ref={onFocusTarget} accessibilityLabel={name} accessibilityRole="button" onPress={onOpen}
+    {onOpen ? <Pressable ref={onFocusTarget} accessibilityLabel={name} accessibilityRole="button" accessibilityHint={onLongPress ? reorderHint : undefined} onPress={onOpen} onLongPress={onLongPress} delayLongPress={350}
       style={({ pressed }) => [StyleSheet.absoluteFill, styles.hitSurface, pressed ? styles.pressed : null]} /> : null}
     <View pointerEvents="none" style={[styles.identity, actions?.length ? styles.withActions : null]}>
       <PathEmoji emoji={appearance.emoji} />
