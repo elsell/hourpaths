@@ -903,3 +903,4 @@ export {
 
 export * from './path-appearance';
 export * from './stats-presentation';
+export { liveTimerProgress, createTimerPeriodRefresher } from './live-timer-progress';

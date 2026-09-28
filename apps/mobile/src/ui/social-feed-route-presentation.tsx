@@ -1,3 +1,4 @@
+import type { ReactionPeopleLoader } from './reaction-people-sheet';
 import type { MessageKey } from '@hourpaths/i18n';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { ActiveFollowingItem } from './social-active-following-presentation';
@@ -35,12 +36,13 @@ export type SocialFeedRoutePresentation = {
   loadMore: () => void;
   openActivity: (event: PracticeSessionFeedEvent) => void;
   openComments: (event: SocialFeedEvent) => void;
-  removeReaction: (event: SocialFeedEvent) => Promise<void>;
+  loadReactionPeople: ReactionPeopleLoader;
+  removeReaction: (event: SocialFeedEvent, emoji?: string) => Promise<void>;
   refresh: () => void;
   refreshActive: () => void;
   retry: () => void;
   retryActive: () => void;
-  setReaction: (event: SocialFeedEvent, reaction: SocialReaction) => Promise<void>;
+  setReaction: (event: SocialFeedEvent, reaction: string) => Promise<void>;
 };
 
 type PublishedPresentation = SocialFeedRoutePresentation & { owner: object };
@@ -81,6 +83,7 @@ export function SocialFeedRouteSource(props: SocialFeedRoutePresentation) {
     props.openActivity,
     props.openComments,
     props.removeReaction,
+    props.loadReactionPeople,
     props.refresh,
     props.refreshActive,
     props.retry,

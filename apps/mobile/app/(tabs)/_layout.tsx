@@ -8,6 +8,9 @@ const i18n = createDeviceTranslator(getLocales);
 export default function TabLayout() {
   return <NativeTabs
     tintColor={mobileTheme.colors.accent}
+    backgroundColor={mobileTheme.colors.surface}
+    blurEffect="systemChromeMaterialDark"
+    disableTransparentOnScrollEdge
     minimizeBehavior="onScrollDown"
   >
     <NativeTabs.Trigger name="home">

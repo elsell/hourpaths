@@ -9,7 +9,7 @@ export const mobileTheme = {
     accent: '#FFD84D',
     accentPressed: '#F2C230',
     accentText: '#141414',
-    systemAction: '#0A84FF',
+    systemAction: '#0064D1',
     systemActionText: '#FFFFFF',
     border: '#767676',
     separator: '#414141',

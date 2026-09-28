@@ -38,7 +38,7 @@ test('late create failure after replacement cannot ask a disposed view to restor
 });
 
 test('retryable interaction mutations retain their frozen idempotency key', () => {
-  assert.match(source, /previousRetry\?\.reaction === reaction[\s\S]*previousRetry\.key[\s\S]*Crypto\.randomUUID\(\)/);
+  assert.match(source, /previousRetry\?\.reaction === retryIntent[\s\S]*previousRetry\.key[\s\S]*Crypto\.randomUUID\(\)/);
   assert.match(source, /practiceCommentMutationKey\(retryScope, text\)/);
   assert.match(source, /practiceCommentMutationKey\(retryScope, `\$\{comment\.version\}\\u0000\$\{text\}`\)/);
   assert.match(source, /practiceCommentMutationKey\(retryScope, String\(comment\.version\)\)/);

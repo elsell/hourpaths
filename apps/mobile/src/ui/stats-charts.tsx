@@ -1,6 +1,7 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Translator } from '@hourpaths/i18n';
-import { statsDuration } from '@hourpaths/client-core';
+import { statsDuration, statsDateLabel, statsContributionWeeks, statsContributionLevel, statsWeekdayLabel, statsContributionMonthLabel } from '@hourpaths/client-core';
 import { mobileTheme } from './tokens';
 
 export type StatsChartValue = { key: string; label: string; seconds: number; color: string };
@@ -33,7 +34,9 @@ export function StatsDonut({ values, total, i18n }: { values: readonly StatsChar
 
 export function StatsBars({ values, i18n }: { values: readonly StatsChartValue[]; i18n: Translator }) {
   const maximum = Math.max(1, ...values.map(value => value.seconds));
-  return <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.bars}>
+  const scroll = useRef<ScrollView>(null);
+  const positioned = useRef(false);
+  return <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator onContentSizeChange={() => { if (!positioned.current) { scroll.current?.scrollToEnd({ animated: false }); positioned.current = true; } }} contentContainerStyle={styles.bars}>
     {values.map(value => <View key={value.key} accessible accessibilityLabel={i18n.t('stats.chartValue', { label: value.label, duration: i18n.t('duration.compactSeconds', { seconds: i18n.number(value.seconds) }) })} style={styles.barColumn}>
       <Text style={styles.barValue}>{statsDuration(value.seconds, i18n)}</Text>
       <View style={styles.barTrack}>
@@ -57,7 +60,39 @@ export function StatsCalendar({ values, i18n }: { values: readonly StatsChartVal
   </View>;
 }
 
+export function StatsContributionGrid({ days, weekStartsOn, i18n }: { days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
+  const weeks = statsContributionWeeks(days, weekStartsOn);
+  const maximum = Math.max(1, ...days.map(day => day.seconds));
+  const [selected, setSelected] = useState<string>();
+  const selectedDay = weeks.flat().find(day => day?.date === selected);
+  const label = (day: { date: string; seconds: number }) => i18n.t('stats.chartValue', { label: statsDateLabel(day.date, 'day', i18n), duration: i18n.t('duration.compactSeconds', { seconds: i18n.number(day.seconds) }) });
+  return <View style={styles.contribution}>
+    <View style={styles.gridBody}><View style={styles.weekdays}>{Array.from({ length: 7 }, (_, index) => <Text key={index} style={styles.weekday}>{statsWeekdayLabel(index, weekStartsOn, i18n)}</Text>)}</View>
+    <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.weeks}>
+      {weeks.map((week, index) => <View key={index} style={styles.week}>
+        <Text numberOfLines={1} style={styles.month}>{statsContributionMonthLabel(week, index, i18n)}</Text>
+        {week.map((day, weekday) => day ? <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={label(day)} accessibilityState={{ selected: selected === day.date }} onPress={() => setSelected(day.date)} style={[styles.day, { backgroundColor: contributionColors[statsContributionLevel(day.seconds, maximum)] }, selected === day.date && styles.selectedDay]} /> : <View key={weekday} style={styles.dayPlaceholder} />)}
+      </View>)}
+    </ScrollView></View>
+    <View style={styles.gridLegend}><Text style={styles.muted}>{i18n.t('stats.contribution.less')}</Text>{contributionColors.map(color => <View key={color} style={[styles.legendDay, { backgroundColor: color }]} />)}<Text style={styles.muted}>{i18n.t('stats.contribution.more')}</Text></View>
+    {selectedDay ? <Text accessibilityLiveRegion="polite" style={styles.muted}>{label(selectedDay)}</Text> : null}
+  </View>;
+}
+const contributionColors = [mobileTheme.colors.surfaceRaised, '#514A26', '#807137', '#B49B40', mobileTheme.colors.accent];
+
 const styles = StyleSheet.create({
+  gridBody: { flexDirection: 'row', gap: 5 },
+  weekdays: { gap: 4, paddingTop: 25 },
+  weekday: { height: 22, lineHeight: 22, fontSize: 10, color: mobileTheme.colors.textMuted },
+  month: { height: 18, fontSize: 9, color: mobileTheme.colors.textMuted, width: 22 },
+  contribution: { gap: mobileTheme.spacing.sm },
+  weeks: { gap: 4, paddingVertical: 3 },
+  week: { gap: 4 },
+  day: { width: 22, height: 22, borderRadius: 4, borderWidth: 1, borderColor: mobileTheme.colors.border },
+  dayPlaceholder: { width: 22, height: 22 },
+  selectedDay: { borderWidth: 2, borderColor: mobileTheme.colors.text },
+  gridLegend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
+  legendDay: { width: 12, height: 12, borderRadius: 3 },
   distribution: { gap: mobileTheme.spacing.lg },
   donut: { width: 184, height: 184, borderRadius: 92, overflow: 'hidden', alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
   ray: { position: 'absolute', width: 4, height: 92, left: 90, top: 46 },

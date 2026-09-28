@@ -6,6 +6,7 @@ import {
 } from './social-reaction-presentation';
 
 type SocialFeedEventBase = {
+  commentCount?: number;
   commentsEnabled: boolean;
   id: string;
   participant: {
@@ -19,6 +20,7 @@ type SocialFeedEventBase = {
     name: string;
   };
   publishedAt: string;
+  emojiReactions?: readonly { emoji: string; count: number; reacted: boolean }[];
   reactions: SocialReactionCounts;
   reactionsEnabled: boolean;
   viewerReaction: SocialReaction | null;
@@ -53,6 +55,7 @@ export type SocialFeedPage = {
 };
 
 export type SocialReactionSummary = {
+  emojiReactions?: readonly { emoji: string; count: number; reacted: boolean }[];
   reactions: SocialReactionCounts;
   viewerReaction: SocialReaction | null;
 };
@@ -62,6 +65,8 @@ export function socialFeedEventFromAPI(item: PracticeFeedItem): SocialFeedEvent 
     throw new Error('invalid_social_feed_item');
   }
   const shared = {
+    commentCount: item.commentCount,
+    emojiReactions: item.emojiReactions,
     commentsEnabled: item.commentsEnabled,
     id: item.id,
     participant: {
@@ -178,6 +183,7 @@ export function preserveNewerSocialReactionSummaries(
     changed = true;
     return {
       ...item,
+      emojiReactions: authoritative.emojiReactions,
       reactions: { ...authoritative.reactions },
       viewerReaction: authoritative.viewerReaction,
     };
@@ -196,6 +202,7 @@ export function applySocialReactionSummary(
   const items = [...page.items];
   items[index] = {
     ...items[index]!,
+    emojiReactions: summary.emojiReactions,
     reactions: { ...summary.reactions },
     viewerReaction: summary.viewerReaction,
   };
@@ -204,6 +211,7 @@ export function applySocialReactionSummary(
 
 export function socialReactionSummaryFromAPI(summary: PracticeReactionSummary): SocialReactionSummary {
   return {
+    emojiReactions: summary.emojiReactions,
     reactions: {
       applause: summary.reactions.applause,
       celebrate: summary.reactions.celebrate,

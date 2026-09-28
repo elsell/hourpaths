@@ -67,3 +67,32 @@ export function statsCalendarGroups(days: readonly { date: string; seconds: numb
   }
   return [...groups].map(([key, seconds]) => ({ key, seconds })).sort((a, b) => a.key.localeCompare(b.key));
 }
+
+// Layout historical labels without reinterpreting their occurrence time zones.
+export function statsContributionWeeks(days: readonly { date: string; seconds: number }[], weekStartsOn = 1): ({ date: string; seconds: number } | null)[][] {
+  if (!days.length) return [];
+  const ordered = [...days].sort((a, b) => a.date.localeCompare(b.date));
+  const values = new Map(ordered.map(day => [day.date, day.seconds]));
+  const cursor = new Date(`${ordered[0]!.date}T12:00:00Z`);
+  const last = ordered[ordered.length - 1]!.date;
+  const offset = ((cursor.getUTCDay() || 7) - weekStartsOn + 7) % 7;
+  const cells: ({ date: string; seconds: number } | null)[] = Array.from({ length: offset }, () => null);
+  while (cursor.toISOString().slice(0, 10) <= last) {
+    const date = cursor.toISOString().slice(0, 10);
+    cells.push({ date, seconds: values.get(date) ?? 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  while (cells.length % 7) cells.push(null);
+  return Array.from({ length: cells.length / 7 }, (_, index) => cells.slice(index * 7, index * 7 + 7));
+}
+export function statsContributionLevel(seconds: number, maximum: number): number {
+  return seconds <= 0 ? 0 : Math.max(1, Math.min(4, Math.ceil(seconds / Math.max(1, maximum) * 4)));
+}
+
+export function statsWeekdayLabel(index: number, weekStartsOn: number, i18n: Translator) {
+  return i18n.date(new Date(Date.UTC(2026, 0, 5 + weekStartsOn - 1 + index)), { weekday: 'short', timeZone: 'UTC' });
+}
+export function statsContributionMonthLabel(week: ReturnType<typeof statsContributionWeeks>[number], index: number, i18n: Translator) {
+  const day = week.find(day => day && (index === 0 || day.date.endsWith('-01')));
+  return day ? i18n.date(new Date(`${day.date}T12:00:00Z`), { month: 'short', timeZone: 'UTC' }) : '';
+}

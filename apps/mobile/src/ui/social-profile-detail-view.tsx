@@ -58,19 +58,21 @@ export function SocialProfileDetailView({
       </View>
       {profile.description ? <Text style={styles.description}>{profile.description}</Text> : null}
       {profile.relationship !== 'self' ? <NativePrimaryButton
+        fullWidth
+        busy={state.mutating}
         disabled={state.mutating}
         label={i18n.t(profile.relationship === 'none'
           ? 'social.follow'
           : profile.relationship === 'requested'
             ? 'social.requested'
-            : 'social.followingAction')}
+            : 'social.unfollow')}
         onPress={() => onRelationshipAction(profile.relationship === 'none'
           ? 'follow'
           : profile.relationship === 'requested'
             ? 'cancel-request'
             : 'unfollow')}
         systemImage={profile.relationship === 'none' ? 'person.badge.plus' : undefined}
-        variant={profile.relationship === 'none' ? 'prominent' : 'plain'}
+        variant="prominent"
       /> : null}
       {state.mutationErrorKey ? <Text accessibilityRole="alert" style={styles.mutationError}>
         {i18n.t(state.mutationErrorKey)}

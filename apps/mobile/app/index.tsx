@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createPathSubmissionOwner, createSessionApiClient, createTimerOperationOwner, formatTimerDuration, generatedResponse, sessionExpiryAdvanced, sessionRefreshDelay, sessionRefreshLeadMs, timerMutationPresentation, type ActivityDeletionResult, type ActivityDetail, type ActivityMutationResult, type GeneratedOperationResult, type ManualActivityDefaults, type MemberRemovalReceipt, type MemberRemovalReview as GeneratedMemberRemovalReview, type OnboardingActivationInput, type OwnershipTransferCandidate as GeneratedOwnershipTransferCandidate, type OwnershipTransferResult, type OwnershipTransferReview, type PathGoalMutationResult, type PathGoalUpdateDraft as GeneratedPathGoalUpdateDraft, type PathRecurrence, type SessionPath, type TimerState, type TimerStopResult } from '@hourpaths/api-client';
-import { activeTimerSeconds, appendOptimisticPracticeComment, applyActivityDeletionResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, classifySessionFailure, compareGoalConfigurations, createActivityDeletionOperationOwner, createAsyncMutationBarrier, createForegroundNotificationCoordinator, createManualActivityFormState, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationRejectOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, exchangeSessionCredential, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, mergePracticeCommentPage, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, practiceCommentFromAPI, practiceCommentPageFromAPI, refreshSessionCredential, removePracticeComment, replacePracticeComment, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionRetryDelay, updateManualActivityDuration, updatePracticeCommentOptimistically, validateSessionCredential, validateSessionMutation, type ActivityDeletionIdentity, type ForegroundNotificationContext, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationPage, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryPage, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PendingPathInvitation, type PendingPathInvitationPage, type PracticeComment, type PracticeCommentPage, type RunningTimerSnapshot, type SessionAccessState, type SessionExchangeCredential, type SessionFailure, type SessionOperationTicket } from '@hourpaths/client-core';
+import { liveTimerProgress, createTimerPeriodRefresher, activeTimerSeconds, appendOptimisticPracticeComment, applyActivityDeletionResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, classifySessionFailure, compareGoalConfigurations, createActivityDeletionOperationOwner, createAsyncMutationBarrier, createForegroundNotificationCoordinator, createManualActivityFormState, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationRejectOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, exchangeSessionCredential, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, mergePracticeCommentPage, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, practiceCommentFromAPI, practiceCommentPageFromAPI, refreshSessionCredential, removePracticeComment, replacePracticeComment, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionRetryDelay, updateManualActivityDuration, updatePracticeCommentOptimistically, validateSessionCredential, validateSessionMutation, type ActivityDeletionIdentity, type ForegroundNotificationContext, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationPage, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryPage, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PendingPathInvitation, type PendingPathInvitationPage, type PracticeComment, type PracticeCommentPage, type RunningTimerSnapshot, type SessionAccessState, type SessionExchangeCredential, type SessionFailure, type SessionOperationTicket } from '@hourpaths/client-core';
 import { mergePracticeCommentHistoryPage, practiceCommentHistoryPageFromAPI, practiceCommentMutationFromAPI, restoreDeletedPracticeComment, rollbackPracticeCommentEdit, type PracticeCommentHistoryPage } from '@hourpaths/client-core';
 import { applyPathVisibilityResult, createPathVisibilityOperationOwner, pathVisibilityOptions, reviewPathVisibilityChange, type PathVisibility, type PathVisibilityChangeReview } from '@hourpaths/client-core';
 import {
@@ -435,7 +435,7 @@ const socialFeedActivityOperations = createSessionOperationOwner();
 const socialFeedReactionOperations = new Map<string, ReturnType<typeof createSessionOperationOwner>>();
 const socialFeedReactionRevisions = new Map<string, number>();
 const socialFeedReactionAdmissions = new Map<string, symbol>();
-const socialFeedReactionRetries = new Map<string, Readonly<{ key: string; reaction: SocialReaction | null }>>();
+const socialFeedReactionRetries = new Map<string, Readonly<{ key: string; reaction: string | null }>>();
 const socialFeedReactionTargets = new Map<string, SocialSessionTarget<Session>>();
 const socialProfileSearchOwner = createProfileSearchOwner();
 const pathArchiveOperations = createPathArchiveOperationOwner(() => Crypto.randomUUID());
@@ -639,6 +639,7 @@ export function HomeScreen() {
   const [timerErrorKeys, setTimerErrorKeys] = useState<Record<string, MessageKey | undefined>>({});
   const [timerNoticeKey, setTimerNoticeKey] = useState<MessageKey | null>(null);
   const [now, setNow] = useState(Date.now());
+  const refreshExpiredTimerPeriods = useRef(createTimerPeriodRefresher()).current;
   const [archivedPathsOpen, setArchivedPathsOpen] = useState(false);
   const [homeArrangementOpen, setHomeArrangementOpen] = useState(false);
   const [homeFilter, setHomeFilter] = useState<HomeFilter>('all');
@@ -2219,6 +2220,29 @@ export function HomeScreen() {
       : currentDestination);
   }
 
+  useEffect(() => {
+    const current = notificationLifecycleState.current;
+    if (!current.session || current.destination?.kind !== 'home') return;
+    const credential = current.session;
+    const ownerID = current.destination.profile.id;
+    refreshExpiredTimerPeriods(current.destination.profile.timers, now, async (pathID, snapshot) => {
+      try {
+        const refreshed = await validateSessionCredential<TimerState>(credential, async (active) => generatedResponse(
+          await createSessionApiClient(apiURL, () => active.token).currentTimer(pathID),
+        ));
+        const latest = notificationLifecycleState.current;
+        if (latest.session === credential && latest.destination?.kind === 'home' &&
+          latest.destination.profile.id === ownerID && latest.destination.profile.timers[pathID] === snapshot) {
+          applyOwnedTimerState(ownerID, credential, pathID, refreshed);
+        }
+      } catch (cause) {
+        const latest = notificationLifecycleState.current;
+        if (latest.session === credential && latest.destination?.kind === 'home' && latest.destination.profile.id === ownerID &&
+          isSessionFailure(cause) && classifySessionFailure(cause).discardCredential) await handleSessionFailure(cause, credential);
+      }
+    });
+  }, [now, refreshExpiredTimerPeriods]);
+
   async function refreshHomeOrganizationPath(
     pathID: string,
     currentSession: Session,
@@ -3775,7 +3799,26 @@ export function HomeScreen() {
     }
   }
 
-  async function mutateSocialFeedReaction(event: SocialFeedEvent, reaction: SocialReaction | null) {
+  async function loadSocialReactionPeople(eventId: string, emoji: string, cursor?: string) {
+    if (!session || destination?.kind !== 'home') throw new Error('social_unavailable');
+    const currentSession = session;
+    const ownerID = destination.profile.id;
+    const target = createSocialSessionTarget(ownerID, currentSession, `reaction-people:${eventId}`);
+    const current = () => ownsCurrentSocialOperation(target, ownerID, `reaction-people:${eventId}`, currentSession);
+    const api = createSessionApiClient(apiURL, () => currentSession.token);
+    try {
+      const response = generatedResponse(await api.socialFeedReactionPeople(eventId, emoji, cursor));
+      if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+      const result = await response.json();
+      if (!current() || !result) throw new Error('stale_social_session');
+      return { items: result.data.items, nextCursor: result.meta.nextCursor ?? '' };
+    } catch (cause) {
+      if (current()) await handleSocialOperationFailure(cause, currentSession, current);
+      throw cause;
+    }
+  }
+
+  async function mutateSocialFeedReaction(event: SocialFeedEvent, reaction: string | null, removedEmoji?: string) {
     const currentEvent = [...socialFeedPage.current.items, ...profileActivityPage.current.items].find(({ id }) => id === event.id);
     if (!event.reactionsEnabled || !currentEvent?.reactionsEnabled || !session || destination?.kind !== 'home') return;
     const currentSession = session;
@@ -3784,10 +3827,11 @@ export function HomeScreen() {
     const admission = Symbol('social-feed-reaction');
     socialFeedReactionAdmissions.set(event.id, admission);
     const previousRetry = socialFeedReactionRetries.get(event.id);
-    const idempotencyKey = previousRetry?.reaction === reaction
+    const retryIntent = reaction ?? `remove:${removedEmoji ?? "all"}`;
+    const idempotencyKey = previousRetry?.reaction === retryIntent
       ? previousRetry.key
       : Crypto.randomUUID();
-    socialFeedReactionRetries.set(event.id, { key: idempotencyKey, reaction });
+    socialFeedReactionRetries.set(event.id, { key: idempotencyKey, reaction: retryIntent });
     const reactionIntentKey = `social:reaction:${event.id}`;
     socialFeedReactionTargets.set(
       event.id,
@@ -3809,8 +3853,8 @@ export function HomeScreen() {
     try {
       const api = createSessionApiClient(apiURL, () => currentSession.token);
       const result = reaction
-        ? await api.setSocialFeedReaction(event.id, reaction, idempotencyKey)
-        : await api.removeSocialFeedReaction(event.id, idempotencyKey);
+        ? await api.addSocialFeedEmojiReaction(event.id, reaction, idempotencyKey)
+        : removedEmoji ? await api.removeSocialFeedEmojiReaction(event.id, removedEmoji, idempotencyKey) : await api.removeSocialFeedReaction(event.id, idempotencyKey);
       const response = generatedResponse(result);
       if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
       const envelope = await response.json();
@@ -7691,9 +7735,10 @@ export function HomeScreen() {
     : { active: [] as HomePath[], pinned: [] as HomePath[], trackable: [] as HomePath[], supporting: [] as HomePath[] };
   const renderHomePath = (path: HomePath) => {
     const pathCapabilities = effectivePathCapabilities(path);
-    const state = ownedHomeDestination && pathCapabilities.trackTime
+    const savedState = ownedHomeDestination && pathCapabilities.trackTime
       ? ownedHomeDestination.profile.timers[path.id]
       : undefined;
+    const state = savedState ? liveTimerProgress(savedState, now) : undefined;
     const progress = state && path.overallTarget
       ? overallProgress(state.accumulatedSeconds, path.overallTarget)
       : undefined;
@@ -7706,8 +7751,8 @@ export function HomeScreen() {
     const pinned = homePreferences.pinnedPathIDs.includes(path.id);
     return <PathCard
       appearance={appearance}
-      headline={state ? formatGoalDuration(currentIntervalProgress?.accumulatedSeconds ?? state.accumulatedSeconds, i18n) : undefined}
-      intervalSummary={currentIntervalProgress && path.intervalGoal ? i18n.t(`home.tile.${path.intervalGoal.recurrence}`, { target: formatGoalDuration(currentIntervalProgress.targetSeconds, i18n) }) : state ? i18n.t('path.progress.accumulatedLabel') : undefined}
+      headline={state && (!path.intervalGoal || currentIntervalProgress) ? (state.running ? formatSessionClock : formatGoalDuration)(currentIntervalProgress?.accumulatedSeconds ?? state.accumulatedSeconds, i18n) : undefined}
+      intervalSummary={currentIntervalProgress && path.intervalGoal ? i18n.t(`home.tile.${path.intervalGoal.recurrence}`, { target: formatGoalDuration(currentIntervalProgress.targetSeconds, i18n) }) : state ? i18n.t(path.intervalGoal ? 'common.loading' : 'path.progress.accumulatedLabel') : undefined}
       actions={[{
         disabled: homePreferenceBusy,
         label: i18n.t(pinned ? 'home.arrange.unpin' : 'home.arrange.pin', { pathName: path.name }),
@@ -7718,8 +7763,8 @@ export function HomeScreen() {
       }, { label: i18n.t('pathDetails.editPath'), systemImage: 'pencil', onPress: () => openPathDetail(path.id) },
       ...(pathCapabilities.manageLifecycle ? [{ label: i18n.t('pathDelete.action'), systemImage: 'trash' as const, destructive: true, onPress: () => { openPathDetail(path.id); openFocusedPathManagement(path, 'delete'); } }] : [])] }
       actionsAccessibilityLabel={i18n.t('home.pathActions', { pathName: path.name })}
-      accumulatedText={state && currentIntervalProgress ? i18n.t('path.progress.accumulatedCompact', {
-        duration: formatGoalDuration(state.accumulatedSeconds, i18n),
+      accumulatedText={state && path.intervalGoal ? i18n.t('path.progress.accumulatedCompact', {
+        duration: (state.running ? formatSessionClock : formatGoalDuration)(state.accumulatedSeconds, i18n),
       }) : undefined}
       key={path.id}
       name={path.name}
@@ -8601,7 +8646,8 @@ export function HomeScreen() {
       }}
       openActivity={(event) => void openSocialFeedActivity(event)}
       openComments={(event) => openPracticeComments(event.id, event.participant.userId)}
-      removeReaction={(event) => mutateSocialFeedReaction(event, null)}
+      loadReactionPeople={loadSocialReactionPeople}
+      removeReaction={(event, emoji) => mutateSocialFeedReaction(event, null, emoji)}
       refresh={() => void loadSocialFeed('', true)}
       refreshActive={() => void loadSocialActiveFollowing('', true)}
       retry={() => void loadSocialFeed()}
@@ -8682,7 +8728,8 @@ export function HomeScreen() {
       openActivity={(event) => void openSocialFeedActivity(event)}
       openComments={(event) => openPracticeComments(event.id, event.participant.userId)}
       setReaction={(event, reaction) => mutateSocialFeedReaction(event, reaction)}
-      removeReaction={(event) => mutateSocialFeedReaction(event, null)}
+      loadReactionPeople={loadSocialReactionPeople}
+      removeReaction={(event, emoji) => mutateSocialFeedReaction(event, null, emoji)}
       dismissActivityNotice={() => setProfileActivity((current) => ({ ...current, interactionNoticeKey: undefined }))}
       isCurrent={() => socialPresentationKey === `${notificationLifecycleState.current.destination?.kind === 'home'
         ? notificationLifecycleState.current.destination.profile.id

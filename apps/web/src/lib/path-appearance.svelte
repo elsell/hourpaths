@@ -67,7 +67,7 @@
   .tone-pink { background: #F0DBFF; color: #392044; }
 
   .appearance { padding: 1rem; border-radius: 1.25rem; }
-  .emoji { display: block; font-size: 1.75rem; margin-bottom: .5rem; }
+  .emoji { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #292734; color: white; font-size: 1.5rem; margin-bottom: .5rem; }
   .appearance :global(.path-link) { color: inherit; }
   .edit { display: block; margin-top: .75rem; background: transparent; color: inherit; }
   button,input,select { font: inherit; padding: .6rem; border-radius: .5rem; }

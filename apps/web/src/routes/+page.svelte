@@ -5,7 +5,7 @@
   import PathAppearanceSurface from '$lib/path-appearance.svelte';
   import { onMount } from 'svelte';
   import { createPathSubmissionOwner, createSessionApiClient, createTimerOperationOwner, formatTimerDuration, generatedResponse, sessionExpiryAdvanced, sessionRefreshDelay, sessionRefreshLeadMs, timerMutationPresentation, type ActivityDeletionResult, type ActivityDetail, type ActivityMutationResult, type ActivityRevision, type GeneratedOperationResult, type ManualActivityDefaults, type MemberRemovalReceipt, type MemberRemovalReview as GeneratedMemberRemovalReview, type OwnershipTransfer, type OwnershipTransferCandidate, type OwnershipTransferResult, type PathArchiveStateDraft, type PathCreateDraft, type PathGoalMutationResult, type PathGoalUpdateDraft, type PathMember, type PathRecurrence, type SessionPath, type TimerState, type TimerStopResult } from '@hourpaths/api-client';
-  import { activeTimerSeconds, applyGoalMutationResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, applyPathVisibilityResult, authenticatedProfileFromAPI, compareGoalConfigurations, createAsyncMutationBarrier, createManualActivityFormState, createNotificationRefreshLatch, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createPathVisibilityOperationOwner, createProfileSearchOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, followRequestPageFromAPI, followRequestReviewResultFromAPI, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeFollowRequestPage, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, notificationPresentationMessageKey, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, pathsRequiringTimerRestore, pathVisibilityFromAPI, pathVisibilityOptions, profileSearchPageFromAPI, profileSearchQuery, publicProfileFromAPI, relationshipMutationResultFromAPI, removeResolvedFollowRequest, retainedSessionExpiry, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPathVisibilityChange, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, type AuthenticatedProfile, type ClientRuntimeConfig, type FollowRequestState, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitation, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PathVisibility, type PathVisibilityChangeReview, type PendingPathInvitation, type PendingPathInvitationState, type ProfileSearchState, type PublicProfile, type RunningTimerSnapshot, type SessionAccessState, type SessionFailure, type SessionOperationTicket, type SignOutTimerResolution } from '@hourpaths/client-core';
+  import { liveTimerProgress, createTimerPeriodRefresher, activeTimerSeconds, applyGoalMutationResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, applyPathVisibilityResult, authenticatedProfileFromAPI, compareGoalConfigurations, createAsyncMutationBarrier, createManualActivityFormState, createNotificationRefreshLatch, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createPathVisibilityOperationOwner, createProfileSearchOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, followRequestPageFromAPI, followRequestReviewResultFromAPI, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeFollowRequestPage, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, notificationPresentationMessageKey, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, pathsRequiringTimerRestore, pathVisibilityFromAPI, pathVisibilityOptions, profileSearchPageFromAPI, profileSearchQuery, publicProfileFromAPI, relationshipMutationResultFromAPI, removeResolvedFollowRequest, retainedSessionExpiry, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPathVisibilityChange, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, type AuthenticatedProfile, type ClientRuntimeConfig, type FollowRequestState, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitation, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PathVisibility, type PathVisibilityChangeReview, type PendingPathInvitation, type PendingPathInvitationState, type ProfileSearchState, type PublicProfile, type RunningTimerSnapshot, type SessionAccessState, type SessionFailure, type SessionOperationTicket, type SignOutTimerResolution } from '@hourpaths/client-core';
   import { blockedAccountPageFromAPI, blockReviewFromAPI, blockResultFromAPI, mergeBlockedAccountPage, unblockResultFromAPI, type BlockedAccount, type BlockedAccountPage, type BlockReview } from '@hourpaths/client-core';
   import { createTranslator, type MessageKey, type SupportedLocale, type Translator } from '@hourpaths/i18n';
   import { applicationDestination, applicationSession, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, refreshApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
@@ -160,6 +160,7 @@
   };
   let signOutResolutionContext: SignOutResolutionContext | null = null;
   let now = Date.now();
+  const refreshExpiredTimerPeriods = createTimerPeriodRefresher();
   let manualPathID: string | null = null;
   let manualForm: ManualActivityFormState | null = null;
   let manualNote = '';
@@ -826,6 +827,17 @@
       liveElapsed = setTimeout(() => {
         if (!active) return;
         now = Date.now();
+        const credential = session;
+        if (credential) refreshExpiredTimerPeriods(timerStates, now, async (pathID, snapshot) => {
+          try {
+            const refreshed = await validateSessionCredential<TimerState>(credential, async (current) => generatedResponse(
+              await createSessionApiClient(data.config.apiURL, () => current.token).currentTimer(pathID),
+            ));
+            if (session === credential && timerStates[pathID] === snapshot) timerStates = { ...timerStates, [pathID]: refreshed };
+          } catch (cause) {
+            if (session === credential && isSessionFailure(cause) && webSessionFailure(cause).discardCredential) handlePathDetailFailure(cause);
+          }
+        });
         tick();
       }, 1000);
     };
@@ -3321,6 +3333,9 @@
   function closeManualActivity() {
     resetManualActivity();
   }
+  function notificationEmoji(value: PathInvitationNotification): string {
+    return value.type === 'practice_reaction' ? value.reaction : '';
+  }
 </script>
 
 <main>
@@ -3419,6 +3434,7 @@
                   {#if !notification.read}<span>{i18n.t('notification.unread')}</span>{/if}
                   {#if notification.type === 'path_deleted' || notification.type === 'path_member_removed'}
                     <p>{i18n.t(notificationPresentationMessageKey(notification), {
+                      emoji: notificationEmoji(notification),
                       displayName: notification.actor.displayName,
                       username: notification.actor.username,
                       pathName: 'pathName' in notification ? notification.pathName : '',
@@ -3427,6 +3443,7 @@
                   {:else}
                     <button class="notification-link" disabled={notificationMutationBusy} onclick={() => void openNotification(notification)}>
                       {i18n.t(notificationPresentationMessageKey(notification), {
+                      emoji: notificationEmoji(notification),
                         displayName: notification.actor.displayName,
                         username: notification.actor.username,
                         pathName: 'pathName' in notification ? notification.pathName : '',
@@ -3450,6 +3467,7 @@
                   {#if !notification.read}<span>{i18n.t('notification.unread')}</span>{/if}
                   {#if notification.type === 'path_deleted' || notification.type === 'path_member_removed'}
                     <p>{i18n.t(notificationPresentationMessageKey(notification), {
+                      emoji: notificationEmoji(notification),
                       displayName: notification.actor.displayName,
                       username: notification.actor.username,
                       pathName: 'pathName' in notification ? notification.pathName : '',
@@ -3458,6 +3476,7 @@
                   {:else}
                     <button class="notification-link" disabled={notificationMutationBusy} onclick={() => void openNotification(notification)}>
                       {i18n.t(notificationPresentationMessageKey(notification), {
+                      emoji: notificationEmoji(notification),
                         displayName: notification.actor.displayName,
                         username: notification.actor.username,
                         pathName: 'pathName' in notification ? notification.pathName : '',
@@ -4142,7 +4161,7 @@
           <p>{i18n.t('home.empty.explanation')}</p>
         </section>
       {:else}
-        <ul class="path-list">{#each paths as path (path.id)}{@const state = timerStates[path.id]}{@const pathCapabilities = effectivePathCapabilities(path)}<li>{#key profile?.id}<PathAppearanceSurface apiURL={data.config.apiURL} token={session?.token ?? ''} pathID={path.id} {i18n}><button class="path-link" onclick={() => void openPathDetails(path)}>{path.name}</button>{#if path.intervalGoal}<p>{i18n.t('path.goal.intervalSummary', { seconds: i18n.number(path.intervalGoal.targetSeconds), recurrence: recurrenceLabel(path.intervalGoal.recurrence) })}</p>{/if}{#if pathCapabilities.trackTime && state}<p>{i18n.t('path.progress.accumulated', { seconds: i18n.number(state.accumulatedSeconds) })}</p>{@const pathIntervalProgress = intervalProgressPresentation(state.intervalProgress)}{#if pathIntervalProgress}<div><progress max={pathIntervalProgress.targetSeconds} value={pathIntervalProgress.visualSeconds} aria-label={intervalProgressMessage(pathIntervalProgress)}></progress><p>{intervalProgressMessage(pathIntervalProgress)}</p></div>{/if}{#if path.overallTarget}{@const pathOverallProgress = overallProgress(state.accumulatedSeconds, path.overallTarget)}{#if pathOverallProgress}<div><progress max={pathOverallProgress.targetSeconds} value={pathOverallProgress.visualSeconds} aria-label={overallProgressMessage(pathOverallProgress)}></progress><p>{overallProgressMessage(pathOverallProgress)}</p></div>{/if}{/if}{#if state.running}<span aria-label={i18n.t('timer.elapsedValue', { duration: formatTimerDuration(activeTimerSeconds(state.timer?.startedAt, now)) })}>{formatTimerDuration(activeTimerSeconds(state.timer?.startedAt, now))}</span>{/if} <button disabled={timerBusy[path.id] || timerMutationLocked} onclick={() => void toggleTimer(path.id)}>{i18n.t(timerMutationPresentation(state).controlMessage)}</button>{#if timerErrorKeys[path.id]}<p role="alert">{i18n.t(timerErrorKeys[path.id]!)}</p>{/if}{/if}</PathAppearanceSurface>{/key}</li>{/each}</ul>
+        <ul class="path-list">{#each paths as path (path.id)}{@const state = timerStates[path.id] ? liveTimerProgress(timerStates[path.id]!, now) : undefined}{@const pathCapabilities = effectivePathCapabilities(path)}<li>{#key profile?.id}<PathAppearanceSurface apiURL={data.config.apiURL} token={session?.token ?? ''} pathID={path.id} {i18n}><button class="path-link" onclick={() => void openPathDetails(path)}>{path.name}</button>{#if path.intervalGoal}<p>{i18n.t('path.goal.intervalSummary', { seconds: i18n.number(path.intervalGoal.targetSeconds), recurrence: recurrenceLabel(path.intervalGoal.recurrence) })}</p>{/if}{#if pathCapabilities.trackTime && state}<p>{i18n.t('path.progress.accumulated', { seconds: i18n.number(state.accumulatedSeconds) })}</p>{@const pathIntervalProgress = intervalProgressPresentation(state.intervalProgress)}{#if pathIntervalProgress}<div><progress max={pathIntervalProgress.targetSeconds} value={pathIntervalProgress.visualSeconds} aria-label={intervalProgressMessage(pathIntervalProgress)}></progress><p>{intervalProgressMessage(pathIntervalProgress)}</p></div>{/if}{#if path.overallTarget}{@const pathOverallProgress = overallProgress(state.accumulatedSeconds, path.overallTarget)}{#if pathOverallProgress}<div><progress max={pathOverallProgress.targetSeconds} value={pathOverallProgress.visualSeconds} aria-label={overallProgressMessage(pathOverallProgress)}></progress><p>{overallProgressMessage(pathOverallProgress)}</p></div>{/if}{/if}{#if state.running}<span aria-label={i18n.t('timer.elapsedValue', { duration: formatTimerDuration(activeTimerSeconds(state.timer?.startedAt, now)) })}>{formatTimerDuration(activeTimerSeconds(state.timer?.startedAt, now))}</span>{/if} <button disabled={timerBusy[path.id] || timerMutationLocked} onclick={() => void toggleTimer(path.id)}>{i18n.t(timerMutationPresentation(state).controlMessage)}</button>{#if timerErrorKeys[path.id]}<p role="alert">{i18n.t(timerErrorKeys[path.id]!)}</p>{/if}{/if}</PathAppearanceSurface>{/key}</li>{/each}</ul>
       {/if}
       {#if pathCreated}<p role="status">{i18n.t('pathCreate.created')}</p>{/if}
       {#if timerNoticeKey}<p role="status">{i18n.t(timerNoticeKey)}</p>{/if}

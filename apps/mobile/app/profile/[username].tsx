@@ -172,7 +172,7 @@ export default function SocialProfileScreen() {
           onLoadMore={social.loadMoreActivity} onRetry={social.retryActivity}
           onDismissInteractionNotice={social.dismissActivityNotice}
           onOpen={social.openActivity} onOpenComments={social.openComments}
-          onSetReaction={social.setReaction} onRemoveReaction={social.removeReaction}
+          loadReactionPeople={social.loadReactionPeople} onSetReaction={social.setReaction} onRemoveReaction={social.removeReaction}
           onOpenProfile={(nextUsername) => { if (nextUsername !== username) router.push({ pathname: '/profile/[username]', params: { username: nextUsername } }); }}
         />
       </> : null}

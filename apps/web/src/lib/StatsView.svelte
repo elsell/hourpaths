@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { statsRanges, statsRangeKeys, statsDuration, statsDateLabel, statsPeriodLabel, statsPathTone, statsCalendarGroups, type StatsState, type StatsSelection, type PathAppearance, type StatsCalendarUnit } from '@hourpaths/client-core';
+  import { tick } from 'svelte';
+  import { statsRanges, statsRangeKeys, statsDuration, statsDateLabel, statsPeriodLabel, statsPathTone, statsCalendarGroups, statsContributionWeeks, statsContributionLevel, statsWeekdayLabel, statsContributionMonthLabel, type StatsState, type StatsSelection, type PathAppearance, type StatsCalendarUnit } from '@hourpaths/client-core';
   import type { Translator, MessageKey } from '@hourpaths/i18n';
 
   export let state: StatsState;
@@ -8,14 +9,27 @@
   export let onRefresh: () => void;
   export let appearance: ((id: string) => PathAppearance) | undefined = undefined;
   let grouping: StatsCalendarUnit = 'day';
+  let weeks: ReturnType<typeof statsContributionWeeks> = [];
   let calendar: ReturnType<typeof statsCalendarGroups> = [];
   let groupedRange = state.selection.range;
-  $: if (groupedRange !== state.selection.range) { groupedRange = state.selection.range; grouping = groupedRange === 'year' ? 'month' : groupedRange === 'all_time' ? 'year' : 'day'; }
+  $: if (groupedRange !== state.selection.range) { groupedRange = state.selection.range; grouping = 'day'; }
   const groupings = ['day', 'week', 'month', 'year'] as const;
   const groupingKeys: Record<StatsCalendarUnit, MessageKey> = { day: 'stats.calendar.day', week: 'stats.calendar.week', month: 'stats.calendar.month', year: 'stats.calendar.year' };
   $: data = state.data;
   $: maxBucket = Math.max(1, ...(data?.buckets ?? []).map((bucket) => bucket.seconds));
   $: calendar = statsCalendarGroups(data?.calendar ?? [], grouping, data?.weekStartsOn);
+  $: weeks = statsContributionWeeks(data?.calendar ?? [], data?.weekStartsOn);
+  $: maxDay = Math.max(1, ...(data?.calendar ?? []).map(day => day.seconds));
+  let selectedDate: string | undefined;
+  $: selectedDay = weeks.flat().find(day => day?.date === selectedDate);
+  $: chartSelection = JSON.stringify(state.selection);
+  function recentFirst(node: HTMLElement, selection: string) {
+    let current = selection;
+    let active = true;
+    const scroll = async () => { await tick(); if (active) node.scrollLeft = node.scrollWidth; };
+    void scroll();
+    return { update(next: string) { if (next !== current) { current = next; void scroll(); } }, destroy() { active = false; } };
+  }
   $: maxCalendar = Math.max(1, ...calendar.map((entry) => entry.seconds));
   $: slices = (data?.distribution ?? []).map((path, index, paths) => ({
     ...path,
@@ -57,9 +71,15 @@
         <svg class="donut" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="44" fill="none" stroke="var(--surface)" stroke-width="19" />{#each slices as slice}<circle cx="60" cy="60" r="44" fill="none" stroke={statsPathTone(slice.pathId, appearance).accent} stroke-width="19" pathLength="1" stroke-dasharray={dashArray(slice.fraction)} stroke-dashoffset={-slice.offset} transform="rotate(-90 60 60)" />{/each}</svg>
         <ul class="legend">{#each data.distribution as path}<li><span class="dot" style:background={statsPathTone(path.pathId, appearance).accent}></span><span>{path.name}</span><strong>{statsDuration(path.seconds, i18n)}</strong></li>{/each}</ul>
       </div></section>
-      <section class="panel"><h3>{i18n.t('stats.activity')}</h3><div class="chart-scroll"><ol class="bars">{#each data.buckets as bucket}<li aria-label={valueLabel(statsDateLabel(bucket.key, data.bucketUnit, i18n), bucket.seconds)}><div class="bar-track" aria-hidden="true"><span style:height={barHeight(bucket.seconds, maxBucket)}></span></div><strong>{statsDuration(bucket.seconds, i18n)}</strong><span>{statsDateLabel(bucket.key, data.bucketUnit, i18n)}</span></li>{/each}</ol></div></section>
+      <section class="panel"><h3>{i18n.t('stats.activity')}</h3><div class="chart-scroll" use:recentFirst={chartSelection}><ol class="bars">{#each data.buckets as bucket}<li aria-label={valueLabel(statsDateLabel(bucket.key, data.bucketUnit, i18n), bucket.seconds)}><div class="bar-track" aria-hidden="true"><span style:height={barHeight(bucket.seconds, maxBucket)}></span></div><strong>{statsDuration(bucket.seconds, i18n)}</strong><span>{statsDateLabel(bucket.key, data.bucketUnit, i18n)}</span></li>{/each}</ol></div></section>
       <section class="panel"><div class="calendar-heading"><h3>{i18n.t('stats.calendar')}</h3><label><span class="sr-only">{i18n.t('stats.calendarGrouping')}</span><select bind:value={grouping}>{#each groupings as value}<option value={value}>{i18n.t(groupingKeys[value])}</option>{/each}</select></label></div>
-        <ol class="calendar">{#each calendar as entry}<li class:has-time={entry.seconds > 0} style:--intensity={String(.08 + entry.seconds / maxCalendar * .2)} aria-label={valueLabel(statsDateLabel(entry.key, grouping === 'week' ? 'day' : grouping, i18n), entry.seconds)}><time datetime={entry.key}>{statsDateLabel(entry.key, grouping === 'week' ? 'day' : grouping, i18n)}</time><strong>{statsDuration(entry.seconds, i18n)}</strong></li>{/each}</ol>
+        {#if grouping === 'day'}
+          <div class="contribution-body"><div class="contribution-weekdays">{#each [0,1,2,3,4,5,6] as weekday}<span>{statsWeekdayLabel(weekday, data.weekStartsOn, i18n)}</span>{/each}</div><div class="contribution-scroll"><div class="contribution" role="group" aria-label={i18n.t('stats.contribution.title')}>
+            {#each weeks as week, index}<div class="contribution-week"><span class="contribution-month">{statsContributionMonthLabel(week, index, i18n)}</span>{#each week as day}{#if day}<button class="contribution-day" data-level={statsContributionLevel(day.seconds, maxDay)} aria-label={valueLabel(statsDateLabel(day.date, 'day', i18n), day.seconds)} title={valueLabel(statsDateLabel(day.date, 'day', i18n), day.seconds)} aria-pressed={selectedDate === day.date} onclick={() => selectedDate = day.date}></button>{:else}<span class="contribution-placeholder"></span>{/if}{/each}</div>{/each}
+          </div></div></div>
+          <div class="contribution-legend"><span>{i18n.t('stats.contribution.less')}</span>{#each [0,1,2,3,4] as level}<span class="contribution-key" data-level={level}></span>{/each}<span>{i18n.t('stats.contribution.more')}</span></div>
+          {#if selectedDay}<p class="contribution-detail" aria-live="polite">{valueLabel(statsDateLabel(selectedDay.date, 'day', i18n), selectedDay.seconds)}</p>{/if}
+        {:else}<ol class="calendar">{#each calendar as entry}<li class:has-time={entry.seconds > 0} style:--intensity={String(.08 + entry.seconds / maxCalendar * .2)} aria-label={valueLabel(statsDateLabel(entry.key, grouping === 'week' ? 'day' : grouping, i18n), entry.seconds)}><time datetime={entry.key}>{statsDateLabel(entry.key, grouping === 'week' ? 'day' : grouping, i18n)}</time><strong>{statsDuration(entry.seconds, i18n)}</strong></li>{/each}</ol>{/if}
       </section>
     {/if}
   {/if}
@@ -77,7 +97,9 @@
   .panel { border:1px solid var(--line); border-radius:1.25rem; padding:1.15rem; min-width:0; } .distribution { display:flex; align-items:center; gap:1rem; padding-top:.75rem; } .donut { width:9rem; flex:none; } .legend { flex:1; min-width:0; padding:0; margin:0; list-style:none; } .legend li { display:flex; align-items:center; gap:.5rem; padding:.45rem 0; font-size:.85rem; } .legend li>span:nth-child(2) { overflow-wrap:anywhere; flex:1; } .legend strong { font-size:.8rem; white-space:nowrap; font-variant-numeric:tabular-nums; } .dot { height:.6rem; width:.6rem; border-radius:50%; flex:none; display:inline-block; }
   .chart-scroll { overflow-x:auto; padding-top:1rem; } .bars { display:flex; gap:.5rem; list-style:none; padding:0; margin:0; min-width:100%; } .bars li { flex:1 0 2.6rem; text-align:center; display:flex; flex-direction:column; gap:.3rem; font-size:.65rem; } .bars strong { font-size:.65rem; font-weight:500; } .bars li>span { color:var(--muted); } .bar-track { height:8rem; display:flex; align-items:flex-end; justify-content:center; border-bottom:1px solid var(--line); } .bar-track>span { display:block; width:70%; min-width:4px; border-radius:.35rem .35rem 0 0; background:#755400; }
   .calendar-heading { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:1rem; } select { border:0; border-radius:.6rem; padding:.5rem; color:var(--ink); background:var(--surface); } .calendar { display:grid; grid-template-columns:repeat(auto-fill,minmax(5rem,1fr)); gap:.4rem; padding:0; margin:0; list-style:none; max-height:24rem; overflow-y:auto; } .calendar li { padding:.65rem .45rem; background:var(--surface); border-radius:.6rem; display:flex; flex-direction:column; gap:.4rem; text-align:center; font-size:.7rem; } .calendar .has-time { background:rgb(117 84 0 / var(--intensity)); } .calendar time { color:var(--muted); } .calendar strong { font-variant-numeric:tabular-nums; }
+  .contribution-body { display:flex; gap:5px; } .contribution-weekdays { display:flex; flex-direction:column; gap:4px; padding-top:25px; font-size:10px; color:var(--muted); } .contribution-weekdays span { height:22px; line-height:22px; } .contribution-month { height:18px; width:22px; overflow:visible; white-space:nowrap; font-size:9px; color:var(--muted); }
+  .contribution-scroll { overflow-x:auto; padding:3px; } .contribution { display:flex; gap:4px; } .contribution-week { display:flex; flex-direction:column; gap:4px; } .contribution-day,.contribution-placeholder { width:22px; height:22px; min-height:22px; padding:0; border-radius:4px; flex:none; } .contribution-day { border:1px solid #767676; } .contribution-day[aria-pressed=true] { outline:2px solid var(--ink); outline-offset:1px; } [data-level="0"] { background:var(--surface); } [data-level="1"] { background:#e4dfc2; } [data-level="2"] { background:#c5b45d; } [data-level="3"] { background:#a48a2b; } [data-level="4"] { background:#755400; } .contribution-legend { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:.7rem; font-size:.75rem; color:var(--muted); } .contribution-key { width:12px; height:12px; border-radius:3px; } .contribution-detail { margin-top:.7rem; font-size:.85rem; color:var(--muted); }
   .empty,.notice { border-radius:1rem; background:var(--surface); padding:1.5rem; } .empty p,.notice p { line-height:1.5; color:var(--muted); margin-top:.5rem; } .notice button { margin-top:.75rem; background:var(--ink); color:var(--panel); } .loading { font-size:.875rem; color:var(--muted); } .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
   @media(max-width:430px) { .distribution { gap:.65rem; } .donut { width:6.5rem; } .panel { padding:.9rem; } }
-  @media(prefers-color-scheme:dark) { .stats { --surface:#2c2c2e; --panel:#1c1c1e; --ink:#f5f5f7; --muted:#aaa; --line:#3a3a3c; } .text-button { color:#b2d1f0; } .bar-track>span { background:#e4cf8e; } .calendar .has-time { background:rgb(228 207 142 / var(--intensity)); } }
+  @media(prefers-color-scheme:dark) { .donut circle[stroke-dasharray], .legend .dot { filter:brightness(2); } [data-level="1"] { background:#514a26; } [data-level="2"] { background:#807137; } [data-level="3"] { background:#b49b40; } [data-level="4"] { background:#ffd84d; } .stats { --surface:#2c2c2e; --panel:#1c1c1e; --ink:#f5f5f7; --muted:#aaa; --line:#3a3a3c; } .text-button { color:#b2d1f0; } .bar-track>span { background:#e4cf8e; } .calendar .has-time { background:rgb(228 207 142 / var(--intensity)); } }
 </style>

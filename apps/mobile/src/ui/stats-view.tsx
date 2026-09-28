@@ -6,14 +6,14 @@ import { NativeSegmentedControl } from './native-segmented-control';
 import { NativeButton } from './native-button';
 import { PlatformSymbol } from './platform-symbol';
 import { SectionHeading, StatusBanner, Surface } from './primitives';
-import { StatsBars, StatsCalendar, StatsDonut } from './stats-charts';
+import { StatsBars, StatsCalendar, StatsDonut, StatsContributionGrid } from './stats-charts';
 import { mobileTheme } from './tokens';
 
 export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { state: StatsState; i18n: Translator; onSelect: (selection: StatsSelection) => void; onRefresh: () => void; appearance?: (id: string) => PathAppearance }) {
   const [pathsExpanded, setPathsExpanded] = useState(false);
   const [calendarUnit, setCalendarUnit] = useState<StatsCalendarUnit>('day');
   const { data, selection } = state;
-  useEffect(() => { setCalendarUnit(selection.range === 'year' ? 'month' : selection.range === 'all_time' ? 'year' : 'day'); }, [selection.range]);
+  useEffect(() => { setCalendarUnit('day'); }, [selection.range]);
   const filterLabel = selection.pathIds.length ? i18n.t('stats.selectedPaths', { count: selection.pathIds.length }) : i18n.t('stats.allPaths');
   const chartValue = (key: string, seconds: number, unit: string) => ({ key, seconds, label: statsDateLabel(key, unit, i18n), color: mobileTheme.colors.accent });
   const selectPath = (id: string) => onSelect({ ...selection, pathIds: selection.pathIds.includes(id) ? selection.pathIds.filter(candidate => candidate !== id) : [...selection.pathIds, id] });
@@ -48,12 +48,12 @@ export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { st
       </Surface>
       <Surface>
         <SectionHeading>{i18n.t('stats.activity')}</SectionHeading>
-        <StatsBars values={data.buckets.map(bucket => chartValue(bucket.key, bucket.seconds, data.bucketUnit))} i18n={i18n} />
+        <StatsBars key={JSON.stringify(selection)} values={data.buckets.map(bucket => chartValue(bucket.key, bucket.seconds, data.bucketUnit))} i18n={i18n} />
       </Surface>
       <Surface>
         <SectionHeading>{i18n.t('stats.calendar')}</SectionHeading>
         <NativeSegmentedControl value={calendarUnit} segments={(['day', 'week', 'month', 'year'] as const).map(value => ({ value, label: i18n.t(calendarKeys[value]) }))} onChange={setCalendarUnit} />
-        <StatsCalendar values={statsCalendarGroups(data.calendar, calendarUnit, data.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} />
+        {calendarUnit === 'day' ? <StatsContributionGrid key={JSON.stringify(selection)} days={data.calendar} weekStartsOn={data.weekStartsOn} i18n={i18n} /> : <StatsCalendar values={statsCalendarGroups(data.calendar, calendarUnit, data.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} />}
       </Surface>
     </> : null}
   </ScrollView>;

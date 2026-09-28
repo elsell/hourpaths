@@ -104,3 +104,13 @@ surface.
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/)
 - [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines)
 - [Android accessibility principles](https://developer.android.com/guide/topics/ui/accessibility/principles)
+
+## Path colors and decorative emoji
+
+- Every supported Path palette must provide at least 4.5:1 text contrast and
+  3:1 contrast for meaningful graphical indicators against adjacent colors.
+- Path emoji must use a shared constant neutral circular backdrop across Home,
+  feed attachments, edit previews, and live activity pages. Emoji are decorative;
+  adjacent text and accessible labels must convey Path identity and controls.
+- Color emoji artwork is platform-rendered and must not be the sole source of
+  information or the only identifiable control.

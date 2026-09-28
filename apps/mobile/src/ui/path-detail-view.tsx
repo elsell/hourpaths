@@ -1,3 +1,4 @@
+import { PathEmoji } from './path-emoji';
 import { getLocales } from 'expo-localization';
 import { Fragment, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -67,7 +68,7 @@ export function PathDetailView({
           onPress={onAppearance}
           style={({ pressed }) => [styles.emojiButton, pressed && styles.pressed]}
         >
-          <Text style={styles.emoji}>{appearance.emoji}</Text>
+          <PathEmoji emoji={appearance.emoji} size={48} />
         </Pressable>
         <Pressable
           accessibilityLabel={name}

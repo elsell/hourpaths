@@ -1,3 +1,4 @@
+import { PathEmoji } from './path-emoji';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { NativeActionMenu } from './native-action-menu';
@@ -25,12 +26,12 @@ export function PathCard({ onFocusTarget, actions, actionsAccessibilityLabel, ac
     {onOpen ? <Pressable ref={onFocusTarget} accessibilityLabel={name} accessibilityRole="button" onPress={onOpen}
       style={({ pressed }) => [StyleSheet.absoluteFill, styles.hitSurface, pressed ? styles.pressed : null]} /> : null}
     <View pointerEvents="none" style={[styles.identity, actions?.length ? styles.withActions : null]}>
-      <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.emoji}>{appearance.emoji}</Text>
+      <PathEmoji emoji={appearance.emoji} />
       <Text style={[styles.name, { color: tone.foreground }]}>{name}</Text>
     </View>
     {actions?.length && actionsAccessibilityLabel ? <View style={styles.actions}><NativeActionMenu color={tone.accent} accessibilityLabel={actionsAccessibilityLabel} actions={actions} /></View> : null}
     <View pointerEvents="none" style={styles.summaryStack}>
-      {headline ? <Text style={[styles.headline, { color: tone.foreground }]}>{headline}</Text> : null}
+      {headline ? <Text adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[styles.headline, { color: tone.foreground }]}>{headline}</Text> : null}
       {intervalSummary ? <Text style={[styles.summary, { color: tone.foreground }]}>{intervalSummary}</Text> : null}
       {progress ? <View style={styles.progressStack}>{progress}</View> : null}
       {accumulatedText ? <Text style={[styles.summary, { color: tone.foreground }]}>{accumulatedText}</Text> : null}

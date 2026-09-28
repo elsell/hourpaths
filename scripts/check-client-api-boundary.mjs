@@ -665,6 +665,11 @@ function importAllowed(specifier, relative, file) {
   }
   if (specifier.startsWith('.')) {
     if (specifier === './$types') return true;
+    // Pinned, offline Unicode data: entries contain only a glyph and catalog key.
+    if (relative === 'packages/i18n/src/index.ts' && specifier === './emoji-catalog.json') {
+      const imported = path.resolve(path.dirname(file), specifier);
+      return realPathBelow(imported, path.join(root, 'packages/i18n/src'));
+    }
     if (relative === 'packages/i18n/src/index.ts' && specifier.startsWith('./locales/') && specifier.endsWith('.json')) {
       const imported = path.resolve(path.dirname(file), specifier);
       const localesRoot = path.join(root, 'packages/i18n/src/locales');

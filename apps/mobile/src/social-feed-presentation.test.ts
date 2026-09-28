@@ -39,9 +39,11 @@ const homeOrchestration = source('../app/index.tsx');
 const fixtureDisplayName = ['Alex', 'Rivera'].join(' ');
 const fixturePathName = ['Pi', 'ano'].join('');
 
-function event(id: string, publishedAt: string): PracticeSessionFeedEvent {
+function event(id: string, publishedAt: string): PracticeSessionFeedEvent & { commentCount: number; emojiReactions: [] } {
   return {
     activity: { durationSeconds: 900, edited: false, id: `activity-${id}` },
+    commentCount: 0,
+    emojiReactions: [],
     commentsEnabled: true,
     id,
     participant: { displayName: fixtureDisplayName, userId: 'user-1', username: 'alex' },
@@ -133,8 +135,9 @@ test('a delayed feed response preserves only reaction projections changed after 
 
 test('generated reaction summary mapping admits only curated viewer reactions', () => {
   const reactions = { applause: 1, celebrate: 2, fire: 3, heart: 4, strong: 5 };
-  assert.deepEqual(socialReactionSummaryFromAPI({ reactions, viewerReaction: 'heart' }), {
+  assert.deepEqual(socialReactionSummaryFromAPI({ reactions, emojiReactions: [], viewerReaction: 'heart' }), {
     reactions,
+    emojiReactions: [],
     viewerReaction: 'heart',
   });
   assert.equal(socialReactionSummaryFromAPI({
@@ -170,7 +173,9 @@ test('generated feed mapping keeps only the approved projection and never copies
   } as Parameters<typeof socialFeedEventFromAPI>[0]);
   assert.deepEqual(Object.keys(mapped).sort(), [
     'activity',
+    'commentCount',
     'commentsEnabled',
+    'emojiReactions',
     'id',
     'participant',
     'path',
@@ -198,6 +203,8 @@ test('feed mapping forms an exact discriminated union for practice and goal achi
       targetSeconds: 7_200,
     },
     id: 'achievement-1',
+    commentCount: 0,
+    emojiReactions: [],
     commentsEnabled: false,
     participant: { displayName: fixtureDisplayName, userId: 'user-1', username: 'alex' },
     path: { id: 'path-1', name: fixturePathName },
@@ -224,6 +231,8 @@ test('feed mapping forms an exact discriminated union for practice and goal achi
   const overall = socialFeedEventFromAPI({
     achievement: { kind: 'overall', targetSeconds: 36_000 },
     id: 'achievement-2',
+    commentCount: 0,
+    emojiReactions: [],
     commentsEnabled: true,
     participant: { displayName: fixtureDisplayName, userId: 'user-1', username: 'alex' },
     path: { id: 'path-1', name: fixturePathName },
@@ -240,6 +249,8 @@ test('feed mapping forms an exact discriminated union for practice and goal achi
 
 test('feed mapping rejects crossed or invalid discriminant payloads at runtime', () => {
   const base = {
+    commentCount: 0,
+    emojiReactions: [],
     commentsEnabled: true,
     id: 'event-invalid',
     participant: { displayName: fixtureDisplayName, userId: 'user-1', username: 'alex' },
@@ -299,15 +310,15 @@ test('all social events use the same comments and reaction controls while only p
   assert.match(engagement, /event\.commentsEnabled \? <Pressable/);
   assert.match(engagement, /event\.reactionsEnabled \? <ReactionStrip/);
   assert.match(feedView, /onOpenComments: \(event: SocialFeedEvent\) => void/);
-  assert.match(feedView, /onRemoveReaction: \(event: SocialFeedEvent\) => Promise<void>/);
-  assert.match(feedView, /onSetReaction: \(event: SocialFeedEvent, reaction: SocialReaction\) => Promise<void>/);
+  assert.match(feedView, /onRemoveReaction: \(event: SocialFeedEvent, emoji\?: string\) => Promise<void>/);
+  assert.match(feedView, /onSetReaction: \(event: SocialFeedEvent, reaction: string\) => Promise<void>/);
   assert.match(feedView, /onDismissInteractionNotice: \(\) => void/);
   assert.match(feedView, /systemName="xmark"/);
   assert.match(feedView, /onPress=\{onDismiss\}/);
   assert.match(routePresentation, /openActivity: \(event: PracticeSessionFeedEvent\) => void/);
   assert.match(routePresentation, /openComments: \(event: SocialFeedEvent\) => void/);
-  assert.match(routePresentation, /removeReaction: \(event: SocialFeedEvent\) => Promise<void>/);
-  assert.match(routePresentation, /setReaction: \(event: SocialFeedEvent, reaction: SocialReaction\) => Promise<void>/);
+  assert.match(routePresentation, /removeReaction: \(event: SocialFeedEvent, emoji\?: string\) => Promise<void>/);
+  assert.match(routePresentation, /setReaction: \(event: SocialFeedEvent, reaction: string\) => Promise<void>/);
   assert.match(routePresentation, /dismissInteractionNotice: \(\) => void/);
   assert.match(homeOrchestration, /mutateSocialFeedReaction\(event: SocialFeedEvent/);
   assert.match(homeOrchestration, /currentEvent = \[\.\.\.socialFeedPage\.current\.items, \.\.\.profileActivityPage\.current\.items\]\.find[\s\S]*!currentEvent\?\.reactionsEnabled/);
@@ -342,7 +353,7 @@ test('feed interaction controls stay outside activity navigation and expose nati
   assert.match(feedView, /<Pressable[\s\S]*onPress=\{onOpen\}[\s\S]*<\/Pressable>[\s\S]*<FeedEngagement/);
   assert.match(feedView, /minHeight: 44/);
   assert.match(feedView, /flexWrap: 'wrap'/);
-  assert.match(feedView, /accessibilityLiveRegion="assertive"/);
+  assert.match(feedView, /accessibilityRole="alert"/);
   assert.match(feedView, /accessibilityState=\{\{ selected/);
   assert.match(reactionMenu, /Image as SwiftUIImage/);
   assert.match(reactionMenu, /systemName=\{selectedEmoji \? 'heart\.fill' : 'heart'\}/);
