@@ -99,7 +99,7 @@ export type PathGoalUpdateDraft =
 export type PathGoalMutationResult = components['schemas']['PathGoalMutationResult'];
 export type PathArchiveStateDraft =
   Omit<components['schemas']['PathArchiveStateUpdate'], '$schema' | 'confirmed'> & { confirmed: true };
-export function createApiClient(baseUrl: string, tokenProvider: TokenProvider) {
+export function createApiClient(baseUrl: string, tokenProvider: TokenProvider, signal?: AbortSignal) {
   return createClient<paths>({
     baseUrl,
     fetch: async (input, init = {}) => {
@@ -109,7 +109,7 @@ export function createApiClient(baseUrl: string, tokenProvider: TokenProvider) {
       new Headers(requestInit.headers).forEach((value, key) => headers.set(key, value));
       headers.delete('Authorization');
       if (token) headers.set('Authorization', `Bearer ${token}`);
-      return fetch(input, { ...requestInit, headers });
+      return fetch(input, { ...requestInit, headers, ...(signal ? { signal } : {}) });
     }
   });
 }
@@ -129,9 +129,9 @@ export function generatedResponse<T>(result: GeneratedOperationResult<T>) {
   };
 }
 
-export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProvider) {
-  const publicClient = createApiClient(baseUrl, () => null);
-  const authenticatedClient = createApiClient(baseUrl, tokenProvider);
+export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProvider, signal?: AbortSignal) {
+  const publicClient = createApiClient(baseUrl, () => null, signal);
+  const authenticatedClient = createApiClient(baseUrl, tokenProvider, signal);
   return {
     exchange: (identityToken: string) => publicClient.POST('/v1/sessions', {
       body: { identityToken, longLivedSession: true },

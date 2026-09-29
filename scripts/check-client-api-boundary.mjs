@@ -70,7 +70,9 @@ const protectedProviderAdapters = new Set([
 const protectedProviderManifest = 'scripts/protected-provider-adapters.sha256';
 const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts']);
 const protectedApiClientManifest = 'scripts/protected-api-client-adapter.sha256';
+const studioHost = 'apps/web/src/routes/studio/[...path]/+page.svelte';
 const protectedClientCapabilityAdapters = new Set([
+  studioHost,
   'apps/mobile/src/policy-link-native.ts',
   'apps/web/src/lib/accessibility-focus.ts',
   'apps/web/src/lib/device-locale.ts',
@@ -391,7 +393,7 @@ function inspectSvelteMarkup(source, relative) {
     // Reviewed Stats chart styles derive only from numeric totals or the fixed Path palette.
     const statsChartStyle = relative === 'apps/web/src/lib/StatsView.svelte' && ['background', 'height', '--intensity'].includes(value.name);
     if (value.type === 'HtmlTag' || value.type === 'SpreadAttribute' || (value.type === 'StyleDirective' && !statsChartStyle) ||
-      (value.type === 'BindDirective' && value.name === 'this')) apiDestination = true;
+      (value.type === 'BindDirective' && value.name === 'this' && relative !== studioHost)) apiDestination = true;
     if (value.type === 'Attribute' && attributeParts(value)) {
       const parts = attributeParts(value);
       const staticValue = staticAttribute(value);
@@ -642,6 +644,24 @@ function approvedResolvedImport(imported, importerRelative) {
 }
 
 function importAllowed(specifier, relative, file) {
+  // The Studio migration adds rendering/router capabilities, never transport.
+  if (specifier === 'react-dom/client') return relative === 'apps/web/src/lib/studio/bootstrap/mount.tsx';
+  if (specifier === '@tanstack/react-router' || specifier === '@tanstack/react-query') {
+    return relative.startsWith('apps/web/src/lib/studio/presentation/');
+  }
+  if (relative.startsWith('apps/web/src/lib/studio/')) {
+    const layer = relative.split('/').at(-2);
+    if (layer === 'domain' || layer === 'ports' || layer === 'application') {
+      if (!specifier.startsWith('.')) return false;
+      const target = resolveRelativeImport(file, specifier);
+      if (!target) return false;
+      const destination = path.relative(root, target).split(path.sep).join('/');
+      if (!destination.startsWith('apps/web/src/lib/studio/')) return false;
+      if (/(?:^|\/)(?:adapters|bootstrap|presentation)(?:\/|$)/.test(destination)) return false;
+      if (layer === 'domain' && /(?:^|\/)(?:ports|application)(?:\/|$)/.test(destination)) return false;
+    }
+    if (relative.includes('/presentation/') && (specifier === '@hourpaths/api-client' || specifier.includes('/adapters/'))) return false;
+  }
   if (specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack') return approvedNavigationImports.get(relative)?.has(specifier) ?? false;
   if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose') return approvedPlatformUIImports.get(relative)?.has(specifier) ?? false;
   if (specifier === '$env/dynamic/private') return relative === 'apps/web/src/lib/server/config.ts';
@@ -1274,7 +1294,7 @@ for (const file of sourceFiles) {
   }
   if (generatedApiClientSources.has(relative) || protectedApiClientAdapters.has(relative)) continue;
   const source = fs.readFileSync(file, 'utf8');
-  const markup = file.endsWith('.svelte') || relative === 'apps/web/src/app.html' ? inspectSvelteMarkup(source, relative) : undefined;
+  const markup = file.endsWith('.css') ? inspectSvelteMarkup(`<style>${source}</style>`, relative) : file.endsWith('.svelte') || relative === 'apps/web/src/app.html' ? inspectSvelteMarkup(source, relative) : undefined;
   const scripts = markup ? markup.scripts : [source];
   const inlineViolation = markup?.expressions.some((expression, index) =>
     inspectSource(relative, file, `${markup.instanceSource}\n${expression};`, scripts.length + index));
