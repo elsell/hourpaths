@@ -15,7 +15,18 @@ function AppearanceForm({ initial, pathId, dependencies: d, close }: { initial: 
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(60);
   const choices = emojiChoices.filter(item => d.i18n.t(item.key).toLocaleLowerCase(d.i18n.locale).includes(search.toLocaleLowerCase(d.i18n.locale)) || item.emoji.includes(search));
-  const mutation = useMutation({ mutationFn: () => d.paths.saveAppearance(pathId, draft, d.operationId()), onSuccess: async () => { await client.invalidateQueries({ queryKey: [d.accountScope, 'appearance', pathId] }); close(); } });
+  const mutation = useMutation({
+    mutationFn: () => d.paths.saveAppearance(pathId, draft, d.operationId()),
+    onSuccess: async () => { await client.invalidateQueries({ queryKey: [d.accountScope, 'appearance', pathId] }); close(); },
+    onError: async () => {
+      // Preserve the draft. Applying it over another client's edit requires the
+      // user's explicit retry after the existing conflict/retry message.
+      try {
+        const latest = await d.paths.appearance(pathId);
+        setDraft(current => ({ ...current, revision: latest.revision }));
+      } catch { /* A later retry must still satisfy the server revision check. */ }
+    },
+  });
   return <form className="studio-appearance-editor studio-form" onSubmit={event => { event.preventDefault(); mutation.mutate(); }}>
     <h2>{d.i18n.t('home.appearance.title')}</h2>
     <fieldset disabled={mutation.isPending}>

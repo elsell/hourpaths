@@ -84,8 +84,7 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
         orderMethod: preferences.orderMethod, manualPathIds: preferences.manualPathIds, pinnedPathIds: pinnedIds }, operationId));
     },
     async saveAppearance(pathId, appearance, operationId) {
-      const current = accepted(await client.pathAppearance(pathId));
-      accepted(await client.savePathAppearance(pathId, { color: appearance.color, emoji: appearance.emoji, expectedRevision: current.revision }, operationId));
+      accepted(await client.savePathAppearance(pathId, { color: appearance.color, emoji: appearance.emoji, expectedRevision: appearance.revision }, operationId));
     },
     async appearance(pathID, signal) {
       const dto = accepted(await createSessionApiClient(baseURL, token, signal).pathAppearance(pathID));
