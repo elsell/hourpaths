@@ -315,7 +315,9 @@ Profile setup after first sign-in is defined in
   discovered OIDC end-session flow. This behavior must not depend on the selected
   upstream provider. It must preserve the existing timer-resolution choices.
 - Local credentials and account data must be removed before opening browser
-  logout. Network failure or cancellation must not restore them.
+  logout. Web navigation must allow application-session revocation to settle,
+  bounded to three seconds, so redirecting does not immediately cancel it.
+  Network failure or cancellation must not restore local credentials.
 - The client must retain a non-secret pending-logout marker until a validated
   end-session callback completes. A later sign-in must retry pending logout
   before starting authorization, including after an app restart.

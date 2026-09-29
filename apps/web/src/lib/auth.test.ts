@@ -108,12 +108,13 @@ test('sign out resolves locally without storage reads or remote revocation when 
   assert.equal(revocations, 0);
 });
 
-test('sign out resolves after local disposal without waiting for remote revocation', async () => {
+test('sign out clears local state immediately but permits remote revocation before browser navigation', async () => {
   let removals = 0;
   let revocations = 0;
   let resolved = false;
-  const pendingRevocation = new Promise<void>(() => {});
-  void revokeApplicationSession(
+  let finish!: () => void;
+  const pendingRevocation = new Promise<void>(resolve => { finish = resolve; });
+  const completion = revokeApplicationSession(
     runtimeConfig,
     { token: 'session-token', expiresAt: '2026-07-21T12:00:00Z' },
     { removeItem: () => { removals += 1; } },
@@ -123,6 +124,9 @@ test('sign out resolves after local disposal without waiting for remote revocati
   await Promise.resolve();
   assert.equal(removals, 1);
   assert.equal(revocations, 1);
+  assert.equal(resolved, false);
+  finish();
+  await completion;
   assert.equal(resolved, true);
 });
 
@@ -333,4 +337,19 @@ test('activation preserves actionable onboarding problem codes', async () => {
       },
     );
   }
+});
+
+test('a bounded revocation timeout still leaves the browser locally signed out', async () => {
+  let cleared = false;
+  let releaseDeadline!: () => void;
+  const deadline = new Promise<void>(resolve => { releaseDeadline = resolve; });
+  const completion = revokeApplicationSession(runtimeConfig,
+    { token: 'session-token', expiresAt: '2026-07-21T12:00:00Z' },
+    { removeItem: () => { cleared = true; } },
+    () => new Promise<void>(() => {}),
+    async () => { await deadline; });
+  assert.equal(cleared, true);
+  releaseDeadline();
+  await completion;
+  assert.equal(cleared, true);
 });
