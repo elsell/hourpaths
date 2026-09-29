@@ -1,3 +1,4 @@
+import { apiPreferencesRepository } from '../preferences/adapters/api-preferences-repository';
 import { apiStatisticsRepository } from '../analytics/adapters/api-statistics-repository';
 import { apiSocialRepository } from '../social/adapters/api-social-repository';
 import { createRoot } from 'react-dom/client';
@@ -28,6 +29,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const paths = apiPathRepository(options.apiURL, () => session.token(), () => session.reject());
   root.render(<StudioApp dependencies={{
     paths,
+    preferences: apiPreferencesRepository(options.apiURL, () => session.token(), () => session.reject()),
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), () => session.reject()),
     social: apiSocialRepository(options.apiURL, () => session.token(), () => session.reject()),
     history: historyRepository(apiHistorySource(options.apiURL, () => session.token(), paths, () => session.reject())),

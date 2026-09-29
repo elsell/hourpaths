@@ -160,6 +160,22 @@ is an authorized recorded activity; a running session is not a completed event.
 - Sign-out and deletion must retain their existing timer-resolution,
   confirmation, credential revocation, and authorization behavior.
 
+### Settings preference slice acceptance
+
+- Settings sections must use the shared Studio navigation and compact grouped
+  fields. The first slice exposes authoritative account identity, time zone,
+  personal Path appearance, nudge delivery, interaction controls, and blocked
+  accounts. Remaining account lifecycle controls remain required before cutover.
+- Time-zone changes must display the exact current/proposed zones for confirmation
+  and submit that reviewed value with a stable retry identity. A conflict must
+  require reloading and reviewing the current setting before another submission.
+- Notification changes must carry the loaded revision. Failed saves must retain
+  the user's draft; successful saves must replace it with the authoritative result.
+- Browser navigation away from an unsaved preference form must offer a choice
+  to retain the draft. Unblocking must identify the account and require confirmation.
+- All preference reads, mutations, drafts, and pending confirmations must belong
+  to the active Studio account lifetime and be disposed on account replacement.
+
 ## Failure, security, and acceptance
 
 - API DTOs must not become presentation or client domain models; see the
