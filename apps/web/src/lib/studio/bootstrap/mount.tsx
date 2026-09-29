@@ -1,3 +1,4 @@
+import { apiSocialRepository } from '../social/adapters/api-social-repository';
 import { createRoot } from 'react-dom/client';
 import { createTranslator, type SupportedLocale } from '@hourpaths/i18n';
 import { apiPathRepository } from '../paths/adapters/api-path-repository';
@@ -26,6 +27,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const paths = apiPathRepository(options.apiURL, () => session.token(), () => session.reject());
   root.render(<StudioApp dependencies={{
     paths,
+    social: apiSocialRepository(options.apiURL, () => session.token(), () => session.reject()),
     history: historyRepository(apiHistorySource(options.apiURL, () => session.token(), paths, () => session.reject())),
     accountScope: crypto.randomUUID(),
     i18n,

@@ -98,6 +98,18 @@ is an authorized recorded activity; a running session is not a completed event.
   The feed should use a readable centered content width in the remaining area.
   Search and Find people retain access to discovery and relationships.
 
+### Social slice acceptance
+
+- Direct Following and username-profile URLs must resolve through the Studio
+  router, including reload and browser history.
+- Refresh and pagination must keep publication order and deduplicate event IDs;
+  comment and reaction changes must update counts without moving events.
+- A running Path removed by authoritative refresh must close its live page or
+  advance to another currently permitted Path, never retain stale access.
+- Comment drafts must survive recoverable submission errors; editing must carry
+  the reviewed comment version. Interaction rosters must paginate through the
+  authorized endpoint rather than infer identities from counts.
+
 ## Stats
 
 - Stats must include date and Path filters, period summary, activity-over-time

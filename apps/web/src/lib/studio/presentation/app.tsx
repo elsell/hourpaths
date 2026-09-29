@@ -1,5 +1,8 @@
+import { StudioShell } from './studio-shell';
+import { FollowingPage, ProfilePage, PeoplePage } from './social-pages';
+import type { SocialRepository } from '../social/ports/social-repository';
 import { useEffect, useState } from 'react';
-import { createRootRoute, createRoute, createRouter, RouterProvider } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, RouterProvider, Outlet } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Translator } from '@hourpaths/i18n';
 import type { PathRepository } from '../paths/ports/path-repository';
@@ -16,6 +19,7 @@ import type { HistoryRepository } from '../history/ports/history-source';
 
 export interface StudioDependencies {
   paths: PathRepository;
+  social: SocialRepository;
   history: HistoryRepository;
   accountScope: string;
   i18n: Translator;
@@ -25,9 +29,12 @@ export interface StudioDependencies {
 export function StudioApp({ dependencies: d }: { dependencies: StudioDependencies }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false } } }));
   const [router] = useState(() => {
-    const root = createRootRoute({ component: () => <PathsPage dependencies={d} /> });
-    const paths = createRoute({ getParentRoute: () => root, path: '/' });
-    return createRouter({ routeTree: root.addChildren([paths]), basepath: '/studio' });
+    const root = createRootRoute({ component: Outlet });
+    const paths = createRoute({ getParentRoute: () => root, path: '/', component: () => <PathsPage dependencies={d} /> });
+    const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
+    const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
+    const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
+    return createRouter({ routeTree: root.addChildren([paths, following, people, profile]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;
@@ -43,12 +50,7 @@ function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
     queryFn: ({ signal }) => d.paths.list(filter === 'archived', signal),
   });
   const paths = query.data?.filter(path => (filter !== 'pinned' || path.pinned) && path.name.toLocaleLowerCase(d.i18n.locale).includes(search.toLocaleLowerCase(d.i18n.locale)));
-  return <div className="studio">
-    <aside className="studio-nav">
-      <a className="studio-brand" href="/studio"><span aria-hidden="true">◉</span> HourPaths</a>
-      <nav aria-label={d.i18n.t('studio.navigation')}><a href="/studio" aria-current="page">{d.i18n.t('studio.paths')}</a></nav>
-      <a className="studio-legacy" href="/">{d.i18n.t('studio.currentApp')}</a>
-    </aside>
+  return <StudioShell page="paths" i18n={d.i18n}>
     <main className="studio-main">
       <header className="studio-header"><h1>{d.i18n.t('studio.paths')}</h1>
         <input type="search" aria-label={d.i18n.t('studio.searchPaths')} placeholder={d.i18n.t('studio.searchPaths')} value={search} onChange={event => setSearch(event.target.value)} />
@@ -62,7 +64,7 @@ function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
       {reorder.isError && <p role="alert">{d.i18n.t('errors.apiRejected')}</p>}
     </main>
     <ActivityTimeline paths={d.paths} history={d.history} accountScope={d.accountScope} i18n={d.i18n} />
-  </div>;
+  </StudioShell>;
 }
 function PathRow({ path, dependencies: d, move, moving }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean }) {
   const [details, setDetails] = useState(false);

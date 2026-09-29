@@ -11,6 +11,7 @@ REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
     "apps/web/src/routes/studio/[...path]/+page.svelte",
+    "apps/web/src/lib/studio/presentation/avatar.tsx",
     "apps/mobile/src/provider-auth.ts",
     "apps/mobile/src/provider-auth-state.ts",
     "apps/mobile/src/provider-discovery.ts",
@@ -48,6 +49,7 @@ class ClientApiBoundaryTest(unittest.TestCase):
             # import-policy tests from application behavior and remain overridable.
             fixtures.update({
                 "apps/web/src/lib/auth.ts": "export {};",
+                "apps/web/src/lib/studio/social/domain/activity.ts": "export {};",
                 "apps/web/src/lib/studio/bootstrap/mount.tsx": "export {};",
             })
             fixtures.update(files)

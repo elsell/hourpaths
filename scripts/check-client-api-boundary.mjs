@@ -73,6 +73,7 @@ const protectedApiClientManifest = 'scripts/protected-api-client-adapter.sha256'
 const studioHost = 'apps/web/src/routes/studio/[...path]/+page.svelte';
 const protectedClientCapabilityAdapters = new Set([
   studioHost,
+  'apps/web/src/lib/studio/presentation/avatar.tsx',
   'apps/mobile/src/policy-link-native.ts',
   'apps/web/src/lib/accessibility-focus.ts',
   'apps/web/src/lib/device-locale.ts',
@@ -945,7 +946,11 @@ function inspectSource(relative, file, source, index) {
       const nativeListData = node.name.text.toLowerCase() === 'data' &&
         (ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element)) &&
         ts.isIdentifier(element.tagName) && element.tagName.text === 'FlatList';
-      if (!nativeListData && !destinationProven(destination)) violation = true;
+      // The checksum-protected avatar owns only this anonymous public-image sink.
+      const publicAvatarImage = relative === 'apps/web/src/lib/studio/presentation/avatar.tsx' &&
+        node.name.text === 'src' && ts.isJsxSelfClosingElement(element) &&
+        ts.isIdentifier(element.tagName) && element.tagName.text === 'img';
+      if (!nativeListData && !publicAvatarImage && !destinationProven(destination)) violation = true;
     }
     if (ts.isJsxSpreadAttribute(node)) violation = true;
     if (ts.isTaggedTemplateExpression(node)) {
