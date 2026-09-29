@@ -473,7 +473,7 @@ result = check({ 'apps/mobile/src/ui/path-share-sheet.tsx': "import { Accessibil
 assert.notEqual(result.status, 0, 'path-admin-motion-does-not-admit-alert');
 
 result = check({
-  'apps/mobile/app/index.tsx': "import { router, useGlobalSearchParams, usePathname } from 'expo-router'; export default function IndexRedirect() { router.replace('/home'); return null; } export function HomeScreen() { useGlobalSearchParams(); usePathname(); router.push('/settings'); return null; }",
+  'apps/mobile/app/index.tsx': "import { CommonActions } from '@react-navigation/native'; import { router, useGlobalSearchParams, useNavigation, usePathname } from 'expo-router'; export default function IndexRedirect() { router.replace('/home'); return null; } export function HomeScreen() { useGlobalSearchParams(); usePathname(); const root = useNavigation('/'); root.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'index' }] })); router.push('/settings'); return null; }",
   'apps/mobile/app/(tabs)/_layout.tsx': "import { NativeTabs } from 'expo-router/unstable-native-tabs'; export default function Tabs() { return <NativeTabs />; }",
   'apps/mobile/app/(tabs)/home/_layout.tsx': "import { Stack } from 'expo-router'; export default function HomeLayout() { return <Stack />; }",
   'apps/mobile/src/ui/home-header-actions.ios.tsx': "import { Stack } from 'expo-router'; export default function HomeHeaderActions() { return <Stack.Toolbar />; }",
