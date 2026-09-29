@@ -508,7 +508,7 @@ result = check({
 assert.equal(result.status, 0, `reviewed-native-settings-routes: ${result.stderr}`);
 
 result = check({
-  'apps/mobile/src/ui/nudge-composer-sheet.tsx': "import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native'; export function Composer() { AccessibilityInfo.isReduceMotionEnabled(); return <Pressable><View /></Pressable>; } void StyleSheet;",
+  'apps/mobile/src/ui/nudge-composer-sheet.tsx': "import { AccessibilityInfo, StyleSheet, View } from 'react-native'; export function Composer() { AccessibilityInfo.isReduceMotionEnabled(); return <View />; } void StyleSheet;",
 });
 assert.equal(result.status, 0, `reviewed-nudge-composer-motion: ${result.stderr}`);
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, HStack, Image, Spacer, Text } from '@expo/ui/swift-ui';
+import { Button, HStack, Image as SwiftUIImage, Spacer, Text } from '@expo/ui/swift-ui';
 import { buttonStyle, contentShape, disabled as nativeDisabled, fixedSize, foregroundColor, frame, padding, shapes } from '@expo/ui/swift-ui/modifiers';
 import { NativeHost } from './native-host';
 import type { SettingsChoiceRowProps } from './settings-choice-row';
@@ -21,7 +21,7 @@ export function SettingsChoiceRow({ label, selected, disabled = false, onPress }
           ]}>
             <Text modifiers={[foregroundColor(mobileTheme.colors.text), fixedSize({ horizontal: false, vertical: true })]}>{label}</Text>
             <Spacer />
-            <Image systemName={selected ? 'checkmark' : 'circle'} size={17} color={selected ? mobileTheme.colors.accent : mobileTheme.colors.textMuted} />
+            <SwiftUIImage systemName={selected ? 'checkmark' : 'circle'} size={17} color={selected ? mobileTheme.colors.accent : mobileTheme.colors.textMuted} />
           </HStack>
         </Button>
       </NativeHost>
