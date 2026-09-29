@@ -5036,5 +5036,9 @@
   "studio.settings.unblock": "Unblock",
   "studio.settings.more": "Load more",
   "studio.settings.unblockConfirm": "Unblock @{{username}}? Your previous follow relationship will not be restored.",
-  "studio.settings.appearanceDetail": "Choose a color and emoji for each Path. Your choices are personal and saved across your devices."
+  "studio.settings.appearanceDetail": "Choose a color and emoji for each Path. Your choices are personal and saved across your devices.",
+  "studio.session.heading": "Session",
+  "studio.session.signOut": "Sign out",
+  "studio.session.reviewing": "Checking running timers…",
+  "studio.session.reviewFailed": "Running timers could not be checked. Retry, or sign out while leaving any timers running."
 }

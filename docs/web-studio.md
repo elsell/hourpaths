@@ -36,3 +36,11 @@ Settings preference controls are available at `/studio/settings/account`, with
 Appearance, Notifications, Privacy, and Blocked accounts sections. Time-zone
 changes require review and confirmation; drafts survive recoverable failures.
 Account lifecycle and complete legacy cutover remain later delivery work.
+
+Studio Account settings include timer-aware sign-out. Failed stops retain the
+session; keep-running sign-out remains available during an unavailable timer
+review. Session maintenance retains unexpired credentials on temporary failures
+and stops refreshing when the server returns the absolute expiry unchanged.
+
+Before final cutover, bind authentication rejection to the credential used by
+that request: a late 401 from a rotated token must not discard its replacement.

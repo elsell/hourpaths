@@ -1,3 +1,5 @@
+import { useOwnedOperation } from './use-owned-operation';
+import { SessionSettings } from './session-settings';
 import { UnsavedChanges } from './unsaved-changes';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
@@ -31,16 +33,6 @@ function Status({ pending, error, retry, dependencies: d }: { pending: boolean; 
 function SaveState({ pending, error, success, dependencies: d }: { pending: boolean; error: unknown; success: boolean; dependencies: StudioDependencies }) {
   return <>{pending && <p role="status">{d.i18n.t('studio.settings.saving')}</p>}{error ? <p role="alert">{d.i18n.t(error instanceof PreferenceFailure && error.kind === 'conflict' ? 'studio.settings.conflict' : 'studio.settings.saveFailed')}</p> : success && <p role="status">{d.i18n.t('studio.settings.saved')}</p>}</>;
 }
-function useOwnedOperation(d: StudioDependencies) {
-  const client = useQueryClient();
-  const [key] = useState(() => [d.accountScope, 'settingsOperation', d.operationId()]);
-  const active = useRef(true);
-  useEffect(() => () => { active.current = false; void client.cancelQueries({ queryKey: key }); client.removeQueries({ queryKey: key }); }, [client, key]);
-  return {
-    active: () => active.current,
-    run: <T,>(operation: (signal: AbortSignal) => Promise<T>): Promise<T> => client.fetchQuery({ queryKey: key, queryFn: async ({ signal }) => ({ result: await operation(signal) }), staleTime: 0, gcTime: 0, retry: false }).then(value => value.result),
-  };
-}
 function useIntent(d: StudioDependencies) {
   const current = useRef<{ value: string; id: string } | null>(null);
   return (value: unknown) => {
@@ -53,7 +45,7 @@ function AccountSettings({ dependencies: d }: { dependencies: StudioDependencies
   const identity = useQuery({ queryKey: [d.accountScope, 'preferences', 'identity'], queryFn: ({ signal }) => d.preferences.identity(signal) });
   const zone = useQuery({ queryKey: [d.accountScope, 'preferences', 'zone'], queryFn: ({ signal }) => d.preferences.timeZone(signal) });
   return <><section className="studio-settings-card"><Status pending={identity.isPending} error={identity.isError} retry={() => void identity.refetch()} dependencies={d} />{identity.data && <dl className="studio-settings-identity"><div><dt>{d.i18n.t('studio.settings.name')}</dt><dd>{identity.data.name}</dd></div><div><dt>{d.i18n.t('settings.account.email')}</dt><dd>{identity.data.email}<small>{d.i18n.t('studio.settings.providerEmail')}</small></dd></div></dl>}</section>
-    <section className="studio-settings-card"><h3>{d.i18n.t('studio.settings.preferences')}</h3><p>{d.i18n.t('studio.settings.locale')}</p><Status pending={zone.isPending} error={zone.isError} retry={() => void zone.refetch()} dependencies={d} />{zone.data && <TimeZoneForm initial={zone.data} dependencies={d} reload={() => zone.refetch()} />}</section></>;
+    <section className="studio-settings-card"><h3>{d.i18n.t('studio.settings.preferences')}</h3><p>{d.i18n.t('studio.settings.locale')}</p><Status pending={zone.isPending} error={zone.isError} retry={() => void zone.refetch()} dependencies={d} />{zone.data && <TimeZoneForm initial={zone.data} dependencies={d} reload={() => zone.refetch()} />}</section><SessionSettings dependencies={d} name={identity.data?.name ?? ''} /></>;
 }
 function TimeZoneForm({ initial, dependencies: d, reload }: { initial: TimeZonePreference; dependencies: StudioDependencies; reload(): Promise<unknown> }) {
   const [saved, setSaved] = useState(initial);

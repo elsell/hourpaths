@@ -5036,5 +5036,9 @@
   "studio.settings.unblock": "Desbloquear",
   "studio.settings.more": "Cargar más",
   "studio.settings.unblockConfirm": "¿Desbloquear a @{{username}}? No se restaurará la relación de seguimiento anterior.",
-  "studio.settings.appearanceDetail": "Elige un color y un emoji para cada Camino. Tus elecciones son personales y se guardan en todos tus dispositivos."
+  "studio.settings.appearanceDetail": "Elige un color y un emoji para cada Camino. Tus elecciones son personales y se guardan en todos tus dispositivos.",
+  "studio.session.heading": "Sesión",
+  "studio.session.signOut": "Cerrar sesión",
+  "studio.session.reviewing": "Comprobando temporizadores activos…",
+  "studio.session.reviewFailed": "No se pudieron comprobar los temporizadores activos. Reinténtalo o cierra sesión dejando los temporizadores activos."
 }

@@ -176,6 +176,21 @@ is an authorized recorded activity; a running session is not a completed event.
 - All preference reads, mutations, drafts, and pending confirmations must belong
   to the active Studio account lifetime and be disposed on account replacement.
 
+### Session control slice acceptance
+
+- Account settings must expose sign-out with an explicit confirmation. Before
+  offering Stop and save, the client must load the account's running timers.
+  A failed review must allow retry or an explicit keep-running sign-out.
+- Stop and save must retain the session if any stop fails. Retrying must reuse
+  the operation identity for an unresolved timer and recheck authoritative
+  running timers before clearing the credential. A newly started timer must
+  require another review instead of being silently stopped or abandoned.
+- Same-client timer mutations must settle before a sign-out review can begin.
+- Expiring renewable sessions must refresh without losing navigation. Temporary
+  refresh failure must preserve an unexpired credential and use bounded retry.
+  A refresh that does not advance expiry must not schedule a refresh loop or
+  extend the server's absolute session-family lifetime.
+
 ## Failure, security, and acceptance
 
 - API DTOs must not become presentation or client domain models; see the

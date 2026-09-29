@@ -1,3 +1,4 @@
+import type { AccountSession } from '../session/ports/account-session';
 import { SettingsPage } from './settings-page';
 import type { PreferencesRepository } from '../preferences/ports/preferences-repository';
 import { StatisticsPage } from './statistics-page';
@@ -22,6 +23,7 @@ import { ActivityTimeline } from './activity-timeline';
 import type { HistoryRepository } from '../history/ports/history-source';
 
 export interface StudioDependencies {
+  session: AccountSession;
   preferences: PreferencesRepository;
   paths: PathRepository;
   social: SocialRepository;
