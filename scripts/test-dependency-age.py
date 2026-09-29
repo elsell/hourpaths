@@ -126,7 +126,6 @@ def main():
     repository_allowlist, failures = module.load_allowlist(ROOT)
     assert not failures, failures
     required_security_exceptions = {
-        ("npm", "fast-uri", "3.1.6"),
         ("npm", "brace-expansion", "5.0.9"),
         ("npm", "js-yaml", "3.15.2"),
         ("npm", "js-yaml", "4.3.2"),
