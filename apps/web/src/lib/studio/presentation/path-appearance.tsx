@@ -1,15 +1,16 @@
+import { UnsavedChanges } from './unsaved-changes';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { emojiChoices } from '@hourpaths/i18n';
 import type { StudioDependencies } from './app';
 import type { PathAppearance } from '../paths/domain/path';
 
-export function PathAppearanceEditor({ pathId, dependencies: d, close }: { pathId: string; dependencies: StudioDependencies; close(): void }) {
+export function PathAppearanceEditor({ pathId, dependencies: d, close, guardChanges = false }: { pathId: string; dependencies: StudioDependencies; close(): void; guardChanges?: boolean }) {
   const query = useQuery({ queryKey: [d.accountScope, 'appearance', pathId], queryFn: ({ signal }) => d.paths.appearance(pathId, signal) });
   if (!query.data) return <div className="studio-appearance-editor"><p>{d.i18n.t(query.isError ? 'home.appearance.loadFailed' : 'studio.loading')}</p><button onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button><button onClick={close}>{d.i18n.t('common.cancel')}</button></div>;
-  return <AppearanceForm initial={query.data} pathId={pathId} dependencies={d} close={close} />;
+  return <AppearanceForm initial={query.data} pathId={pathId} dependencies={d} close={close} guardChanges={guardChanges} />;
 }
-function AppearanceForm({ initial, pathId, dependencies: d, close }: { initial: PathAppearance; pathId: string; dependencies: StudioDependencies; close(): void }) {
+function AppearanceForm({ initial, pathId, dependencies: d, close, guardChanges }: { initial: PathAppearance; pathId: string; dependencies: StudioDependencies; close(): void; guardChanges: boolean }) {
   const client = useQueryClient();
   const [draft, setDraft] = useState(initial);
   const [search, setSearch] = useState('');
@@ -28,6 +29,7 @@ function AppearanceForm({ initial, pathId, dependencies: d, close }: { initial: 
     },
   });
   return <form className="studio-appearance-editor studio-form" onSubmit={event => { event.preventDefault(); mutation.mutate(); }}>
+    {guardChanges && <UnsavedChanges dirty={draft.color !== initial.color || draft.emoji !== initial.emoji || mutation.isPending} i18n={d.i18n} />}
     <h2>{d.i18n.t('home.appearance.title')}</h2>
     <fieldset disabled={mutation.isPending}>
       <label>{d.i18n.t('home.appearance.color')}<select value={draft.color} onChange={event => setDraft({ ...draft, color: event.target.value as PathAppearance['color'] })}>{(['coral', 'lavender', 'gold', 'mint', 'blue', 'pink'] as const).map(color => <option key={color} value={color}>{d.i18n.t(`home.appearance.color.${color}`)}</option>)}</select></label>

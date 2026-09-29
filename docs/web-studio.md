@@ -31,3 +31,8 @@ failures retain a valid credential and expose retry controls.
 The approved images are in `docs/design/web-studio/`. The timeline correction is
 normative: its vertical line continues across day boundaries. Following must not
 include the people-you-follow sidebar shown in its early image.
+
+Settings preference controls are available at `/studio/settings/account`, with
+Appearance, Notifications, Privacy, and Blocked accounts sections. Time-zone
+changes require review and confirmation; drafts survive recoverable failures.
+Account lifecycle and complete legacy cutover remain later delivery work.
