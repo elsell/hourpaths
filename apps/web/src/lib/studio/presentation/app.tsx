@@ -1,3 +1,5 @@
+import { StatisticsPage } from './statistics-page';
+import type { StatisticsRepository } from '../analytics/ports/statistics-repository';
 import { StudioShell } from './studio-shell';
 import { FollowingPage, ProfilePage, PeoplePage } from './social-pages';
 import type { SocialRepository } from '../social/ports/social-repository';
@@ -20,6 +22,7 @@ import type { HistoryRepository } from '../history/ports/history-source';
 export interface StudioDependencies {
   paths: PathRepository;
   social: SocialRepository;
+  statistics: StatisticsRepository;
   history: HistoryRepository;
   accountScope: string;
   i18n: Translator;
@@ -34,7 +37,8 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
     const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, following, people, profile]), basepath: '/studio' });
+    const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
+    return createRouter({ routeTree: root.addChildren([paths, following, people, profile, statistics]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;

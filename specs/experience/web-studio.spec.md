@@ -122,6 +122,17 @@ is an authorized recorded activity; a running session is not a completed event.
   differing recurrences. Sample image totals are not calculation requirements.
 - The secondary activity timeline uses the same connected day-marker component.
 
+### Stats slice acceptance
+
+- The Studio Stats route must retain the existing Week/All Paths initial
+  selection and all five specified range presets. Period navigation must use
+  the server-provided adjacent anchors.
+- Summary cards must derive from returned recorded time, active calendar days,
+  and Paths with recorded activity; illustrative session counts or cross-Path
+  goal percentages must not be invented from incomplete client history.
+- Changing a filter must never display the previous selection’s aggregate as
+  current. Refresh must preserve chart scroll positions and selected controls.
+
 ## Profiles
 
 - Profile identity must combine avatar, name, username, Path count, follower

@@ -5009,5 +5009,9 @@
   "studio.social.editComment": "Edit comment",
   "studio.social.deleteConfirm": "Delete this comment? This cannot be undone.",
   "studio.social.editHistory": "Edit history",
-  "studio.social.activeLabel": "{{name}} · {{count}} active Paths: {{paths}}"
+  "studio.social.activeLabel": "{{name}} · {{count}} active Paths: {{paths}}",
+  "studio.stats.intro": "See your progress and patterns over time.",
+  "studio.stats.share": "Share of time",
+  "studio.stats.activeDays": "Active days",
+  "studio.stats.activePaths": "Paths with activity"
 }

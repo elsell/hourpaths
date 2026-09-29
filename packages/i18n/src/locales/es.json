@@ -5009,5 +5009,9 @@
   "studio.social.editComment": "Editar comentario",
   "studio.social.deleteConfirm": "¿Eliminar este comentario? No se puede deshacer.",
   "studio.social.editHistory": "Historial de cambios",
-  "studio.social.activeLabel": "{{name}} · {{count}} Paths activos: {{paths}}"
+  "studio.social.activeLabel": "{{name}} · {{count}} Paths activos: {{paths}}",
+  "studio.stats.intro": "Descubre tu progreso y tus patrones a lo largo del tiempo.",
+  "studio.stats.share": "Proporción del tiempo",
+  "studio.stats.activeDays": "Días activos",
+  "studio.stats.activePaths": "Paths con actividad"
 }
