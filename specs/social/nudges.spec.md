@@ -91,6 +91,9 @@ practice and accountability.
   that identifies the recipient and Path, presents the five approved presets as
   one standard single-choice group, places Cancel in the leading native bar
   position, and places Send or its retry equivalent in the trailing position.
+- Tapping anywhere in a preset row must select that preset, show its checkmark,
+  and enable Send immediately. Selection must remain usable inside the native
+  sheet on iOS; no send request occurs until Send is explicitly activated.
 - The clean task may use ordinary swipe dismissal. A selected preset and visible
   failure must remain available for retry, and an admitted send must not be
   abandoned by Cancel, back, or swipe dismissal before authoritative success or

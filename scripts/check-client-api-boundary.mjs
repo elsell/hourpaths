@@ -176,6 +176,10 @@ const approvedExpoUIImports = new Map([
     ['@expo/ui/swift-ui', new Set(['Button', 'Text'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'buttonStyle', 'controlSize', 'contentShape', 'shapes', 'disabled', 'frame', 'foregroundColor', 'tint'])],
   ])],
+  ['apps/mobile/src/ui/settings-choice-row.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'Image', 'Spacer', 'Text'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['buttonStyle', 'contentShape', 'disabled', 'fixedSize', 'foregroundColor', 'frame', 'padding', 'shapes'])],
+  ])],
   ['apps/mobile/src/ui/native-choice-picker.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Picker', 'Text'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['accessibilityLabel', 'disabled', 'environment', 'pickerStyle', 'tag', 'tint'])],
@@ -1018,7 +1022,7 @@ function inspectSource(relative, file, source, index) {
         const manualActivityPresentationAllowed = new Set(['AccessibilityInfo', 'StyleSheet', 'View']);
         const pathSharePresentationAllowed = new Set(['AccessibilityInfo', 'StyleSheet', 'View']);
         const pathArchivePresentationAllowed = new Set(['AccessibilityInfo']);
-        const nudgeComposerPresentationAllowed = new Set(['AccessibilityInfo', 'Pressable', 'StyleSheet', 'View']);
+        const nudgeComposerPresentationAllowed = new Set(['AccessibilityInfo', 'StyleSheet', 'View']);
         const commentEditPresentationAllowed = new Set([
           'AccessibilityInfo', 'Alert', 'StyleSheet', 'View',
         ]);
