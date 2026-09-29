@@ -18,7 +18,6 @@ test('maps persisted totals separately from session time and rejects inverted pe
 
 test('appearance saving uses the reviewed revision and surfaces a concurrent edit', async context => {
   const { createServer } = await import('node:http');
-  const { once } = await import('node:events');
   const { apiPathRepository, PathRequestError } = await import('./studio/paths/adapters/api-path-repository');
   const received: { method: string | undefined; body: unknown }[] = [];
   const server = createServer(async (request, response) => {
@@ -28,8 +27,10 @@ test('appearance saving uses the reviewed revision and surfaces a concurrent edi
     response.writeHead(409, { 'Content-Type': 'application/problem+json' });
     response.end(JSON.stringify({ code: 'conflict' }));
   });
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
   context.after(() => { server.closeAllConnections(); server.close(); });
   const address = server.address();
   assert.ok(address && typeof address !== 'string');
