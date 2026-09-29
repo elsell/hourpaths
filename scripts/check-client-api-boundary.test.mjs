@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+  'apps/web/src/routes/studio/[...path]/+page.svelte',
   'apps/mobile/src/provider-auth.ts',
   'apps/mobile/src/provider-auth-state.ts',
   'apps/mobile/src/provider-discovery.ts',
@@ -43,6 +44,8 @@ function check(files, symlinks = {}) {
       ...protectedBaseline,
       ...workspaceManifestBaseline,
       'apps/web/src/app.html': appShellBaseline,
+      'apps/web/src/lib/auth.ts': 'export {};',
+      'apps/web/src/lib/studio/bootstrap/mount.tsx': 'export {};',
       ...files,
     })) {
       const path = join(root, relative);
