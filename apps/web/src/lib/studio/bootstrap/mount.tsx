@@ -27,14 +27,14 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const session = new SessionController(initial, store, apiSessionService(options.apiURL), () => Date.now(), unavailable);
   // Validate the local owner/expiry even while the user is idle.
   const deadline = setInterval(() => { void session.maintain(); }, 1000);
-  const paths = apiPathRepository(options.apiURL, () => session.token(), () => session.reject());
+  const paths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
   root.render(<StudioApp dependencies={{
     paths,
     session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),
-    preferences: apiPreferencesRepository(options.apiURL, () => session.token(), () => session.reject()),
-    statistics: apiStatisticsRepository(options.apiURL, () => session.token(), () => session.reject()),
-    social: apiSocialRepository(options.apiURL, () => session.token(), () => session.reject()),
-    history: historyRepository(apiHistorySource(options.apiURL, () => session.token(), paths, () => session.reject())),
+    preferences: apiPreferencesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    statistics: apiStatisticsRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    social: apiSocialRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    history: historyRepository(apiHistorySource(options.apiURL, () => session.token(), paths, credential => session.reject(credential))),
     accountScope: crypto.randomUUID(),
     i18n,
     operationId: () => crypto.randomUUID(),

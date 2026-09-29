@@ -50,15 +50,13 @@ function commentFromAPI(dto: PracticeCommentItem): Comment {
     version: count(dto.comment.version), createdAt: instant(dto.comment.createdAt), edited: dto.comment.edited,
     hearts: count(dto.heartCount), hearted: dto.heartedByViewer };
 }
-export function apiSocialRepository(baseURL: string, token: () => string | null, rejected: () => void): SocialRepository {
-  const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal);
+export function apiSocialRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): SocialRepository {
+  const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   const accepted = <T>(result: { response: Response; data?: { data: T } }): T => {
-    if (result.response.status === 401) rejected();
     if (!result.response.ok || !result.data) throw new SocialRequestError(result.response.status);
     return result.data.data;
   };
   const changed = (result: { response: Response }) => {
-    if (result.response.status === 401) rejected();
     if (!result.response.ok) throw new SocialRequestError(result.response.status);
   };
   const page = <T, U>(result: { response: Response; data?: { data: { items: T[] }; meta: { nextCursor?: string } } }, map: (item: T) => U): Page<U> => {

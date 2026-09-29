@@ -30,6 +30,10 @@ and bootstrap responsibilities.
 - Cache keys must include account identity and query scope. Sign-out/account
   replacement must cancel and clear owned queries and mutations. Token rotation
   for the same account must not reset navigation or mix old/new account data.
+- Authentication rejection must be bound to the credential used by that exact
+  request. A late 401 for a replaced credential must not clear its replacement;
+  a 401 for the current credential must still end that session immediately.
+  Temporary failures and permission denials must not be treated as logout.
 - Public profile images must use the checksum-reviewed avatar component, HTTPS
   URLs mapped by the social adapter, anonymous image requests, and no referrer.
   This media capability must not permit arbitrary API calls from presentation.
