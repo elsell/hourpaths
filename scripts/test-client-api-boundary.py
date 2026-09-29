@@ -10,6 +10,7 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/web/src/routes/studio/[...path]/+page.svelte",
     "apps/mobile/src/provider-auth.ts",
     "apps/mobile/src/provider-auth-state.ts",
     "apps/mobile/src/provider-discovery.ts",
@@ -43,6 +44,12 @@ class ClientApiBoundaryTest(unittest.TestCase):
                 relative: (REPOSITORY / relative).read_text(encoding="utf-8")
                 for relative in FIXTURE_PATHS
             }
+            # The protected Studio host is real; these inert dependencies isolate
+            # import-policy tests from application behavior and remain overridable.
+            fixtures.update({
+                "apps/web/src/lib/auth.ts": "export {};",
+                "apps/web/src/lib/studio/bootstrap/mount.tsx": "export {};",
+            })
             fixtures.update(files)
             for relative, contents in fixtures.items():
                 path = root / relative
@@ -54,6 +61,21 @@ class ClientApiBoundaryTest(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
+
+    def test_studio_framework_and_api_capabilities_remain_layer_scoped(self) -> None:
+        for source, statement in (
+            ("apps/web/src/lib/studio/paths/domain/path.ts", "import { useState } from 'react';"),
+            ("apps/web/src/lib/studio/paths/domain/path.ts", "import { createSessionApiClient } from '@hourpaths/api-client';"),
+            ("apps/web/src/lib/studio/presentation/page.tsx", "import { createSessionApiClient } from '@hourpaths/api-client';"),
+            ("apps/web/src/lib/unreviewed.ts", "import { createRoot } from 'react-dom/client';"),
+            ("apps/web/src/lib/studio/paths/domain/path.ts", "import { useQuery } from '@tanstack/react-query';"),
+        ):
+            with self.subTest(source=source, statement=statement):
+                result = self.run_checker({source: statement})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(source, result.stderr)
+        result = self.run_checker({"apps/web/src/lib/studio/presentation/page.tsx": "import { useQuery } from '@tanstack/react-query';"})
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_native_navigation_imports_remain_symbol_scoped(self) -> None:
         source = "apps/mobile/src/ui/native-sheet-frame.ios.tsx"
