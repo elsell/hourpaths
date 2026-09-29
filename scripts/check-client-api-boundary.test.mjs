@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
   'apps/web/src/routes/studio/[...path]/+page.svelte',
+  'apps/web/src/lib/studio/presentation/avatar.tsx',
   'apps/mobile/src/provider-auth.ts',
   'apps/mobile/src/provider-auth-state.ts',
   'apps/mobile/src/provider-discovery.ts',
@@ -45,6 +46,7 @@ function check(files, symlinks = {}) {
       ...workspaceManifestBaseline,
       'apps/web/src/app.html': appShellBaseline,
       'apps/web/src/lib/auth.ts': 'export {};',
+      'apps/web/src/lib/studio/social/domain/activity.ts': 'export {};',
       'apps/web/src/lib/studio/bootstrap/mount.tsx': 'export {};',
       ...files,
     })) {
@@ -62,6 +64,7 @@ function check(files, symlinks = {}) {
 }
 
 const bypasses = {
+  'apps/web/src/lib/unreviewed-avatar.tsx': 'export const Avatar = ({url}) => <img src={url} alt="" />;',
   'apps/web/src/lib/direct.ts': "fetch(apiURL + '/v1/me');",
   'apps/web/src/lib/computed.ts': "(globalThis as any)['fe' + 'tch'](apiURL + '/v1/me');",
   'apps/web/src/lib/window.ts': "window['fetch']('/v1/me');",

@@ -4,3 +4,4 @@ c09264a598f3eadd886f3e51da31cab08a9f611a3ae2b4000fc024f572ee8a8c  apps/web/src/l
 d51a56b436d00d8f51db1b63c1117b30c70e8c7e6365f48d202400f34cfcde24  apps/web/src/lib/external-policy-link.ts
 938bec96604a62dcc94bc9f50410423b10e2a1a25814d0b5868630211d9a830b  apps/web/src/lib/notification-convergence-browser.ts
 a1168ed88494b29feb505ff2d2ae4a30347d674a7a25c39b9b78dc674ce4d974  apps/web/src/routes/studio/[...path]/+page.svelte
+83255679fd4e48d4d05df4650647ead59694fc07421021e848cbe62d22a4a067  apps/web/src/lib/studio/presentation/avatar.tsx

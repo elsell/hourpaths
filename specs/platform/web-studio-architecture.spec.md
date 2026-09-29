@@ -30,6 +30,9 @@ and bootstrap responsibilities.
 - Cache keys must include account identity and query scope. Sign-out/account
   replacement must cancel and clear owned queries and mutations. Token rotation
   for the same account must not reset navigation or mix old/new account data.
+- Public profile images must use the checksum-reviewed avatar component, HTTPS
+  URLs mapped by the social adapter, anonymous image requests, and no referrer.
+  This media capability must not permit arbitrary API calls from presentation.
 - Existing OIDC PKCE, application-session exchange/rotation/revocation, runtime
   configuration validation, CSP, and security headers must survive migration.
 
