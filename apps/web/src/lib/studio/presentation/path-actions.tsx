@@ -1,0 +1,31 @@
+import { PathAppearanceEditor } from './path-appearance';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { StudioDependencies } from './app';
+import type { Path } from '../paths/domain/path';
+
+export function PathActions({ path, dependencies: d, move, moving }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean }) {
+  const client = useQueryClient();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [appearance, setAppearance] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(path.name);
+  const refresh = () => client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] });
+  const rename = useMutation({ mutationFn: () => d.paths.rename(path, name.trim(), d.operationId()), onSuccess: async () => { setRenaming(false); await refresh(); } });
+  const pin = useMutation({ mutationFn: () => d.paths.pin(path.id, !path.pinned, d.operationId()), onSuccess: refresh });
+  return <div className="studio-path-actions">
+    <details open={menuOpen}><summary onClick={event => { event.preventDefault(); setMenuOpen(!menuOpen); }} aria-label={d.i18n.t('home.pathActions', { pathName: path.name })}>⋯</summary><div className="studio-action-menu">
+      {!path.archived && <button disabled={pin.isPending} onClick={() => { setMenuOpen(false); pin.mutate(); }}>{d.i18n.t(path.pinned ? 'home.arrange.unpinShort' : 'home.arrange.pinShort')}</button>}
+      {path.canEdit && <button onClick={() => { setMenuOpen(false); setName(path.name); setRenaming(true); }}>{d.i18n.t('pathRename.action')}</button>}
+      {move && <><button disabled={moving} onClick={() => { setMenuOpen(false); move(-1); }}>{d.i18n.t('home.arrange.moveUp', { pathName: path.name })}</button><button disabled={moving} onClick={() => { setMenuOpen(false); move(1); }}>{d.i18n.t('home.arrange.moveDown', { pathName: path.name })}</button></>}
+      <button onClick={() => { setMenuOpen(false); setAppearance(true); }}>{d.i18n.t('home.appearance.title')}</button>
+    </div></details>
+    {appearance && <PathAppearanceEditor pathId={path.id} dependencies={d} close={() => setAppearance(false)} />}
+    {renaming && <form className="studio-rename" onSubmit={event => { event.preventDefault(); rename.mutate(); }}>
+      <label>{d.i18n.t('pathRename.nameLabel')}<input required maxLength={100} value={name} disabled={rename.isPending} onChange={event => setName(event.target.value)} /></label>
+      <button type="submit" disabled={rename.isPending || !name.trim() || name.trim() === path.name}>{d.i18n.t('pathRename.save')}</button>
+      <button type="button" disabled={rename.isPending} onClick={() => setRenaming(false)}>{d.i18n.t('common.cancel')}</button>
+    </form>}
+    {(pin.isError || rename.isError) && <p role="alert">{d.i18n.t('errors.apiRejected')}</p>}
+  </div>;
+}

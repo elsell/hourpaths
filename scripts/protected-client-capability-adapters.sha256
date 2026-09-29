@@ -3,3 +3,4 @@ bfef9074cf6f3cec74f90bf76be0ed8e7585c3222e5a9f40d98101cac752ca4c  apps/web/src/l
 c09264a598f3eadd886f3e51da31cab08a9f611a3ae2b4000fc024f572ee8a8c  apps/web/src/lib/device-locale.ts
 d51a56b436d00d8f51db1b63c1117b30c70e8c7e6365f48d202400f34cfcde24  apps/web/src/lib/external-policy-link.ts
 938bec96604a62dcc94bc9f50410423b10e2a1a25814d0b5868630211d9a830b  apps/web/src/lib/notification-convergence-browser.ts
+a1168ed88494b29feb505ff2d2ae4a30347d674a7a25c39b9b78dc674ce4d974  apps/web/src/routes/studio/[...path]/+page.svelte
