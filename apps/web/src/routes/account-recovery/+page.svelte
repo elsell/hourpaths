@@ -4,7 +4,7 @@
   import { scheduleSessionDeadline, isSessionFailure, validateSessionMutation, type ClientRuntimeConfig, type SessionFailure } from '@hourpaths/client-core';
   import { createTranslator, type MessageKey, type SupportedLocale, type Translator } from '@hourpaths/i18n';
   import { applicationDestination, applicationSession, applicationSessionExpired, applicationSessionOperations, clearApplicationSession, declineApplicationRecovery, revokeApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
-  import { replaceApplicationLocation } from '$lib/provider-auth';
+  import { beginProviderSignOut, replaceApplicationLocation } from '$lib/provider-auth';
 
   export let data: { locale: SupportedLocale; config: ClientRuntimeConfig };
   let session: ApplicationSession | null = null;
@@ -52,7 +52,8 @@
   async function signOut() {
     await revokeApplicationSession(data.config, session);
     session = null;
-    replaceApplicationLocation('/');
+    try { await beginProviderSignOut(data.config.oidcIssuer, data.config.oidcClientId); }
+    catch { replaceApplicationLocation('/'); }
   }
 
   async function declineRecovery() {

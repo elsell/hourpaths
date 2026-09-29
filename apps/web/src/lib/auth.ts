@@ -156,16 +156,25 @@ export function revokeSupersededApplicationSession(
   try { void revoke(config, session.token).catch(() => {}); }
   catch { /* Superseded local state remains authoritative. */ }
 }
+function boundedRevocation(operation: Promise<void>): Promise<void> {
+  return new Promise(resolve => {
+    const timeout = setTimeout(resolve, 3000);
+    const done = () => { clearTimeout(timeout); resolve(); };
+    void operation.then(done, done);
+  });
+}
+
 export async function revokeApplicationSession(
   config: ClientRuntimeConfig,
   session: ApplicationSession | null,
   storage: SessionStorageRemover = window.sessionStorage,
   revoke: RemoteSessionRevoker = revokeRemoteApplicationSession,
+  waitForRevocation: (operation: Promise<void>) => Promise<void> = boundedRevocation,
 ): Promise<void> {
 	applicationSessionOperations.invalidate();
 	clearApplicationSession(storage);
 	if (session) {
-		try { void revoke(config, session.token).catch(() => {}); }
+		try { await waitForRevocation(revoke(config, session.token)); }
     catch { /* Local credential disposal must not depend on network availability. */ }
   }
 }

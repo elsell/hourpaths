@@ -1988,6 +1988,7 @@ export function HomeScreen() {
       if (runningEntries.length === 0) {
         if (!ownsSignOutResolution(ownerID, currentSession)) return { kind: 'superseded' };
         signOutCompleted = await clearSession(null, 'authentication_required', { ownerID, session: currentSession });
+        if (signOutCompleted) await providerSignIn.signOut();
         return signOutCompleted ? { kind: 'signed_out' } : { kind: 'superseded' };
       }
     if (choice === 'confirmed_no_timers') {
@@ -2045,6 +2046,7 @@ export function HomeScreen() {
       return { kind: 'superseded' };
     }
       signOutCompleted = await clearSession(null, 'authentication_required', { ownerID, session: currentSession });
+      if (signOutCompleted) await providerSignIn.signOut();
       return signOutCompleted ? { kind: 'signed_out' } : { kind: 'superseded' };
     } finally {
       if (!signOutCompleted) timerMutationBarrier.unblock();
@@ -8892,7 +8894,7 @@ export function HomeScreen() {
       onOpenPolicy={(url) => void openPolicyLink(url)}
       onReviewUsername={reviewOnboardingUsername}
       onRetryHome={() => void retryOnboardingHome()}
-      onSignOut={() => void clearSession()}
+      onSignOut={() => void clearSession().then((cleared) => { if (cleared) return providerSignIn.signOut(); })}
       onUpdate={updateOnboardingDraft}
       profile={destination.profile}
       usernameReviewed={destination.profile.usernameReviewed}
@@ -8902,7 +8904,7 @@ export function HomeScreen() {
       declining={decliningRecovery}
       errorText={errorKey ? i18n.t(errorKey) : undefined}
       onContinue={() => void continueCreatingNewAccount()}
-      onReturnToSignIn={() => void clearSession()}
+      onReturnToSignIn={() => void clearSession().then((cleared) => { if (cleared) return providerSignIn.signOut(); })}
     /> : null}
     {ready && !destination && accessState !== 'authenticated_offline' ? <SignedOutScreen
       errorText={errorKey ? i18n.t(errorKey) : undefined}
