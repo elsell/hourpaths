@@ -59,3 +59,7 @@ all clients, as approved in the Home specification.
 Approved mobile refinement: compact one-page Path detail/edit surface and Home tile navigation; see [Path details](experience/path-details.spec.md#compact-mobile-detailedit-page-approved-september-2026).
 
 Approved social redesign: [mobile feed, profiles, and live activity viewer](experience/social-mobile.spec.md).
+
+Approved Studio web rebuild: [experience and delivery slices](experience/web-studio.spec.md),
+[domain isolation and TanStack architecture](platform/web-studio-architecture.spec.md).
+Following omits the people-list sidebar; timelines remain connected across days.

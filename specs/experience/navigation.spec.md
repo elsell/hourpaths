@@ -11,8 +11,9 @@ responsibilities.
 
 - The application must provide three primary surfaces: Home, Social, and
   Stats/History.
-- Their initial user-facing navigation labels must be `Home`, `Following`, and
-  `Stats`, respectively.
+- Mobile navigation labels must be `Home`, `Following`, and `Stats`.
+  The approved Studio web client uses `Paths`, `Following`, and `Stats`; see
+  [Studio web experience](web-studio.spec.md).
 - The `Following` label must not narrow the already-specified Social feed rules:
   eligible activity from participants in shared Paths must still appear even
   when the participant is not followed.
