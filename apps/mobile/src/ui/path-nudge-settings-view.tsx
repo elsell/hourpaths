@@ -1,9 +1,9 @@
 import { NUDGE_AUDIENCES, type NudgeAudience, type NudgeAudiencePreference } from '@hourpaths/client-core';
 import type { Translator } from '@hourpaths/i18n';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { NativeRouteRecoveryView } from './native-route-recovery-view';
 import { ThemedText as Text } from './primitives';
-import { SettingsIcon } from './settings-icon';
+import { SettingsChoiceRow } from './settings-choice-row';
 import { SettingsSection, SettingsSeparator } from './settings-list';
 import { mobileTheme } from './tokens';
 
@@ -41,17 +41,12 @@ export function PathNudgeSettingsView({
         const selected = preference.audience === audience;
         return <View key={audience}>
           {index > 0 ? <SettingsSeparator /> : null}
-          <Pressable
-            accessibilityLabel={i18n.t(`nudge.audience.${audience}`)}
-            accessibilityRole="radio"
-            accessibilityState={{ disabled: busy, selected }}
+          <SettingsChoiceRow
+            label={i18n.t(`nudge.audience.${audience}`)}
+            selected={selected}
             disabled={busy}
             onPress={() => { if (!selected) onSelect(audience); }}
-            style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
-          >
-            <Text style={styles.label}>{i18n.t(`nudge.audience.${audience}`)}</Text>
-            <View style={styles.check}>{selected ? <SettingsIcon systemName="checkmark" variant="disclosure" /> : null}</View>
-          </Pressable>
+          />
         </View>;
       })}
     </SettingsSection>
@@ -62,11 +57,7 @@ export function PathNudgeSettingsView({
 }
 
 const styles = StyleSheet.create({
-  check: { alignItems: 'center', minWidth: 24 },
   error: { color: mobileTheme.colors.error, fontSize: 15, lineHeight: 20 },
-  label: { flex: 1, fontSize: 17, lineHeight: 22 },
-  pressed: { backgroundColor: mobileTheme.colors.surfaceRaised },
-  row: { alignItems: 'center', flexDirection: 'row', minHeight: 52, paddingHorizontal: mobileTheme.spacing.md, paddingVertical: mobileTheme.spacing.sm },
   stack: { gap: mobileTheme.spacing.sm },
   status: { color: mobileTheme.colors.textMuted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
 });
