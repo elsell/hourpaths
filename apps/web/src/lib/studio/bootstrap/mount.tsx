@@ -1,3 +1,4 @@
+import { accountSession } from '../session/application/account-session';
 import { apiPreferencesRepository } from '../preferences/adapters/api-preferences-repository';
 import { apiStatisticsRepository } from '../analytics/adapters/api-statistics-repository';
 import { apiSocialRepository } from '../social/adapters/api-social-repository';
@@ -25,10 +26,11 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   }
   const session = new SessionController(initial, store, apiSessionService(options.apiURL), () => Date.now(), unavailable);
   // Validate the local owner/expiry even while the user is idle.
-  const deadline = setInterval(() => { session.token(); }, 1000);
+  const deadline = setInterval(() => { void session.maintain(); }, 1000);
   const paths = apiPathRepository(options.apiURL, () => session.token(), () => session.reject());
   root.render(<StudioApp dependencies={{
     paths,
+    session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),
     preferences: apiPreferencesRepository(options.apiURL, () => session.token(), () => session.reject()),
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), () => session.reject()),
     social: apiSocialRepository(options.apiURL, () => session.token(), () => session.reject()),

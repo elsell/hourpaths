@@ -47,3 +47,15 @@ test('an expired credential is discarded before any authenticated request', () =
   assert.equal(controller.token(), null);
   assert.equal(stored, null);
 });
+
+test('maintenance retries temporary failure without losing the session and stops refreshing at absolute expiry', async () => {
+  let now = 950_000, stored: Session | null = initial, calls = 0;
+  const controller = new SessionController(initial, { read: () => stored, write: value => { stored = value; }, clear: () => { stored = null; } }, {
+    refresh: async value => { calls++; if (calls === 1) throw new SessionUnavailable(true); return { ...value, token: 'rotated' }; }, revoke: async () => undefined,
+  }, () => now, () => undefined);
+  await controller.maintain(); assert.equal(controller.token(), 'original');
+  now += 10_000; await controller.maintain(); assert.equal(calls, 1);
+  now += 20_000; await controller.maintain(); assert.equal(controller.token(), 'rotated');
+  now += 1000; await controller.maintain(); assert.equal(calls, 2);
+  now = initial.expiresAt; await controller.maintain(); assert.equal(stored, null);
+});

@@ -5,6 +5,8 @@ import type { SessionService, SessionStore } from '../ports/session-store';
 export class SessionController {
   private current: Session | null;
   private generation = 0;
+  private nextRefreshAttempt = 0;
+  private renewable = true;
   private pending: Promise<Session> | null = null;
 
   constructor(initial: Session, private readonly store: SessionStore,
@@ -22,6 +24,15 @@ export class SessionController {
       return null;
     }
     return this.current.token;
+  }
+
+  async maintain(): Promise<void> {
+    if (!this.token() || !this.current || this.pending || !this.renewable || this.now() < this.nextRefreshAttempt || this.current.expiresAt - this.now() > 60_000) return;
+    const previousExpiry = this.current.expiresAt;
+    try {
+      const replacement = await this.refresh();
+      this.renewable = replacement.expiresAt > previousExpiry;
+    } catch { this.nextRefreshAttempt = this.now() + 30_000; }
   }
 
   refresh(): Promise<Session> {
