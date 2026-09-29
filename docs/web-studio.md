@@ -42,5 +42,6 @@ session; keep-running sign-out remains available during an unavailable timer
 review. Session maintenance retains unexpired credentials on temporary failures
 and stops refreshing when the server returns the absolute expiry unchanged.
 
-Before final cutover, bind authentication rejection to the credential used by
-that request: a late 401 from a rotated token must not discard its replacement.
+Authentication rejection is scoped to the credential used by the request. A late
+401 from a rotated token does not discard its replacement; rejection of the
+current credential still signs out immediately.

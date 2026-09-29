@@ -15,12 +15,11 @@ function nudges(value: { enabled: boolean; revision: number }) {
   if (typeof value.enabled !== 'boolean' || !Number.isSafeInteger(value.revision) || value.revision < 0) throw new PreferenceFailure();
   return { enabled: value.enabled, revision: value.revision };
 }
-export function apiPreferencesRepository(baseURL: string, token: () => string | null, rejected: () => void): PreferencesRepository {
-  const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal);
+export function apiPreferencesRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): PreferencesRepository {
+  const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   async function read<T>(request: Promise<GeneratedOperationResult<T>>): Promise<T> {
     try {
       const result = await request;
-      if (result.response.status === 401) rejected();
       if (!result.response.ok) throw new PreferenceFailure(result.response.status === 409 ? 'conflict' : result.response.status === 401 || result.response.status === 403 ? 'rejected' : 'unavailable');
       return result.data as T;
     } catch (error) {

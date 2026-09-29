@@ -63,7 +63,8 @@ export class SessionController {
     return operation;
   }
 
-  reject(): void {
+  reject(credential: string | null): void {
+    if (!credential || credential !== this.current?.token) return;
     this.invalidate(!!this.current && this.store.read()?.token === this.current.token);
   }
 

@@ -34,11 +34,10 @@ export function statisticsFromAPI(dto: StatsSummary): Statistics {
     days: dto.calendar.map(day => ({ date: date(day.date), seconds: seconds(day.seconds) })),
   };
 }
-export function apiStatisticsRepository(baseURL: string, token: () => string | null, rejected: () => void): StatisticsRepository {
+export function apiStatisticsRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): StatisticsRepository {
   return { async load(selection, signal) {
     try {
-    const result = await createSessionApiClient(baseURL, token, signal).stats({ range: selection.range, anchor: selection.anchor, pathIds: selection.pathIds.length ? selection.pathIds.join(',') : undefined });
-    if (result.response.status === 401) rejected();
+    const result = await createSessionApiClient(baseURL, token, signal, rejected).stats({ range: selection.range, anchor: selection.anchor, pathIds: selection.pathIds.length ? selection.pathIds.join(',') : undefined });
     if (!result.response.ok || !result.data) throw new StatisticsUnavailable(result.response.status === 429 || result.response.status >= 500);
     return statisticsFromAPI(result.data.data);
     } catch (error) {

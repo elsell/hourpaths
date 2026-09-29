@@ -45,14 +45,13 @@ export function trackingFromAPI(dto: TimerState): TrackingSnapshot {
     } : null,
   };
 }
-export function apiPathRepository(baseURL: string, token: () => string | null, rejected: () => void): PathRepository {
+export function apiPathRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): PathRepository {
   const accepted = <T>(result: { data?: { data: T }; response: Response }): T => {
-    if (result.response.status === 401) rejected();
     return required(result);
   };
-  const client = createSessionApiClient(baseURL, token);
+  const client = createSessionApiClient(baseURL, token, undefined, rejected);
   const tracking = async (pathId: string, signal?: AbortSignal) =>
-    trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal).currentTimer(pathId)));
+    trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).currentTimer(pathId)));
   return {
     async saveGoals(path, goals, operationId) {
       const encode = (value: PathGoals) => ({
@@ -87,7 +86,7 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
       accepted(await client.savePathAppearance(pathId, { color: appearance.color, emoji: appearance.emoji, expectedRevision: appearance.revision }, operationId));
     },
     async appearance(pathID, signal) {
-      const dto = accepted(await createSessionApiClient(baseURL, token, signal).pathAppearance(pathID));
+      const dto = accepted(await createSessionApiClient(baseURL, token, signal, rejected).pathAppearance(pathID));
       const colors = ['coral', 'lavender', 'gold', 'mint', 'blue', 'pink'] as const;
       const hash = Array.from(pathID).reduce((value, character) => (value * 31 + character.codePointAt(0)!) >>> 0, 0);
       if (dto.revision === 0) return { color: colors[hash % colors.length]!, emoji: '✨', revision: 0 };
@@ -100,7 +99,7 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
       let order: 'recent' | 'alphabetical' | 'manual' = 'recent';
       const seen = new Set<string>();
       do {
-        const reader = createSessionApiClient(baseURL, token, signal);
+        const reader = createSessionApiClient(baseURL, token, signal, rejected);
         const response = await (archived ? reader.archivedPaths(cursor) : reader.paths(cursor));
         paths.push(...accepted(response).map(pathFromAPI));
         order = response.data!.meta.homePreferences.orderMethod;
