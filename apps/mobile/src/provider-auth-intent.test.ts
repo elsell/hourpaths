@@ -5,6 +5,8 @@ import { redirectSystemPath } from '../app/+native-intent';
 
 describe('redirectSystemPath', () => {
   for (const response of [
+    'hourpaths://logout?state=expected-state',
+    'hourpaths://logout?error=access_denied&state=expected-state',
     'hourpaths://callback?code=authorization-code&state=expected-state',
     'hourpaths://callback?error=access_denied&state=expected-state',
     'hourpaths://callback#code=authorization-code&state=expected-state',
@@ -22,6 +24,8 @@ describe('redirectSystemPath', () => {
   });
 
   for (const path of [
+    'hourpaths://logout.evil.example?state=expected-state',
+    'hourpaths://logout/child?state=expected-state',
     'hourpaths://callback.evil.example?code=authorization-code',
     'hourpaths://callback/child?code=authorization-code',
     'hourpaths://path/path-id',

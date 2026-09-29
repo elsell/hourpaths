@@ -6,7 +6,7 @@
   import { activateApplicationSession, applicationDestination, applicationSession, applicationSessionExpired, applicationSessionOperations, clearApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
   import { buildOnboardingActivationInput, deviceOnboardingDefaults } from '$lib/onboarding';
   import { openWebPolicyLink } from '$lib/external-policy-link';
-  import { replaceApplicationLocation } from '$lib/provider-auth';
+  import { beginProviderSignOut, replaceApplicationLocation } from '$lib/provider-auth';
 
   type PolicySet = OnboardingProfile['policies'];
   type OnboardingFailure = SessionFailure | { kind: 'http'; status: number; code: string };
@@ -142,7 +142,8 @@
   async function signOut() {
     await revokeApplicationSession(data.config, session);
     session = null;
-    replaceApplicationLocation('/');
+    try { await beginProviderSignOut(data.config.oidcIssuer, data.config.oidcClientId); }
+    catch { replaceApplicationLocation('/'); }
   }
 
   function openPolicyLink(url: string) {

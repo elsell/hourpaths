@@ -308,3 +308,27 @@ Profile setup after first sign-in is defined in
 - Google sign-in must use the full Google authorization flow with
   `prompt=select_account`. Google One Tap must be disabled so its remembered-
   identity shortcut does not obscure account choice after explicit sign-out.
+
+## Broker browser logout
+
+- Explicit sign-out on web and mobile must also initiate the configured broker's
+  discovered OIDC end-session flow. This behavior must not depend on the selected
+  upstream provider. It must preserve the existing timer-resolution choices.
+- Local credentials and account data must be removed before opening browser
+  logout. Network failure or cancellation must not restore them.
+- The client must retain a non-secret pending-logout marker until a validated
+  end-session callback completes. A later sign-in must retry pending logout
+  before starting authorization, including after an app restart.
+- End-session requests must use the configured client ID and registered return
+  URI, with a fresh state value validated on return. Provider tokens must not be
+  retained just to support logout. Logout callbacks must not enter code exchange.
+- Mobile logout must use the shared authentication browser to clear surviving
+  broker cookies. Fresh iOS authorization must continue using an ephemeral
+  session; all clients must retain explicit fresh-authentication requests.
+- This operation ends the broker session, not every upstream provider's global
+  session. The broker must present its provider chooser; provider-supported
+  account-selection behavior remains configured at the broker's connectors.
+- Acceptance: sign out after either Google or Apple authentication, return from
+  broker logout, and sign in with another identity without restoring old data.
+  Canceling logout, offline logout, forged callback state, and restart before
+  completion must leave the client locally signed out with logout retry pending.

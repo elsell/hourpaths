@@ -21,6 +21,17 @@ Register these deployed redirect URIs:
 - mobile: `hourpaths://callback`
 - docs: `https://API_ORIGIN/docs`
 
+Register post-logout redirect URIs separately:
+
+- web: `https://APP_ORIGIN/signed-out`
+- mobile: `hourpaths://logout`
+
+Clients use discovered OIDC end-session with `client_id`, registered return URI,
+and correlated `state`; they do not retain an ID token for logout. Cancellation
+keeps a non-secret retry marker and never restores the application credential.
+The broker must retain its provider chooser and connector account-selection
+settings; ending its session does not globally sign out upstream services.
+
 Permit the web origin to perform the authorization-code token exchange. Configure
 the broker's upstream redirect URIs with Google and Apple rather than registering
 HourPaths application callbacks directly with those providers. Provider-routing

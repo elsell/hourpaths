@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { beginProviderSignOut } from '$lib/provider-auth';
   import StatsView from '$lib/StatsView.svelte';
   import { createPathAppearancePort, type StatsSummary } from '@hourpaths/api-client';
   import { createPathAppearanceStore, defaultPathAppearance, initialStatsSelection, type StatsState, type StatsSelection } from '@hourpaths/client-core';
@@ -900,6 +901,8 @@
     timerErrorKeys = {};
     timerNoticeKey = null;
     await revocation;
+    try { await beginProviderSignOut(data.config.oidcIssuer, data.config.oidcClientId); }
+    catch { errorKey = 'errors.signInFailed'; }
   }
 
   function ownsSignOutResolution(context: Pick<SignOutResolutionContext, 'session' | 'ownerID'>): boolean {
