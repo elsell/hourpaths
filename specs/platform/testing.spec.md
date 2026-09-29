@@ -268,11 +268,12 @@ compensating verification includes frozen-lock installation, package audit,
 dependency-age verification, mobile bundle validation, clean prebuild, and
 hosted native compilation. The dependency must not return to the vulnerable
 1.2.1 resolution.
-The patched `fast-uri` 3.1.6 release has an exact, reviewed age exception because
-it removes the current fast-uri SSRF and host-confusion advisories from AJV
-dependency paths. Compensating verification includes an exact workspace override,
-frozen-lock installation, a clean package audit, dependency-age tests, and the
-full CI gate.
+The workspace must pin `fast-uri` 3.1.7 to remove authority injection
+(GHSA-qw65-cvwx-89v3) and the vulnerable 3.1.6 host-confusion resolution
+(GHSA-58mr-gqgx-xq4g) from EAS/AJV dependency paths. This patch exceeds
+the fourteen-day observation window and requires no age exception.
+Verification includes frozen-lock installation, a clean package audit,
+dependency-age verification, exact EAS CLI startup, and the full CI gate.
 The patched `brace-expansion` 5.0.9, `postcss` 8.5.23, and `tar` 7.5.21
 releases have exact, reviewed age exceptions because they clear current
 security advisories before the standard fourteen-day observation window closes.
