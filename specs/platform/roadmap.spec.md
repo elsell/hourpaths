@@ -2,11 +2,36 @@
 
 ## Current focus
 
-Ship the approved September 2026 mobile Home tile redesign as the sole active
-product slice: stable grid and integrated tracking first, then palette/emoji
-customization. Use small PRs and focused useful behavioral checks. The user
-explicitly authorized merging without waiting for PR CI and reviewing main CI
-after every two or three PRs; release workflows retain their own gates.
+Close the approved October 1 specs-to-implementation gap audit through small,
+demonstrable slices. The active product slice is Studio Path archive, restore,
+and deletion parity. The concurrent release blocker is the vulnerable build-tool
+dependency graph (PR #78), which prevents delivery of the merged encouragement
+selection fix. Use shared UI, focused useful checks, and the applicable merge and
+release gates. Merged code is not evidence of tester or production availability.
+
+## Gap-closure scope and evidence
+
+The following work remains open until implementation, applicable acceptance,
+merge, and release evidence establish the specified behavior. Specification
+coverage alone must not mark an item complete.
+
+| Area | Outstanding delivery scope |
+| --- | --- |
+| Studio replacement | Path lifecycle; activity CRUD/history; sharing, invitations, membership and ownership; notification history; blocking and nudges; account entry; calendar summaries; shared design-system/application boundaries; legacy cutover and GitOps deployment |
+| Offline | Durable timers and activity edits, retained history, causal synchronization, conflicts, and offline authentication lifecycle |
+| Account lifecycle | Permanent deletion, retention/restore verification, provider linking/unlinking and duplicate-account recovery |
+| Profiles and preferences | Editing and safe image uploads, privacy changes, follower lists/removal, editable week start, unavailable periods and policy reacceptance |
+| Notifications | Complete channels and subscriptions, timer-start/achievement delivery, reminders, unachievable/long-timer notices and quiet-period enforcement |
+| Safety | Reporting, moderation, enforcement, appeals and public-text checks |
+| Native and analytics | iOS Live Activities, Android ongoing timer notification, Path-specific contribution grid |
+| Verification and delivery | Physical-device encouragement and accessibility evidence, release availability, production revision, and reconciliation of stale open questions |
+
+Global Stats and the mobile Home redesign have implementations; neither is a
+future blank surface. Their remaining scoped gaps and native acceptance still
+require evidence. Widgets remain explicitly deferred. Unresolved decisions below
+must be reconciled with authoritative domain specs before implementing their
+related behavior; they must not be silently treated as settled or as proof that
+already-delivered behavior is missing.
 
 ## UI-28 Apple-native audit matrix
 
@@ -85,8 +110,8 @@ delay the active successful-account-creation slice.
   through UI-28L. Deliver SOC-07 acceptance, notification delivery and
   stale-target gaps, the missing channel catalog, recurring unavailable period,
   reporting, profile/provider work, and account deletion only through their
-  owning functional slices. Stats enters the polish sequence only when its
-  specified product surface exists.
+  owning functional slices. Global Stats is implemented; its remaining calendar
+  parity and Path-specific analytics gaps remain separate acceptance work.
 - Keep ACCT-01 open and preserve duplicate-recovery, provider-picture, and
   provisional-lifecycle decisions outside UI-28B unless one demonstrably blocks
   its existing presentation path.
