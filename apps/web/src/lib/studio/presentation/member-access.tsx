@@ -46,7 +46,11 @@ export function MemberAccess({ dependencies: d, pathId, disabled, onBusy }: { de
       await client.cancelQueries({ predicate: query => query.queryKey[0] === d.accountScope });
       if (!active.current) return;
       client.removeQueries({ predicate: query => query.queryKey[0] === d.accountScope && !['sharingContext', 'managedInvitations', 'pathMembers'].includes(String(query.queryKey[1])) });
-      if (review.member.canStepDownAdministrator && review.action === 'participant') { setSteppedDown(true); return; }
+      if (review.member.canStepDownAdministrator && review.action === 'participant') {
+        client.removeQueries({ queryKey: [d.accountScope, 'sharingContext', pathId] });
+        client.removeQueries({ queryKey: key });
+        setSteppedDown(true); return;
+      }
       await client.resetQueries({ queryKey: key });
       await client.invalidateQueries({ queryKey: [d.accountScope, 'sharingContext', pathId] });
     } catch { if (active.current) setFailure(true); }
