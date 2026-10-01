@@ -19,7 +19,7 @@ test('entry maps policy review, preserves transient credentials, and never adopt
   const pending = new Promise<void>(resolve => { started = resolve; });
   const revocation = new Promise<void>(resolve => { revoked = resolve; });
   let body: Record<string, unknown> | undefined;
-  const policy = { url: 'https://example.test/policy', version: 'v1' };
+  const policy = { url: 'http://localhost:5173/legal/policy', version: 'v1' };
   const server = createServer(async (request, response) => {
     response.setHeader('Content-Type', 'application/json');
     if (request.method === 'DELETE') {
@@ -41,6 +41,7 @@ test('entry maps policy review, preserves transient credentials, and never adopt
     store.setItem(key, JSON.stringify(original));
     const service = browserEntryService(config, () => now); await service.restore();
     const review = await service.review(); assert.equal(review.token, 'policy-1'); assert.equal(review.displayName, ''); assert.equal(review.policies.privacy.version, 'v1');
+    assert.throws(() => service.openPolicy(review.policies.privacy.url), (error: unknown) => error instanceof EntryFailure && error.kind === 'unavailable');
     failure = 503; code = 'unavailable'; await assert.rejects(service.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'unavailable'); assert.ok(store.getItem(key));
     failure = 403; code = 'forbidden'; await assert.rejects(service.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'forbidden'); assert.ok(store.getItem(key));
     failure = 409; code = 'username_unavailable'; await assert.rejects(service.activate(input), (error: unknown) => error instanceof EntryFailure && error.kind === 'username');

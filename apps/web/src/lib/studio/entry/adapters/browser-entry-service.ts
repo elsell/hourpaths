@@ -9,7 +9,9 @@ import type { EntryService } from '../ports/entry-service';
 
 function required(value: unknown): string { if (typeof value !== 'string' || !value.trim()) throw new EntryFailure('unavailable'); return value; }
 function seed(value: unknown): string { if (typeof value !== 'string') throw new EntryFailure('unavailable'); return value; }
-function link(value: unknown): string { const url = new URL(required(value)); if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) throw new EntryFailure('unavailable'); return url.href; }
+// Reviews may include development policy URLs. Only the reviewed policy-link
+// adapter can open them; it enforces HTTPS and reports unsafe/unavailable links.
+function link(value: unknown): string { return required(value); }
 function policy(value: { url: string; version: string }): PolicyLink { return { url: link(value?.url), version: required(value?.version) }; }
 export function entryReview(value: OnboardingProfile): EntryReview {
   return { email: seed(value.email), displayName: seed(value.displayName), username: seed(value.usernameSuggestion), token: required(value.policyReviewToken), policies: {
