@@ -59,7 +59,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false } } }));
   const [router] = useState(() => {
     const root = createRootRoute({ component: Outlet });
-    const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
+    const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ pathLeft: search.pathLeft === true, activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
     const ownership = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/ownership', component: () => <OwnershipPage dependencies={d} /> });
     const notifications = createRoute({ getParentRoute: () => root, path: '/notifications', component: () => <NotificationsPage dependencies={d} /> });
     const inbox = createRoute({ getParentRoute: () => root, path: '/invitations', component: () => <InvitationInbox dependencies={d} /> });
@@ -97,7 +97,7 @@ function PathPage({ dependencies: d }: { dependencies: StudioDependencies }) {
 }
 function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const client = useQueryClient();
-  const searchState = useSearch({ strict: false }) as { activityDeleted?: boolean; memberSteppedDown?: boolean };
+  const searchState = useSearch({ strict: false }) as { pathLeft?: boolean; activityDeleted?: boolean; memberSteppedDown?: boolean };
   const reorder = useMutation({ mutationFn: (paths: readonly Path[]) => d.paths.reorder(paths, d.operationId()), onSuccess: () => client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] }) });
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
@@ -114,7 +114,8 @@ function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
         <button className="studio-primary" onClick={() => setCreating(true)}>{d.i18n.t('home.createPath')}</button>
       </header>
       {searchState.memberSteppedDown && <p role="status">{d.i18n.t('pathMembers.roleChangedParticipant')}</p>}
-      {searchState.activityDeleted && <p role="status">{d.i18n.t('pathDetails.deleted')}</p>}
+      {searchState.pathLeft && <p role="status">{d.i18n.t('studio.pathLeft')}</p>}
+    {searchState.activityDeleted && <p role="status">{d.i18n.t('pathDetails.deleted')}</p>}
       {creating && <CreatePath dependencies={d} close={() => setCreating(false)} />}
       <div className="studio-filters">{(['all', 'pinned', 'archived'] as const).map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{d.i18n.t(`studio.filter.${value}`)}</button>)}</div>
       <div className="studio-columns" aria-hidden="true"><span>{d.i18n.t('studio.path')}</span><span>{d.i18n.t('studio.progress')}</span><span>{d.i18n.t('studio.goal')}</span><span>{d.i18n.t('studio.timer')}</span></div>

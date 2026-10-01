@@ -5059,5 +5059,9 @@
   "studio.notifications.deleteExplanation": "Esto elimina solo la notificación. La solicitud, actividad o cambio correspondiente permanece sin cambios.",
   "studio.nudgeAudienceSaveFailed": "No se pudo guardar la configuración de ánimos. Se conservó tu elección; inténtalo de nuevo.",
   "studio.nudgeAudienceConflict": "La configuración de ánimos cambió en otro lugar. Actualiza antes de guardar de nuevo.",
-  "studio.nudgeEligibilityFailed": "No se pudo comprobar si puedes enviar ánimos. Inténtalo de nuevo."
+  "studio.nudgeEligibilityFailed": "No se pudo comprobar si puedes enviar ánimos. Inténtalo de nuevo.",
+  "studio.pathLeft": "Saliste de la ruta.",
+  "studio.leaveSaveTimer": "Si tienes un temporizador en marcha, al salir se detiene y su tiempo transcurrido se guarda con tu actividad conservada.",
+  "studio.leaveDiscardTimer": "Si tienes un temporizador en marcha, al salir se detiene y se descarta el tiempo transcurrido sin guardar una actividad final.",
+  "studio.leaveDeleteConsequences": "También se eliminarán permanentemente tu progreso, estadísticas, logros y eventos del feed derivados de tu actividad en esta ruta."
 }

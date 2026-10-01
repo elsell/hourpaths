@@ -1,7 +1,9 @@
+import type { LeaveCommands } from './leave-commands';
 import type { LifecycleReview } from '../domain/lifecycle';
 import type { NewPath, PathGoals, Path, PathAppearance, TrackingSnapshot } from '../domain/path';
 
 export interface PathRepository {
+  leaveCommands(key: () => string): LeaveCommands;
   read(pathId: string, signal?: AbortSignal): Promise<Path>;
   lifecycle(review: LifecycleReview): Promise<void>;
   saveGoals(path: Path, goals: PathGoals, operationId: string): Promise<Path>;

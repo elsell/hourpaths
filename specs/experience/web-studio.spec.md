@@ -474,3 +474,40 @@ Acceptance: select a preset without sending, cancel without a write, retry an
 uncertain send with the same key, observe the recipient's notification after
 success, reject completed goals and unauthorized recipients, persist a personal
 Nobody audience across reload, and prevent stale-revision audience overwrites.
+
+## Voluntary Path leaving
+
+- Studio must expose Leave Path only when the current authoritative capability
+  permits it, never for the current creator or an archived Path. Opening the
+  action must revalidate the Path and capabilities before admitting a command.
+- The shared confirmation dialog must identify the Path. For participants and
+  administrators, retaining activity must be the default. It must explain the
+  loss of access, hidden retained activity, restoration on rejoining, and that
+  a running timer is stopped and saved before departure.
+- Delete My Activity must open a distinct destructive confirmation. It must
+  explain permanent removal of that user's activity, progress, statistics,
+  achievements and activity-derived feed events, no restoration on rejoining,
+  and stopping/discarding any running timer without a final activity.
+- Supporters must receive an ordinary leave confirmation without an activity
+  choice or claims that their activity is retained/deleted.
+- Cancel and Escape before admission must not change membership, activity or
+  timers. Once admitted, duplicate submission and navigation must be guarded.
+- An uncertain failure must retain the exact reviewed choice and idempotency
+  key for retry, even if the server already removed membership. Switching
+  activity outcomes must not be allowed after an uncertain admitted request.
+  Dismissing and reopening the task in the same activated account must preserve
+  that unresolved intent; a definitive server rejection may release it for a
+  fresh capability review.
+- Successful leave must clear stale Path, timer, activity, social and notification
+  projections before returning Home with a localized completion notice. Late
+  completion after account replacement or disposal must not affect another view.
+- Studio must use its domain ports and shared client-core leave validation and
+  operation ownership. Server authorization, atomic data changes, retention,
+  timer behavior and notification cleanup remain authoritative under
+  [Path Membership](../paths/membership.spec.md#leaving-a-path).
+
+Acceptance: cancel preserves a running timer and membership; ordinary leave
+saves that timer and hides retained history until rejoining; delete-and-leave
+discards a running timer and removes prior activity permanently; supporters see
+no irrelevant data choice; creator/archived capability rejection and uncertain
+receipt retries remain fail-closed and deterministic.
