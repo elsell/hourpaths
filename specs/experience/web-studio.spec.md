@@ -136,6 +136,31 @@ is an authorized recorded activity; a running session is not a completed event.
   [Path membership](../paths/membership.spec.md) and
   [Visibility](../social/visibility.spec.md).
 
+### Ownership transfer
+
+- Every accessible Path must expose an addressable Studio ownership page,
+  independently of notification read or deletion state. The page must revalidate
+  Path access and load the authorized pending transfer; it must not treat a
+  failed pending read as proof that no transfer exists.
+- Creator initiation, candidate pagination, server-authored review, immutable
+  expiration, recipient acceptance/decline, creator cancellation, and archived
+  restrictions must follow [Path roles](../paths/roles.spec.md).
+- Confirmation must identify the Path and canonical counterpart, explain role
+  changes and unchanged activity, and show the exact expiration in the viewer's
+  configured time zone. Initiation must also show the complete reviewed lifetime.
+- Canceling a review must make no mutation. Retries of an unresolved confirmed
+  command must retain its operation identifier and reviewed input. Pending
+  commands must prevent duplicate submission and navigation; account disposal
+  must prevent subsequent commands and ignore late results.
+- Successful commands must discard stale role-dependent projections and reload
+  authorized Path and transfer state. A failed refresh must remain retryable and
+  must not leave old creator actions available after acceptance.
+- Acceptance scenarios: a creator reviews and sends to an existing participant;
+  the recipient opens the Path ownership page after reload and accepts; only then
+  the creator becomes administrator and the recipient gains creator controls.
+  Decline, cancel, expired review, archived Path, and inaccessible Path must not
+  change roles. Failed transport retries must preserve command identity.
+
 ### Current member access
 
 - Share must show paginated current members, their canonical identity, role,
