@@ -3,16 +3,16 @@
 ## Current focus
 
 Close the approved October 1 specs-to-implementation gap audit through small,
-demonstrable slices. Studio lifecycle and activity CRUD/history (PRs #79, #83,
-#84) and sharing/sent invitations (PR #85) are deployed at `/studio`; infra
-ea01945 has healthy Flux and exact web-image evidence, including recipient
-invitations and accepted Path access (PR #87). TestFlight 0.20.0 (225) is VALID
-and available internally; physical-device encouragement acceptance remains
-pending. Ownership transfer merged in PR #88 with all five gates and real
-creator/recipient verification; release availability is pending. The active
-slice is Studio notification history and unread-state convergence. Use shared UI, focused
-useful checks, and applicable merge/release gates. Merged code alone must not
-count as production or tester availability.
+demonstrable slices. Studio lifecycle, activity CRUD/history, sharing, membership,
+recipient invitations, and ownership transfer (PRs #79, #83–#88) are deployed at
+`/studio`. GitOps c2ab6f9 has healthy Flux, the exact running web image, and public
+availability evidence. TestFlight 0.22.0 (230) is VALID and available internally;
+physical-device encouragement acceptance remains pending. Notification history
+and unread convergence merged in PR #89 after all five gates and exact-image
+real-API verification; production release remains pending. The active slice is
+Studio profile blocking with reviewed shared-Path warnings and existing Settings
+unblock recovery. Use shared UI, focused useful checks, and applicable merge and
+release gates. Merged code alone must not count as user availability.
 
 ## Gap-closure scope and evidence
 

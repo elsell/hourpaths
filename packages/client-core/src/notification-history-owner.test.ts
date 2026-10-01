@@ -32,3 +32,12 @@ test('disposal aborts reads and suppresses late mutation receipts and convergenc
   assert.equal(await mutation, false); assert.equal(published, 0);
   assert.equal(await owner.mutate({kind:'read-all'}), false);
 });
+test('visibility invalidation clears history immediately and rejects a pre-block response', async () => {
+  const gate=deferred<unknown>(); let reads=0, cancels=0;
+  const owner=createNotificationHistoryOwner({page:async()=>{reads++; if(reads===2)return gate.promise; return {items:reads===1?[item]:[],nextCursor:'',unreadCount:reads===1?1:0};},mutate:async()=>({unreadCount:0}),changed(){},cancel(){cancels++;}});
+  await owner.refresh(); const pending=owner.refresh();
+  const invalidation=owner.invalidate();
+  assert.deepEqual(owner.snapshot().history.items,[]);assert.equal(owner.snapshot().history.unreadCount,0);assert.equal(cancels,1);
+  gate.resolve({items:[item],nextCursor:'',unreadCount:1});await pending;await invalidation;
+  assert.equal(reads,3);assert.deepEqual(owner.snapshot().history.items,[]);
+});

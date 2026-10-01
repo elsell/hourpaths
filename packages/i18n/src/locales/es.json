@@ -794,6 +794,7 @@
   "social.approveRequest": "Aprobar",
   "social.declineRequest": "Rechazar",
   "social.reviewRequestUnavailable": "No se pudo actualizar la solicitud. Inténtalo de nuevo.",
+  "blocking.operationFailed": "No se pudo confirmar esta acción. Inténtalo de nuevo o actualiza la revisión.",
   "blocking.blockAction": "Bloquear",
   "blocking.blockActionLabel": "Bloquear a @{{username}}",
   "blocking.profileActions": "Acciones del perfil de @{{username}}",

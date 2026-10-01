@@ -794,6 +794,7 @@
   "social.approveRequest": "Approve",
   "social.declineRequest": "Decline",
   "social.reviewRequestUnavailable": "That request couldn’t be updated. Try again.",
+  "blocking.operationFailed": "Couldn’t confirm this action. Retry, or refresh the review.",
   "blocking.blockAction": "Block",
   "blocking.blockActionLabel": "Block @{{username}}",
   "blocking.profileActions": "Profile actions for @{{username}}",
