@@ -1,3 +1,4 @@
+import { apiNudgesRepository } from '../nudges/adapters/api-nudges-repository';
 import { apiBlockingRepository } from '../blocking/adapters/api-blocking-repository';
 import { apiNotifications } from '../notifications/adapters/api-notifications';
 import { apiOwnershipRepository } from '../ownership/adapters/api-ownership-repository';
@@ -38,6 +39,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
     blocking: apiBlockingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     notifications: apiNotifications(options.apiURL, () => session.token(), credential => session.reject(credential), i18n),
     ownership: apiOwnershipRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    nudges: apiNudgesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     sharing: apiSharingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     activities: apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),

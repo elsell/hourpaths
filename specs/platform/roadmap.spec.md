@@ -4,17 +4,15 @@
 
 Close the approved October 1 specs-to-implementation gap audit through small,
 demonstrable slices. Studio lifecycle, activity CRUD/history, sharing, membership,
-recipient invitations, and ownership transfer (PRs #79, #83–#88) are deployed at
-`/studio`. GitOps c2ab6f9 has healthy Flux, the exact running web image, and public
-availability evidence. TestFlight 0.22.0 (230) is VALID and available internally;
-physical-device encouragement acceptance remains pending. Notification history
-and unread convergence merged in PR #89 after all five gates and exact-image
-real-API verification. Its release was superseded when PR #90 merged; both await
-the next release. Profile blocking merged in PR #90 after all five gates and
-real-account verification; its release is pending. The active slice is the shared Path People
-destination for authorized viewers, including progress and shared-Path unblock
-recovery. Use shared UI, focused useful checks, and applicable merge and
-release gates. Merged code alone must not count as user availability.
+recipient invitations, ownership transfer, notification history, and profile
+blocking (PRs #79, #83–#90) are deployed at `/studio`. GitOps 0cbd32f has healthy
+Flux, the exact running web image, and public availability evidence. TestFlight
+0.23.0 (235) is VALID and available internally; physical-device encouragement
+acceptance remains pending. Shared Path People and progress merged in PR #91
+after all five gates, exact-image build, and real-account verification; release
+is pending. The active slice is Studio Path encouragement and personal audience
+controls. Use shared UI, focused useful checks, and applicable merge and release
+gates. Merged code alone must not count as user availability.
 
 ## Gap-closure scope and evidence
 

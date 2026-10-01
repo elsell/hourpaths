@@ -5056,5 +5056,8 @@
   "studio.ownership.acceptEffect": "You will become the creator. The previous creator will become an administrator and remain a participant.",
   "studio.ownership.unchangedRoles": "All roles will remain unchanged.",
   "studio.ownership.unchangedActivity": "Recorded activity and goal progress will not change.",
-  "studio.notifications.deleteExplanation": "This deletes only the notification. The underlying request, activity, or change remains unchanged."
+  "studio.notifications.deleteExplanation": "This deletes only the notification. The underlying request, activity, or change remains unchanged.",
+  "studio.nudgeAudienceSaveFailed": "Your nudge settings couldn’t be saved. Your choice was kept; try again.",
+  "studio.nudgeAudienceConflict": "Your nudge settings changed elsewhere. Refresh before saving again.",
+  "studio.nudgeEligibilityFailed": "Encouragement availability couldn’t be checked. Try again."
 }

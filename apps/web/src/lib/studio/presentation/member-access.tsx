@@ -1,3 +1,4 @@
+import { MemberEncouragement } from './nudge-composer';
 import { useOwnedOperation } from './use-owned-operation';
 import type { MessageKey } from '@hourpaths/i18n';
 import { useEffect, useRef, useState } from 'react';
@@ -15,7 +16,7 @@ function actionKey(member: PathMember, action: MemberAction) {
   if (member.role === 'administrator') return member.canStepDownAdministrator ? 'pathMembers.confirmStepDownAdministrator' : 'pathMembers.confirmRevokeAdministrator';
   return 'pathMembers.confirmParticipant';
 }
-export function MemberAccess({ dependencies: d, pathId, disabled, onBusy, mode = 'access', archived = false }: { dependencies: StudioDependencies; pathId: string; disabled: boolean; onBusy(value: boolean): void; mode?: 'access' | 'people'; archived?: boolean }) {
+export function MemberAccess({ dependencies: d, pathId, disabled, onBusy, mode = 'access', archived = false, pathName = '' }: { dependencies: StudioDependencies; pathId: string; disabled: boolean; onBusy(value: boolean): void; mode?: 'access' | 'people'; archived?: boolean; pathName?: string }) {
   const client = useQueryClient(), operation = useOwnedOperation(d);
   const [selectedId, setSelectedId] = useState<string | null>(null), [unblockReview, setUnblockReview] = useState<PathMember | null>(null);
   const unblockAttempt = useRef<{ id: string; key: string } | null>(null);
@@ -88,7 +89,7 @@ export function MemberAccess({ dependencies: d, pathId, disabled, onBusy, mode =
     {loadingReview && <p role="status">{d.i18n.t('common.loading')}</p>}
     {failure && !review && !unblockReview && <p role="alert">{d.i18n.t('pathMembers.reviewUnavailableDescription')}</p>}
     {query.isPending ? <p role="status">{d.i18n.t('pathMembers.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('pathMembers.unavailableDescription')}</p><button disabled={locked} onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : !members.length ? <p>{d.i18n.t('pathMembers.emptyDescription')}</p> : <ul className="studio-settings-people">{members.map(member => <li key={member.userId}>{mode === 'people' ? <button disabled={locked} className="studio-member-select" onClick={() => { setSelectedId(member.userId); setFailure(false); }}><strong>{d.i18n.t('pathMembers.identity', { ...member })}</strong><small>{d.i18n.t(roleKey(member.role))}</small></button> : <><MemberFacts member={member} dependencies={d} />{actions(member)}</>}</li>)}</ul>}
-    {mode === 'people' && selected && <section className="studio-member-detail" aria-label={d.i18n.t('pathMembers.identity', { ...selected })}><MemberFacts member={selected} dependencies={d} />{actions(selected)}{selected.blockedByViewer && <button disabled={locked} onClick={() => { setUnblockReview(selected); unblockAttempt.current = null; setFailure(false); }}>{d.i18n.t('blocking.unblock')}</button>}</section>}
+    {mode === 'people' && selected && <section className="studio-member-detail" aria-label={d.i18n.t('pathMembers.identity', { ...selected })}><MemberFacts member={selected} dependencies={d} /><MemberEncouragement key={selected.userId} dependencies={d} pathId={pathId} pathName={pathName} member={selected} disabled={locked} />{actions(selected)}{selected.blockedByViewer && <button disabled={locked} onClick={() => { setUnblockReview(selected); unblockAttempt.current = null; setFailure(false); }}>{d.i18n.t('blocking.unblock')}</button>}</section>}
     {unblockReview && <ConfirmationDialog title={d.i18n.t('blocking.unblockConfirmTitle', { username: unblockReview.username })} busy={busy} cancelLabel={d.i18n.t('common.cancel')} confirmLabel={d.i18n.t('blocking.unblock')} cancel={() => { setUnblockReview(null); unblockAttempt.current = null; setFailure(false); }} confirm={() => void unblock()}><p>{d.i18n.t('blocking.unblockConfirmDescription')}</p>{failure && <p role="alert">{d.i18n.t('blocking.unblockUnavailable')}</p>}</ConfirmationDialog>}
     {query.hasNextPage && !query.isError && <button disabled={locked || query.isFetching} onClick={() => void query.fetchNextPage()}>{d.i18n.t('common.loadMore')}</button>}
     {review && <ConfirmationDialog title={d.i18n.t(actionKey(review.member, review.action))} busy={busy} cancelLabel={d.i18n.t('common.cancel')} confirmLabel={d.i18n.t(busy ? 'common.loading' : actionKey(review.member, review.action))} cancel={() => { commands.clear(); setReview(null); setFailure(false); }} confirm={() => void submit()}>
