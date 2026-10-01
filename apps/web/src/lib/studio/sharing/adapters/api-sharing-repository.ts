@@ -1,3 +1,4 @@
+import { readInbox, inboxCommands } from './api-inbox';
 import { sharedMemberCommands } from './shared-member-commands';
 import { sharedInvitationCommands } from './shared-invitation-commands';
 import { createSessionApiClient } from '@hourpaths/api-client';
@@ -10,6 +11,8 @@ function required<T>(result: { data?: { data: T }; error?: unknown; response: Re
 export function apiSharingRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): SharingRepository {
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   const repository: SharingRepository = {
+    inbox: (cursor, signal) => readInbox(client(signal), cursor),
+    inboxCommands: key => inboxCommands(() => client(), key),
     memberCommands: key => sharedMemberCommands(() => client(), (pathId, cursor) => repository.members(pathId, cursor), key),
     async members(pathId, cursor, signal) {
       const result = await client(signal).pathMembers(pathId, cursor || undefined);

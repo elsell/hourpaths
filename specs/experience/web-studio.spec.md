@@ -111,6 +111,31 @@ is an authorized recorded activity; a running session is not a completed event.
   rejection remain independently reachable; this page must not replace
   or weaken their existing behavior.
 
+### Recipient invitations
+
+- Studio must provide a dedicated, addressable pending-invitations page linked
+  from its shell, independent of notification read state or retention.
+- The inbox must paginate without duplicate entries or repeating cursors and
+  show Path name, inviter's canonical public identity, offered role, and date.
+  Joined context must be validated before display; provider data must not leak.
+- Accept and decline must show the selected Path, inviter, and offered role in
+  a cancel-first confirmation. Participant visibility warnings must show the
+  reviewed audience, exposure, unchanged profile privacy, and retained-activity
+  consequence where applicable. Acceptance must acknowledge only that audience.
+- Cancel must leave the invitation pending. Pending decisions must prevent
+  duplicate submission and navigation. Retry must preserve its operation key;
+  a changed visibility requirement must leave the invitation pending and offer
+  refresh/review rather than acknowledging a different audience automatically.
+- Acceptance must refresh Home and remove the resolved invitation, announce the
+  granted role, and offer a link to the accepted Path. Participants must be able
+  to track their time there; supporters must see its goals without tracking or
+  management controls. Direct navigation and reload must revalidate access.
+- Decline must remove the resolved invitation and announce completion without
+  granting membership. Disposed-account completions must not affect new state.
+- Membership and private-profile warnings remain governed by
+  [Path membership](../paths/membership.spec.md) and
+  [Visibility](../social/visibility.spec.md).
+
 ### Current member access
 
 - Share must show paginated current members, their canonical identity, role,

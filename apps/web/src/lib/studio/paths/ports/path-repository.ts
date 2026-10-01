@@ -2,6 +2,7 @@ import type { LifecycleReview } from '../domain/lifecycle';
 import type { NewPath, PathGoals, Path, PathAppearance, TrackingSnapshot } from '../domain/path';
 
 export interface PathRepository {
+  read(pathId: string, signal?: AbortSignal): Promise<Path>;
   lifecycle(review: LifecycleReview): Promise<void>;
   saveGoals(path: Path, goals: PathGoals, operationId: string): Promise<Path>;
   create(path: NewPath, operationId: string): Promise<Path>;

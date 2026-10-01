@@ -55,6 +55,11 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
   const tracking = async (pathId: string, signal?: AbortSignal) =>
     trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).currentTimer(pathId)));
   return {
+    async read(pathId, signal) {
+      const value = pathFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).path(pathId)));
+      if (value.id !== pathId) throw new PathRequestError(502);
+      return value;
+    },
     async lifecycle(review) {
       if (review.action === 'delete') {
         const result = accepted(await client.deletePath(review.pathId, { confirmed: true, expectedName: review.name }, review.operationId));
