@@ -88,6 +88,21 @@ is an authorized recorded activity; a running session is not a completed event.
 
 ## Connected activity timeline
 
+- A tracking participant must be able to add activity from a Path row and edit
+  their own entry from activity details. Both actions must use the same compact
+  form with date, start time, hours/minutes/seconds, and a secondary private note.
+- Forms must follow [Recorded Activity](../tracking/recorded-activity.spec.md)
+  for participant-local defaults, original occurrence zone on edits, daylight
+  saving transitions, exact seconds, note normalization, and future-end checks.
+  Changing duration before occurrence is touched must keep the default end at now.
+- An edit must retain the exact original occurrence and duration until changed.
+  Errors must retain the draft. Retries of the same submission must retain its
+  idempotency key; pending saves must block duplicate submission and navigation.
+  Leaving unsaved changes must require an explicit discard choice.
+- A successful save must open the saved detail, announce success, and refresh
+  affected progress, timeline, statistics, and social projections. Completion
+  from a disposed account must not change another account's presentation.
+
 - One vertical line must connect all visible events, including across day
   boundaries. Day labels and distinct day markers attach to that same line.
 - Days must not be separate cards or be split by horizontal divider lines.

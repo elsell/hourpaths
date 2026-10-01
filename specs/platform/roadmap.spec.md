@@ -5,9 +5,12 @@
 Close the approved October 1 specs-to-implementation gap audit through small,
 demonstrable slices. Studio Path archive, restore, and deletion parity merged in
 PR #79 with real-API browser evidence; production availability remains pending.
-The active product slice is Studio activity detail, edit history, and deletion.
-The concurrent release blocker is the bundled npm runtime tree (PR #81), after
-the build-tool dependency repairs merged in PR #78. Use shared UI, focused useful checks, and the applicable merge and
+Studio activity detail, edit history, and deletion merged in PR #83 with real-API
+verification. The active product slice is Studio activity creation and editing.
+Release repairs in PRs #78 and #81 shipped as v0.16.0. Its web image is deployed
+through infra commit b00ce425 with a healthy Flux rollout; TestFlight build 212
+and physical-device encouragement acceptance remain pending. Use shared UI,
+focused useful checks, and the applicable merge and
 release gates. Merged code is not evidence of tester or production availability.
 
 ## Gap-closure scope and evidence

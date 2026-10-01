@@ -23,6 +23,7 @@ import { ActivityTimeline } from './activity-timeline';
 import type { HistoryRepository } from '../history/ports/history-source';
 import type { ActivityRepository } from '../history/ports/activity-repository';
 import { ActivityDetailPage } from './activity-detail';
+import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
   session: AccountSession;
@@ -43,12 +44,14 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const root = createRootRoute({ component: Outlet });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true }), component: () => <PathsPage dependencies={d} /> });
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
-    const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', component: () => <ActivityDetailPage dependencies={d} /> });
+    const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', validateSearch: (search: Record<string, unknown>) => ({ activitySaved: search.activitySaved === true }), component: () => <ActivityDetailPage dependencies={d} /> });
+    const addActivity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/new', component: () => <ActivityEditorPage dependencies={d} /> });
+    const editActivity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId/edit', component: () => <ActivityEditorPage dependencies={d} editing /> });
     const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, activity, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;

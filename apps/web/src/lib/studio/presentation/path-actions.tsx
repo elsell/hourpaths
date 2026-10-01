@@ -2,6 +2,7 @@ import { PathLifecycleReview } from './path-lifecycle';
 import { reviewLifecycle, type LifecycleReview, type LifecycleAction } from '../paths/application/lifecycle';
 import { PathAppearanceEditor } from './path-appearance';
 import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
 import type { Path } from '../paths/domain/path';
@@ -19,6 +20,7 @@ export function PathActions({ path, dependencies: d, move, moving }: { path: Pat
   const pin = useMutation({ mutationFn: () => d.paths.pin(path.id, !path.pinned, d.operationId()), onSuccess: refresh });
   return <div className="studio-path-actions">
     <details open={menuOpen}><summary onClick={event => { event.preventDefault(); setMenuOpen(!menuOpen); }} aria-label={d.i18n.t('home.pathActions', { pathName: path.name })}>⋯</summary><div className="studio-action-menu">
+      {path.canTrack && !path.archived && <Link to="/paths/$pathId/activities/new" params={{ pathId: path.id }}>{d.i18n.t('activity.add')}</Link>}
       {!path.archived && <button disabled={pin.isPending} onClick={() => { setMenuOpen(false); pin.mutate(); }}>{d.i18n.t(path.pinned ? 'home.arrange.unpinShort' : 'home.arrange.pinShort')}</button>}
       {path.canEdit && <button onClick={() => { setMenuOpen(false); setName(path.name); setRenaming(true); }}>{d.i18n.t('pathRename.action')}</button>}
       {move && <><button disabled={moving} onClick={() => { setMenuOpen(false); move(-1); }}>{d.i18n.t('home.arrange.moveUp', { pathName: path.name })}</button><button disabled={moving} onClick={() => { setMenuOpen(false); move(1); }}>{d.i18n.t('home.arrange.moveDown', { pathName: path.name })}</button></>}
