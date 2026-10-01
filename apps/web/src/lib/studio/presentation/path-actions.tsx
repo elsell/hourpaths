@@ -15,7 +15,7 @@ export function PathActions({ path, dependencies: d, move, moving }: { path: Pat
   const [appearance, setAppearance] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(path.name);
-  const refresh = () => client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] });
+  const refresh = async () => { await Promise.all([client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] }), client.invalidateQueries({ queryKey: [d.accountScope, 'path', path.id] })]); };
   const rename = useMutation({ mutationFn: () => d.paths.rename(path, name.trim(), d.operationId()), onSuccess: async () => { setRenaming(false); await refresh(); } });
   const pin = useMutation({ mutationFn: () => d.paths.pin(path.id, !path.pinned, d.operationId()), onSuccess: refresh });
   return <div className="studio-path-actions">

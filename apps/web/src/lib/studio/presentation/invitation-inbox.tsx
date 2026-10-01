@@ -47,7 +47,7 @@ export function InvitationInbox({ dependencies: d }: { dependencies: StudioDepen
       <p>{d.i18n.t(selected.decision === 'decline' ? 'pathInvitation.rejectConfirmationBody' : 'pathInvitation.pendingContext', { ...selected.item.inviter, pathName: selected.item.pathName })}</p>
       <p>{d.i18n.t(selected.item.invitation.offeredRole === 'participant' ? 'pathInvitation.participantTracking' : 'pathInvitation.supporterReadOnly')}</p>
       {warning && <><strong>{d.i18n.t(`pathInvitation.visibilityWarning.audience.${warning.pathVisibility}`)}</strong><p>{d.i18n.t('pathInvitation.visibilityWarning.exposure')}</p><p>{d.i18n.t('pathInvitation.visibilityWarning.privacyScope')}</p>{warning.hasRetainedActivity && <p>{d.i18n.t('pathInvitation.visibilityWarning.retainedActivity')}</p>}</>}
-      {error && <p role="alert">{error}</p>}
+      {error && <div role="alert"><p>{error}</p><button disabled={busy} onClick={() => { close(); void query.refetch(); }}>{d.i18n.t('common.refresh')}</button></div>}
     </ConfirmationDialog>}
   </main></StudioShell>;
 }
