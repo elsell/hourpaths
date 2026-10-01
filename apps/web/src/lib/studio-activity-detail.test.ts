@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { reviewActivityDeletion, deleteReviewedActivity } from './studio/history/application/activity-deletion';
 import type { ActivityDetail } from './studio/history/domain/detail';
-const zone = 'Etc/UTC';
+const zone = 'utc';
 const detail: ActivityDetail = { id: 'entry', pathId: 'path', participantId: 'owner', pathName: 'practice-path', owned: true, startedAt: 1000, endedAt: 2000, seconds: 1, timeZone: zone, version: 1, note: null };
 test('deletion requires owner review and retains identity and key across uncertain retries', async () => {
   assert.throws(() => reviewActivityDeletion({ ...detail, owned: false }, 'key'));
