@@ -1,3 +1,6 @@
+import { NotificationsPage } from './notifications';
+import { NotificationsContext } from './notification-navigation';
+import type { Notifications } from '../notifications/ports/notifications';
 import { OwnershipPage } from './ownership-page';
 import type { OwnershipRepository } from '../ownership/ports/ownership-repository';
 import { InvitationInbox } from './invitation-inbox';
@@ -31,6 +34,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  notifications: Notifications;
   ownership: OwnershipRepository;
   sharing: SharingRepository;
   session: AccountSession;
@@ -51,6 +55,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const root = createRootRoute({ component: Outlet });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
     const ownership = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/ownership', component: () => <OwnershipPage dependencies={d} /> });
+    const notifications = createRoute({ getParentRoute: () => root, path: '/notifications', component: () => <NotificationsPage dependencies={d} /> });
     const inbox = createRoute({ getParentRoute: () => root, path: '/invitations', component: () => <InvitationInbox dependencies={d} /> });
     const path = createRoute({ getParentRoute: () => root, path: '/paths/$pathId', component: () => <PathPage dependencies={d} /> });
     const sharing = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/share', component: () => <SharingPage dependencies={d} /> });
@@ -62,10 +67,18 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, path, inbox, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, path, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
-  return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;
+  useEffect(() => {
+    const key = [d.accountScope, 'notificationOperation'];
+    d.notifications.start({
+      run: operation => client.fetchQuery({ queryKey: key, queryFn: async ({ signal }) => ({ result: await operation(signal) }), staleTime: 0, gcTime: 0, retry: false }).then(value => value.result),
+      cancel: () => { void client.cancelQueries({ queryKey: key }); client.removeQueries({ queryKey: key }); },
+    });
+    return () => d.notifications.dispose();
+  }, [d, client]);
+  return <NotificationsContext.Provider value={d.notifications}><QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider></NotificationsContext.Provider>;
 }
 function PathPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const { pathId } = useParams({ strict: false }) as { pathId: string };

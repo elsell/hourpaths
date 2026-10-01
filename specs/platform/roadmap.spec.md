@@ -5,12 +5,12 @@
 Close the approved October 1 specs-to-implementation gap audit through small,
 demonstrable slices. Studio lifecycle and activity CRUD/history (PRs #79, #83,
 #84) and sharing/sent invitations (PR #85) are deployed at `/studio`; infra
-14c9e9e has healthy Flux and exact web-image evidence. TestFlight 0.19.0 (222)
-is VALID and available internally; physical-device encouragement acceptance
-remains pending. Current-member access and role management (PR #86) are deployed
-on web; its iOS release is building. Recipient invitations and accepted Path
-access merged in PR #87 with all five gates and real-API verification; release
-availability is pending. The active slice is Studio ownership transfer. Use shared UI, focused
+ea01945 has healthy Flux and exact web-image evidence, including recipient
+invitations and accepted Path access (PR #87). TestFlight 0.20.0 (225) is VALID
+and available internally; physical-device encouragement acceptance remains
+pending. Ownership transfer merged in PR #88 with all five gates and real
+creator/recipient verification; release availability is pending. The active
+slice is Studio notification history and unread-state convergence. Use shared UI, focused
 useful checks, and applicable merge/release gates. Merged code alone must not
 count as production or tester availability.
 
