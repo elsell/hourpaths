@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { apiSharingRepository } from './studio/sharing/adapters/api-sharing-repository';
-import { sharingCommands } from './studio/sharing/application/sharing';
+import { sharingCommands, retainSharingDraft } from './studio/sharing/application/sharing';
 test('sharing binds reviewed identity and stable retries; denies stale capability and mismatched list context', async () => {
   const calls: { key?: string; body: unknown }[] = []; let allowed = true; let malformed = false;
   const person = { userId: 'recipient', username: 'person', displayName: 'person' };
@@ -28,4 +28,11 @@ test('sharing binds reviewed identity and stable retries; denies stale capabilit
     malformed = true; await assert.rejects(repo.pending('path', ''));
     allowed = false; await assert.rejects(repo.context('path'));
   } finally { server.close(); server.closeAllConnections(); }
+});
+
+test('temporary context failures retain drafts while permission loss and invalid context hide them', () => {
+  assert.equal(retainSharingDraft({ kind: 'network' }), true);
+  assert.equal(retainSharingDraft({ kind: 'http', status: 503 }), true);
+  assert.equal(retainSharingDraft({ kind: 'http', status: 429 }), true);
+  for (const cause of [{ kind: 'opaque' }, { kind: 'invalid_response' }, { kind: 'http', status: 403 }, { kind: 'http', status: 401 }]) assert.equal(retainSharingDraft(cause), false);
 });

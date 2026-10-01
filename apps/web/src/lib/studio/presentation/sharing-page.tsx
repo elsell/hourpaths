@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useBlocker, useParams } from '@tanstack/react-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { sharingCommands, pathInvitationFailureMessageKey } from '../sharing/application/sharing';
+import { sharingCommands, pathInvitationFailureMessageKey, retainSharingDraft } from '../sharing/application/sharing';
 import type { ManagedPendingPathInvitation, PathInvitationRecipientReview, PathInvitationRole } from '../sharing/domain/invitations';
 import type { StudioDependencies } from './app';
 import { StudioShell } from './studio-shell';
@@ -11,7 +11,7 @@ export function SharingPage({ dependencies: d }: { dependencies: StudioDependenc
   const { pathId } = useParams({ strict: false }) as { pathId: string };
   const context = useQuery({ queryKey: [d.accountScope, 'sharingContext', pathId], queryFn: ({ signal }) => d.sharing.context(pathId, signal), refetchOnWindowFocus: true, refetchInterval: 30_000 });
   return <StudioShell page="paths" i18n={d.i18n}><main className="studio-main studio-activity-detail"><Link to="/">{d.i18n.t('common.back')}</Link><header className="studio-header"><h1>{d.i18n.t('pathInvitation.heading')}</h1></header>
-    {context.isPending ? <p role="status">{d.i18n.t('common.loading')}</p> : context.isError ? <div role="alert"><p>{d.i18n.t('pathInvitation.unavailable')}</p><button onClick={() => void context.refetch()}>{d.i18n.t('common.retry')}</button></div> : <SharingForm key={pathId} pathId={pathId} name={context.data.name} dependencies={d} />}
+    {context.isPending ? <p role="status">{d.i18n.t('common.loading')}</p> : context.isError && (!context.data || !retainSharingDraft(context.error)) ? <div role="alert"><p>{d.i18n.t('pathInvitation.unavailable')}</p><button onClick={() => void context.refetch()}>{d.i18n.t('common.retry')}</button></div> : <>{context.isError && <p role="alert">{d.i18n.t('pathInvitation.retry')}</p>}<SharingForm key={pathId} pathId={pathId} name={context.data!.name} dependencies={d} /></>}
   </main></StudioShell>;
 }
 function SharingForm({ pathId, name, dependencies: d }: { pathId: string; name: string; dependencies: StudioDependencies }) {

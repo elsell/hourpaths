@@ -104,7 +104,8 @@ is an authorized recorded activity; a running session is not a completed event.
   and navigation. Disposed-account completions must not alter another account.
 - Success must announce the result and refresh the pending list. Errors must
   retain the reviewed request and expose the existing localized failure state.
-  Permission loss or archival must fail closed without disclosing stale content.
+  A transient background context refresh failure must retain the draft and retry
+  state; confirmed permission loss or archival must hide stale content.
 - Invitation authority, duplicate rules, and role effects remain governed by
   [Path membership](../paths/membership.spec.md). Recipient acceptance and
   membership management are separate destinations; this page must not replace

@@ -9,7 +9,8 @@ export function apiSharingRepository(baseURL: string, token: () => string | null
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   return {
     async context(pathId, signal) {
-      const value = required(await client(signal).path(pathId));
+      const response = await client(signal).path(pathId).catch(() => { throw { kind: 'network' }; });
+      const value = required(response);
       if (value.id !== pathId || !value.name || value.archivedAt || value.capabilities.inviteMembers !== true) throw { kind: 'opaque' };
       return { id: value.id, name: value.name };
     },
