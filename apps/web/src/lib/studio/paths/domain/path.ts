@@ -22,6 +22,7 @@ export interface Path extends PathGoals {
   readonly canTrack: boolean;
   readonly canEdit: boolean;
   readonly canManageGoals: boolean;
+  readonly canManageLifecycle: boolean;
 }
 
 export interface TrackingSnapshot {
