@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useId } from 'react';
-import { Link, useBlocker, Navigate, useParams } from '@tanstack/react-router';
+import { Link, useBlocker, Navigate, useParams, useSearch } from '@tanstack/react-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
 import { ActivityFailure } from '../history/domain/detail';
@@ -12,6 +12,7 @@ import { duration } from './duration';
 export function ActivityDetailPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const { pathId, activityId } = useParams({ strict: false }) as { pathId: string; activityId: string };
   const [review, setReview] = useState<ActivityDeletion | null>(null);
+  const search = useSearch({ strict: false }) as { activitySaved?: boolean };
   const query = useQuery({ queryKey: [d.accountScope, 'activity', pathId, activityId], queryFn: ({ signal }) => d.activities.detail(pathId, activityId, signal) });
   const revisions = useInfiniteQuery({
     queryKey: [d.accountScope, 'activity-revisions', pathId, activityId], initialPageParam: null as string | null,
@@ -25,8 +26,9 @@ export function ActivityDetailPage({ dependencies: d }: { dependencies: StudioDe
     {query.isPending && <p role="status">{d.i18n.t('studio.loading')}</p>}
     {query.isError && <div role="alert"><p>{d.i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div>}
     {query.data && <>
+      {search.activitySaved && <p role="status">{d.i18n.t('activity.savedVersion', { version: d.i18n.number(query.data.version) })}</p>}
       <section className="studio-settings-card"><h2>{query.data.pathName}</h2><ActivityValues value={query.data} dependencies={d} />
-        {query.data.owned && <button onClick={() => setReview(reviewActivityDeletion(query.data!, d.operationId()))}>{d.i18n.t('pathDetails.delete')}</button>}
+        {query.data.owned && <div className="studio-form-actions"><Link to="/paths/$pathId/activities/$activityId/edit" params={{ pathId, activityId }}>{d.i18n.t('pathDetails.edit')}</Link><button onClick={() => setReview(reviewActivityDeletion(query.data!, d.operationId()))}>{d.i18n.t('pathDetails.delete')}</button></div>}
       </section>
       <section className="studio-settings-card"><h2>{d.i18n.t('pathDetails.revisions')}</h2>
         {revisions.isPending && <p role="status">{d.i18n.t('studio.loading')}</p>}

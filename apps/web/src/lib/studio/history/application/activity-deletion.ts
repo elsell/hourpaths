@@ -4,6 +4,6 @@ export function reviewActivityDeletion(detail: ActivityDetail, operationId: stri
   if (!detail.owned || !detail.id || !detail.pathId || !operationId) throw new Error('activity_delete_unavailable');
   return Object.freeze({ pathId: detail.pathId, activityId: detail.id, operationId });
 }
-export async function deleteReviewedActivity(repository: ActivityRepository, review: ActivityDeletion): Promise<ActivityDeletionResult> {
+export async function deleteReviewedActivity(repository: Pick<ActivityRepository, 'remove'>, review: ActivityDeletion): Promise<ActivityDeletionResult> {
   return repository.remove(review);
 }

@@ -15,6 +15,21 @@ function snapshot(value: APIDetail['activity'], version: number, pathId: string,
 export function apiActivityRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): ActivityRepository {
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   return {
+    async defaults(pathId, signal) {
+      const api = client(signal);
+      const path = required(await api.path(pathId));
+      const defaults = required(await api.manualActivityDefaults(pathId));
+      const currentInstant = Date.parse(defaults.currentInstant);
+      if (path.id !== pathId || !path.name || !Number.isFinite(currentInstant)) throw new Error('activity_defaults_invalid');
+      new Intl.DateTimeFormat('en', { timeZone: defaults.timeZone }).format(currentInstant);
+      return { pathName: path.name, currentInstant, timeZone: defaults.timeZone, canTrack: path.capabilities.trackTime };
+    },
+    async save(review) {
+      const body = { localDate: review.input.localDate, localStartTime: review.input.localTime, durationSeconds: review.input.seconds, note: review.input.note };
+      const result = required(await (review.activityId ? client().updateActivity(review.pathId, review.activityId, body, review.operationId) : client().createManualActivity(review.pathId, body, review.operationId)));
+      if (!result.activity.id || result.activity.pathId !== review.pathId || (review.activityId && result.activity.id !== review.activityId) || !Number.isSafeInteger(result.version) || result.version < 1) throw new Error('activity_save_invalid');
+      return { id: result.activity.id, version: result.version };
+    },
     async detail(pathId, activityId, signal) {
       const api = client(signal);
       const profile = required(await api.profile());

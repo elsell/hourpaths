@@ -579,6 +579,7 @@
   "activity.duration.minutes": "Minutes",
   "activity.duration.seconds": "Seconds",
   "activity.note": "Private note (optional)",
+  "activity.noteInvalid": "Use at most 2,000 characters in the private note, without control characters.",
   "activity.notePrivacy": "Only you can see this note.",
   "activity.addNote": "Add a private note",
   "activity.hideNote": "Hide private note",

@@ -309,6 +309,14 @@ func (s *Service) UpdateActivity(ctx context.Context, authorization, pathID, act
 	if err != nil || input.DurationSeconds <= 0 {
 		return UpdateActivityResult{}, ports.ErrInvalidArgument
 	}
+	location, err := time.LoadLocation(timeZone)
+	if err != nil {
+		return UpdateActivityResult{}, errInvalidDependencies
+	}
+	localStart := current.StartedAt.In(location)
+	if localStart.Format("2006-01-02") == input.LocalDate && localStart.Format("15:04:05") == input.LocalStartTime {
+		startedAt = current.StartedAt
+	}
 	canonicalInput, err := domain.RecordManualActivity(domain.ManualActivity{
 		ID: activityID, PathID: pathID, ParticipantID: principal.UserID,
 		StartedAt: startedAt, DurationSeconds: input.DurationSeconds,

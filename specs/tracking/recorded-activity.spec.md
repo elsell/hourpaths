@@ -318,3 +318,14 @@ on a path.
 If Alice practices from 5:00 PM until 6:00 PM on Monday, the product records one
 hour of Alice's activity on the path at that time. Whether that hour satisfies a
 daily, weekly, monthly, yearly, or no interval goal is calculated separately.
+
+### Preserving unchanged occurrence during edits
+
+- When an edit submits the same local date and time as the existing entry in its
+  occurrence time zone, the server must retain the original UTC start instant.
+  This includes its offset during a repeated daylight-saving hour and any
+  retained fractional-second precision. Changing only a note or duration must
+  not shift the original start time.
+- For example, a New York entry at the second 01:30 on November 2, 2025 retains
+  06:30 UTC on a note-only edit; it must not move to the earlier 05:30 UTC.
+  A changed local occurrence continues to use the existing manual-entry rules.
