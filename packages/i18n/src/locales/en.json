@@ -5054,5 +5054,6 @@
   "studio.ownership.failed": "The transfer could not be confirmed. Retry, or refresh to check its current state.",
   "studio.ownership.acceptEffect": "You will become the creator. The previous creator will become an administrator and remain a participant.",
   "studio.ownership.unchangedRoles": "All roles will remain unchanged.",
-  "studio.ownership.unchangedActivity": "Recorded activity and goal progress will not change."
+  "studio.ownership.unchangedActivity": "Recorded activity and goal progress will not change.",
+  "studio.notifications.deleteExplanation": "This deletes only the notification. The underlying request, activity, or change remains unchanged."
 }

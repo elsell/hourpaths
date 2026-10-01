@@ -1,3 +1,4 @@
+import { apiNotifications } from '../notifications/adapters/api-notifications';
 import { apiOwnershipRepository } from '../ownership/adapters/api-ownership-repository';
 import { apiSharingRepository } from '../sharing/adapters/api-sharing-repository';
 import { accountSession } from '../session/application/account-session';
@@ -33,6 +34,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const paths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
   root.render(<StudioApp dependencies={{
     paths,
+    notifications: apiNotifications(options.apiURL, () => session.token(), credential => session.reject(credential), i18n),
     ownership: apiOwnershipRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     sharing: apiSharingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     activities: apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),

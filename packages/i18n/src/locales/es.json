@@ -5054,5 +5054,6 @@
   "studio.ownership.failed": "No se pudo confirmar la transferencia. Reintenta o actualiza para consultar su estado.",
   "studio.ownership.acceptEffect": "Serás el creador. El creador anterior será administrador y seguirá siendo participante.",
   "studio.ownership.unchangedRoles": "Todos los roles permanecerán sin cambios.",
-  "studio.ownership.unchangedActivity": "La actividad registrada y el progreso de las metas no cambiarán."
+  "studio.ownership.unchangedActivity": "La actividad registrada y el progreso de las metas no cambiarán.",
+  "studio.notifications.deleteExplanation": "Esto elimina solo la notificación. La solicitud, actividad o cambio correspondiente permanece sin cambios."
 }

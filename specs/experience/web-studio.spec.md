@@ -136,6 +136,33 @@ is an authorized recorded activity; a running session is not a completed event.
   [Path membership](../paths/membership.spec.md) and
   [Visibility](../social/visibility.spec.md).
 
+### Notification history
+
+- Studio must provide a notification destination and an unread-count navigation
+  badge using the authoritative history and mutation counts. Listing history
+  must not mark notifications read.
+- History must present separate newest-first actionable and informational
+  sections with pagination, explicit refresh, mark-all-read, individual opening,
+  and deletion, following [Notifications](../notifications/notifications.spec.md).
+- Opening an item must revalidate it through the read mutation before navigating
+  to the relevant invitation, ownership, follow-request, profile, or Path
+  surface. Informational tombstones must be readable without offering a target.
+  Destinations must apply their current authorization; unavailable targets must
+  not reveal stale private content.
+- Deleting a notification must not resolve its underlying request. Invitation
+  and ownership pages must remain independently reachable.
+- The badge and history must share one account-owned state. Same-account
+  content-free cross-tab signals, focus/visibility refresh, serialized reads and
+  mutations, and trailing refresh after successful mutations must follow the
+  authoritative notification convergence rules. Failed refreshes must retain
+  visible history and the last authoritative badge with a retry action.
+- Account disposal must abort pending requests, close convergence listeners,
+  and suppress late results. Core orchestration must be framework-independent
+  and reusable; Studio models must not expose generated API DTOs.
+- Acceptance scenarios must cover list-without-reading, open/read, mark-all,
+  deletion without request resolution, pagination, same-account cross-tab
+  convergence, wrong-account signal isolation, retry, and account disposal.
+
 ### Ownership transfer
 
 - Every accessible Path must expose an addressable Studio ownership page,
