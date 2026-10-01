@@ -5044,5 +5044,15 @@
   "studio.session.heading": "Session",
   "studio.session.signOut": "Sign out",
   "studio.session.reviewing": "Checking running timers…",
-  "studio.session.reviewFailed": "Running timers could not be checked. Retry, or sign out while leaving any timers running."
+  "studio.session.reviewFailed": "Running timers could not be checked. Retry, or sign out while leaving any timers running.",
+  "studio.ownership.expires": "Expires on {{exact}}.",
+  "studio.ownership.pending": "Ownership transfer request sent.",
+  "studio.ownership.accepted": "Ownership accepted. You are now the creator.",
+  "studio.ownership.declined": "Ownership transfer declined. Roles are unchanged.",
+  "studio.ownership.canceled": "Ownership transfer canceled. Roles are unchanged.",
+  "studio.ownership.empty": "There is no pending ownership transfer for you on this Path.",
+  "studio.ownership.failed": "The transfer could not be confirmed. Retry, or refresh to check its current state.",
+  "studio.ownership.acceptEffect": "You will become the creator. The previous creator will become an administrator and remain a participant.",
+  "studio.ownership.unchangedRoles": "All roles will remain unchanged.",
+  "studio.ownership.unchangedActivity": "Recorded activity and goal progress will not change."
 }

@@ -9,7 +9,7 @@ test('failed sign-out stop retains credentials and retry identity; newly started
   const running = new Map([['p', 'first']]);
   const stops: string[] = [];
   const paths = {
-    list: async () => [{ id: 'p', name: 'path', canInvite: true, canTrack: true, canEdit: true, canManageGoals: true, canManageLifecycle: true, archived: false, pinned: false, position: null, pinnedPosition: null, recentActivityAt: 0, goal: null, overallTarget: null }] as Path[],
+    list: async () => [{ id: 'p', name: 'path', canInvite: true, canTrack: true, canEdit: true, canManageGoals: true, canManageLifecycle: true, canTransferOwnership: true, archived: false, pinned: false, position: null, pinnedPosition: null, recentActivityAt: 0, goal: null, overallTarget: null }] as Path[],
     tracking: async (id: string) => ({ savedTotalSeconds: 0, period: null, activeSession: running.has(id) ? { id: running.get(id)!, startedAt: 0 } : null }),
     stop: async (id: string, timerId: string, key: string) => { stops.push(key); if (failing) throw new Error('unavailable'); running.delete(id); return { savedTotalSeconds: 10, period: null, activeSession: null }; },
   } satisfies Pick<PathRepository, 'list' | 'tracking' | 'stop'>;
@@ -31,7 +31,7 @@ test('cancelling a pending stop or replacing the account cannot complete sign-ou
     let started!: () => void;
     const stopping = new Promise<void>(resolve => { started = resolve; });
     const abort = new AbortController();
-    const path: Path = { id: 'p', name: 'path', canInvite: true, canTrack: true, canEdit: true, canManageGoals: true, canManageLifecycle: true, archived: false, pinned: false, position: null, pinnedPosition: null, recentActivityAt: 0, goal: null, overallTarget: null };
+    const path: Path = { id: 'p', name: 'path', canInvite: true, canTrack: true, canEdit: true, canManageGoals: true, canManageLifecycle: true, canTransferOwnership: true, archived: false, pinned: false, position: null, pinnedPosition: null, recentActivityAt: 0, goal: null, overallTarget: null };
     const paths = {
       list: async () => [path],
       tracking: async () => ({ savedTotalSeconds: 0, period: null, activeSession: { id: 'timer', startedAt: 0 } }),
