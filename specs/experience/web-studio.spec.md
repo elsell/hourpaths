@@ -108,8 +108,28 @@ is an authorized recorded activity; a running session is not a completed event.
   state; confirmed permission loss or archival must hide stale content.
 - Invitation authority, duplicate rules, and role effects remain governed by
   [Path membership](../paths/membership.spec.md). Recipient acceptance and
-  membership management are separate destinations; this page must not replace
+  rejection remain independently reachable; this page must not replace
   or weaken their existing behavior.
+
+### Current member access
+
+- Share must show paginated current members, their canonical identity, role,
+  session count, and tracked time. Member-specific server capabilities must
+  control removal and ordinary/administrator role actions.
+- Before a destructive change, the client must obtain a fresh removal review
+  for the exact Path and member. Confirmation must identify the person, current
+  role, sessions, tracked time, and running-timer state and explain all data,
+  offline, and reinvitation consequences defined in Path membership.
+- Administrator grants, revocations, and voluntary step-down must require
+  explicit confirmation and preserve participation and recorded activity.
+- Cancel must receive initial focus. Pending mutations must prevent duplicate
+  submissions and navigation. A retry must reuse the reviewed expected role and
+  original operation key; changing or dismissing the review must cancel it.
+- Successful changes must refresh member access and affected account projections.
+  Stepping down must return to Paths with confirmation, without retaining
+  manager controls. Late completions after account disposal must have no effect.
+- Unavailable reviews and denied/stale operations must retain a localized error
+  and retry/dismiss controls without claiming success or changing local roles.
 
 ## Connected activity timeline
 

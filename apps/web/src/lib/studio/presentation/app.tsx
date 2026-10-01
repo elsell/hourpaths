@@ -45,7 +45,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false } } }));
   const [router] = useState(() => {
     const root = createRootRoute({ component: Outlet });
-    const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true }), component: () => <PathsPage dependencies={d} /> });
+    const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
     const sharing = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/share', component: () => <SharingPage dependencies={d} /> });
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
     const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', validateSearch: (search: Record<string, unknown>) => ({ activitySaved: search.activitySaved === true }), component: () => <ActivityDetailPage dependencies={d} /> });
@@ -62,7 +62,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
 }
 function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const client = useQueryClient();
-  const searchState = useSearch({ strict: false }) as { activityDeleted?: boolean };
+  const searchState = useSearch({ strict: false }) as { activityDeleted?: boolean; memberSteppedDown?: boolean };
   const reorder = useMutation({ mutationFn: (paths: readonly Path[]) => d.paths.reorder(paths, d.operationId()), onSuccess: () => client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] }) });
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
@@ -78,6 +78,7 @@ function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
         <input type="search" aria-label={d.i18n.t('studio.searchPaths')} placeholder={d.i18n.t('studio.searchPaths')} value={search} onChange={event => setSearch(event.target.value)} />
         <button className="studio-primary" onClick={() => setCreating(true)}>{d.i18n.t('home.createPath')}</button>
       </header>
+      {searchState.memberSteppedDown && <p role="status">{d.i18n.t('pathMembers.roleChangedParticipant')}</p>}
       {searchState.activityDeleted && <p role="status">{d.i18n.t('pathDetails.deleted')}</p>}
       {creating && <CreatePath dependencies={d} close={() => setCreating(false)} />}
       <div className="studio-filters">{(['all', 'pinned', 'archived'] as const).map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{d.i18n.t(`studio.filter.${value}`)}</button>)}</div>

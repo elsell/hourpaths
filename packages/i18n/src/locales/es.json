@@ -313,6 +313,7 @@
   "pathMembers.roleAdministratorEffect": "Los administradores pueden gestionar esta ruta y sus miembros mientras continúan registrando tiempo.",
   "pathMembers.roleChangeWarning": "La actividad registrada, el progreso, las estadísticas, los logros y las publicaciones derivadas de la actividad de {{displayName}} en esta ruta se eliminarán permanentemente.",
   "pathMembers.roleChangeTimerWarning": "Cualquier temporizador en curso se detendrá sin guardarse y la actividad sin conexión pendiente se rechazará. Volver a cambiar su rol más adelante no restaurará los datos eliminados.",
+  "pathMembers.confirmParticipant": "Cambiar a participante",
   "pathMembers.confirmSupporter": "Cambiar a persona de apoyo y eliminar datos",
   "pathMembers.confirmGrantAdministrator": "Conceder acceso de administrador",
   "pathMembers.confirmRevokeAdministrator": "Revocar acceso de administrador",

@@ -313,6 +313,7 @@
   "pathMembers.roleAdministratorEffect": "Administrators can manage this Path and its members while continuing to track time.",
   "pathMembers.roleChangeWarning": "{{displayName}}’s recorded activity, progress, statistics, achievements, and activity-derived posts on this Path will be permanently deleted.",
   "pathMembers.roleChangeTimerWarning": "Any running timer will stop without saving, and pending offline activity will be rejected. Changing them back later will not restore deleted data.",
+  "pathMembers.confirmParticipant": "Change to participant",
   "pathMembers.confirmSupporter": "Change to supporter and delete data",
   "pathMembers.confirmGrantAdministrator": "Grant administrator access",
   "pathMembers.confirmRevokeAdministrator": "Revoke administrator access",

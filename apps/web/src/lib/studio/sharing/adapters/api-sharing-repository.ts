@@ -1,3 +1,4 @@
+import { sharedMemberCommands } from './shared-member-commands';
 import { sharedInvitationCommands } from './shared-invitation-commands';
 import { createSessionApiClient } from '@hourpaths/api-client';
 import { mergeManagedPendingInvitationPage, pathInvitationFailureFromProblem } from '@hourpaths/client-core';
@@ -9,6 +10,22 @@ function required<T>(result: { data?: { data: T }; error?: unknown; response: Re
 export function apiSharingRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): SharingRepository {
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   const repository: SharingRepository = {
+    memberCommands: key => sharedMemberCommands(() => client(), (pathId, cursor) => repository.members(pathId, cursor), key),
+    async members(pathId, cursor, signal) {
+      const result = await client(signal).pathMembers(pathId, cursor || undefined);
+      const values = required(result), nextCursor = result.data?.meta.nextCursor ?? '';
+      if (nextCursor && (nextCursor === cursor || !values.length)) throw { kind: 'invalid_response' };
+      const items = values.map(value => ({
+        userId: value.userId, username: value.username, displayName: value.displayName, role: value.role,
+        sessionCount: value.sessionCount, totalTrackedSeconds: value.totalTrackedSeconds,
+        canRemove: value.canRemove === true, canChangeRole: value.canChangeRole === true,
+        canGrantAdministrator: value.canGrantAdministrator === true, canRevokeAdministrator: value.canRevokeAdministrator === true,
+        canStepDownAdministrator: value.canStepDownAdministrator === true,
+      }));
+      if (items.some(value => !value.userId || !value.username || !value.displayName || !['creator', 'administrator', 'participant', 'supporter'].includes(value.role)
+        || !Number.isSafeInteger(value.sessionCount) || value.sessionCount < 0 || !Number.isSafeInteger(value.totalTrackedSeconds) || value.totalTrackedSeconds < 0)) throw { kind: 'invalid_response' };
+      return { items, nextCursor };
+    },
     commands: key => sharedInvitationCommands(repository, key),
     async context(pathId, signal) {
       const response = await client(signal).path(pathId).catch(() => { throw { kind: 'network' }; });
