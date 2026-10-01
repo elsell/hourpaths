@@ -1,3 +1,4 @@
+const pathName = 'practice-path';
 const utcTimeZone = 'utc';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -58,14 +59,14 @@ test('lifecycle transport sends exact reviewed preconditions and rejects a recei
   context.after(() => { server.closeAllConnections(); server.close(); });
   const address = server.address(); assert.ok(address && typeof address !== 'string');
   const repository = apiPathRepository(`http://127.0.0.1:${address.port}`, () => 'session', () => assert.fail('unexpected rejection'));
-  const review = { pathId: 'path', name: 'Guitar', expectedArchived: false, operationId: 'stable-key' };
+  const review = { pathId: 'path', name: pathName, expectedArchived: false, operationId: 'stable-key' };
   await repository.lifecycle({ ...review, action: 'archive' });
   await repository.lifecycle({ ...review, expectedArchived: true, action: 'restore' });
   await repository.lifecycle({ ...review, action: 'delete' });
   assert.deepEqual(requests, [
     { method: 'PUT', url: '/v1/paths/path/archive-state', key: 'stable-key', body: { confirmed: true, expectedArchived: false, archived: true } },
     { method: 'PUT', url: '/v1/paths/path/archive-state', key: 'stable-key', body: { confirmed: true, expectedArchived: true, archived: false } },
-    { method: 'DELETE', url: '/v1/paths/path', key: 'stable-key', body: { confirmed: true, expectedName: 'Guitar' } },
+    { method: 'DELETE', url: '/v1/paths/path', key: 'stable-key', body: { confirmed: true, expectedName: pathName } },
   ]);
   wrongReceipt = true;
   await assert.rejects(repository.lifecycle({ ...review, action: 'delete' }), /path_request_failed/);
