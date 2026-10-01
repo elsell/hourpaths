@@ -35,7 +35,8 @@ absolute deadline and immediate explicit revocation; see
 | History, calendar, and statistics | Covered | Covered | Covered | Covered | [`analytics/stats-history.spec.md`](analytics/stats-history.spec.md), [`experience/path-details.spec.md`](experience/path-details.spec.md) |
 | Notifications | Covered | Covered | Covered | Covered | [`notifications/notifications.spec.md`](notifications/notifications.spec.md), [`notifications/reminders.spec.md`](notifications/reminders.spec.md) |
 | Offline behavior and synchronization | Covered | Covered | Covered | Covered | [`sync/offline.spec.md`](sync/offline.spec.md) |
-| Widgets and operating-system integration | Deferred | Deferred | Deferred | Deferred | [`integrations/widgets.spec.md`](integrations/widgets.spec.md) |
+| Native ongoing timer surfaces | Covered | Covered | Covered | Covered | [`platform/clients.spec.md`](platform/clients.spec.md#active-timer-visibility) |
+| Widgets | Deferred | Deferred | Deferred | Deferred | [`integrations/widgets.spec.md`](integrations/widgets.spec.md) |
 | Data deletion, safety, and moderation | Covered | Covered | Covered | Covered | [`accounts/deletion.spec.md`](accounts/deletion.spec.md), [`safety/moderation.spec.md`](safety/moderation.spec.md), [`safety/user-policies.spec.md`](safety/user-policies.spec.md) |
 | Platform and configuration behavior | Covered | Covered | Covered | Covered | [`platform/clients.spec.md`](platform/clients.spec.md), [`platform/configuration.spec.md`](platform/configuration.spec.md), [`platform/api-behavior.spec.md`](platform/api-behavior.spec.md) |
 
@@ -63,3 +64,7 @@ Approved social redesign: [mobile feed, profiles, and live activity viewer](expe
 Approved Studio web rebuild: [experience and delivery slices](experience/web-studio.spec.md),
 [domain isolation and TanStack architecture](platform/web-studio-architecture.spec.md).
 Following omits the people-list sidebar; timelines remain connected across days.
+
+Delivery completion is tracked separately from specification coverage in the
+[ordered gap-closure checklist](platform/completion-checklist.spec.md). A Covered
+cell above does not establish implementation, release, or device acceptance.

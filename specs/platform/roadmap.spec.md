@@ -2,21 +2,24 @@
 
 ## Current focus
 
-Close the approved October 1 specs-to-implementation gap audit through small,
-demonstrable slices. Studio lifecycle, activity CRUD/history, sharing, membership,
-recipient invitations, ownership transfer, notification history, and profile
-blocking (PRs #79, #83–#90) are deployed at `/studio`. GitOps a5a0cfc has healthy
-Flux, the exact running web image, and public availability evidence. TestFlight
-0.24.0 (237) is VALID and available internally; physical-device encouragement
-acceptance remains pending. Shared Path People and progress merged in PR #91
-after all five gates, exact-image build, and real-account verification; its web
-image is deployed and healthy. TestFlight 0.24.0 (237) is VALID and assigned to
-the internal testing group. Studio
-encouragement and audience controls merged in PR #92 with browser, real-recipient
-delivery, and all five gates passed; release remains pending. The active slice is
-Studio voluntary Path leaving, including retained/deleted activity and timer
-outcomes. Use shared UI, focused useful checks, and applicable merge and release
-gates. Merged code alone must not count as user availability.
+Merged PRs #92–#94 are published in v0.25.0: Studio encouragement/audience
+controls, voluntary Path leaving, and the devalue security release fix. Both
+leave outcomes and encouragement delivery passed real-account verification;
+required PR and main gates passed. GitOps `a08886b` deploys web revision
+`ad40d8b`; Flux is Ready/Healthy, the exact published image is running, and
+public Studio is available. TestFlight 0.25.0 (245) is VALID, IN_BETA_TESTING,
+and assigned to the internal group (status run `36905986943`).
+Physical-device encouragement acceptance remains open.
+
+The [ordered completion checklist](completion-checklist.spec.md) retains the
+entire approved audit scope in **13 remaining acceptance areas**. It identifies
+the two remaining Studio legacy-journey groups and the explicit web cutover gate,
+and schedules offline, account lifecycle, notification delivery, and native timer
+work before further Studio-only expansion. Only one product slice is active;
+a demonstrated P0/P1 release blocker is the only additional infrastructure work.
+The release gate is closed. The next product slice is creator-only Path
+visibility within the checklist's first area, followed by Studio account entry;
+then move to durable offline use rather than extending Studio-only scope.
 
 ## Gap-closure scope and evidence
 
@@ -115,12 +118,12 @@ delay the active successful-account-creation slice.
 
 ## Next implementation slices
 
-- Polish the existing Path nudge composer and per-Path audience destination
-  through UI-28L. Deliver SOC-07 acceptance, notification delivery and
-  stale-target gaps, the missing channel catalog, recurring unavailable period,
-  reporting, profile/provider work, and account deletion only through their
-  owning functional slices. Global Stats is implemented; its remaining calendar
-  parity and Path-specific analytics gaps remain separate acceptance work.
-- Keep ACCT-01 open and preserve duplicate-recovery, provider-picture, and
-  provisional-lifecycle decisions outside UI-28B unless one demonstrably blocks
-  its existing presentation path.
+Use the [ordered completion checklist](completion-checklist.spec.md), rather than
+an expanding list of Studio micro-features. Keep small PRs under their owning
+acceptance area and close an area only with client, merge, and release evidence.
+Existing implementation must be credited; calendar summaries and global Stats
+must not be rebuilt simply because acceptance or documentation is incomplete.
+
+Unresolved account and policy decisions remain above until reconciled with the
+authoritative spec and actual implementation. They do not authorize new product
+choices, and they must not stall independent areas of the checklist.
