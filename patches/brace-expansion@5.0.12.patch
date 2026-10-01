@@ -1,0 +1,10 @@
+diff --git a/dist/commonjs/index.js b/dist/commonjs/index.js
+--- a/dist/commonjs/index.js
++++ b/dist/commonjs/index.js
+@@ -330,4 +330,6 @@
+     }
+     return acc;
+ }
++// Preserve callable CommonJS imports for legacy minimatch and named exports.
++module.exports = Object.assign(expand, exports);
+ //# sourceMappingURL=index.js.map
