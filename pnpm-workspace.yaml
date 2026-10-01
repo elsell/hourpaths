@@ -9,16 +9,17 @@ packages:
 ignoreScripts: true
 
 overrides:
-  fast-uri: '3.1.7'
+  fast-uri: '3.1.8'
+  moment: '2.31.0'
   'eas-cli>ajv': '8.18.0'
   'eas-cli>diff': '8.0.3'
-  'eas-cli>joi': '17.13.6'
-  '@expo/eas-build-job>joi': '17.13.6'
-  '@expo/steps>joi': '17.13.6'
+  'eas-cli>joi': '17.13.7'
+  '@expo/eas-build-job>joi': '17.13.7'
+  '@expo/steps>joi': '17.13.7'
   'eas-cli>minimatch': '5.1.9'
   'eas-cli>ts-deepmerge': '8.0.0'
   'eas-cli>yaml': '2.9.0'
-  '@expo/eas-json>joi': '17.13.6'
+  '@expo/eas-json>joi': '17.13.7'
   'expo-auth-session>expo-crypto': '55.0.19'
   'expo-auth-session>expo-web-browser': '55.0.20'
   '@0no-co/graphql.web': '1.2.0'
@@ -66,7 +67,7 @@ overrides:
   acorn: '8.16.0'
   baseline-browser-mapping: '2.11.0'
   babel-preset-expo: '55.0.22'
-  brace-expansion: '5.0.9'
+  brace-expansion: '5.0.12'
   browserslist: '4.28.7'
   caniuse-lite: '1.0.30001797'
   cookie: '0.7.2'
@@ -106,4 +107,4 @@ overrides:
   yargs: '17.7.2'
 
 patchedDependencies:
-  brace-expansion@5.0.9: patches/brace-expansion@5.0.9.patch
+  brace-expansion@5.0.12: patches/brace-expansion@5.0.12.patch

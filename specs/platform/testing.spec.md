@@ -277,6 +277,12 @@ dependency-age verification, exact EAS CLI startup, and the full CI gate.
 The patched `brace-expansion` 5.0.9, `postcss` 8.5.23, and `tar` 7.5.21
 releases have exact, reviewed age exceptions because they clear current
 security advisories before the standard fourteen-day observation window closes.
+The release-unblocking update must replace `brace-expansion` 5.0.9 with
+5.0.12 to remove the subsequently published recursion and expansion denial-of-
+service advisories. Version 5.0.12 exceeds the fourteen-day observation window.
+Its deterministic CommonJS compatibility patch must continue to support both
+legacy callable imports and modern named exports, verified with both minimatch
+generations and the release-tooling configuration checks.
 The `brace-expansion` exception additionally preserves legacy minimatch
 compatibility through a deterministic patch. Compensating verification includes
 exact overrides, frozen-lock installation, a clean package audit, old and new
@@ -424,3 +430,8 @@ online recommendation only while the native-set gate verifies both the declared
 and installed 55.0.31 version and Expo's bundled `~55.0.30` compatibility range.
 Native build and signed release gates must remain enabled. An Expo or Updates
 upgrade must explicitly revisit this compatibility exception.
+
+The release-unblocking dependency set must also pin `fast-uri` 3.1.8 and
+`moment` 2.31.0 to remove GHSA-hrr3-gc8f-f4qj and GHSA-4p3w-j4w9-5jqw.
+Both patches exceed fourteen days; no age exception is required. Verification
+must include the package audit and EAS configuration-validation checks.

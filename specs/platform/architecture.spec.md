@@ -27,6 +27,12 @@ legitimate session.
 
 ## Baseline stack
 
+The EAS release-tooling dependency graph must pin Joi `17.13.7` across its
+existing consumers to address GHSA-6h2x-m376-mqjq (quadratic backtracking in
+ISO-date validation). This patch must retain the existing EAS CLI version and
+must pass the dependency-age and vulnerability gates plus CLI startup and
+configuration-validation checks before release.
+
 The checked-in local cursor-signing and metrics-token sentinel values are valid
 only when database, OIDC, and SpiceDB insecure modes are all explicitly enabled.
 Any secure deployment fails startup until both known values are replaced.
