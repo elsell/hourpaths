@@ -5059,5 +5059,9 @@
   "studio.notifications.deleteExplanation": "This deletes only the notification. The underlying request, activity, or change remains unchanged.",
   "studio.nudgeAudienceSaveFailed": "Your nudge settings couldn’t be saved. Your choice was kept; try again.",
   "studio.nudgeAudienceConflict": "Your nudge settings changed elsewhere. Refresh before saving again.",
-  "studio.nudgeEligibilityFailed": "Encouragement availability couldn’t be checked. Try again."
+  "studio.nudgeEligibilityFailed": "Encouragement availability couldn’t be checked. Try again.",
+  "studio.pathLeft": "You left the Path.",
+  "studio.leaveSaveTimer": "If you have a running timer, leaving stops it and saves its elapsed time with your retained activity.",
+  "studio.leaveDiscardTimer": "If you have a running timer, leaving stops it and discards its elapsed time without saving a final activity.",
+  "studio.leaveDeleteConsequences": "Your progress, statistics, achievements, and activity-derived feed events for this Path will also be permanently deleted."
 }

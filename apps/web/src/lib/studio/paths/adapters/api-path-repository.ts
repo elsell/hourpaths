@@ -1,3 +1,4 @@
+import { createLeaveRecovery, sharedLeaveCommands } from './shared-leave-commands';
 import { createSessionApiClient, type SessionPath, type TimerState } from '@hourpaths/api-client';
 import type { Path, PathGoals, TrackingSnapshot } from '../domain/path';
 import { orderPaths } from '../domain/order';
@@ -28,6 +29,7 @@ export function pathFromAPI(dto: SessionPath): Path {
     goal: dto.intervalGoal ? { targetSeconds: seconds(dto.intervalGoal.targetSeconds), recurrence: dto.intervalGoal.recurrence, alignment: { minute: dto.intervalGoal.alignment.minute, hour: dto.intervalGoal.alignment.hour, day: dto.intervalGoal.alignment.day, month: dto.intervalGoal.alignment.month, isoWeekday: dto.intervalGoal.alignment.isoWeekday } } : null,
     overallTarget: dto.overallTarget ? seconds(dto.overallTarget.targetSeconds) : null,
     canManageGoals: dto.capabilities.manageGoals,
+    canLeave: dto.capabilities.leavePath === true,
     canTransferOwnership: dto.capabilities.transferOwnership === true,
     canInvite: dto.capabilities.inviteMembers === true,
     canManageLifecycle: dto.capabilities.manageLifecycle === true,
@@ -49,6 +51,7 @@ export function trackingFromAPI(dto: TimerState): TrackingSnapshot {
   };
 }
 export function apiPathRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): PathRepository {
+  const leaveRecovery = createLeaveRecovery();
   const accepted = <T>(result: { data?: { data: T }; response: Response }): T => {
     return required(result);
   };
@@ -56,6 +59,7 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
   const tracking = async (pathId: string, signal?: AbortSignal) =>
     trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).currentTimer(pathId)));
   return {
+    leaveCommands: key => sharedLeaveCommands(signal => createSessionApiClient(baseURL, token, signal, rejected), key, leaveRecovery),
     async read(pathId, signal) {
       const value = pathFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).path(pathId)));
       if (value.id !== pathId) throw new PathRequestError(502);

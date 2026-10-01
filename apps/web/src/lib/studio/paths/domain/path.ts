@@ -20,6 +20,7 @@ export interface Path extends PathGoals {
   readonly pinnedPosition: number | null;
   readonly recentActivityAt: number;
   readonly canTransferOwnership: boolean;
+  readonly canLeave: boolean;
   readonly canInvite: boolean;
   readonly canTrack: boolean;
   readonly canEdit: boolean;
