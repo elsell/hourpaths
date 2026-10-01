@@ -453,3 +453,12 @@ must include the pinned-pnpm lockfile update, registry integrity, frozen install
 clean package audit, dependency-age gate, web checks/build, required CI gates,
 and production image/release checks. No unrelated dependency updates belong in
 this blocker fix.
+
+## OpenTelemetry release security patch
+
+The API must pin the OpenTelemetry 1.45.0 compatibility set to remove
+GO-2026-6505 (exporter endpoint disclosure), which blocks the account-entry
+release. The update must pass the fourteen-day dependency-age gate, module
+verification, observability adapter tests, Go vulnerability scanning, and
+required CI integration checks. The update must not include unrelated
+dependency upgrades.

@@ -8,6 +8,7 @@ import (
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -96,6 +97,16 @@ type OpenTelemetry struct {
 func NewOpenTelemetry(ctx context.Context, endpoint, serviceName string, insecure bool) (*OpenTelemetry, error) {
 	traceOptions := []otlptracehttp.Option{otlptracehttp.WithEndpointURL(endpoint)}
 	metricOptions := []otlpmetrichttp.Option{otlpmetrichttp.WithEndpointURL(endpoint)}
+	// Preserve the standard signal paths for a collector base URL. The 1.45
+	// exporter treats an empty URL path as an explicit root path.
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	if parsed.Path == "" {
+		traceOptions = append(traceOptions, otlptracehttp.WithURLPath("/v1/traces"))
+		metricOptions = append(metricOptions, otlpmetrichttp.WithURLPath("/v1/metrics"))
+	}
 	if insecure {
 		traceOptions = append(traceOptions, otlptracehttp.WithInsecure())
 		metricOptions = append(metricOptions, otlpmetrichttp.WithInsecure())
