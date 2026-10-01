@@ -86,6 +86,31 @@ is an authorized recorded activity; a running session is not a completed event.
   profile, and statistics projections before refreshed data is displayed.
   Account replacement must not allow an old completion to change the new account.
 
+### Sharing and sent invitations
+
+- Authorized creators and administrators must reach an addressable Share page
+  from a Path's actions. Direct navigation and reload must enforce the current
+  `inviteMembers` capability and active-Path state before showing its contents.
+- The page must use the Studio shell and shared fields, buttons, notices, and
+  confirmation styling. Exact-username lookup must show the reviewed public
+  identity and offered participant/supporter role before sending.
+- Sending must bind the reviewed user ID and canonical username, and must not
+  grant membership. Editing the username must invalidate its previous review.
+- Managers must see all pages of pending invitations with recipient, inviter,
+  role, and sent time. Cursors must not repeat and entries must not duplicate.
+- Canceling must review the recipient and role with Cancel initially focused.
+  Dismissal must not mutate state. Failed send/cancel retries must preserve the
+  original idempotency key; pending mutations must prevent duplicate submission
+  and navigation. Disposed-account completions must not alter another account.
+- Success must announce the result and refresh the pending list. Errors must
+  retain the reviewed request and expose the existing localized failure state.
+  A transient background context refresh failure must retain the draft and retry
+  state; confirmed permission loss or archival must hide stale content.
+- Invitation authority, duplicate rules, and role effects remain governed by
+  [Path membership](../paths/membership.spec.md). Recipient acceptance and
+  membership management are separate destinations; this page must not replace
+  or weaken their existing behavior.
+
 ## Connected activity timeline
 
 - A tracking participant must be able to add activity from a Path row and edit
