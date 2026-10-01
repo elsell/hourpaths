@@ -851,6 +851,7 @@
   "examples.created": "Example created.",
   "examples.count_one": "{{count}} example",
   "examples.count_other": "{{count}} examples",
+  "studio.pathVisibilityUnconfirmed": "Couldn’t confirm the visibility update. Retry the same change, or refresh to review its current visibility.",
   "pathVisibility.heading": "Path visibility",
   "pathVisibility.current": "Current visibility: {{visibility}}",
   "pathVisibility.choiceLabel": "Who can see this Path",

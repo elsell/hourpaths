@@ -851,6 +851,7 @@
   "examples.created": "Ejemplo creado.",
   "examples.count_one": "{{count}} ejemplo",
   "examples.count_other": "{{count}} ejemplos",
+  "studio.pathVisibilityUnconfirmed": "No se pudo confirmar el cambio de visibilidad. Reintenta el mismo cambio o actualiza para revisar la visibilidad actual.",
   "pathVisibility.heading": "Visibilidad de la ruta",
   "pathVisibility.current": "Visibilidad actual: {{visibility}}",
   "pathVisibility.choiceLabel": "Quién puede ver esta ruta",

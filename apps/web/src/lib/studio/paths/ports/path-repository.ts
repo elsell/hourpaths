@@ -1,8 +1,10 @@
+import type { VisibilityCommands } from './visibility-commands';
 import type { LeaveCommands } from './leave-commands';
 import type { LifecycleReview } from '../domain/lifecycle';
 import type { NewPath, PathGoals, Path, PathAppearance, TrackingSnapshot } from '../domain/path';
 
 export interface PathRepository {
+  visibilityCommands(key: () => string): VisibilityCommands;
   leaveCommands(key: () => string): LeaveCommands;
   read(pathId: string, signal?: AbortSignal): Promise<Path>;
   lifecycle(review: LifecycleReview): Promise<void>;

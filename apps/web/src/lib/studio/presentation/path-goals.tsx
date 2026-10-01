@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
@@ -23,6 +24,7 @@ export function PathGoalsEditor({ path, dependencies: d, close }: { path: Path; 
   const summary = (value: PathGoals) => <dl><dt>{d.i18n.t('pathCreate.intervalHeading')}</dt><dd>{value.goal ? <>{d.i18n.t('studio.duration', { minutes: Math.floor(value.goal.targetSeconds / 60), seconds: value.goal.targetSeconds % 60 })} · {d.i18n.t(`pathCreate.recurrence.${value.goal.recurrence}`)}</> : d.i18n.t('pathManage.noInterval')}</dd><dt>{d.i18n.t('pathCreate.overallHeading')}</dt><dd>{value.overallTarget === null ? d.i18n.t('pathManage.noOverall') : d.i18n.t('studio.duration', { minutes: Math.floor(value.overallTarget / 60), seconds: value.overallTarget % 60 })}</dd></dl>;
   return <section className="studio-form studio-path-details">
     <header><h2>{path.name}</h2><button onClick={close} disabled={mutation.isPending}>{d.i18n.t('common.cancel')}</button></header>
+    {path.canManageVisibility && !path.archived && <p>{d.i18n.t('pathVisibility.current', { visibility: d.i18n.t(`pathVisibility.option.${path.visibility}`) })} · <Link to="/paths/$pathId/visibility" params={{ pathId: path.id }}>{d.i18n.t('pathVisibility.heading')}</Link></p>}
     {!path.canManageGoals ? summary(path) : review ? <div>
       <h3>{d.i18n.t('pathManage.reviewHeading')}</h3><p>{d.i18n.t('pathManage.reviewExplanation')}</p>
       <div className="studio-form-pair"><section><h4>{d.i18n.t('pathManage.current')}</h4>{summary(path)}</section><section><h4>{d.i18n.t('pathManage.proposed')}</h4>{summary(review)}</section></div>
