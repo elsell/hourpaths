@@ -437,3 +437,40 @@ final cutover. A styled demo or a partial feature set is not completion.
 
 None blocking the approved layout. Further visual refinements follow user
 feedback; existing domain specifications resolve behavior absent from pictures.
+
+## Path encouragement and audience controls
+
+- Studio must expose Path-specific encouragement from the selected participant
+  in People, subject to the authoritative eligibility and visibility rules in
+  [Nudges and Direct Encouragement](../social/nudges.spec.md).
+- The composer must identify the recipient and Path, load current eligibility,
+  and present the five approved presets as a keyboard-accessible single-choice
+  group. Selecting a row must select its preset and enable Send; selection alone
+  must not send. Cancel and Escape must leave the server unchanged.
+- Goal-complete and rate-limited eligibility must display their localized reason
+  without an enabled send action. Missing or rejected eligibility must fail
+  closed with localized recovery and must not infer hidden audience or block data.
+- An admitted send must prevent duplicate submission and navigation until its
+  result is reconciled. An uncertain failure must retain the selected preset and
+  reuse the same idempotency key for the same intent; changed recipients or
+  presets must not reuse that intent. Success must be announced and refresh the
+  selected participant's eligibility.
+- Participants must be able to open their personal audience controls from their
+  Path. The addressable destination must recover on direct navigation and reload,
+  identify the Path, and offer Nobody, Path members, Followers, and Everyone.
+  Supporters and nonmembers must not receive an editable personal audience.
+- Audience changes must use the authoritative revision and stable retry intent.
+  A conflict must require fresh server state before another save. Failed saves
+  must retain the chosen audience for recovery; success must show the persisted
+  value. Audience controls must never edit another participant's preference.
+- All reads and writes must remain owned by the activated account and exact
+  Path/recipient intent, cancel on disposal, and ignore late completions. Studio
+  must adapt the shared client-core validation and command ownership behind its
+  own domain ports, without importing generated API models into presentation.
+- Composer and audience controls must reuse Studio form/dialog styling and shared
+  locale catalogs, remain keyboard-operable, and reflow on narrow screens.
+
+Acceptance: select a preset without sending, cancel without a write, retry an
+uncertain send with the same key, observe the recipient's notification after
+success, reject completed goals and unauthorized recipients, persist a personal
+Nobody audience across reload, and prevent stale-revision audience overwrites.

@@ -57,3 +57,7 @@
 .studio-member-facts { display: grid; gap: 8px; overflow-wrap: anywhere; }
 .studio-member-facts progress { display: block; width: 100%; margin-top: 8px; }
 .studio-member-detail { display: grid; gap: 16px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px; }
+
+.studio-choice-group { border: 0; padding: 0; min-width: 0; display: grid; gap: .5rem; }
+.studio-choice-group label { display: flex; align-items: center; gap: .75rem; padding: .75rem; cursor: pointer; border: 1px solid var(--border); border-radius: .6rem; }
+.studio-choice-group input { flex: 0 0 auto; width: auto; }
