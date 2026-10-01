@@ -103,7 +103,7 @@ func NewOpenTelemetry(ctx context.Context, endpoint, serviceName string, insecur
 	if err != nil {
 		return nil, err
 	}
-	if parsed.Path == "" || parsed.Path == "/" {
+	if parsed.Path == "" {
 		traceOptions = append(traceOptions, otlptracehttp.WithURLPath("/v1/traces"))
 		metricOptions = append(metricOptions, otlpmetrichttp.WithURLPath("/v1/metrics"))
 	}
