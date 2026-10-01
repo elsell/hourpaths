@@ -31,7 +31,7 @@ async function openLocalizedDocument(page) {
   await page.getByText('Tu aplicación generada está lista.', { exact: true }).waitFor()
 }
 
-async function completeDexLogin(page, expectedResponse) {
+async function completeDexLogin(page, expectedResponse, legacyHome = false) {
   const signIn = page.getByRole('button', { name: 'Iniciar sesión', exact: true })
   await navigateToDexLogin({
     now: () => Date.now(),
@@ -51,6 +51,15 @@ async function completeDexLogin(page, expectedResponse) {
   await page.locator('input[name=login]').fill(email)
   await page.locator('input[name=password]').fill(password)
 
+  if (legacyHome) {
+    // Account entry now lands in Studio. This suite still verifies the legacy
+    // invitation surface until the separately specified legacy cutover.
+    await page.getByRole('button', { name: 'Login', exact: true }).click()
+    await page.waitForURL(url => url.pathname === '/studio', { waitUntil: 'domcontentloaded' })
+    const responsePromise = page.waitForResponse(expectedResponse)
+    await page.goto(webBaseURL, { waitUntil: 'domcontentloaded' })
+    return responsePromise
+  }
   const responsePromise = page.waitForResponse(expectedResponse)
   await page.getByRole('button', { name: 'Login', exact: true }).click()
   return responsePromise
@@ -77,6 +86,7 @@ async function acceptInvitationWithVisibilityWarning(page) {
     (response) =>
       new URL(response.url()).pathname === '/v1/path-invitations' &&
       response.request().method() === 'GET',
+    true,
   )
   if (invitationsResponse.status() !== 200) {
     throw new Error(`authenticated invitation Home request returned ${invitationsResponse.status()}`)

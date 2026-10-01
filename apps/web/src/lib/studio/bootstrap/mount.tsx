@@ -1,3 +1,6 @@
+import type { ClientRuntimeConfig } from '@hourpaths/client-core';
+import { browserEntryService } from '../entry/adapters/browser-entry-service';
+import { AccountEntry } from '../presentation/account-entry';
 import { apiNudgesRepository } from '../nudges/adapters/api-nudges-repository';
 import { apiBlockingRepository } from '../blocking/adapters/api-blocking-repository';
 import { apiNotifications } from '../notifications/adapters/api-notifications';
@@ -17,14 +20,14 @@ import { apiHistorySource } from '../history/adapters/api-history-source';
 import { apiActivityRepository } from '../history/adapters/api-activity-repository';
 import { StudioApp } from '../presentation/app';
 
-export function mountStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale }) {
+export function mountStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale; config: ClientRuntimeConfig }) {
   const root = createRoot(element);
   const i18n = createTranslator([options.locale]);
   const store = browserSessionStore();
   const initial = store.read();
   let active = true;
   const unavailable = () => {
-    if (active) root.render(<a href="/">{i18n.t('auth.signIn')}</a>);
+    if (active) root.render(<AccountEntry service={browserEntryService(options.config)} i18n={i18n} />);
   };
   if (!initial || initial.expiresAt <= Date.now() || initial.destination !== 'home') {
     unavailable();
@@ -53,4 +56,10 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
     now: () => Date.now(),
   }} />);
   return () => { active = false; clearInterval(deadline); session.dispose(); root.unmount(); };
+}
+
+export function mountAccountEntry(element: HTMLElement, options: { config: ClientRuntimeConfig; locale: SupportedLocale; callback?: boolean }) {
+  const root = createRoot(element);
+  root.render(<AccountEntry service={browserEntryService(options.config)} i18n={createTranslator([options.locale])} callback={options.callback} />);
+  return () => root.unmount();
 }

@@ -70,9 +70,14 @@ const protectedProviderAdapters = new Set([
 const protectedProviderManifest = 'scripts/protected-provider-adapters.sha256';
 const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts']);
 const protectedApiClientManifest = 'scripts/protected-api-client-adapter.sha256';
-const studioHost = 'apps/web/src/routes/studio/[...path]/+page.svelte';
+const studioHosts = new Set([
+  'apps/web/src/routes/studio/[...path]/+page.svelte',
+  'apps/web/src/routes/onboarding/+page.svelte',
+  'apps/web/src/routes/account-recovery/+page.svelte',
+  'apps/web/src/routes/callback/+page.svelte',
+]);
 const protectedClientCapabilityAdapters = new Set([
-  studioHost,
+  ...studioHosts,
   'apps/web/src/lib/studio/presentation/avatar.tsx',
   'apps/mobile/src/policy-link-native.ts',
   'apps/web/src/lib/accessibility-focus.ts',
@@ -398,7 +403,7 @@ function inspectSvelteMarkup(source, relative) {
     // Reviewed Stats chart styles derive only from numeric totals or the fixed Path palette.
     const statsChartStyle = relative === 'apps/web/src/lib/StatsView.svelte' && ['background', 'height', '--intensity'].includes(value.name);
     if (value.type === 'HtmlTag' || value.type === 'SpreadAttribute' || (value.type === 'StyleDirective' && !statsChartStyle) ||
-      (value.type === 'BindDirective' && value.name === 'this' && relative !== studioHost)) apiDestination = true;
+      (value.type === 'BindDirective' && value.name === 'this' && !studioHosts.has(relative))) apiDestination = true;
     if (value.type === 'Attribute' && attributeParts(value)) {
       const parts = attributeParts(value);
       const staticValue = staticAttribute(value);

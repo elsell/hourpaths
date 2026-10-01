@@ -8,6 +8,9 @@ import { spawnSync } from 'node:child_process';
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
   'apps/web/src/routes/studio/[...path]/+page.svelte',
+  'apps/web/src/routes/onboarding/+page.svelte',
+  'apps/web/src/routes/account-recovery/+page.svelte',
+  'apps/web/src/routes/callback/+page.svelte',
   'apps/web/src/lib/studio/presentation/avatar.tsx',
   'apps/mobile/src/provider-auth.ts',
   'apps/mobile/src/provider-auth-state.ts',
@@ -327,7 +330,6 @@ for (const relative of Object.keys(forbiddenPresentationCapabilities)) {
 }
 
 result = check({
-  'apps/web/src/routes/callback/+page.svelte': '<script>window.location.replace("/");</script>',
   'apps/web/src/routes/static-style/+page.svelte': '<div style="color:red"></div>',
 });
 assert.equal(result.status, 0, `reviewed-presentation-capabilities: ${result.stderr}`);
@@ -773,3 +775,10 @@ result = check({
 assert.equal(result.status, 0, result.stderr);
 
 console.log('client API boundary rejects alternate transports and allows only exact provider adapters');
+
+for (const route of ['onboarding', 'account-recovery', 'callback']) {
+  const host = `apps/web/src/routes/${route}/+page.svelte`;
+  result = check({ [host]: `${protectedBaseline[host]}\n<script>fetch('/v1/me');</script>\n` });
+  assert.notEqual(result.status, 0, result.stderr);
+  assert.match(result.stderr, new RegExp(regexEscape(host)));
+}
