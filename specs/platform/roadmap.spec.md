@@ -3,10 +3,11 @@
 ## Current focus
 
 Close the approved October 1 specs-to-implementation gap audit through small,
-demonstrable slices. The active product slice is Studio Path archive, restore,
-and deletion parity. The concurrent release blocker is the vulnerable build-tool
-dependency graph (PR #78), which prevents delivery of the merged encouragement
-selection fix. Use shared UI, focused useful checks, and the applicable merge and
+demonstrable slices. Studio Path archive, restore, and deletion parity merged in
+PR #79 with real-API browser evidence; production availability remains pending.
+The active product slice is Studio activity detail, edit history, and deletion.
+The concurrent release blocker is the bundled npm runtime tree (PR #81), after
+the build-tool dependency repairs merged in PR #78. Use shared UI, focused useful checks, and the applicable merge and
 release gates. Merged code is not evidence of tester or production availability.
 
 ## Gap-closure scope and evidence

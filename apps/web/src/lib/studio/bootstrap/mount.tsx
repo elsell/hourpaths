@@ -9,6 +9,7 @@ import { browserSessionStore, apiSessionService } from '../session/adapters/brow
 import { SessionController } from '../session/application/session-controller';
 import { historyRepository } from '../history/application/history';
 import { apiHistorySource } from '../history/adapters/api-history-source';
+import { apiActivityRepository } from '../history/adapters/api-activity-repository';
 import { StudioApp } from '../presentation/app';
 
 export function mountStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale }) {
@@ -30,6 +31,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const paths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
   root.render(<StudioApp dependencies={{
     paths,
+    activities: apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),
     preferences: apiPreferencesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),

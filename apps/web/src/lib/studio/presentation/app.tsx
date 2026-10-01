@@ -7,7 +7,7 @@ import { StudioShell } from './studio-shell';
 import { FollowingPage, ProfilePage, PeoplePage } from './social-pages';
 import type { SocialRepository } from '../social/ports/social-repository';
 import { useEffect, useState } from 'react';
-import { createRootRoute, createRoute, createRouter, RouterProvider, Outlet } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, RouterProvider, Outlet, useSearch } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Translator } from '@hourpaths/i18n';
 import type { PathRepository } from '../paths/ports/path-repository';
@@ -21,6 +21,8 @@ import { PathActions } from './path-actions';
 import { CreatePath } from './create-path';
 import { ActivityTimeline } from './activity-timeline';
 import type { HistoryRepository } from '../history/ports/history-source';
+import type { ActivityRepository } from '../history/ports/activity-repository';
+import { ActivityDetailPage } from './activity-detail';
 
 export interface StudioDependencies {
   session: AccountSession;
@@ -29,6 +31,7 @@ export interface StudioDependencies {
   social: SocialRepository;
   statistics: StatisticsRepository;
   history: HistoryRepository;
+  activities: ActivityRepository;
   accountScope: string;
   i18n: Translator;
   operationId(): string;
@@ -38,19 +41,21 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false } } }));
   const [router] = useState(() => {
     const root = createRootRoute({ component: Outlet });
-    const paths = createRoute({ getParentRoute: () => root, path: '/', component: () => <PathsPage dependencies={d} /> });
+    const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true }), component: () => <PathsPage dependencies={d} /> });
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
+    const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', component: () => <ActivityDetailPage dependencies={d} /> });
     const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, activity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;
 }
 function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const client = useQueryClient();
+  const searchState = useSearch({ strict: false }) as { activityDeleted?: boolean };
   const reorder = useMutation({ mutationFn: (paths: readonly Path[]) => d.paths.reorder(paths, d.operationId()), onSuccess: () => client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] }) });
   const [search, setSearch] = useState('');
   const [creating, setCreating] = useState(false);
@@ -66,6 +71,7 @@ function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
         <input type="search" aria-label={d.i18n.t('studio.searchPaths')} placeholder={d.i18n.t('studio.searchPaths')} value={search} onChange={event => setSearch(event.target.value)} />
         <button className="studio-primary" onClick={() => setCreating(true)}>{d.i18n.t('home.createPath')}</button>
       </header>
+      {searchState.activityDeleted && <p role="status">{d.i18n.t('pathDetails.deleted')}</p>}
       {creating && <CreatePath dependencies={d} close={() => setCreating(false)} />}
       <div className="studio-filters">{(['all', 'pinned', 'archived'] as const).map(value => <button key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{d.i18n.t(`studio.filter.${value}`)}</button>)}</div>
       <div className="studio-columns" aria-hidden="true"><span>{d.i18n.t('studio.path')}</span><span>{d.i18n.t('studio.progress')}</span><span>{d.i18n.t('studio.goal')}</span><span>{d.i18n.t('studio.timer')}</span></div>

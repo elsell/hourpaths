@@ -1,4 +1,5 @@
 import { ConnectedTimeline } from './connected-timeline';
+import { Link } from '@tanstack/react-router';
 import { duration } from './duration';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { Translator } from '@hourpaths/i18n';
@@ -19,7 +20,7 @@ export function ActivityTimeline({ paths, history, accountScope, i18n }: { paths
     {!query.isPending && !query.isError && !entries.length && <p>{i18n.t('studio.noActivity')}</p>}
     <ConnectedTimeline items={entries} identity={entry => entry.id} instant={entry => entry.startedAt} timeZone={entry => entry.timeZone} i18n={i18n} render={entry => <>
       <time dateTime={new Date(entry.startedAt).toISOString()}>{i18n.time(entry.startedAt, { hour: 'numeric', minute: '2-digit', timeZone: entry.timeZone })}</time>
-      <TimelinePath entry={entry} paths={paths} accountScope={accountScope} i18n={i18n} />
+      <Link to="/paths/$pathId/activities/$activityId" params={{ pathId: entry.pathId, activityId: entry.id }}><TimelinePath entry={entry} paths={paths} accountScope={accountScope} i18n={i18n} /></Link>
     </>} />
     {query.isError && <div role="alert"><p>{i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{i18n.t('common.retry')}</button></div>}
     {query.hasNextPage && <button disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{i18n.t('studio.moreHistory')}</button>}
