@@ -1,3 +1,4 @@
+import { sharedInvitationCommands } from './shared-invitation-commands';
 import { createSessionApiClient } from '@hourpaths/api-client';
 import { mergeManagedPendingInvitationPage, pathInvitationFailureFromProblem } from '@hourpaths/client-core';
 import type { SharingRepository } from '../ports/sharing-repository';
@@ -7,7 +8,8 @@ function required<T>(result: { data?: { data: T }; error?: unknown; response: Re
 }
 export function apiSharingRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): SharingRepository {
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
-  return {
+  const repository: SharingRepository = {
+    commands: key => sharedInvitationCommands(repository, key),
     async context(pathId, signal) {
       const response = await client(signal).path(pathId).catch(() => { throw { kind: 'network' }; });
       const value = required(response);
@@ -34,4 +36,5 @@ export function apiSharingRepository(baseURL: string, token: () => string | null
       return mergeManagedPendingInvitationPage({ items: [], nextCursor: cursor }, { items, nextCursor }, cursor);
     },
   };
+  return repository;
 }

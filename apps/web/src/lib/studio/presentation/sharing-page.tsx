@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useBlocker, useParams } from '@tanstack/react-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { sharingCommands, pathInvitationFailureMessageKey, retainSharingDraft } from '../sharing/application/sharing';
+import { sharingCommands, retainSharingDraft } from '../sharing/application/sharing';
 import type { ManagedPendingPathInvitation, PathInvitationRecipientReview, PathInvitationRole } from '../sharing/domain/invitations';
 import type { StudioDependencies } from './app';
 import { StudioShell } from './studio-shell';
@@ -35,7 +35,7 @@ function SharingForm({ pathId, name, dependencies: d }: { pathId: string; name: 
     if (!active.current) return;
     setReviewing(false);
     if (result.kind === 'reviewed') setReview(result.review);
-    else if (result.kind === 'failed') setFailure(d.i18n.t(pathInvitationFailureMessageKey(result.failure)));
+    else if (result.kind === 'failed') setFailure(d.i18n.t(commands.failureMessage(result.failure)));
   }
   async function mutate(action: 'send' | 'cancel') {
     if (admitted.current || (action === 'send' ? !review : !selected)) return;
@@ -43,9 +43,9 @@ function SharingForm({ pathId, name, dependencies: d }: { pathId: string; name: 
     try {
       const result = action === 'send' ? await commands.send(review!, role) : await commands.cancel(pathId, selected!.invitation.id);
       if (!active.current) return;
-      if (result.kind === 'failed') { setFailure(d.i18n.t(pathInvitationFailureMessageKey(result.failure))); return; }
+      if (result.kind === 'failed') { setFailure(d.i18n.t(commands.failureMessage(result.failure))); return; }
       if (result.kind === 'superseded' || result.kind === 'cancelled') return;
-      setNotice(action === 'send' ? d.i18n.t('pathInvitation.sent', review!.recipient) : d.i18n.t('pathInvitation.managed.canceled'));
+      setNotice(action === 'send' ? d.i18n.t('pathInvitation.sent', { ...review!.recipient }) : d.i18n.t('pathInvitation.managed.canceled'));
       if (action === 'send') { setReview(null); setUsername(''); commands.clearReview(); }
       else { setSelected(null); commands.clearCancellation(); }
       await client.cancelQueries({ queryKey: key });
@@ -67,7 +67,7 @@ function SharingForm({ pathId, name, dependencies: d }: { pathId: string; name: 
     {failure && !selected && <p role="alert">{failure}</p>}
     </form>
     <section className="studio-settings-card"><header className="studio-section-header"><h2>{d.i18n.t('pathInvitation.managed.heading')}</h2><button disabled={busy || pending.isFetching} onClick={() => void pending.refetch()}>{d.i18n.t('common.refresh')}</button></header>
-      {pending.isPending ? <p role="status">{d.i18n.t('pathInvitation.managed.loading')}</p> : pending.isError ? <div role="alert"><p>{d.i18n.t('pathInvitation.managed.unavailableHeading')}</p><button disabled={busy} onClick={() => void pending.refetch()}>{d.i18n.t('common.retry')}</button></div> : items.length ? <ul className="studio-settings-people">{items.map(item => <li key={item.invitation.id}><div><strong>{d.i18n.t('pathInvitation.managed.recipient', item.recipient)}</strong><small>{d.i18n.t('pathInvitation.managed.role', { role: d.i18n.t(`pathInvitation.role.${item.invitation.offeredRole}`) })}</small><small>{d.i18n.t('pathInvitation.managed.inviter', item.inviter)}</small><small>{d.i18n.date(Date.parse(item.invitation.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}</small></div><button disabled={busy} onClick={() => { setFailure(null); setSelected(item); }}>{d.i18n.t('pathInvitation.managed.cancel')}</button></li>)}</ul> : <p>{d.i18n.t('pathInvitation.managed.emptyDescription')}</p>}
+      {pending.isPending ? <p role="status">{d.i18n.t('pathInvitation.managed.loading')}</p> : pending.isError ? <div role="alert"><p>{d.i18n.t('pathInvitation.managed.unavailableHeading')}</p><button disabled={busy} onClick={() => void pending.refetch()}>{d.i18n.t('common.retry')}</button></div> : items.length ? <ul className="studio-settings-people">{items.map(item => <li key={item.invitation.id}><div><strong>{d.i18n.t('pathInvitation.managed.recipient', { ...item.recipient })}</strong><small>{d.i18n.t('pathInvitation.managed.role', { role: d.i18n.t(`pathInvitation.role.${item.invitation.offeredRole}`) })}</small><small>{d.i18n.t('pathInvitation.managed.inviter', { ...item.inviter })}</small><small>{d.i18n.date(Date.parse(item.invitation.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}</small></div><button disabled={busy} onClick={() => { setFailure(null); setSelected(item); }}>{d.i18n.t('pathInvitation.managed.cancel')}</button></li>)}</ul> : <p>{d.i18n.t('pathInvitation.managed.emptyDescription')}</p>}
       {pending.hasNextPage && !pending.isError && <button disabled={busy || pending.isFetching} onClick={() => void pending.fetchNextPage()}>{d.i18n.t('common.loadMore')}</button>}
     </section>
     {selected && <ConfirmationDialog title={d.i18n.t('pathInvitation.managed.cancelConfirmationHeading')} busy={busy} cancelLabel={d.i18n.t('common.cancel')} confirmLabel={d.i18n.t(busy ? 'pathInvitation.managed.canceling' : 'pathInvitation.managed.cancel')} cancel={() => { commands.clearCancellation(); setSelected(null); setFailure(null); }} confirm={() => void mutate('cancel')}><p>{d.i18n.t('pathInvitation.managed.cancelConfirmationBody', { ...selected.recipient, role: d.i18n.t(`pathInvitation.role.${selected.invitation.offeredRole}`) })}</p>{failure && <p role="alert">{failure}</p>}</ConfirmationDialog>}
