@@ -3,14 +3,14 @@
 ## Current focus
 
 Close the approved October 1 specs-to-implementation gap audit through small,
-demonstrable slices. Studio Path lifecycle and activity CRUD/history (PRs #79,
-#83, #84) are deployed at `/studio` in v0.18.0 through infra commit a63a238,
-with healthy Flux and exact-image API/web rollout evidence. TestFlight 214 is
-available to internal testers; build 217 is uploaded but availability and
-physical-device encouragement acceptance remain unverified. Sharing and sent
-invitations merged in PR #85; its release remains pending.
-The active slice is Studio current-member access and role management. Recipient
-invitations and ownership remain subsequent scoped work. Use shared UI, focused
+demonstrable slices. Studio lifecycle and activity CRUD/history (PRs #79, #83,
+#84) and sharing/sent invitations (PR #85) are deployed at `/studio`; infra
+8abd1f2 has healthy Flux and exact web-image evidence. TestFlight 0.18.0 (217)
+is VALID and available internally; physical-device encouragement acceptance
+remains pending. Current-member access and role management merged in PR #86
+with all five gates and real-API verification; release availability is pending.
+The active slice is Studio recipient invitations and the accepted Path
+destination. Ownership remains subsequent scoped work. Use shared UI, focused
 useful checks, and applicable merge/release gates. Merged code alone must not
 count as production or tester availability.
 

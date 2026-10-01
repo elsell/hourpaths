@@ -1,3 +1,4 @@
+import { InvitationInbox } from './invitation-inbox';
 import { SharingPage } from './sharing-page';
 import type { SharingRepository } from '../sharing/ports/sharing-repository';
 import type { AccountSession } from '../session/ports/account-session';
@@ -9,7 +10,7 @@ import { StudioShell } from './studio-shell';
 import { FollowingPage, ProfilePage, PeoplePage } from './social-pages';
 import type { SocialRepository } from '../social/ports/social-repository';
 import { useEffect, useState } from 'react';
-import { createRootRoute, createRoute, createRouter, RouterProvider, Outlet, useSearch } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, RouterProvider, Outlet, useSearch, useParams } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Translator } from '@hourpaths/i18n';
 import type { PathRepository } from '../paths/ports/path-repository';
@@ -46,6 +47,8 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
   const [router] = useState(() => {
     const root = createRootRoute({ component: Outlet });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
+    const inbox = createRoute({ getParentRoute: () => root, path: '/invitations', component: () => <InvitationInbox dependencies={d} /> });
+    const path = createRoute({ getParentRoute: () => root, path: '/paths/$pathId', component: () => <PathPage dependencies={d} /> });
     const sharing = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/share', component: () => <SharingPage dependencies={d} /> });
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
     const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', validateSearch: (search: Record<string, unknown>) => ({ activitySaved: search.activitySaved === true }), component: () => <ActivityDetailPage dependencies={d} /> });
@@ -55,10 +58,17 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, path, inbox, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;
+}
+function PathPage({ dependencies: d }: { dependencies: StudioDependencies }) {
+  const { pathId } = useParams({ strict: false }) as { pathId: string };
+  const query = useQuery({ queryKey: [d.accountScope, 'path', pathId], queryFn: ({ signal }) => d.paths.read(pathId, signal), staleTime: 0, gcTime: 0, refetchOnWindowFocus: true });
+  return <StudioShell page="paths" i18n={d.i18n}><main className="studio-main"><header className="studio-header"><h1>{query.data && !query.isError && !query.isFetching ? query.data.name : d.i18n.t('studio.path')}</h1></header>
+    {query.isPending || query.isFetching ? <p role="status">{d.i18n.t('common.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : <ul className="studio-paths"><PathRow key={pathId} path={query.data} dependencies={d} moving={false} initialDetails /></ul>}
+  </main></StudioShell>;
 }
 function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const client = useQueryClient();
@@ -90,8 +100,8 @@ function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
     <ActivityTimeline paths={d.paths} history={d.history} accountScope={d.accountScope} i18n={d.i18n} />
   </StudioShell>;
 }
-function PathRow({ path, dependencies: d, move, moving }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean }) {
-  const [details, setDetails] = useState(false);
+function PathRow({ path, dependencies: d, move, moving, initialDetails = false }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean; initialDetails?: boolean }) {
+  const [details, setDetails] = useState(initialDetails);
   const client = useQueryClient();
   const appearance = useQuery({ queryKey: [d.accountScope, 'appearance', path.id], queryFn: ({ signal }) => d.paths.appearance(path.id, signal) });
   const key = [d.accountScope, 'tracking', path.id];

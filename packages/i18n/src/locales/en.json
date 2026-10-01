@@ -4943,6 +4943,7 @@
   "studio.filter.all": "All paths",
   "studio.filter.pinned": "Pinned",
   "studio.filter.archived": "Archived",
+  "studio.openPath": "Open {{name}}",
   "studio.path": "Path",
   "studio.progress": "Current period",
   "studio.goal": "Goal",
