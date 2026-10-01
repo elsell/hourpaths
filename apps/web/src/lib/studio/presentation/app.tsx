@@ -21,6 +21,8 @@ import { PathActions } from './path-actions';
 import { CreatePath } from './create-path';
 import { ActivityTimeline } from './activity-timeline';
 import type { HistoryRepository } from '../history/ports/history-source';
+import type { ActivityRepository } from '../history/ports/activity-repository';
+import { ActivityDetailPage } from './activity-detail';
 
 export interface StudioDependencies {
   session: AccountSession;
@@ -29,6 +31,7 @@ export interface StudioDependencies {
   social: SocialRepository;
   statistics: StatisticsRepository;
   history: HistoryRepository;
+  activities: ActivityRepository;
   accountScope: string;
   i18n: Translator;
   operationId(): string;
@@ -40,11 +43,12 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const root = createRootRoute({ component: Outlet });
     const paths = createRoute({ getParentRoute: () => root, path: '/', component: () => <PathsPage dependencies={d} /> });
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
+    const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', component: () => <ActivityDetailPage dependencies={d} /> });
     const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, activity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   return <QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>;
