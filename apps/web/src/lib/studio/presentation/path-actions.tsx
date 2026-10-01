@@ -22,6 +22,7 @@ export function PathActions({ path, dependencies: d, move, moving }: { path: Pat
   const pin = useMutation({ mutationFn: () => d.paths.pin(path.id, !path.pinned, d.operationId()), onSuccess: refresh });
   return <div className="studio-path-actions">
     <details open={menuOpen}><summary onClick={event => { event.preventDefault(); setMenuOpen(!menuOpen); }} aria-label={d.i18n.t('home.pathActions', { pathName: path.name })}>⋯</summary><div className="studio-action-menu">
+      {path.canManageVisibility && !path.archived && <Link to="/paths/$pathId/visibility" params={{ pathId: path.id }}>{d.i18n.t('pathVisibility.heading')}</Link>}
       {path.canTrack && <Link to="/paths/$pathId/nudge-settings" params={{ pathId: path.id }}>{d.i18n.t('nudge.audience.openLabel')}</Link>}<Link to="/paths/$pathId/people" params={{ pathId: path.id }}>{d.i18n.t('pathMembers.heading')}</Link>
       <Link to="/paths/$pathId/ownership" params={{ pathId: path.id }}>{d.i18n.t('pathOwnership.heading')}</Link>
       {path.canInvite && !path.archived && <Link to="/paths/$pathId/share" params={{ pathId: path.id }}>{d.i18n.t('pathInvitation.share')}</Link>}

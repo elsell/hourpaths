@@ -511,3 +511,28 @@ saves that timer and hides retained history until rejoining; delete-and-leave
 discards a running timer and removes prior activity permanently; supporters see
 no irrelevant data choice; creator/archived capability rejection and uncertain
 receipt retries remain fail-closed and deterministic.
+
+## Existing Path visibility in Studio
+
+- The creator's active Path management surface must show effective visibility
+  and link to an addressable Studio visibility editor. Other roles and archived
+  Paths must not expose that action.
+- The editor must load the authoritative Path capability and authenticated
+  profile privacy before offering choices. Direct routes must fail closed when
+  that review is unavailable; API DTOs must remain inside adapters.
+- The editor must follow [Visibility](../social/visibility.spec.md#changing-an-existing-paths-visibility):
+  unchanged choices send nothing, narrowing is explicitly saved, and expansion
+  uses the shared Cancel-first confirmation naming the reviewed transition and
+  historical exposure. Cancellation sends no mutation.
+- Submitted changes must retain the reviewed current/proposed audiences and a
+  stable retry identity. Conflicts and loss of capability must require a fresh
+  authoritative review. Transient failure must preserve the draft and support
+  retry without implying that an uncertain response proves no server change.
+- Pending changes must prevent duplicate admission and navigation. Account
+  replacement or disposal must prevent late responses from changing the new
+  account. Successful writes must publish the returned client-owned Path and
+  invalidate affected account projections without discarding the active editor.
+- Acceptance must cover private-profile audience limits; creator versus other
+  roles and archival; expansion cancellation; explicit narrowing; same-intent
+  retry; changed-state conflicts; and stale completion after disposal. Real API
+  verification must show the saved audience and its visibility effects.

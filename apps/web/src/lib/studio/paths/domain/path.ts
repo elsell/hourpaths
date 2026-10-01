@@ -14,6 +14,8 @@ export interface PathGoals {
 export interface Path extends PathGoals {
   readonly id: string;
   readonly name: string;
+  readonly visibility: 'private' | 'followers' | 'public';
+  readonly canManageVisibility: boolean;
   readonly archived: boolean;
   readonly pinned: boolean;
   readonly position: number | null;
