@@ -27,6 +27,7 @@ test('entry maps policy review, preserves transient credentials, and never adopt
       response.statusCode = 204; response.end(); revoked(); return;
     }
     assert.equal(request.headers.authorization, 'Bearer onboarding-credential');
+    if (request.url?.endsWith('/duplicate-email-recovery/decline')) { response.statusCode = 204; response.end(); return; }
     if (request.method === 'POST') { let text = ''; for await (const chunk of request) text += chunk; body = JSON.parse(text); if (deferred) { started(); await new Promise<void>(resolve => { finish = resolve; }); } }
     response.statusCode = failure || 200;
     response.end(JSON.stringify(failure ? { code, status: failure } : { data: request.method === 'POST' ? replacement : { email: 'person@example.test', displayName: '', usernameSuggestion: 'person', policyReviewToken: 'policy-1', policies: { termsOfService: policy, privacyPolicy: policy, communityGuidelines: policy, supportUrl: policy.url } } }));
@@ -53,6 +54,12 @@ test('entry maps policy review, preserves transient credentials, and never adopt
     assert.deepEqual(body, { username: 'person', displayName: 'person', profileVisibility: 'private', 
     timeZone: 'UTC',
     firstDayOfWeek: 1, policyReviewToken: 'policy-1', atLeast16: true, termsAccepted: true, privacyAcknowledged: true, communityGuidelinesAccepted: true });
+    store.setItem(key, JSON.stringify({ ...original, nextAction: 'duplicate_email_recovery' }));
+    const recovery = browserEntryService(config, () => now);
+    assert.equal((await recovery.restore()).kind, 'recovery');
+    assert.equal((await recovery.decline()).kind, 'onboarding');
+    assert.deepEqual(JSON.parse(store.getItem(key)!), original);
+    recovery.dispose();
     const rejected = browserEntryService(config, () => now); await rejected.restore(); failure = 401; code = 'invalid_credential';
     await assert.rejects(rejected.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(store.getItem(key), null);
     store.setItem(key, JSON.stringify(original)); const expired = browserEntryService(config, () => now + 60_000);

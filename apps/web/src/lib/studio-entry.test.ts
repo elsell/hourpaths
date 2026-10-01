@@ -57,3 +57,10 @@ test('provider completion follows the server destination before rendering restri
     await controller.initialize(true); assert.deepEqual(f.navigation, [mode]); assert.equal(f.counts().reviews, 0);
   }
 });
+
+test('recovery navigates only after the acknowledged onboarding transition', async () => {
+  const f = fixture(); f.setMode('recovery');
+  const controller = new EntryController(f.service, () => 0, () => {});
+  await controller.initialize(); await controller.decline();
+  assert.deepEqual(f.navigation, ['onboarding']);
+});
