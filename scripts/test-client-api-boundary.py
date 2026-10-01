@@ -11,6 +11,9 @@ REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
     "apps/web/src/routes/studio/[...path]/+page.svelte",
+    "apps/web/src/routes/onboarding/+page.svelte",
+    "apps/web/src/routes/account-recovery/+page.svelte",
+    "apps/web/src/routes/callback/+page.svelte",
     "apps/web/src/lib/studio/presentation/avatar.tsx",
     "apps/mobile/src/provider-auth.ts",
     "apps/mobile/src/provider-auth-state.ts",
@@ -63,6 +66,14 @@ class ClientApiBoundaryTest(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
+
+    def test_account_entry_hosts_reject_unreviewed_changes(self) -> None:
+        for route in ("onboarding", "account-recovery", "callback"):
+            source = f"apps/web/src/routes/{route}/+page.svelte"
+            with self.subTest(source=source):
+                result = self.run_checker({source: (REPOSITORY / source).read_text() + "\n<script>fetch('/unreviewed')</script>"})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(source, result.stderr)
 
     def test_studio_framework_and_api_capabilities_remain_layer_scoped(self) -> None:
         for source, statement in (
@@ -421,9 +432,6 @@ class ClientApiBoundaryTest(unittest.TestCase):
             "apps/web/src/routes/component/+page.svelte": '<Nav target="/paths"/>',
             "apps/web/src/lib/https.ts": (
                 "export const identity = 'https://identity.example/authorize';"
-            ),
-            "apps/web/src/routes/callback/+page.svelte": (
-                '<script>window.location.replace("/");</script>'
             ),
         })
         self.assertEqual(result.returncode, 0, result.stderr)
