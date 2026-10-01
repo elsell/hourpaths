@@ -70,6 +70,22 @@ is an authorized recorded activity; a running session is not a completed event.
 - The right panel must show the viewer's recent authorized activity using the
   shared connected timeline, with an entry to full history.
 
+### Path lifecycle parity
+
+- Studio must expose archive, unarchive, and permanent deletion only when the
+  authoritative Path capability permits lifecycle management. Archived Paths
+  must remain reachable through the existing Archived filter.
+- Each action must review the exact selected Path before submission, using the
+  warnings and confirmation rules in [Path lifecycle](../paths/lifecycle.spec.md).
+  Cancel must perform no mutation. A pending request must prevent duplicate
+  submission and ordinary navigation from abandoning the admitted operation.
+- Retrying a failed confirmed request must preserve its idempotency key and
+  reviewed name or archive state. A stale review must fail visibly, leaving the
+  user able to close it, refresh, and review the current Path again.
+- Successful lifecycle changes must clear stale tracking, history, social,
+  profile, and statistics projections before refreshed data is displayed.
+  Account replacement must not allow an old completion to change the new account.
+
 ## Connected activity timeline
 
 - One vertical line must connect all visible events, including across day

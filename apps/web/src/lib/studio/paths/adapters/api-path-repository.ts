@@ -28,6 +28,7 @@ export function pathFromAPI(dto: SessionPath): Path {
     goal: dto.intervalGoal ? { targetSeconds: seconds(dto.intervalGoal.targetSeconds), recurrence: dto.intervalGoal.recurrence, alignment: { minute: dto.intervalGoal.alignment.minute, hour: dto.intervalGoal.alignment.hour, day: dto.intervalGoal.alignment.day, month: dto.intervalGoal.alignment.month, isoWeekday: dto.intervalGoal.alignment.isoWeekday } } : null,
     overallTarget: dto.overallTarget ? seconds(dto.overallTarget.targetSeconds) : null,
     canManageGoals: dto.capabilities.manageGoals,
+    canManageLifecycle: dto.capabilities.manageLifecycle === true,
     canTrack: dto.capabilities.trackTime, canEdit: dto.capabilities.renamePath,
   };
 }
@@ -53,6 +54,15 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
   const tracking = async (pathId: string, signal?: AbortSignal) =>
     trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).currentTimer(pathId)));
   return {
+    async lifecycle(review) {
+      if (review.action === 'delete') {
+        const result = accepted(await client.deletePath(review.pathId, { confirmed: true, expectedName: review.name }, review.operationId));
+        if (result.pathId !== review.pathId || result.deleted !== true) throw new PathRequestError(502);
+      } else {
+        const result = accepted(await client.setPathArchiveState(review.pathId, { confirmed: true, expectedArchived: review.expectedArchived, archived: review.action === 'archive' }, review.operationId));
+        if (result.id !== review.pathId || Boolean(result.archivedAt) !== (review.action === 'archive')) throw new PathRequestError(502);
+      }
+    },
     async saveGoals(path, goals, operationId) {
       const encode = (value: PathGoals) => ({
         ...(value.goal ? { intervalGoal: { targetSeconds: value.goal.targetSeconds, recurrence: value.goal.recurrence, alignment: { ...value.goal.alignment } } } : {}),

@@ -1,3 +1,5 @@
+import { PathLifecycleReview } from './path-lifecycle';
+import { reviewLifecycle, type LifecycleReview, type LifecycleAction } from '../paths/application/lifecycle';
 import { PathAppearanceEditor } from './path-appearance';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,6 +8,8 @@ import type { Path } from '../paths/domain/path';
 
 export function PathActions({ path, dependencies: d, move, moving }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean }) {
   const client = useQueryClient();
+  const [lifecycle, setLifecycle] = useState<LifecycleReview | null>(null);
+  const review = (action: LifecycleAction) => { setMenuOpen(false); setLifecycle(reviewLifecycle(path, action, d.operationId())); };
   const [menuOpen, setMenuOpen] = useState(false);
   const [appearance, setAppearance] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -19,7 +23,9 @@ export function PathActions({ path, dependencies: d, move, moving }: { path: Pat
       {path.canEdit && <button onClick={() => { setMenuOpen(false); setName(path.name); setRenaming(true); }}>{d.i18n.t('pathRename.action')}</button>}
       {move && <><button disabled={moving} onClick={() => { setMenuOpen(false); move(-1); }}>{d.i18n.t('home.arrange.moveUp', { pathName: path.name })}</button><button disabled={moving} onClick={() => { setMenuOpen(false); move(1); }}>{d.i18n.t('home.arrange.moveDown', { pathName: path.name })}</button></>}
       <button onClick={() => { setMenuOpen(false); setAppearance(true); }}>{d.i18n.t('home.appearance.title')}</button>
+      {path.canManageLifecycle && <><button onClick={() => review(path.archived ? 'restore' : 'archive')}>{d.i18n.t(path.archived ? 'pathArchive.unarchiveAction' : 'pathArchive.action')}</button><button onClick={() => review('delete')}>{d.i18n.t('pathDelete.action')}</button></>}
     </div></details>
+    {lifecycle && <PathLifecycleReview review={lifecycle} dependencies={d} close={() => setLifecycle(null)} />}
     {appearance && <PathAppearanceEditor pathId={path.id} dependencies={d} close={() => setAppearance(false)} />}
     {renaming && <form className="studio-rename" onSubmit={event => { event.preventDefault(); rename.mutate(); }}>
       <label>{d.i18n.t('pathRename.nameLabel')}<input required maxLength={100} value={name} disabled={rename.isPending} onChange={event => setName(event.target.value)} /></label>
