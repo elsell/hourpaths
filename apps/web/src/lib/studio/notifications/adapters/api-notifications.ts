@@ -60,6 +60,7 @@ export function apiNotifications(baseURL: string, token: () => string | null, re
       }
       return snapshot;
     },
+    invalidate: owner.invalidate,
     subscribe: owner.subscribe, refresh: () => operations ? owner.refresh() : Promise.resolve(), loadMore: owner.loadMore, mutate: owner.mutate,
     dispose() { disposed = true; channel?.close(); channel = null; owner.dispose(); },
   };

@@ -8,6 +8,7 @@ export interface Notifications {
   snapshot(): NotificationsSnapshot;
   subscribe(listener: () => void): () => void;
   refresh(): Promise<void>;
+  invalidate(): Promise<void>;
   loadMore(): Promise<void>;
   mutate(change: NotificationChange): Promise<boolean>;
   dispose(): void;

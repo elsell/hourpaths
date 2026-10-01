@@ -1,3 +1,4 @@
+import type { BlockingRepository } from '../blocking/ports/blocking-repository';
 import { NotificationsPage } from './notifications';
 import { NotificationsContext } from './notification-navigation';
 import type { Notifications } from '../notifications/ports/notifications';
@@ -34,6 +35,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  blocking: BlockingRepository;
   notifications: Notifications;
   ownership: OwnershipRepository;
   sharing: SharingRepository;

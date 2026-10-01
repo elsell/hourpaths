@@ -136,6 +136,30 @@ is an authorized recorded activity; a running session is not a completed event.
   [Path membership](../paths/membership.spec.md) and
   [Visibility](../social/visibility.spec.md).
 
+### Profile blocking
+
+- A non-self profile must expose Block using shared Studio controls. Starting
+  the action must obtain a fresh server review for that exact account before
+  presenting the cancel-first confirmation required by
+  [Blocking](../safety/moderation.spec.md).
+- Confirmation must identify the canonical reviewed account, explain ended
+  follows and requests, and list any shared Paths with the retained-visibility
+  warning. It must offer links for managing those Paths separately; blocking
+  must not silently leave them or delete activity.
+- Confirm must submit the exact server acknowledgement. Failed transport retries
+  must retain the reviewed identity and operation key. Stale review rejection
+  must require a new review instead of acknowledging changed shared Paths.
+- Pending review and mutation must prevent duplicate actions; pending mutation
+  must prevent navigation from abandoning the admitted command. Account disposal
+  must cancel owned work and suppress late completions.
+- After success, the profile must disappear and stale social, notification,
+  history, and analytics projections must be discarded before reloading current
+  authorized data. Settings must remain the independent unblock destination.
+- Acceptance must cover cancel without mutation, shared-Path warning, failed
+  retry, stale review, successful profile hiding, retained Path membership,
+  independently reachable unblock, and account disposal. Domain blocking and
+  authorization rules remain unchanged.
+
 ### Notification history
 
 - Studio must provide a notification destination and an unread-count navigation
