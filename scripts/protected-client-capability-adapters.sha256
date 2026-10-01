@@ -3,5 +3,8 @@ bfef9074cf6f3cec74f90bf76be0ed8e7585c3222e5a9f40d98101cac752ca4c  apps/web/src/l
 c09264a598f3eadd886f3e51da31cab08a9f611a3ae2b4000fc024f572ee8a8c  apps/web/src/lib/device-locale.ts
 d51a56b436d00d8f51db1b63c1117b30c70e8c7e6365f48d202400f34cfcde24  apps/web/src/lib/external-policy-link.ts
 938bec96604a62dcc94bc9f50410423b10e2a1a25814d0b5868630211d9a830b  apps/web/src/lib/notification-convergence-browser.ts
-a1168ed88494b29feb505ff2d2ae4a30347d674a7a25c39b9b78dc674ce4d974  apps/web/src/routes/studio/[...path]/+page.svelte
+cf555911cd7d281501f114ffeb772da55913c6dfc5c9b3d2827dc44e3ce3e4a6  apps/web/src/routes/studio/[...path]/+page.svelte
 83255679fd4e48d4d05df4650647ead59694fc07421021e848cbe62d22a4a067  apps/web/src/lib/studio/presentation/avatar.tsx
+ffc0fa053b13c4b063696ee3a3062424e02873fa6845bca69820185b52d2b5e1  apps/web/src/routes/onboarding/+page.svelte
+ffc0fa053b13c4b063696ee3a3062424e02873fa6845bca69820185b52d2b5e1  apps/web/src/routes/account-recovery/+page.svelte
+2e448598c50bfa1ff68658956f21d6b0545363a02fdf3b5c01f02debbdb74f64  apps/web/src/routes/callback/+page.svelte

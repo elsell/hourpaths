@@ -1,10 +1,11 @@
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 
-export type ApplicationDestination = '/' | '/onboarding' | '/account-recovery';
+export type ApplicationDestination = '/' | '/studio' | '/onboarding' | '/account-recovery';
 
 export function replaceApplicationLocation(destination: ApplicationDestination): void {
   switch (destination) {
     case '/': window.location.replace('/'); break;
+    case '/studio': window.location.replace('/studio'); break;
     case '/onboarding': window.location.replace('/onboarding'); break;
     case '/account-recovery': window.location.replace('/account-recovery'); break;
   }

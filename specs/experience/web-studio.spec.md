@@ -536,3 +536,42 @@ receipt retries remain fail-closed and deterministic.
   roles and archival; expansion cancellation; explicit narrowing; same-intent
   retry; changed-state conflicts; and stale completion after disposal. Real API
   verification must show the saved audience and its visibility effects.
+
+### Studio account entry
+
+Studio must present signed-out entry, provider callback progress and recovery,
+onboarding, and the currently supported duplicate-email recovery choices in one
+shared account-entry layout. These surfaces must use Studio typography, colors,
+fields, actions, and responsive spacing without exposing authenticated navigation
+until the server-selected destination is Home.
+
+- Sign-in must use the existing provider PKCE and application-session exchange;
+  its action label must remain stable during progress, prevent duplicate attempts,
+  and recover visibly from cancellation or failure.
+- Successful entry must follow the authoritative Home, onboarding, or recovery
+  destination. A Studio entry must reach Studio Home after activation without
+  flashing the legacy authenticated UI. Existing callback and entry links must
+  remain operable throughout migration.
+- Onboarding must load only the authorized private profile seeds and current policy
+  review. It must retain the existing required username, display name, explicit
+  visibility, device-derived time zone, editable week start, age attestation, and
+  separate policy acknowledgements. A username collision must retain editable
+  values. A changed policy review must refresh policy links and reset consent
+  without discarding unrelated edits.
+- Recovery must retain its current cancellation and new-account choice, require
+  successful acknowledgement and local adoption before navigating to onboarding,
+  and remain bounded by credential expiry. Provider linking and dual-provider
+  recovery remain governed by the authentication spec and completion area 4.
+- Expired, rejected, or unreadable credentials must return to usable entry.
+  Transient failures must preserve locally valid credentials and visible retry.
+  Disposal, sign-out, or account replacement must prevent late review, activation,
+  or recovery results from acting on the replacement account.
+- Loading, field errors, progress, policy-link failures, and retry must use shared
+  localized copy and accessible semantics. Narrow layouts must retain readable
+  labels and operable actions without horizontal scrolling.
+
+Acceptance must cover real provider entry into Studio, onboarding with explicit
+privacy and current policy consent, username/policy recovery, callback failure,
+existing recovery choices, expiry and late-response account isolation, and
+desktop/narrow keyboard operation. The existing authentication contract and
+security gates must remain intact.

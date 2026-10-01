@@ -17,9 +17,10 @@ the two remaining Studio legacy-journey groups and the explicit web cutover gate
 and schedules offline, account lifecycle, notification delivery, and native timer
 work before further Studio-only expansion. Only one product slice is active;
 a demonstrated P0/P1 release blocker is the only additional infrastructure work.
-The release gate is closed. The active product slice is creator-only Path
-visibility within the checklist's first area, followed by Studio account entry;
-then move to durable offline use rather than extending Studio-only scope.
+The release gate is closed. Path visibility is merged in PR #96 and its release pipeline is active.
+The active product slice is Studio account entry, the final legacy-journey group
+in checklist area 1. Durable offline use follows, without further Studio-only
+scope expansion.
 
 ## Gap-closure scope and evidence
 
