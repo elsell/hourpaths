@@ -439,3 +439,17 @@ The release-unblocking dependency set must also pin `fast-uri` 3.1.8 and
 `moment` 2.31.0 to remove GHSA-hrr3-gc8f-f4qj and GHSA-4p3w-j4w9-5jqw.
 Both patches exceed fourteen days; no age exception is required. Verification
 must include the package audit and EAS configuration-validation checks.
+
+## October 1 devalue release blocker
+
+The workspace must pin `devalue` 5.9.3 to remove the six advisories newly
+reported by main CI, including GHSA-j22f-vq7h-c4qm, GHSA-mcm9-63f2-9j32, and
+GHSA-x5rw-q4pp-hg5g. This exact version has a reviewed age exception: it was
+published September 18, 2026 at 18:45 UTC, just inside the fourteen-day window
+when the October 1 audit blocked releases. The global age threshold must remain
+unchanged. The upstream signed 5.9.3 release includes the buffer isolation,
+serialization expansion, rejection handling, and parser fixes. Verification
+must include the pinned-pnpm lockfile update, registry integrity, frozen install,
+clean package audit, dependency-age gate, web checks/build, required CI gates,
+and production image/release checks. No unrelated dependency updates belong in
+this blocker fix.
