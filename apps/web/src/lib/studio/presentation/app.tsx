@@ -1,3 +1,4 @@
+import { PathPeoplePage } from './path-people';
 import type { BlockingRepository } from '../blocking/ports/blocking-repository';
 import { NotificationsPage } from './notifications';
 import { NotificationsContext } from './notification-navigation';
@@ -60,6 +61,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const notifications = createRoute({ getParentRoute: () => root, path: '/notifications', component: () => <NotificationsPage dependencies={d} /> });
     const inbox = createRoute({ getParentRoute: () => root, path: '/invitations', component: () => <InvitationInbox dependencies={d} /> });
     const path = createRoute({ getParentRoute: () => root, path: '/paths/$pathId', component: () => <PathPage dependencies={d} /> });
+    const pathPeople = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/people', component: () => <PathPeoplePage dependencies={d} /> });
     const sharing = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/share', component: () => <SharingPage dependencies={d} /> });
     const following = createRoute({ getParentRoute: () => root, path: '/following', component: () => <FollowingPage dependencies={d} /> });
     const activity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId', validateSearch: (search: Record<string, unknown>) => ({ activitySaved: search.activitySaved === true }), component: () => <ActivityDetailPage dependencies={d} /> });
@@ -69,7 +71,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, path, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, path, pathPeople, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   useEffect(() => {

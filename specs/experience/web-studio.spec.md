@@ -212,6 +212,31 @@ is an authorized recorded activity; a running session is not a completed event.
   Decline, cancel, expired review, archived Path, and inaccessible Path must not
   change roles. Failed transport retries must preserve command identity.
 
+### Shared Path People
+
+- Every viewer authorized to read a Path must be able to open an addressable
+  People destination independently of invitation or management capabilities.
+  Direct navigation and reload must revalidate Path and member-list access.
+- People must paginate canonical identities and roles in compact rows. Selecting
+  a row must show Path-scoped sessions, tracked time, and available interval and
+  overall goal progress; it must not navigate to the member's social profile.
+- The shared-Path exception in [Blocking](../safety/moderation.spec.md) must
+  preserve authorized member visibility. Only `blockedByViewer` may expose an
+  Unblock action; the presentation must not disclose who blocked the viewer.
+- Unblock must use the shared cancel-first confirmation, preserve its operation
+  key on failure, prevent duplicate or abandoned admitted mutations, and discard
+  stale projections before refreshing. It must preserve membership and activity.
+- Management actions must reuse the existing member-access commands and remain
+  limited by the server-provided member capabilities. Archival must suppress
+  role/removal actions without suppressing authorized read access or Unblock.
+- Loading, denied access, empty results, refresh, pagination, failure, and retry
+  must remain localized and operable with keyboard and narrow layouts. Account
+  disposal must cancel owned work and suppress late completion.
+- Acceptance must include an ordinary participant opening People after reload,
+  reading another member's available progress without management controls,
+  preserving shared-Path visibility across a block, and unblocking from the
+  member detail without leaving the Path or restoring removed follow relations.
+
 ### Current member access
 
 - Share must show paginated current members, their canonical identity, role,

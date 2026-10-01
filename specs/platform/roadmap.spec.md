@@ -9,9 +9,11 @@ recipient invitations, and ownership transfer (PRs #79, #83–#88) are deployed 
 availability evidence. TestFlight 0.22.0 (230) is VALID and available internally;
 physical-device encouragement acceptance remains pending. Notification history
 and unread convergence merged in PR #89 after all five gates and exact-image
-real-API verification; production release remains pending. The active slice is
-Studio profile blocking with reviewed shared-Path warnings and existing Settings
-unblock recovery. Use shared UI, focused useful checks, and applicable merge and
+real-API verification. Its release was superseded when PR #90 merged; both await
+the next release. Profile blocking merged in PR #90 after all five gates and
+real-account verification; its release is pending. The active slice is the shared Path People
+destination for authorized viewers, including progress and shared-Path unblock
+recovery. Use shared UI, focused useful checks, and applicable merge and
 release gates. Merged code alone must not count as user availability.
 
 ## Gap-closure scope and evidence

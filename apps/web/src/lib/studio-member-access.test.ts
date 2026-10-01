@@ -37,3 +37,16 @@ test('member review binds current identity and role; destructive retries preserv
     await assert.rejects(commands.review('path', 'person', 'remove'));
   } finally { server.close(); server.closeAllConnections(); }
 });
+test('member list preserves Path progress and viewer-owned block state while rejecting invalid progress', async () => {
+  let progress = { accumulatedSeconds: 120, targetSeconds: 300 };
+  const server = createServer((_request,response) => {
+    response.setHeader('Content-Type','application/json');
+    response.end(JSON.stringify({ data:[{userId:'person',username:'person',displayName:'person',role:'participant',sessionCount:2,totalTrackedSeconds:600,blockedByViewer:true,intervalProgress:progress,overallProgress:{accumulatedSeconds:600,targetSeconds:900}}],meta:{nextCursor:''}}));
+  });server.listen(0,'127.0.0.1');await once(server,'listening');
+  try {
+    const repo=apiSharingRepository(`http://127.0.0.1:${(server.address() as {port:number}).port}`,()=> 'credential',()=>{});
+    const member=(await repo.members('path','')).items[0];
+    assert.equal(member.blockedByViewer,true);assert.deepEqual(member.intervalProgress,progress);assert.deepEqual(member.overallProgress,{accumulatedSeconds:600,targetSeconds:900});
+    progress={accumulatedSeconds:-1,targetSeconds:300};await assert.rejects(repo.members('path',''));
+  }finally{server.close();server.closeAllConnections();}
+});
