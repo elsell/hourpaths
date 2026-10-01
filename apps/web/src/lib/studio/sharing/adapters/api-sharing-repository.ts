@@ -8,6 +8,11 @@ function required<T>(result: { data?: { data: T }; error?: unknown; response: Re
   if (!result.response.ok || !result.data) throw pathInvitationFailureFromProblem(result.response.status, result.error);
   return result.data.data;
 }
+function progress(value: { accumulatedSeconds: number; targetSeconds: number } | undefined) {
+  if (value === undefined) return undefined;
+  if (!Number.isSafeInteger(value.accumulatedSeconds) || value.accumulatedSeconds < 0 || !Number.isSafeInteger(value.targetSeconds) || value.targetSeconds <= 0) throw { kind: 'invalid_response' };
+  return { accumulatedSeconds: value.accumulatedSeconds, targetSeconds: value.targetSeconds };
+}
 export function apiSharingRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): SharingRepository {
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
   const repository: SharingRepository = {
@@ -21,6 +26,7 @@ export function apiSharingRepository(baseURL: string, token: () => string | null
       const items = values.map(value => ({
         userId: value.userId, username: value.username, displayName: value.displayName, role: value.role,
         sessionCount: value.sessionCount, totalTrackedSeconds: value.totalTrackedSeconds,
+        blockedByViewer: value.blockedByViewer === true, intervalProgress: progress(value.intervalProgress), overallProgress: progress(value.overallProgress),
         canRemove: value.canRemove === true, canChangeRole: value.canChangeRole === true,
         canGrantAdministrator: value.canGrantAdministrator === true, canRevokeAdministrator: value.canRevokeAdministrator === true,
         canStepDownAdministrator: value.canStepDownAdministrator === true,

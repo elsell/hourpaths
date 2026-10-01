@@ -1,3 +1,4 @@
+import { useOwnedOperation } from './use-owned-operation';
 import type { MessageKey } from '@hourpaths/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useBlocker } from '@tanstack/react-router';
@@ -14,20 +15,22 @@ function actionKey(member: PathMember, action: MemberAction) {
   if (member.role === 'administrator') return member.canStepDownAdministrator ? 'pathMembers.confirmStepDownAdministrator' : 'pathMembers.confirmRevokeAdministrator';
   return 'pathMembers.confirmParticipant';
 }
-export function MemberAccess({ dependencies: d, pathId, disabled, onBusy }: { dependencies: StudioDependencies; pathId: string; disabled: boolean; onBusy(value: boolean): void }) {
-  const client = useQueryClient();
+export function MemberAccess({ dependencies: d, pathId, disabled, onBusy, mode = 'access', archived = false }: { dependencies: StudioDependencies; pathId: string; disabled: boolean; onBusy(value: boolean): void; mode?: 'access' | 'people'; archived?: boolean }) {
+  const client = useQueryClient(), operation = useOwnedOperation(d);
+  const [selectedId, setSelectedId] = useState<string | null>(null), [unblockReview, setUnblockReview] = useState<PathMember | null>(null);
+  const unblockAttempt = useRef<{ id: string; key: string } | null>(null);
   const [commands] = useState(() => d.sharing.memberCommands(d.operationId));
   const active = useRef(true), admitted = useRef(false);
   const [review, setReview] = useState<MemberReview | null>(null);
   const [busy, setBusy] = useState(false), [loadingReview, setLoadingReview] = useState(false);
   const [failure, setFailure] = useState(false), [notice, setNotice] = useState(''), [steppedDown, setSteppedDown] = useState(false);
   const key = [d.accountScope, 'pathMembers', pathId];
-  const query = useInfiniteQuery({ queryKey: key, initialPageParam: '', queryFn: ({ pageParam, signal }) => d.sharing.members(pathId, pageParam, signal), getNextPageParam: (page, pages, last, previous) => page.nextCursor && !previous.includes(page.nextCursor) ? page.nextCursor : undefined });
+  const query = useInfiniteQuery({ queryKey: key, staleTime: 0, initialPageParam: '', queryFn: ({ pageParam, signal }) => d.sharing.members(pathId, pageParam, signal), refetchOnWindowFocus: true, getNextPageParam: (page, pages, last, previous) => page.nextCursor && !previous.includes(page.nextCursor) ? page.nextCursor : undefined });
   const members = [...new Map(query.data?.pages.flatMap(page => page.items).map(member => [member.userId, member]) ?? []).values()];
   useEffect(() => () => { active.current = false; commands.dispose(); }, [commands]);
   useBlocker({ shouldBlockFn: () => admitted.current, enableBeforeUnload: busy });
   async function choose(member: PathMember, action: MemberAction) {
-    if (disabled || admitted.current || loadingReview) return;
+    if (disabled || archived || admitted.current || loadingReview) return;
     setLoadingReview(true); onBusy(true); setFailure(false); setNotice('');
     try { const value = await commands.review(pathId, member.userId, action); if (active.current) setReview(value); }
     catch { if (active.current) setFailure(true); }
@@ -56,14 +59,37 @@ export function MemberAccess({ dependencies: d, pathId, disabled, onBusy }: { de
     } catch { if (active.current) setFailure(true); }
     finally { admitted.current = false; if (active.current) { setBusy(false); onBusy(false); } }
   }
+  async function unblock() {
+    if (!unblockReview || admitted.current || disabled) return;
+    const person = unblockReview;
+    if (unblockAttempt.current?.id !== person.userId) unblockAttempt.current = { id: person.userId, key: d.operationId() };
+    const key = unblockAttempt.current.key;
+    admitted.current = true; setBusy(true); onBusy(true); setFailure(false);
+    try {
+      await operation.run(signal => d.preferences.unblock(person.userId, key, signal));
+      if (!active.current || !operation.active()) return;
+      setUnblockReview(null); unblockAttempt.current = null;
+      setNotice(d.i18n.t('blocking.unblockedSuccess', { username: person.username }));
+      await client.cancelQueries({ predicate: query => query.queryKey[0] === d.accountScope });
+      if (!active.current) return;
+      client.removeQueries({ predicate: query => query.queryKey[0] === d.accountScope && !['pathMembers', 'pathPeople'].includes(String(query.queryKey[1])) });
+      void d.notifications.invalidate();
+      await client.resetQueries({ queryKey: [d.accountScope, 'pathMembers', pathId] });
+    } catch { if (active.current) setFailure(true); }
+    finally { admitted.current = false; if (active.current) { setBusy(false); onBusy(false); } }
+  }
   if (steppedDown) return <Navigate to="/" search={{ memberSteppedDown: true }} replace />;
   const locked = disabled || busy || loadingReview;
+  const selected = !query.isError ? members.find(member => member.userId === selectedId) : undefined;
+  const actions = (member: PathMember) => <div className="studio-member-actions">{!archived && (['participant', 'supporter', 'administrator', 'remove'] as const).filter(action => allowsMemberAction(member, action)).map(action => <button key={action} disabled={locked} onClick={() => void choose(member, action)}>{d.i18n.t(actionKey(member, action))}</button>)}</div>;
   return <section className="studio-settings-card">
     <header className="studio-section-header"><h2>{d.i18n.t('pathMembers.heading')}</h2><button disabled={locked || query.isFetching} onClick={() => void query.refetch()}>{d.i18n.t('common.refresh')}</button></header>
     {notice && <p role="status">{notice}</p>}
     {loadingReview && <p role="status">{d.i18n.t('common.loading')}</p>}
-    {failure && !review && <p role="alert">{d.i18n.t('pathMembers.reviewUnavailableDescription')}</p>}
-    {query.isPending ? <p role="status">{d.i18n.t('pathMembers.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('pathMembers.unavailableDescription')}</p><button disabled={locked} onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : <ul className="studio-settings-people">{members.map(member => <li key={member.userId}><div><strong>{d.i18n.t('pathMembers.identity', { ...member })}</strong><small>{d.i18n.t(roleKey(member.role))}</small><small>{d.i18n.t('pathMembers.sessions', { count: member.sessionCount })}</small><small>{d.i18n.t('pathMembers.totalTime', { duration: duration(d.i18n, member.totalTrackedSeconds) })}</small></div><div className="studio-member-actions">{(['participant', 'supporter', 'administrator', 'remove'] as const).filter(action => allowsMemberAction(member, action)).map(action => <button key={action} disabled={locked} onClick={() => void choose(member, action)}>{d.i18n.t(actionKey(member, action))}</button>)}</div></li>)}</ul>}
+    {failure && !review && !unblockReview && <p role="alert">{d.i18n.t('pathMembers.reviewUnavailableDescription')}</p>}
+    {query.isPending ? <p role="status">{d.i18n.t('pathMembers.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('pathMembers.unavailableDescription')}</p><button disabled={locked} onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : !members.length ? <p>{d.i18n.t('pathMembers.emptyDescription')}</p> : <ul className="studio-settings-people">{members.map(member => <li key={member.userId}>{mode === 'people' ? <button disabled={locked} className="studio-member-select" onClick={() => { setSelectedId(member.userId); setFailure(false); }}><strong>{d.i18n.t('pathMembers.identity', { ...member })}</strong><small>{d.i18n.t(roleKey(member.role))}</small></button> : <><MemberFacts member={member} dependencies={d} />{actions(member)}</>}</li>)}</ul>}
+    {mode === 'people' && selected && <section className="studio-member-detail" aria-label={d.i18n.t('pathMembers.identity', { ...selected })}><MemberFacts member={selected} dependencies={d} />{actions(selected)}{selected.blockedByViewer && <button disabled={locked} onClick={() => { setUnblockReview(selected); unblockAttempt.current = null; setFailure(false); }}>{d.i18n.t('blocking.unblock')}</button>}</section>}
+    {unblockReview && <ConfirmationDialog title={d.i18n.t('blocking.unblockConfirmTitle', { username: unblockReview.username })} busy={busy} cancelLabel={d.i18n.t('common.cancel')} confirmLabel={d.i18n.t('blocking.unblock')} cancel={() => { setUnblockReview(null); unblockAttempt.current = null; setFailure(false); }} confirm={() => void unblock()}><p>{d.i18n.t('blocking.unblockConfirmDescription')}</p>{failure && <p role="alert">{d.i18n.t('blocking.unblockUnavailable')}</p>}</ConfirmationDialog>}
     {query.hasNextPage && !query.isError && <button disabled={locked || query.isFetching} onClick={() => void query.fetchNextPage()}>{d.i18n.t('common.loadMore')}</button>}
     {review && <ConfirmationDialog title={d.i18n.t(actionKey(review.member, review.action))} busy={busy} cancelLabel={d.i18n.t('common.cancel')} confirmLabel={d.i18n.t(busy ? 'common.loading' : actionKey(review.member, review.action))} cancel={() => { commands.clear(); setReview(null); setFailure(false); }} confirm={() => void submit()}>
       <p><strong>{d.i18n.t('pathMembers.identityWithRole', { ...review.member, role: d.i18n.t(roleKey(review.member.role)) })}</strong></p>
@@ -82,4 +108,10 @@ function MemberWarnings({ review, dependencies: d }: { review: MemberReview; dep
   else if (review.member.role === 'administrator') keys = [review.member.canStepDownAdministrator ? 'pathMembers.stepDownAdministratorWarning' : 'pathMembers.revokeAdministratorWarning'];
   else keys = ['pathMembers.roleParticipantEffect'];
   return <>{keys.map(key => <p key={key}>{d.i18n.t(key, { displayName: review.member.displayName })}</p>)}</>;
+}
+
+function MemberFacts({ member, dependencies: d }: { member: PathMember; dependencies: StudioDependencies }) {
+  return <div className="studio-member-facts"><strong>{d.i18n.t('pathMembers.identity', { ...member })}</strong><small>{d.i18n.t(roleKey(member.role))}</small><span>{d.i18n.t('pathMembers.sessions', { count: member.sessionCount })}</span><span>{d.i18n.t('pathMembers.totalTime', { duration: duration(d.i18n, member.totalTrackedSeconds) })}</span>
+    {(['interval', 'overall'] as const).map(kind => { const progress = kind === 'interval' ? member.intervalProgress : member.overallProgress; return progress ? <div key={kind}><span>{d.i18n.t('pathMembers.progressSummary', { label: d.i18n.t(kind === 'interval' ? 'pathMembers.intervalProgressLabel' : 'pathMembers.overallProgressLabel'), accumulated: duration(d.i18n, progress.accumulatedSeconds), target: duration(d.i18n, progress.targetSeconds) })}</span><progress aria-label={d.i18n.t(kind === 'interval' ? 'pathMembers.intervalProgressLabel' : 'pathMembers.overallProgressLabel')} max={progress.targetSeconds} value={Math.min(progress.accumulatedSeconds, progress.targetSeconds)} /></div> : null; })}
+  </div>;
 }

@@ -52,3 +52,8 @@
 .studio-notification-open time { display: block; font-size: .85rem; color: var(--muted); margin-top: 8px; }
 .studio-unread-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); margin-inline-end: 8px; }
 @media (max-width: 600px) { .studio-notification-list li { align-items: stretch; flex-direction: column; gap: 8px; } .studio-notification-open { width: 100%; } }
+
+.studio-member-select { display: grid; gap: 4px; text-align: left; width: 100%; overflow-wrap: anywhere; }
+.studio-member-facts { display: grid; gap: 8px; overflow-wrap: anywhere; }
+.studio-member-facts progress { display: block; width: 100%; margin-top: 8px; }
+.studio-member-detail { display: grid; gap: 16px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px; }

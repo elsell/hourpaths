@@ -1,6 +1,8 @@
 export type MemberRole = 'creator' | 'administrator' | 'participant' | 'supporter';
 export type MemberAction = Exclude<MemberRole, 'creator'> | 'remove';
+export interface MemberProgress { accumulatedSeconds: number; targetSeconds: number }
 export interface PathMember {
+  blockedByViewer?: boolean; intervalProgress?: MemberProgress; overallProgress?: MemberProgress;
   userId: string; username: string; displayName: string; role: MemberRole;
   sessionCount: number; totalTrackedSeconds: number;
   canRemove: boolean; canChangeRole: boolean; canGrantAdministrator: boolean;

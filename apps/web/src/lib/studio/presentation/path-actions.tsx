@@ -20,6 +20,7 @@ export function PathActions({ path, dependencies: d, move, moving }: { path: Pat
   const pin = useMutation({ mutationFn: () => d.paths.pin(path.id, !path.pinned, d.operationId()), onSuccess: refresh });
   return <div className="studio-path-actions">
     <details open={menuOpen}><summary onClick={event => { event.preventDefault(); setMenuOpen(!menuOpen); }} aria-label={d.i18n.t('home.pathActions', { pathName: path.name })}>⋯</summary><div className="studio-action-menu">
+      <Link to="/paths/$pathId/people" params={{ pathId: path.id }}>{d.i18n.t('pathMembers.heading')}</Link>
       <Link to="/paths/$pathId/ownership" params={{ pathId: path.id }}>{d.i18n.t('pathOwnership.heading')}</Link>
       {path.canInvite && !path.archived && <Link to="/paths/$pathId/share" params={{ pathId: path.id }}>{d.i18n.t('pathInvitation.share')}</Link>}
       {path.canTrack && !path.archived && <Link to="/paths/$pathId/activities/new" params={{ pathId: path.id }}>{d.i18n.t('activity.add')}</Link>}
