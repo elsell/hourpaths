@@ -178,6 +178,9 @@ implementation is retained only as an injected test or explicitly selected
 single-process development adapter.
 
 All runtime configuration is environment-backed and validated at startup.
+The production web image must omit the base image's bundled npm installation,
+including version-suffixed `node_modules_24` locations. Removal must occur before
+copying the deployed application so application dependencies remain intact.
 Infrastructure dependencies are replaceable adapters.
 Shared PostgreSQL rate-limit windows map the database's complete `(scope,
 principal_hash)` identity and every update must affect exactly one row. An

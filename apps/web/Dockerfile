@@ -24,7 +24,7 @@ WORKDIR /app
 USER 0
 # The runtime only needs Node. Remove the base image's bundled npm tree so
 # package-manager dependencies are not shipped or scanned with the service.
-RUN find / -xdev -path '*/node_modules/npm' -prune -exec rm -rf '{}' '+' 2>/dev/null || true
+RUN find /usr /opt -xdev \( -path '*/node_modules/npm' -o -path '*/node_modules_*/npm' \) -prune -exec rm -rf '{}' '+'
 COPY --from=build --chown=65532:0 /app/prod ./
 # The base image also carries a few package-manager dependencies outside npm's
 # own tree. They are not needed by the service and must not ship in its image.

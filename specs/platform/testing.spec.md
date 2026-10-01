@@ -221,6 +221,10 @@ retryable failures, and preserve authenticated-offline presentation state. A
 mobile orchestration test cold-starts with a valid stored credential while OIDC
 discovery and the API are unavailable, and proves restoration completes in the
 authenticated-offline state without deleting the credential.
+Production web image verification must confirm that the base image's bundled npm
+tree is absent, including version-suffixed module directories, while Node and the
+built web server remain runnable. The final image vulnerability scan must pass.
+
 The web runtime configuration tests reject absent and unsafe production API,
 issuer, and client settings. Container acceptance proves the production image
 fails before serving without them while local Compose explicitly selects the
