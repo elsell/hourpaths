@@ -107,7 +107,9 @@ is an authorized recorded activity; a running session is not a completed event.
   existing permanent-deletion warning. Cancel must receive initial focus.
   Failed deletion must retain the reviewed identity and retry key; an admitted
   request must prevent duplicate submission and navigation until it settles.
-  Successful deletion must clear loaded account projections before returning
+  Successful deletion must remove the deleted entry and exact removed feed events,
+  apply authoritative progress, preserve unrelated loaded data, and announce
+  success before returning
   to the timeline. An old account's completion must not affect a new account.
 
 ## Following

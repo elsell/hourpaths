@@ -8,7 +8,7 @@ test('deletion requires owner review and retains identity and key across uncerta
   assert.throws(() => reviewActivityDeletion({ ...detail, owned: false }, 'key'));
   const review = reviewActivityDeletion(detail, 'same-key');
   const requests: unknown[] = [];
-  const repository = { async detail() { return detail; }, async revisions() { return { items: [], next: null }; }, async remove(value: typeof review) { requests.push(value); if (requests.length === 1) throw new Error('connection_lost'); } };
+  const repository = { async detail() { return detail; }, async revisions() { return { items: [], next: null }; }, async remove(value: typeof review) { requests.push(value); if (requests.length === 1) throw new Error('connection_lost'); return { accumulatedSeconds: 0, sessionCount: 0, unreadNotificationCount: 0, removedFeedEventIds: [], period: null }; } };
   await assert.rejects(deleteReviewedActivity(repository, review));
   await deleteReviewedActivity(repository, review);
   assert.deepEqual(requests, [review, review]);
@@ -40,4 +40,23 @@ test('HTTP detail isolates identity, redacts nonowner notes, and rejects repeate
     activityId = 'unrelated-entry';
     await assert.rejects(repository.detail('path', 'entry'));
   } finally { server.close(); server.closeAllConnections(); }
+});
+import { QueryClient } from '@tanstack/react-query';
+import { applyActivityDeletion } from './studio/presentation/activity-cache';
+test('deletion applies authoritative totals and removes exact projections without discarding unrelated data', () => {
+  const client = new QueryClient();
+  const cursor = { participantId: 'owner', streams: [{ pathId: 'path', pathName: 'practice-path', remaining: [{ id: 'entry' }, { id: 'other' }], cursor: null, loaded: true }] };
+  client.setQueryData(['account', 'history'], { pages: [{ items: [{ id: 'entry' }, { id: 'other' }], next: cursor }], pageParams: [cursor] });
+  client.setQueryData(['account', 'social', 'feed', null], { pages: [{ items: [{ id: 'removed' }, { id: 'retained' }], next: null }], pageParams: [null] });
+  client.setQueryData(['account', 'tracking', 'path'], { savedTotalSeconds: 100, activeSession: { id: 'running', startedAt: 1 }, period: null });
+  client.setQueryData(['account', 'appearance', 'path'], { emoji: '✨' });
+  applyActivityDeletion(client, 'account', reviewActivityDeletion(detail, 'key'), { accumulatedSeconds: 99, sessionCount: 1, unreadNotificationCount: 0, removedFeedEventIds: ['removed'], period: null });
+  const history = client.getQueryData<any>(['account', 'history']);
+  assert.deepEqual(history.pages[0].items, [{ id: 'other' }]);
+  assert.deepEqual(history.pageParams[0].streams[0].remaining, [{ id: 'other' }]);
+  assert.deepEqual(client.getQueryData<any>(['account', 'social', 'feed', null]).pages[0].items, [{ id: 'retained' }]);
+  assert.equal(client.getQueryData<any>(['account', 'tracking', 'path']).savedTotalSeconds, 99);
+  assert.equal(client.getQueryData<any>(['account', 'tracking', 'path']).activeSession.id, 'running');
+  assert.deepEqual(client.getQueryData(['account', 'appearance', 'path']), { emoji: '✨' });
+  client.clear();
 });

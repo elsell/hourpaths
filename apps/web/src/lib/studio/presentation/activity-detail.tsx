@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, useId } from 'react';
 import { Link, useBlocker, Navigate, useParams } from '@tanstack/react-router';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
+import { ActivityFailure } from '../history/domain/detail';
 import type { ActivitySnapshot, ActivityDeletion } from '../history/domain/detail';
 import { reviewActivityDeletion, deleteReviewedActivity } from '../history/application/activity-deletion';
 import { StudioShell } from './studio-shell';
+import { applyActivityDeletion } from './activity-cache';
 import { duration } from './duration';
 
 export function ActivityDetailPage({ dependencies: d }: { dependencies: StudioDependencies }) {
@@ -51,29 +53,29 @@ function DeleteActivityReview({ review, dependencies: d, close }: { review: Acti
   const client = useQueryClient();
   const [deleted, setDeleted] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null), active = useRef(true), admitted = useRef(false);
-  const [busy, setBusy] = useState(false), [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false), [failed, setFailed] = useState<null | { retryable: boolean }>(null);
   const heading = useId();
   useBlocker({ shouldBlockFn: () => admitted.current, enableBeforeUnload: busy });
   useEffect(() => { dialog.current?.showModal(); return () => { active.current = false; }; }, []);
   async function submit() {
     if (admitted.current) return;
-    admitted.current = true; setBusy(true); setFailed(false);
+    admitted.current = true; setBusy(true); setFailed(null);
     try {
-      await deleteReviewedActivity(d.activities, review);
+      const result = await deleteReviewedActivity(d.activities, review);
       if (!active.current) return;
       await client.cancelQueries({ queryKey: [d.accountScope] });
       if (!active.current) return;
-      client.removeQueries({ queryKey: [d.accountScope] });
+      applyActivityDeletion(client, d.accountScope, review, result);
       admitted.current = false;
       setDeleted(true);
-    } catch { if (active.current) setFailed(true); }
+    } catch (error) { if (active.current) setFailed({ retryable: !(error instanceof ActivityFailure) || error.retryable }); }
     finally { admitted.current = false; if (active.current) setBusy(false); }
   }
-  if (deleted) return <Navigate to="/" />;
+  if (deleted) return <Navigate to="/" search={{ activityDeleted: true }} />;
   return <dialog ref={dialog} className="studio-settings-guard" aria-labelledby={heading} onCancel={event => { event.preventDefault(); if (!admitted.current) close(); }}><div>
     <h2 id={heading}>{d.i18n.t('pathDetails.deleteConfirmationHeading')}</h2><p>{d.i18n.t('pathDetails.deleteConfirmation')}</p>
     {failed && <p role="alert">{d.i18n.t('errors.apiRejected')}</p>}
-    <button autoFocus disabled={busy} onClick={close}>{d.i18n.t('common.cancel')}</button><button disabled={busy} onClick={() => void submit()}>{d.i18n.t(failed ? 'common.retry' : 'pathDetails.confirmDelete')}</button>
+    <button autoFocus disabled={busy} onClick={close}>{d.i18n.t('common.cancel')}</button><button disabled={busy || failed?.retryable === false} onClick={() => void submit()}>{d.i18n.t(failed ? 'common.retry' : 'pathDetails.confirmDelete')}</button>
     {busy && <p role="status">{d.i18n.t('pathDetails.deleting')}</p>}
   </div></dialog>;
 }

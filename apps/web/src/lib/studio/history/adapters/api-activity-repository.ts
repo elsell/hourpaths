@@ -1,8 +1,9 @@
 import { createSessionApiClient, type ActivityDetail as APIDetail, type ActivityRevision as APIRevision } from '@hourpaths/api-client';
+import { ActivityFailure } from '../domain/detail';
 import type { ActivitySnapshot } from '../domain/detail';
 import type { ActivityRepository } from '../ports/activity-repository';
 function required<T>(result: { data?: { data: T }; response: Response }): T {
-  if (!result.response.ok || !result.data) throw new Error('activity_unavailable');
+  if (!result.response.ok || !result.data) throw new ActivityFailure(result.response.status >= 500 || result.response.status === 429);
   return result.data.data;
 }
 function snapshot(value: APIDetail['activity'], version: number, pathId: string, activityId: string, owner: string): ActivitySnapshot {
@@ -38,7 +39,11 @@ export function apiActivityRepository(baseURL: string, token: () => string | nul
     },
     async remove(review) {
       const result = required(await client().deleteActivity(review.pathId, review.activityId, review.operationId));
-      if (!Number.isSafeInteger(result.accumulatedSeconds) || result.accumulatedSeconds < 0 || !Array.isArray(result.removedFeedEventIds)) throw new Error('activity_deletion_invalid');
+      if (![result.sessionCount, result.unreadNotificationCount].every(value => Number.isSafeInteger(value) && value >= 0) || !Number.isSafeInteger(result.accumulatedSeconds) || result.accumulatedSeconds < 0 || !Array.isArray(result.removedFeedEventIds)) throw new Error('activity_deletion_invalid');
+      const progress = result.intervalProgress;
+      const period = progress?.startedAt && progress.endedAt ? { savedSeconds: progress.accumulatedSeconds, targetSeconds: progress.targetSeconds, startsAt: Date.parse(progress.startedAt), endsAt: Date.parse(progress.endedAt) } : null;
+      if (period && (!Object.values(period).every(Number.isFinite) || period.endsAt <= period.startsAt || period.savedSeconds < 0 || period.targetSeconds <= 0)) throw new Error('activity_deletion_invalid');
+      return { accumulatedSeconds: result.accumulatedSeconds, sessionCount: result.sessionCount, unreadNotificationCount: result.unreadNotificationCount, removedFeedEventIds: result.removedFeedEventIds, period };
     },
   };
 }
