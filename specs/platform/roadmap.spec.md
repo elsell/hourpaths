@@ -3,15 +3,16 @@
 ## Current focus
 
 Close the approved October 1 specs-to-implementation gap audit through small,
-demonstrable slices. Studio Path archive, restore, and deletion parity merged in
-PR #79 with real-API browser evidence; production availability remains pending.
-Studio activity detail, edit history, and deletion merged in PR #83 with real-API
-verification. The active product slice is Studio activity creation and editing.
-Release repairs in PRs #78 and #81 shipped as v0.16.0. Its web image is deployed
-through infra commit b00ce425 with a healthy Flux rollout; TestFlight build 212
-and physical-device encouragement acceptance remain pending. Use shared UI,
-focused useful checks, and the applicable merge and
-release gates. Merged code is not evidence of tester or production availability.
+demonstrable slices. Studio Path lifecycle (PR #79) and activity details/history/
+deletion (PR #83) are deployed at `/studio` in v0.17.0 through infra commit
+2d7d26c, with healthy Flux and exact-image rollout evidence. TestFlight 0.17.0
+(214) is VALID and assigned to internal testers; physical-device encouragement
+acceptance is still pending. Activity creation/editing merged in PR #84 after
+all five gates and real-API browser verification; release availability is pending.
+The active slice is Studio sharing and sent-invitation management. Recipient
+invitations, membership, and ownership remain subsequent scoped work. Use shared
+UI, focused useful checks, and applicable merge/release gates. Merged code alone
+must not count as production or tester availability.
 
 ## Gap-closure scope and evidence
 

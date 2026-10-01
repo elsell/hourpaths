@@ -28,6 +28,7 @@ export function pathFromAPI(dto: SessionPath): Path {
     goal: dto.intervalGoal ? { targetSeconds: seconds(dto.intervalGoal.targetSeconds), recurrence: dto.intervalGoal.recurrence, alignment: { minute: dto.intervalGoal.alignment.minute, hour: dto.intervalGoal.alignment.hour, day: dto.intervalGoal.alignment.day, month: dto.intervalGoal.alignment.month, isoWeekday: dto.intervalGoal.alignment.isoWeekday } } : null,
     overallTarget: dto.overallTarget ? seconds(dto.overallTarget.targetSeconds) : null,
     canManageGoals: dto.capabilities.manageGoals,
+    canInvite: dto.capabilities.inviteMembers === true,
     canManageLifecycle: dto.capabilities.manageLifecycle === true,
     canTrack: dto.capabilities.trackTime, canEdit: dto.capabilities.renamePath,
   };

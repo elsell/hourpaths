@@ -382,6 +382,7 @@
   "pathInvitation.managed.role": "Rol: {{role}}",
   "pathInvitation.managed.inviter": "Invitación de {{displayName}} (@{{username}})",
   "pathInvitation.managed.sentAt": "Enviada el {{date}} a las {{time}}",
+  "pathInvitation.managed.canceled": "Invitación cancelada.",
   "pathInvitation.managed.cancel": "Cancelar invitación",
   "pathInvitation.managed.canceling": "Cancelando invitación…",
   "pathInvitation.managed.cancelFor": "Cancelar invitación como {{role}} para {{displayName}} (@{{username}})",

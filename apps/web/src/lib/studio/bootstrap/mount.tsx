@@ -1,3 +1,4 @@
+import { apiSharingRepository } from '../sharing/adapters/api-sharing-repository';
 import { accountSession } from '../session/application/account-session';
 import { apiPreferencesRepository } from '../preferences/adapters/api-preferences-repository';
 import { apiStatisticsRepository } from '../analytics/adapters/api-statistics-repository';
@@ -31,6 +32,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const paths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
   root.render(<StudioApp dependencies={{
     paths,
+    sharing: apiSharingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     activities: apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),
     preferences: apiPreferencesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
