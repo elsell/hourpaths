@@ -144,7 +144,9 @@ or requeue the resource owner's recovery item.
 The release gate runs Go vulnerability analysis and the package-manager audit
 against the resolved dependency graph. CI has least-privilege permissions,
 bounded runtime, and cancels superseded work. High or critical dependency
-findings at any severity fail delivery rather than being silently accepted.
+findings at any severity fail delivery unless an explicit owner-approved,
+version-specific and expiring exception below applies. Exceptions must be
+visible in security output; unknown audit formats or registry failures fail closed.
 CI runs the live Compose acceptance harness. A pinned Playwright/Chromium browser
 must operate Scalar itself: authorize through Dex with PKCE, then send authenticated
 Try It requests to `/v1/me` and a protected resource endpoint. Protocol-only
@@ -462,3 +464,27 @@ release. The update must pass the fourteen-day dependency-age gate, module
 verification, observability adapter tests, Go vulnerability scanning, and
 required CI integration checks. The update must not include unrelated
 dependency upgrades.
+
+## Deletion acceptance clock
+
+The deletion-cascade acceptance fixture must use an injected fixed instant
+within the goal interval it intends to exercise; it must not depend on whether
+CI runs just before or after midnight. Keep the assertions for interval and
+overall achievements and terminal deletion intact.
+
+## Temporary node-forge advisory exception
+
+The owner approved a temporary exception on October 2, 2026 for
+GHSA-86w9-cpqp-85rv affecting exactly node-forge 1.4.0 in the resolved Expo/EAS
+toolchain graph. The audit recommends 1.4.1, but the npm version endpoint returns
+404 and the upstream advisory lists no published fix. This is risk acceptance,
+not a claim that the signature-verification issue has been fixed.
+
+The exception must expire at 2026-10-09T00:00:00Z. The security command must still
+run the complete package-manager audit and reject every other advisory, package
+or installed version. It must fail on audit transport/format errors and after
+expiry. It must print the exception and deadline when used. Go, Ruby, dependency
+age, image, native and authorization checks remain required. Remove the
+exception as soon as a reviewed patched package can be installed; do not extend
+its deadline without renewed owner approval. No public signature-verification
+feature may be added using this affected dependency under this exception.
