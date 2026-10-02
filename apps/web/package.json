@@ -12,23 +12,23 @@
     "@hourpaths/api-client": "workspace:*",
     "@hourpaths/client-core": "workspace:*",
     "@hourpaths/i18n": "workspace:*",
-    "@sveltejs/kit": "2.70.2",
-    "@tanstack/react-query": "5.102.8",
-    "@tanstack/react-router": "1.170.36",
-    "oidc-client-ts": "3.3.0",
+    "@sveltejs/kit": "2.70.3",
+    "@tanstack/react-query": "5.104.0",
+    "@tanstack/react-router": "1.170.40",
+    "oidc-client-ts": "3.5.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "svelte": "5.56.2"
+    "svelte": "5.57.1"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "5.5.7",
-    "@sveltejs/vite-plugin-svelte": "7.1.2",
-    "@types/node": "24.13.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@types/node": "26.6.3",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "svelte-check": "4.6.0",
-    "tsx": "4.22.4",
-    "typescript": "5.9.3",
-    "vite": "8.0.16"
+    "svelte-check": "4.7.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.1"
   }
 }
