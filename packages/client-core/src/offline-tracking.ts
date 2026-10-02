@@ -1,4 +1,4 @@
-import { createRecordedActivity, editRecordedActivity, recordedActivityChanges, recordedActivityDelta, type ActivityEditStamp, type RecordedActivityInput, type RecordedActivityOperation } from './offline-recorded-activity';
+import { activityIdentity, settleRecordedActivity, type RecordedActivityOutcome, type RecordedActivityDelta, createRecordedActivity, editRecordedActivity, recordedActivityChanges, recordedActivityDelta, type ActivityEditStamp, type RecordedActivityInput, type RecordedActivityOperation } from './offline-recorded-activity';
 import { currentGoalPeriod, type CalendarGoal } from './calendar-goal';
 /** Credential loss pauses replay while preserving the account's durable work. */
 export class TrackingReplaySuspended extends Error {
@@ -34,8 +34,11 @@ export interface RetainedActivity {
 export type TrackingOutcome = { activity?: RetainedActivity | null; serverTimerId?: string; terminal?: boolean; mustStop?: boolean } & ({ kind: 'accepted' } | {
   kind: 'rejected'; reason: TrackingRejection; disclosePath: boolean; savedSeconds?: number; discardedSeconds?: number;
 });
-export interface TrackingSync { send(owner: string, operation: TrackingOperation): Promise<TrackingOutcome> }
-export interface TrackingNotice { id: string; reason: TrackingRejection | 'subsecond'; pathId?: string; savedSeconds?: number; discardedSeconds?: number }
+export interface TrackingSync {
+  send(owner: string, operation: TrackingOperation): Promise<TrackingOutcome>;
+  sendActivity?(owner: string, operation: RecordedActivityOperation): Promise<RecordedActivityOutcome>;
+}
+export interface TrackingNotice { id: string; reason: TrackingRejection | 'subsecond'; subject?: 'activity'; pathId?: string; savedSeconds?: number; discardedSeconds?: number }
 export interface TrackingSnapshot {
   owner: string;
   revision: number;
@@ -48,6 +51,9 @@ export interface TrackingSnapshot {
   timers: LocalTimer[];
   operations: TrackingOperation[];
   activityOperations?: RecordedActivityOperation[];
+  activityAliases?: Record<string, string>;
+  activityDeltas?: RecordedActivityDelta[];
+  deletedActivityIds?: string[];
   corrections: { timer: LocalTimer; endedAt: string; reviewedStartedAt?: string }[];
   notices: TrackingNotice[];
 }
@@ -124,7 +130,21 @@ export class OfflineTracking {
       // A clock correction must be resolved before this timer can be replayed.
       const correctionIds = new Set(snapshot.corrections.map(value => value.timer.id));
       const operation = snapshot.operations.find(value => !correctionIds.has(value.timerId));
-      if (!operation) return;
+      if (!operation) {
+        const recorded = snapshot.activityOperations?.[0];
+        if (!recorded) return;
+        if (!sync.sendActivity) throw new Error('activity_sync_unavailable');
+        const command = copy(recorded);
+        command.activity.id = activityIdentity(snapshot, command.activity.id);
+        const result = await sync.sendActivity(this.owner, command);
+        if (this.disposed) return;
+        if (result.kind === 'accepted') {
+          this.validateHistory([result.activity]);
+          if (result.activity.id !== command.activity.id || result.activity.pathId !== command.activity.pathId) throw new Error('tracking_history_invalid');
+        }
+        await this.change(state => settleRecordedActivity(state, recorded, result));
+        continue;
+      }
       const outcome = await sync.send(this.owner, copy(operation));
       if (this.disposed) return; // Its stable identity makes a later retry safe.
       const archiveStopId = outcome.mustStop ? this.newId() : '';
@@ -136,6 +156,9 @@ export class OfflineTracking {
           if (outcome.activity.pathId !== operation.pathId) throw new Error('tracking_history_invalid');
           state.history = state.history.filter(entry => entry.id !== outcome.activity!.id);
           state.history.push(copy(outcome.activity));
+          (state.activityAliases ??= {})[operation.operationId] = outcome.activity.id;
+          const dependent = state.activityOperations?.find(value => activityIdentity(state, value.activity.id) === outcome.activity!.id);
+          if (dependent) dependent.previous = copy(outcome.activity);
           state.unreflected = state.unreflected.filter(entry => entry.id !== outcome.activity!.id);
           state.unreflected.push(copy(outcome.activity));
         }
@@ -154,6 +177,7 @@ export class OfflineTracking {
           if (outcome.reason === 'membership' || outcome.reason === 'deleted') {
             state.unavailablePaths = [...new Set([...(state.unavailablePaths ?? []), operation.pathId])];
             state.operations = state.operations.filter(value => value.pathId !== operation.pathId);
+            state.activityOperations = state.activityOperations?.filter(value => value.activity.pathId !== operation.pathId);
             state.timers = state.timers.filter(value => value.pathId !== operation.pathId);
             state.corrections = state.corrections.filter(value => value.timer.pathId !== operation.pathId);
           }
@@ -198,6 +222,7 @@ export class OfflineTracking {
     const previous = timer && state.timers.find(value => value.id === timer.id || value.serverId === timer.id);
     state.summaries = { ...state.summaries, [pathId]: copy(summary) };
     state.unreflected = state.unreflected.filter(value => value.pathId !== pathId);
+    state.activityDeltas = state.activityDeltas?.filter(value => (value.activity?.pathId ?? value.previous?.pathId) !== pathId);
     state.timers = state.timers.filter(value => value.pathId !== pathId);
     if (timer) state.timers.push({ ...copy(timer), id: previous?.id ?? timer.id, serverId: timer.id });
   }
@@ -238,6 +263,7 @@ export class OfflineTracking {
     const path = state.paths.find(value => value.id === pathId);
     let period = summary.period;
     let periodIntervals = intervals;
+    let includeAcknowledgedEdits = true;
     if (path && path.goal !== undefined) {
       const bounds = this.periodFor(path, this.now());
       if (!bounds) period = null;
@@ -247,16 +273,17 @@ export class OfflineTracking {
         // The old authoritative total belongs only to its old period. Use the
         // retained occurrences for a different period, deduplicating replay
         // acknowledgements already present in the history snapshot.
-        const recorded = new Map([...state.history, ...state.unreflected].filter(value => value.pathId === pathId).map(value => [value.id, value]));
+        const recorded = new Map([...state.unreflected, ...state.history].filter(value => value.pathId === pathId).map(value => [value.id, value]));
         periodIntervals = [...recorded.values(), ...pending.filter(value => value.kind !== 'start' && value.endedAt)
           .map(value => ({ startedAt: value.correctedStartedAt ?? value.startedAt, endedAt: value.endedAt! }))];
         period = { ...bounds, savedSeconds: 0 };
+        includeAcknowledgedEdits = false;
       }
     }
     const periodDelta = period ? periodIntervals.reduce((sum, value) => sum + seconds(Math.max(period.startsAt, Date.parse(value.startedAt)), Math.min(period.endsAt, Date.parse(value.endedAt))), 0) : 0;
     const timer = state.timers.find(value => value.pathId === pathId);
     return { savedTotalSeconds: summary.savedTotalSeconds + total + recordedActivityDelta(state, pathId),
-      period: period ? { ...period, savedSeconds: period.savedSeconds + periodDelta + recordedActivityDelta(state, pathId, period) } : null,
+      period: period ? { ...period, savedSeconds: period.savedSeconds + periodDelta + recordedActivityDelta(state, pathId, period, includeAcknowledgedEdits) } : null,
       activeSession: timer ? { id: timer.id, startedAt: Date.parse(timer.startedAt), originalStartedAt: timer.startedAt, timeZone: timer.timeZone } : null,
       pending: (state.activityOperations ?? []).some(operation => operation.activity.pathId === pathId) || pending.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)) };
   }
@@ -306,9 +333,9 @@ export class OfflineTracking {
     if (state.revision !== expectedRevision) return false;
     const instant = this.now();
     const cutoff = instant - 90 * 24 * 60 * 60 * 1000;
-    const pendingIds = new Set((state.activityOperations ?? []).map(value => value.activity.id));
+    const pendingIds = new Set((state.activityOperations ?? []).map(value => activityIdentity(state, value.activity.id)));
     state.history = copy([...entries.filter(entry => !pendingIds.has(entry.id)), ...state.history.filter(entry => pendingIds.has(entry.id))]
-      .filter(entry => Date.parse(entry.endedAt) >= cutoff));
+      .filter(entry => !state.deletedActivityIds?.includes(entry.id) && Date.parse(entry.endedAt) >= cutoff));
     state.historyRetainedAt = new Date(instant).toISOString();
     state.revision++;
     if (this.disposed) throw new Error('tracking_disposed');
