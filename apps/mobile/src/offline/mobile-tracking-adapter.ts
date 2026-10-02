@@ -79,6 +79,19 @@ export function mobileTrackingAdapter(dependencies: {
       return retained;
     },
     timer,
+    async saveActivity(pathId: string, activityId: string | null, input: { startedAt: string; durationSeconds: number; note: string }) {
+      assertCurrent();
+      if (activityId) {
+        const history = await dependencies.tracking.localHistory(pathId);
+        assertCurrent();
+        if (!history.items.some(entry => entry.id === activityId)) throw new Error('activity_not_retained');
+      }
+      const entry = activityId ? await dependencies.tracking.editRecordedActivity(activityId, input)
+        : await dependencies.tracking.createManualActivity({ ...input, pathId });
+      assertCurrent();
+      await changed(pathId);
+      return entry;
+    },
     async start(pathId: string) {
       assertCurrent();
       await timer(pathId);

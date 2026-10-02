@@ -236,3 +236,19 @@ test('native Home publishes a new goal period before an unavailable refresh and 
   assert.equal(stopped.accumulatedSeconds, 1860);
   service.dispose();
 });
+
+test('native manual create and edit survive restart and update totals without a server', async () => {
+  const env = fixture(); const first = env.create();
+  await first.retain(home, utcTimeZone, await first.beginHydration());
+  const saved = await first.saveActivity('guitar', null, { startedAt: '2026-10-01T11:58:00Z', durationSeconds: 60, note: 'first' });
+  first.dispose();
+  const restored = env.create();
+  const edited = await restored.saveActivity('guitar', saved.id, { startedAt: '2026-10-01T11:57:00Z', durationSeconds: 90, note: 'revised' });
+  assert.equal(edited.id, saved.id);
+  assert.equal((await restored.timer('guitar')).accumulatedSeconds, 150);
+  assert.equal((await env.core().snapshot()).activityOperations?.length, 2);
+  assert.equal((await env.core().localHistory('guitar')).items[0]?.note, 'revised');
+  env.leave();
+  await assert.rejects(restored.saveActivity('guitar', saved.id, { startedAt: '2026-10-01T11:57:00Z', durationSeconds: 100, note: 'wrong account' }), /superseded/);
+  restored.dispose();
+});

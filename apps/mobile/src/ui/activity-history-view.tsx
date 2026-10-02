@@ -116,6 +116,7 @@ function ActivityHistoryRow({
   });
   const edited = activityWasEdited(detail);
   const duration = formatCompactDuration(detail.activity.durationSeconds, i18n);
+  const inspectable = !detail.retained || (detail.activity.note !== undefined && Boolean(detail.activity.createdAt) && Boolean(detail.activity.updatedAt));
 
   return <Pressable
     accessibilityLabel={i18n.t(hideParticipant
@@ -126,8 +127,8 @@ function ActivityHistoryRow({
       time,
     })}
     accessibilityHint={detail.pending ? i18n.t('offline.pending') : undefined}
-    accessibilityRole={detail.retained || detail.pending ? "text" : "button"}
-    disabled={detail.retained || detail.pending}
+    accessibilityRole={inspectable ? "button" : "text"}
+    disabled={!inspectable}
     onPress={onPress}
     style={({ pressed }) => [
       styles.row,
@@ -148,7 +149,7 @@ function ActivityHistoryRow({
         <ThemedText style={styles.duration}>{duration}</ThemedText>
       </View>
     </View>
-    {!detail.retained && !detail.pending ? <SettingsIcon systemName="chevron.right" variant="disclosure" /> : null}
+    {inspectable ? <SettingsIcon systemName="chevron.right" variant="disclosure" /> : null}
   </Pressable>;
 }
 

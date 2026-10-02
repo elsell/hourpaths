@@ -1,4 +1,4 @@
-import { OfflineTracking, TrackingReplayWorker, TrackingReplaySuspended, type RetainedActivity, type SessionExchangeCredential, type TrackingSchedule, type TrackingSnapshot, type TrackingStore, type TrackingSync } from '@hourpaths/client-core';
+import { manualActivityParticipantNow, OfflineTracking, TrackingReplayWorker, TrackingReplaySuspended, type RetainedActivity, type SessionExchangeCredential, type TrackingSchedule, type TrackingSnapshot, type TrackingStore, type TrackingSync } from '@hourpaths/client-core';
 import type { MobileHomeProfile } from '../session-destination';
 import type { MobileHomeCache } from './mobile-home-cache';
 import { mobileTrackingAdapter } from './mobile-tracking-adapter';
@@ -179,6 +179,24 @@ export function mobileOfflineHome(dependencies: {
     refresh(): Promise<MobileHomeProfile> {
       if (!context) return Promise.reject(new Error('tracking_session_unavailable'));
       return refreshContext(context);
+    },
+    async activityDefaults(pathId: string) {
+      if (!context || !context.credential || context.paused || Date.parse(context.credential.expiresAt) <= dependencies.now()) throw new Error('tracking_session_unavailable');
+      const current = context;
+      const state = await current.tracking.snapshot(); valid(current);
+      const path = state.paths.find(value => value.id === pathId);
+      if (!path || state.unavailablePaths?.includes(pathId)) throw new Error('tracking_path_unavailable');
+      const local = manualActivityParticipantNow(new Date(dependencies.now()).toISOString(), path.timeZone);
+      return { currentInstant: local.currentInstant, timeZone: path.timeZone, localDate: local.localDate, localStartTime: local.localTime };
+    },
+    async retainActivity(entry: RetainedActivity) {
+      if (!context || !context.credential || context.paused || Date.parse(context.credential.expiresAt) <= dependencies.now()) throw new Error('tracking_session_unavailable');
+      const current = context;
+      await current.tracking.retainActivity(entry); valid(current);
+    },
+    async saveActivity(pathId: string, activityId: string | null, input: { startedAt: string; durationSeconds: number; note: string }) {
+      if (!context || !context.credential || context.paused || Date.parse(context.credential.expiresAt) <= dependencies.now()) throw new Error('tracking_session_unavailable');
+      return context.adapter.saveActivity(pathId, activityId, input);
     },
     async start(pathId: string) {
       if (!context || !context.credential || context.paused || Date.parse(context.credential.expiresAt) <= dependencies.now()) throw new Error('tracking_session_unavailable');
