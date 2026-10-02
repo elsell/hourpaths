@@ -4,6 +4,7 @@ export interface ClockCorrectionView {
 }
 
 interface TrackingNoticeView {
+  subject?: 'activity';
   id: string;
   reason: 'membership' | 'deleted' | 'conflict' | 'archived' | 'validation' | 'subsecond';
   pathName?: string;

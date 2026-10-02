@@ -74,6 +74,7 @@ export function durableHistoryRepository(
       current.assertCurrent();
       if (cursor && cursor.participantId !== current.owner) throw new Error('history_owner_mismatch');
       if (cursor?.retained) return local(current, cursor);
+      if (!cursor && (await current.tracking.pendingHistory()).length) return local(current, null);
       try {
         const page = await remote.page(cursor, signal);
         current.assertCurrent();

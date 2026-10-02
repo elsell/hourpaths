@@ -51,7 +51,8 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     worker = new TrackingReplayWorker(async () => {
       const snapshot = await tracking.snapshot();
       const queued = snapshot.operations.filter(operation => !snapshot.corrections.some(value => value.timer.id === operation.timerId));
-      replayChange = { pathIds: [...new Set(queued.map(operation => operation.pathId))], historyChanged: queued.some(operation => operation.kind !== 'start') };
+      const activities = snapshot.activityOperations ?? [];
+      replayChange = { pathIds: [...new Set([...queued.map(operation => operation.pathId), ...activities.map(operation => operation.activity.pathId)])], historyChanged: activities.length > 0 || queued.some(operation => operation.kind !== 'start') };
       await tracking.replay(sync);
     }, (work, delay) => {
       const timer = setTimeout(work, delay); return () => clearTimeout(timer);

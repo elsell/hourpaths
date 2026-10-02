@@ -5071,6 +5071,7 @@
   "offline.rejection.membership": "Esta actividad no se guardó porque ya no está disponible la participación en esta ruta.",
   "offline.rejection.deleted": "Esta actividad se eliminó en otro dispositivo. Tu cambio pendiente no se guardó.",
   "offline.rejection.conflict": "Hay un temporizador más reciente en marcha para esta ruta. El tiempo del temporizador anterior no se guardó.",
+  "offline.activityArchived": "Esta ruta se archivó. Tu cambio de actividad pendiente no se guardó.",
   "offline.rejection.archived": "Esta ruta se archivó. El tiempo posterior al archivo no se guardó.",
   "offline.rejection.validation": "No se pudo guardar este cambio. Revisa la actividad antes de volver a intentarlo.",
   "offline.archiveAmounts": "Guardado: {saved}. Descartado: {discarded}.",
