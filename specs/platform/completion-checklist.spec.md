@@ -113,3 +113,13 @@ microsecond precision. Candidate gates also caught an obsolete direct-API
 assertion and the readiness migration version; both are corrected. Required
 candidate gates and owner approval remain pending. No additional acceptance area
 is closed.
+
+
+Browser acceptance on warm web revision `e2b1f8e` and API `0308245` demonstrated
+manual creation and two independent account ledgers converging on the newer
+online edit after an older offline edit replayed; the losing revision remained
+visible. The second browser opened the editor directly without retaining the
+new Path through Home. This closes the direct-editor regression, not area 2.
+Large shared fixture accounts still exhaust the read quota during concurrent
+Home/history hydration; retain this as an area 2 delivery issue. Do not raise
+server limits or claim large-account acceptance from the isolated conflict check.
