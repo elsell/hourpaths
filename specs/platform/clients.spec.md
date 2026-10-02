@@ -167,3 +167,23 @@ native builds verify this exact existing combination.
   internal/external beta distribution state and existing tester-group assignment.
 - Diagnostics must use the existing App Store Connect credential inside the
   protected release environment and must not log credentials or tester details.
+
+## Store release notes
+
+- Every delivered mobile release must include concise user-facing changes in its
+  store release notes: TestFlight build notes for the current iOS beta channel
+  and release notes on the Google Play internal release.
+- Notes must derive from the exact stable release tag, covering first-parent
+  changes since the previous stable tag. Reviewed `Release notes:` bullets in
+  feature, fix, or performance commits should describe user-visible behavior;
+  existing `TestFlight notes:` bullets and commit subjects provide fallback.
+- Both stores must share these highlights, deduplicate them, and respect their
+  text limits. Notes must not include credentials or private operational details.
+- Apple publication must verify the bundle, version, build and saved notes. Play
+  must attach notes to the version code returned by the bundle upload in the
+  same release edit. Failed notes publication must fail delivery visibly.
+- Store credentials must remain in their existing protected environments.
+  Notes must not promote a build or change its intended distribution channel.
+- Acceptance: two feature commits with the same highlight produce one bullet;
+  maintenance-only releases receive a short reliability message; an Apple build
+  mismatch fails before writing; Play sends notes on the exact uploaded release.
