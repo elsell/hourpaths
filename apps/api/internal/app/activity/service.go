@@ -20,16 +20,15 @@ import (
 var errInvalidDependencies = errors.New("activity service dependencies are invalid")
 
 type Dependencies struct {
-	Auth              ports.Authenticator
-	Profiles          ProfileReader
-	Authorizer        ports.Authorizer
-	Repository        Repository
-	OfflineActivities OfflineActivityRepository
-	Audits            ports.Audits
-	AuditRateLimiter  ports.AuditRateLimiter
-	Clock             ports.Clock
-	NewID             func() string
-	CursorSigningKey  []byte
+	Auth             ports.Authenticator
+	Profiles         ProfileReader
+	Authorizer       ports.Authorizer
+	Repository       Repository
+	Audits           ports.Audits
+	AuditRateLimiter ports.AuditRateLimiter
+	Clock            ports.Clock
+	NewID            func() string
+	CursorSigningKey []byte
 }
 
 type Service struct{ Dependencies }

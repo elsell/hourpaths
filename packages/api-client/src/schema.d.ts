@@ -796,6 +796,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/paths/{pathId}/offline-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["synchronize-offline-path-activity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/paths/{pathId}/offline-timer": {
         parameters: {
             query?: never;
@@ -1470,6 +1486,13 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["ActivityDetail"];
+        };
+        ActivityEditOrder: {
+            /** Format: date-time */
+            authoredAt: string;
+            /** Format: int64 */
+            counter: number;
+            operationId: string;
         };
         ActivityListOutputBody: {
             /**
@@ -2171,6 +2194,42 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["NudgeAudiencePreference"];
+        };
+        OfflineActivityInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OfflineActivityInput.json
+             */
+            readonly $schema?: string;
+            activityId: string;
+            /** Format: date-time */
+            authoredAt: string;
+            /** Format: int64 */
+            counter: number;
+            /** Format: int64 */
+            durationSeconds: number;
+            /** @enum {string} */
+            kind: "create" | "edit";
+            note: string;
+            occurrenceTimeZone: string;
+            /** Format: date-time */
+            startedAt: string;
+        };
+        OfflineActivityOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OfflineActivityOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OfflineActivityResult"];
+        };
+        OfflineActivityResult: {
+            activity?: components["schemas"]["Activity"];
+            order?: components["schemas"]["ActivityEditOrder"];
+            /** @enum {string} */
+            outcome: "accepted" | "deleted" | "archived";
         };
         OfflineTimerInput: {
             /**
@@ -5376,6 +5435,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NudgePreferenceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "synchronize-offline-path-activity": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                pathId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfflineActivityInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfflineActivityOutputBody"];
                 };
             };
             /** @description Error */

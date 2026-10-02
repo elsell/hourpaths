@@ -481,3 +481,32 @@ func TestTimerRoutesConcealDeniedAndMissingResourcesIdentically(t *testing.T) {
 func (s controlledService) SynchronizeTimer(context.Context, string, string, string, application.OfflineTimerInput) (application.OfflineTimerResult, error) {
 	return application.OfflineTimerResult{Outcome: "accepted"}, s.err
 }
+
+func (s controlledService) SynchronizeActivity(context.Context, string, string, string, application.OfflineActivityInput) (application.OfflineActivityResult, error) {
+	return application.OfflineActivityResult{Outcome: "deleted"}, s.err
+}
+
+func TestOfflineActivityRouteConcealsFailuresAndMarksReplayBoundary(t *testing.T) {
+	payload := `{"kind":"edit","activityId":"entry","startedAt":"2026-10-01T12:00:00Z","durationSeconds":60,"occurrenceTimeZone":"UTC","note":"","authoredAt":"2026-10-01T13:00:00Z","counter":0}`
+	var denied string
+	for _, failure := range []struct {
+		err    error
+		status int
+	}{{platformapp.ErrForbidden, 404}, {ports.ErrNotFound, 404}, {ports.ErrInvalidCredential, 401}, {errors.New("database secret"), 500}} {
+		req := httptest.NewRequest(http.MethodPost, "/v1/paths/path-1/offline-activity", strings.NewReader(payload))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer session")
+		req.Header.Set("Idempotency-Key", "offline-activity-key-01")
+		response := httptest.NewRecorder()
+		handler(controlledService{err: failure.err}).ServeHTTP(response, req)
+		if response.Code != failure.status || strings.Contains(response.Body.String(), "database secret") || !strings.Contains(response.Body.String(), "synchronize-offline-path-activity") {
+			t.Fatalf("response=%d %s", response.Code, response.Body.String())
+		}
+		if failure.status == 404 {
+			if denied != "" && denied != response.Body.String() {
+				t.Fatal("denied and missing differ")
+			}
+			denied = response.Body.String()
+		}
+	}
+}

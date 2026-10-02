@@ -52,7 +52,7 @@ func (s *Service) SynchronizeActivity(ctx context.Context, authorization, pathID
 	if err != nil {
 		return OfflineActivityResult{}, err
 	}
-	if s.OfflineActivities == nil {
+	if s.Repository == nil {
 		return OfflineActivityResult{}, errInvalidDependencies
 	}
 	order, err := domain.NewActivityEditOrder(input.AuthoredAt, input.Counter, key)
@@ -70,7 +70,7 @@ func (s *Service) SynchronizeActivity(ctx context.Context, authorization, pathID
 	event := s.auditEvent(ctx, principal.UserID, action, entry.ID)
 	event.TargetType = "activity"
 	command := OfflineActivityCommand{Kind: input.Kind, Activity: entry, Order: order, Audit: event, Idempotency: ports.Idempotency{PrincipalID: principal.UserID, Operation: OfflineActivityOperation, Key: key, RequestHash: requestHash(OfflineActivityOperation, pathID, input.Kind, entry.ID, entry.StartedAt.Format(time.RFC3339Nano), strconv.FormatInt(input.DurationSeconds, 10), entry.OccurrenceTimeZone, entry.Note, order.AuthoredAt.Format(time.RFC3339Nano), strconv.FormatInt(order.Counter, 10))}}
-	result, err := s.OfflineActivities.SynchronizeActivity(ctx, command)
+	result, err := s.Repository.SynchronizeActivity(ctx, command)
 	if err != nil {
 		return OfflineActivityResult{}, err
 	}
