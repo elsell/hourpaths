@@ -9,7 +9,7 @@ export function durableActivityRepository(remote: ActivityRepository, runtime: (
     id: entry.id, pathId: entry.pathId, participantId: entry.owner, owned: entry.owner === current.owner,
     pathName: entry.pathName ?? name, startedAt: Date.parse(entry.startedAt), endedAt: Date.parse(entry.endedAt),
     seconds: Math.floor((Date.parse(entry.endedAt) - Date.parse(entry.startedAt)) / 1000), timeZone: entry.timeZone,
-    note: entry.note ?? '', version: entry.version ?? 1,
+    note: entry.note ?? '', version: entry.version ?? 1, editStamp: entry.editStamp, originalStartedAt: entry.startedAt, originalEndedAt: entry.endedAt, createdAt: entry.createdAt, updatedAt: entry.updatedAt,
   });
   return {
     ...remote,
@@ -35,7 +35,8 @@ export function durableActivityRepository(remote: ActivityRepository, runtime: (
         const value = await remote.detail(pathId, activityId, signal); current.assertCurrent();
         if (value.owned && value.participantId === current.owner) {
           await current.tracking.retainActivity({ id: value.id, owner: current.owner, pathId, pathName: value.pathName,
-            startedAt: new Date(value.startedAt).toISOString(), endedAt: new Date(value.endedAt).toISOString(),
+            startedAt: value.originalStartedAt ?? new Date(value.startedAt).toISOString(), endedAt: value.originalEndedAt ?? new Date(value.endedAt).toISOString(),
+            editStamp: value.editStamp, createdAt: value.createdAt, updatedAt: value.updatedAt,
             timeZone: value.timeZone, note: value.note ?? '', version: value.version });
           current.assertCurrent();
         }

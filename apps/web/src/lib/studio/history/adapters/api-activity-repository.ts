@@ -10,7 +10,7 @@ function snapshot(value: APIDetail['activity'], version: number, pathId: string,
   const startedAt = Date.parse(value.startedAt), endedAt = Date.parse(value.endedAt);
   if (value.id !== activityId || value.pathId !== pathId || !value.participantId || !Number.isFinite(startedAt) || !Number.isFinite(endedAt) || !Number.isSafeInteger(value.durationSeconds) || value.durationSeconds <= 0 || (endedAt - startedAt) / 1000 !== value.durationSeconds || !Number.isSafeInteger(version) || version < 1) throw new Error('activity_invalid');
   new Intl.DateTimeFormat('en', { timeZone: value.occurrenceTimeZone }).format(startedAt);
-  return { id: activityId, pathId, participantId: value.participantId, startedAt, endedAt, seconds: value.durationSeconds, timeZone: value.occurrenceTimeZone, version, note: value.participantId === owner ? value.note ?? null : null };
+  return { editStamp: value.editOrder ? { authoredAt: value.editOrder.authoredAt, counter: value.editOrder.counter } : undefined, originalStartedAt: value.startedAt, originalEndedAt: value.endedAt, createdAt: value.createdAt, updatedAt: value.updatedAt, id: activityId, pathId, participantId: value.participantId, startedAt, endedAt, seconds: value.durationSeconds, timeZone: value.occurrenceTimeZone, version, note: value.participantId === owner ? value.note ?? null : null };
 }
 export function apiActivityRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): ActivityRepository {
   const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);

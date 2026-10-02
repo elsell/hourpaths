@@ -7505,7 +7505,7 @@ export function HomeScreen() {
       const value = selectedActivity.activity;
       await durable.retainActivity({ id: value.id, owner: value.participantId, pathId: value.pathId,
         startedAt: value.startedAt, endedAt: value.endedAt, timeZone: value.occurrenceTimeZone,
-        note: value.note ?? '', version: selectedActivity.version, createdAt: value.createdAt, updatedAt: value.updatedAt });
+        note: value.note ?? '', editStamp: value.editOrder ? { authoredAt: value.editOrder.authoredAt, counter: value.editOrder.counter } : undefined, version: selectedActivity.version, createdAt: value.createdAt, updatedAt: value.updatedAt });
       const defaults = await durable.activityDefaults(selectedPathID);
       if (!ticket.current() || manualOwnerID.current !== ownerID) return;
       const seed = activityEditSeed(selectedActivity, defaults);

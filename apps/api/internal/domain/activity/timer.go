@@ -26,6 +26,7 @@ type RunningTimer struct {
 // RecordedActivity is the canonical completed occurrence. Duration is not a
 // field: callers must derive it from the retained UTC instants.
 type RecordedActivity struct {
+	EditOrder          ActivityEditOrder
 	ID                 string
 	PathID             string
 	ParticipantID      string

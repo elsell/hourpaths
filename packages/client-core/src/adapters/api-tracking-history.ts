@@ -45,7 +45,7 @@ export function apiTrackingHistory(clientForOwner: (owner: string) => SessionAPI
           if (Date.parse(activity.endedAt) < cutoff) continue;
           entries.push({ id: activity.id, owner, pathId, pathName, startedAt: activity.startedAt,
             endedAt: activity.endedAt, timeZone: activity.occurrenceTimeZone,
-            version, note: activity.note, createdAt: activity.createdAt, updatedAt: activity.updatedAt });
+            version, note: activity.note ?? '', editStamp: activity.editOrder ? { authoredAt: activity.editOrder.authoredAt, counter: activity.editOrder.counter } : undefined, createdAt: activity.createdAt, updatedAt: activity.updatedAt });
         }
         cursor = result.data?.meta.nextCursor || undefined;
         if (cursor && seen.has(cursor)) throw new Error('tracking_history_cursor_repeated');

@@ -14,6 +14,7 @@ export function durableHistoryRepository(
 ): HistoryRepository & { refresh(): Promise<boolean> } {
   let refreshing: Promise<boolean> | null = null;
   const record = (entry: RetainedActivity, names: Map<string, string>, pending = false): RecordedActivity => ({
+    editStamp: entry.editStamp, originalStartedAt: entry.startedAt, originalEndedAt: entry.endedAt, note: entry.note, version: entry.version, createdAt: entry.createdAt, updatedAt: entry.updatedAt,
     id: entry.id, pathId: entry.pathId, pathName: entry.pathName ?? names.get(entry.pathId) ?? '',
     startedAt: Date.parse(entry.startedAt), endedAt: Date.parse(entry.endedAt),
     seconds: Math.floor((Date.parse(entry.endedAt) - Date.parse(entry.startedAt)) / 1000), timeZone: entry.timeZone, pending,
@@ -50,7 +51,8 @@ export function durableHistoryRepository(
         if (!Number.isFinite(entry.endedAt)) throw new Error('history_interval_missing');
         if (entry.endedAt! < cutoff) continue;
         entries.set(entry.id, { id: entry.id, owner: current.owner, pathId: entry.pathId, pathName: entry.pathName,
-          startedAt: new Date(entry.startedAt).toISOString(), endedAt: new Date(entry.endedAt!).toISOString(), timeZone: entry.timeZone });
+          startedAt: entry.originalStartedAt ?? new Date(entry.startedAt).toISOString(), endedAt: entry.originalEndedAt ?? new Date(entry.endedAt!).toISOString(), timeZone: entry.timeZone,
+          editStamp: entry.editStamp, note: entry.note, version: entry.version, createdAt: entry.createdAt, updatedAt: entry.updatedAt });
       }
       cursor = page.next;
       if (cursor) {

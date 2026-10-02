@@ -1,4 +1,9 @@
 export interface ActivitySnapshot {
+  readonly editStamp?: { authoredAt: string; counter: number };
+  readonly originalStartedAt?: string;
+  readonly originalEndedAt?: string;
+  readonly createdAt?: string;
+  readonly updatedAt?: string;
   readonly id: string;
   readonly pathId: string;
   readonly participantId: string;

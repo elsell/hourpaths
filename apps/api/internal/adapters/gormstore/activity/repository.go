@@ -476,7 +476,15 @@ func (r *Repository) GetActivity(ctx context.Context, viewerID, pathID, activity
 			row.UpdatedAt = revisionState.LastUpdated.UTC()
 		}
 	}
-	return toActivity(row), revisionState.Count + 1, nil
+	entry := toActivity(row)
+	if row.ParticipantID == viewerID {
+		orders, err := loadOwnerEditOrders(r.DB.WithContext(ctx), viewerID, []string{entry.ID})
+		if err != nil {
+			return domain.RecordedActivity{}, 0, err
+		}
+		entry.EditOrder = orders[entry.ID]
+	}
+	return entry, revisionState.Count + 1, nil
 }
 
 func (r *Repository) ListActivities(ctx context.Context, viewerID, pathID string, page application.ActivityPageRequest) (application.ActivityPage, error) {
@@ -522,6 +530,19 @@ func (r *Repository) ListActivities(ctx context.Context, viewerID, pathID string
 			StartedAt: row.StartedAt, EndedAt: row.EndedAt, OccurrenceTimeZone: row.OccurrenceTimeZone,
 			Note: row.Note, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 		}), Version: row.Version})
+	}
+	ids := make([]string, 0, len(result))
+	for _, record := range result {
+		if record.Activity.ParticipantID == viewerID {
+			ids = append(ids, record.Activity.ID)
+		}
+	}
+	orders, err := loadOwnerEditOrders(r.DB.WithContext(ctx), viewerID, ids)
+	if err != nil {
+		return application.ActivityPage{}, err
+	}
+	for index := range result {
+		result[index].Activity.EditOrder = orders[result[index].Activity.ID]
 	}
 	return application.ActivityPage{Items: result, HasMore: hasMore}, nil
 }

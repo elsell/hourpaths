@@ -1433,6 +1433,7 @@ export interface components {
             createdAt: string;
             /** Format: int64 */
             durationSeconds: number;
+            editOrder?: components["schemas"]["ActivityEditOrder"];
             /** Format: date-time */
             endedAt: string;
             id: string;
@@ -1526,6 +1527,7 @@ export interface components {
             createdAt: string;
             /** Format: int64 */
             durationSeconds: number;
+            editOrder?: components["schemas"]["ActivityEditOrder"];
             /** Format: date-time */
             endedAt: string;
             id: string;

@@ -10,16 +10,17 @@ type Timer struct {
 }
 
 type Activity struct {
-	ID                 string    `json:"id"`
-	PathID             string    `json:"pathId"`
-	ParticipantID      string    `json:"participantId"`
-	StartedAt          time.Time `json:"startedAt"`
-	EndedAt            time.Time `json:"endedAt"`
-	OccurrenceTimeZone string    `json:"occurrenceTimeZone"`
-	DurationSeconds    int64     `json:"durationSeconds" minimum:"1"`
-	Note               *string   `json:"note,omitempty" maxLength:"2000"`
-	CreatedAt          time.Time `json:"createdAt"`
-	UpdatedAt          time.Time `json:"updatedAt"`
+	EditOrder          *ActivityEditOrder `json:"editOrder,omitempty"`
+	ID                 string             `json:"id"`
+	PathID             string             `json:"pathId"`
+	ParticipantID      string             `json:"participantId"`
+	StartedAt          time.Time          `json:"startedAt"`
+	EndedAt            time.Time          `json:"endedAt"`
+	OccurrenceTimeZone string             `json:"occurrenceTimeZone"`
+	DurationSeconds    int64              `json:"durationSeconds" minimum:"1"`
+	Note               *string            `json:"note,omitempty" maxLength:"2000"`
+	CreatedAt          time.Time          `json:"createdAt"`
+	UpdatedAt          time.Time          `json:"updatedAt"`
 }
 
 type TimerState struct {

@@ -113,3 +113,13 @@ test('activity form adapter saves and reopens local entries while offline', asyn
   assert.equal((await env.tracking.localHistory('path')).items.length, 1);
   assert.equal((await env.tracking.snapshot()).activityOperations?.length, 2);
 });
+
+test('retained history carries observed edit order into the next offline edit', async () => {
+  const env = setup();
+  await env.tracking.retainPaths([{ id: 'path', name: 'guitar', timeZone: utcTimeZone }]);
+  const stamp = { authoredAt: new Date(now + 60000).toISOString(), counter: 4 };
+  const history = durableHistoryRepository({ page: async () => ({ items: [{ ...entry('remote'), editStamp: stamp, note: 'remote', createdAt: new Date(now - 60000).toISOString(), updatedAt: new Date(now).toISOString() }], next: null }) }, env.runtime, () => true, 25, () => now);
+  assert.equal(await history.refresh(), true);
+  await env.tracking.editRecordedActivity('remote', { startedAt: new Date(now - 180000).toISOString(), durationSeconds: 90, note: 'offline next' });
+  assert.deepEqual((await env.tracking.snapshot()).activityOperations?.[0]?.stamp, { authoredAt: stamp.authoredAt, counter: 5 });
+});

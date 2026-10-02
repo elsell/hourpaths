@@ -64,6 +64,10 @@ func TestPostgresRecordedReplayRetainsLosingEdit(t *testing.T) {
 			t.Fatalf("late edit replaced winner: %+v", result)
 		}
 	}
+	fetched, _, err := repo.GetActivity(context.Background(), create.Activity.ParticipantID, create.Activity.PathID, create.Activity.ID)
+	if err != nil || fetched.EditOrder != newer.Order {
+		t.Fatalf("owner lost causal metadata: %+v err=%v", fetched, err)
+	}
 	retry, err := repo.SynchronizeActivity(context.Background(), create)
 	if err != nil || !retry.Replayed || retry.Activity.Note != "newer" {
 		t.Fatalf("retry=%+v err=%v", retry, err)
