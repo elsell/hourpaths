@@ -15,7 +15,12 @@ export function CreatePath({ dependencies: d, close }: { dependencies: StudioDep
   const [submission, setSubmission] = useState<{ fingerprint: string; id: string } | null>(null);
   const mutation = useMutation({
     mutationFn: ({ draft, id }: { draft: NewPath; id: string }) => d.paths.create(draft, id),
-    onSuccess: async () => { await client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] }); close(); },
+    onSuccess: async () => {
+      const queryKey = [d.accountScope, 'paths'];
+      await client.cancelQueries({ queryKey });
+      await client.invalidateQueries({ queryKey });
+      close();
+    },
   });
   return <form className="studio-form" onSubmit={event => {
     event.preventDefault();

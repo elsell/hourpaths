@@ -1,4 +1,11 @@
-import type { ClientRuntimeConfig } from '@hourpaths/client-core';
+import { retainedTimers } from '../offline/adapters/retained-timers';
+import { RetainedTimerControls } from '../presentation/retained-timers';
+import { browserConnected, subscribeTrackingConnectivity } from '../offline/adapters/browser-tracking-connectivity';
+import { browserTrackingRuntime } from '../offline/adapters/browser-tracking-runtime';
+import { IndexedDBTrackingStore } from '../offline/adapters/indexeddb-tracking-store';
+import { durablePathRepository } from '../offline/adapters/durable-path-repository';
+import { PathRequestError } from '../paths/adapters/path-mapping';
+import { TrackingReplayWorker, type ClientRuntimeConfig } from '@hourpaths/client-core';
 import { browserEntryService } from '../entry/adapters/browser-entry-service';
 import { AccountEntry } from '../presentation/account-entry';
 import { apiNudgesRepository } from '../nudges/adapters/api-nudges-repository';
@@ -16,6 +23,8 @@ import { apiPathRepository } from '../paths/adapters/api-path-repository';
 import { browserSessionStore, apiSessionService } from '../session/adapters/browser-session';
 import { SessionController } from '../session/application/session-controller';
 import { historyRepository } from '../history/application/history';
+import { durableHistoryRepository } from '../offline/adapters/durable-history-repository';
+import { HistoryRequestError } from '../history/adapters/api-history-source';
 import { apiHistorySource } from '../history/adapters/api-history-source';
 import { apiActivityRepository } from '../history/adapters/api-activity-repository';
 import { StudioApp } from '../presentation/app';
@@ -26,18 +35,55 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const store = browserSessionStore();
   const initial = store.read();
   let active = true;
+  let stopRetained: (() => void) | undefined;
+  let stopHistoryRefresh: (() => void) | undefined;
+  let offline: ReturnType<typeof browserTrackingRuntime> | undefined;
   const unavailable = () => {
-    if (active) root.render(<AccountEntry service={browserEntryService(options.config)} i18n={i18n} />);
+    stopHistoryRefresh?.();
+    offline?.dispose();
+    stopRetained?.(); stopRetained = undefined;
+    if (!active) return;
+    const owner = store.retainedOwner?.();
+    if (owner) {
+      const local = new IndexedDBTrackingStore();
+      const retained = retainedTimers(owner, local, () => active && store.retainedOwner?.() === owner, () => Date.now(), () => crypto.randomUUID());
+      stopRetained = () => { retained.dispose(); void local.close(); };
+      root.render(<AccountEntry service={browserEntryService(options.config)} i18n={i18n} retained={<RetainedTimerControls service={retained} i18n={i18n} />} />);
+    } else root.render(<AccountEntry service={browserEntryService(options.config)} i18n={i18n} />);
   };
   if (!initial || initial.expiresAt <= Date.now() || initial.destination !== 'home') {
     unavailable();
-    return () => { active = false; root.unmount(); };
+    return () => { active = false; stopRetained?.(); root.unmount(); };
   }
   const session = new SessionController(initial, store, apiSessionService(options.apiURL), () => Date.now(), unavailable);
   // Validate the local owner/expiry even while the user is idle.
   const deadline = setInterval(() => { void session.maintain(); }, 1000);
-  const paths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
+  const durableStore = new IndexedDBTrackingStore();
+  offline = browserTrackingRuntime(options.apiURL, session, durableStore, browserConnected);
+  const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
+  const paths = durablePathRepository(
+    remotePaths,
+    durableStore, offline.runtime,
+    error => error instanceof TypeError || error instanceof PathRequestError && (error.status === 0 || error.status >= 500 || error.status === 429),
+  );
+  const history = durableHistoryRepository(
+    historyRepository(apiHistorySource(options.apiURL, () => session.token(), remotePaths, credential => session.reject(credential))),
+    offline.runtime,
+    error => error instanceof TypeError || error instanceof HistoryRequestError && (error.status === 429 || error.status >= 500),
+    25, () => Date.now(),
+  );
+  const historyRefresh = new TrackingReplayWorker(async () => {
+    if (!await history.refresh()) throw new Error('history_refresh_unavailable');
+  }, (work, delay) => { const timer = setTimeout(work, delay); return () => clearTimeout(timer); }, () => {});
+  stopHistoryRefresh = () => historyRefresh.dispose();
+  const wakeTracking = () => {
+    offline?.retry();
+    if (browserConnected()) void historyRefresh.wake();
+  };
+  if (browserConnected()) void historyRefresh.wake();
+  const stopConnectivity = subscribeTrackingConnectivity(wakeTracking);
   root.render(<StudioApp dependencies={{
+    offline,
     paths,
     blocking: apiBlockingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     notifications: apiNotifications(options.apiURL, () => session.token(), credential => session.reject(credential), i18n),
@@ -49,13 +95,13 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
     preferences: apiPreferencesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     social: apiSocialRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
-    history: historyRepository(apiHistorySource(options.apiURL, () => session.token(), paths, credential => session.reject(credential))),
+    history,
     accountScope: crypto.randomUUID(),
     i18n,
     operationId: () => crypto.randomUUID(),
     now: () => Date.now(),
   }} />);
-  return () => { active = false; clearInterval(deadline); session.dispose(); root.unmount(); };
+  return () => { active = false; clearInterval(deadline); stopConnectivity(); historyRefresh.dispose(); offline?.dispose(); stopRetained?.(); session.dispose(); root.unmount(); };
 }
 
 export function mountAccountEntry(element: HTMLElement, options: { config: ClientRuntimeConfig; locale: SupportedLocale; callback?: boolean }) {

@@ -71,3 +71,16 @@ test('Path palette meets AA text and meaningful progress contrast', () => {
     assert.ok(contrast(tone.accent, tone.track) >= 3);
   }
 });
+
+test('retained appearances display before an unavailable remote read and cannot publish after account disposal', async () => {
+  const saved = { revision: 3, color: 'mint', emoji: '🌱' };
+  let failRemote!: () => void, entered!: () => void;
+  const pending = new Promise<void>(resolve => { entered = resolve; });
+  let changes = 0;
+  const store = createPathAppearanceStore({ read: () => new Promise((_resolve, reject) => { failRemote = () => reject(new Error('offline')); entered(); }),
+    save: async () => saved }, () => 'operation', () => { changes++; }, { read: async () => saved, write: async () => {} });
+  const load = store.refresh(['path']); await pending;
+  assert.deepEqual(store.appearance('path'), { color: 'mint', emoji: '🌱' });
+  store.dispose(); const before = changes; failRemote(); await load;
+  assert.equal(changes, before); assert.equal(store.isLoaded('path'), false);
+});

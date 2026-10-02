@@ -37,7 +37,7 @@ export function trackingFromAPI(dto: TimerState): TrackingSnapshot {
   if (period?.startedAt && period.endedAt && timestamp(period.endedAt) <= timestamp(period.startedAt)) throw new PathRequestError(502);
   return {
     savedTotalSeconds: seconds(dto.accumulatedSeconds),
-    activeSession: dto.running && dto.timer ? { id: dto.timer.id, startedAt: timestamp(dto.timer.startedAt) } : null,
+    activeSession: dto.running && dto.timer ? { id: dto.timer.id, startedAt: timestamp(dto.timer.startedAt), originalStartedAt: dto.timer.startedAt, timeZone: dto.timer.occurrenceTimeZone } : null,
     period: period?.startedAt && period.endedAt ? {
       savedSeconds: seconds(period.accumulatedSeconds), targetSeconds: seconds(period.targetSeconds),
       startsAt: timestamp(period.startedAt), endsAt: timestamp(period.endedAt),

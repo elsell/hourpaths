@@ -1,3 +1,4 @@
+import { localDateTimeValue, participantLocalDateTime, participantInstantValue, type ManualActivityLocalDateTime } from './calendar-time';
 export { scheduleSessionDeadline } from './session-deadline';
 export {
   authenticatedProfileFromAPI,
@@ -250,7 +251,7 @@ export type SessionFailureDecision = {
 
 export const sessionNextActions = ['home', 'onboarding', 'duplicate_email_recovery'] as const;
 export type SessionNextAction = (typeof sessionNextActions)[number];
-export type SessionCredential = { token: string; expiresAt: string; nextAction?: SessionNextAction };
+export type SessionCredential = { token: string; expiresAt: string; nextAction?: SessionNextAction; ownerId?: string };
 export type SessionExchangeCredential = SessionCredential & { nextAction: SessionNextAction };
 export type SessionRefreshResponse = { ok: boolean; status: number; problem?: unknown; json(): Promise<unknown> };
 export type ClientRuntimeConfig = {
@@ -260,10 +261,7 @@ export type ClientRuntimeConfig = {
   oidcClientId: string;
 };
 
-export type ManualActivityLocalDateTime = {
-  localDate: string;
-  localTime: string;
-};
+export type { ManualActivityLocalDateTime } from './calendar-time';
 export type ManualActivityParticipantNow = ManualActivityLocalDateTime & {
   currentInstant: string;
   timeZone: string;
@@ -284,80 +282,6 @@ export type SessionOperationOwner = {
   issue(): SessionOperationTicket;
   invalidate(): void;
 };
-
-const localDatePattern = /^(\d{4})-(\d{2})-(\d{2})$/;
-const localTimePattern = /^(\d{2}):(\d{2}):(\d{2})$/;
-
-function localDateTimeValue(value: ManualActivityLocalDateTime): number | undefined {
-  const date = localDatePattern.exec(value.localDate);
-  const time = localTimePattern.exec(value.localTime);
-  if (!date || !time) return undefined;
-  const year = Number(date[1]);
-  const month = Number(date[2]);
-  const day = Number(date[3]);
-  const hour = Number(time[1]);
-  const minute = Number(time[2]);
-  const second = Number(time[3]);
-  const nominal = new Date(0);
-  nominal.setUTCFullYear(year, month - 1, day);
-  nominal.setUTCHours(hour, minute, second, 0);
-  if (
-    nominal.getUTCFullYear() !== year || nominal.getUTCMonth() !== month - 1 ||
-    nominal.getUTCDate() !== day || nominal.getUTCHours() !== hour ||
-    nominal.getUTCMinutes() !== minute || nominal.getUTCSeconds() !== second
-  ) return undefined;
-  return nominal.getTime();
-}
-
-function participantLocalDateTime(value: number, timeZone: string): ManualActivityLocalDateTime | undefined {
-  if (!Number.isFinite(value) || !timeZone || timeZone === 'Local' || timeZone.trim() !== timeZone) return undefined;
-  try {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone,
-      calendar: 'iso8601',
-      numberingSystem: 'latn',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    }).formatToParts(new Date(value));
-    const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((candidate) => candidate.type === type)?.value;
-    const local = {
-      localDate: `${part('year')}-${part('month')}-${part('day')}`,
-      localTime: `${part('hour')}:${part('minute')}:${part('second')}`,
-    };
-    return localDateTimeValue(local) === undefined ? undefined : local;
-  } catch {
-    return undefined;
-  }
-}
-
-function participantInstantValue(value: ManualActivityLocalDateTime, timeZone: string): number | undefined {
-  const wallValue = localDateTimeValue(value);
-  if (wallValue === undefined) return undefined;
-  const offsets = new Set<number>();
-  for (let hour = -72; hour <= 72; hour += 1) {
-    const sample = wallValue + hour * 3_600_000;
-    const localSample = participantLocalDateTime(sample, timeZone);
-    const localSampleValue = localSample && localDateTimeValue(localSample);
-    if (localSampleValue !== undefined) offsets.add(localSampleValue - sample);
-  }
-  const exact: number[] = [];
-  const forward: Array<{ instant: number; wall: number }> = [];
-  for (const offset of offsets) {
-    const instant = wallValue - offset;
-    const candidate = participantLocalDateTime(instant, timeZone);
-    const candidateWall = candidate && localDateTimeValue(candidate);
-    if (candidateWall === wallValue) exact.push(instant);
-    else if (candidateWall !== undefined && candidateWall > wallValue) forward.push({ instant, wall: candidateWall });
-  }
-  if (exact.length > 0) return Math.min(...exact);
-  forward.sort((left, right) => left.wall - wallValue - (right.wall - wallValue) || left.instant - right.instant);
-  return forward[0]?.instant;
-}
 
 function positiveWholeSeconds(value: string): number | undefined {
   if (!/^[1-9]\d*$/.test(value)) return undefined;
@@ -430,6 +354,15 @@ export function serializeManualActivityForm(
       durationSeconds: seconds,
     },
   };
+}
+
+/** Resolve a reviewed local occurrence using the same zone/DST rules as the
+ * existing manual-entry validator, for durable client-side commands. */
+export function reviewedManualActivityInterval(state: ManualActivityFormState, now: ManualActivityParticipantNow): { startedAt: string; endedAt: string } {
+  const result = serializeManualActivityForm(state, now);
+  if (!result.ok) throw new Error('activity_interval_invalid');
+  const start = participantInstantValue(state, now.timeZone)!;
+  return { startedAt: new Date(start).toISOString(), endedAt: new Date(start + result.fields.durationSeconds * 1000).toISOString() };
 }
 
 export function createSessionOperationOwner(): SessionOperationOwner {
@@ -520,9 +453,9 @@ export async function refreshSessionCredential(
     () => request(current),
     (data) => {
       if (!isValidSessionCredential(data)) return undefined;
-      return current.nextAction
-        ? { token: data.token, expiresAt: data.expiresAt, nextAction: current.nextAction }
-        : { token: data.token, expiresAt: data.expiresAt };
+      return { token: data.token, expiresAt: data.expiresAt,
+        ...(current.nextAction ? { nextAction: current.nextAction } : {}),
+        ...(current.ownerId ? { ownerId: current.ownerId } : {}) };
     },
     persist,
   );
@@ -652,7 +585,8 @@ export function isValidSessionCredential(value: unknown): value is SessionCreden
   const candidate = value as Partial<SessionCredential>;
   return typeof candidate.token === 'string' && candidate.token.length > 0 &&
     typeof candidate.expiresAt === 'string' && Number.isFinite(Date.parse(candidate.expiresAt)) &&
-    (!('nextAction' in candidate) || sessionNextActions.includes(candidate.nextAction as SessionNextAction));
+    (!('nextAction' in candidate) || sessionNextActions.includes(candidate.nextAction as SessionNextAction)) &&
+    (!('ownerId' in candidate) || typeof candidate.ownerId === 'string' && candidate.ownerId.trim() === candidate.ownerId && candidate.ownerId.length > 0 && candidate.ownerId.length <= 128);
 }
 
 export function retainedSessionExpiry(value: unknown, fallback: string): string {
@@ -908,3 +842,13 @@ export { liveTimerProgress, createTimerPeriodRefresher } from './live-timer-prog
 export { durationParts, secondsFromDurationParts, type DurationParts } from './duration-parts';
 
 export { createNotificationHistoryOwner, type NotificationHistoryPort, type NotificationHistorySnapshot } from "./notification-history-owner";
+export { OfflineTracking } from './offline-tracking';
+export type { RetainedTrackingPath, RetainedActivity, TrackingSummary, LocalTrackingView, LocalTimer, TrackingOperation, TrackingSnapshot, TrackingStore, TrackingSync, TrackingOutcome, TrackingNotice, TrackingRejection } from './offline-tracking';
+export { TrackingReplayWorker, type TrackingSchedule } from './tracking-replay-worker';
+
+export { apiTrackingSync } from './adapters/api-tracking-sync';
+export { TrackingReplaySuspended } from './offline-tracking';
+
+export * from "./retained-account";
+
+export { apiTrackingHistory } from './adapters/api-tracking-history';

@@ -796,6 +796,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/paths/{pathId}/offline-timer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["synchronize-offline-path-timer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/paths/{pathId}/ownership-transfer": {
         parameters: {
             query?: never;
@@ -1341,6 +1357,8 @@ export interface components {
             code: "bad_request" | "unauthenticated" | "invalid_credential" | "forbidden" | "not_found" | "conflict" | "username_unavailable" | "policy_set_changed" | "idempotency_conflict" | "invitation_warning_required" | "block_review_required" | "validation_failed" | "rate_limited" | "authorization_pending" | "authorization_dead_lettered" | "authorization_policy_not_configured" | "unavailable" | "internal_error" | "request_failed" | "oidc_discovery_unavailable";
             detail?: string;
             errors?: components["schemas"]["ErrorDetail"][] | null;
+            /** @description Operation that classified this failure, when needed for safe replay */
+            operation?: string;
             /** Format: int64 */
             status?: number;
             title?: string;
@@ -2153,6 +2171,45 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["NudgeAudiencePreference"];
+        };
+        OfflineTimerInput: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OfflineTimerInput.json
+             */
+            readonly $schema?: string;
+            /** Format: date-time */
+            correctedStartedAt?: string;
+            /** Format: date-time */
+            endedAt?: string;
+            /** @enum {string} */
+            kind: "start" | "stop" | "correct";
+            occurrenceTimeZone: string;
+            /** Format: date-time */
+            startedAt: string;
+            timerId: string;
+        };
+        OfflineTimerOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OfflineTimerOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OfflineTimerResult"];
+        };
+        OfflineTimerResult: {
+            activity?: components["schemas"]["Activity"];
+            /** Format: int64 */
+            discardedSeconds: number;
+            mustStop: boolean;
+            /** @enum {string} */
+            outcome: "accepted" | "conflict" | "archived";
+            /** Format: int64 */
+            savedSeconds: number;
+            terminal: boolean;
+            timer?: components["schemas"]["Timer"];
         };
         OnboardingActivationInputBody: {
             /**
@@ -5319,6 +5376,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NudgePreferenceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "synchronize-offline-path-timer": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                pathId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OfflineTimerInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfflineTimerOutputBody"];
                 };
             };
             /** @description Error */

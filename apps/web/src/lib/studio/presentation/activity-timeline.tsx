@@ -17,10 +17,13 @@ export function ActivityTimeline({ paths, history, accountScope, i18n }: { paths
   return <section className="studio-history" aria-label={i18n.t('studio.activity')}>
     <header><h2>{i18n.t('studio.activity')}</h2><button onClick={() => void query.refetch()} disabled={query.isFetching}>{i18n.t('studio.refresh')}</button></header>
     {query.isPending && <p role="status">{i18n.t('studio.loading')}</p>}
+    {query.data?.pages[0]?.retained && <p role="status">{i18n.t(query.data.pages[0].incomplete ? 'offline.historyIncomplete' : 'offline.historyRetained')}</p>}
     {!query.isPending && !query.isError && !entries.length && <p>{i18n.t('studio.noActivity')}</p>}
     <ConnectedTimeline items={entries} identity={entry => entry.id} instant={entry => entry.startedAt} timeZone={entry => entry.timeZone} i18n={i18n} render={entry => <>
       <time dateTime={new Date(entry.startedAt).toISOString()}>{i18n.time(entry.startedAt, { hour: 'numeric', minute: '2-digit', timeZone: entry.timeZone })}</time>
-      <Link to="/paths/$pathId/activities/$activityId" params={{ pathId: entry.pathId, activityId: entry.id }}><TimelinePath entry={entry} paths={paths} accountScope={accountScope} i18n={i18n} /></Link>
+      {entry.pending || query.data?.pages[0]?.retained
+        ? <TimelinePath entry={entry} paths={paths} accountScope={accountScope} i18n={i18n} />
+        : <Link to="/paths/$pathId/activities/$activityId" params={{ pathId: entry.pathId, activityId: entry.id }}><TimelinePath entry={entry} paths={paths} accountScope={accountScope} i18n={i18n} /></Link>}
     </>} />
     {query.isError && <div role="alert"><p>{i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{i18n.t('common.retry')}</button></div>}
     {query.hasNextPage && <button disabled={query.isFetching} onClick={() => void query.fetchNextPage()}>{i18n.t('studio.moreHistory')}</button>}
@@ -29,5 +32,5 @@ export function ActivityTimeline({ paths, history, accountScope, i18n }: { paths
 
 function TimelinePath({ entry, paths, accountScope, i18n }: { entry: RecordedActivity; paths: PathRepository; accountScope: string; i18n: Translator }) {
   const appearance = useQuery({ queryKey: [accountScope, 'appearance', entry.pathId], queryFn: ({ signal }) => paths.appearance(entry.pathId, signal) });
-  return <div className="studio-timeline-identity"><span className="studio-emoji" data-color={appearance.data?.color} aria-hidden="true">{appearance.data?.emoji ?? '✨'}</span><div><strong>{entry.pathName}</strong><small>{duration(i18n, entry.seconds)}</small></div></div>;
+  return <div className="studio-timeline-identity"><span className="studio-emoji" data-color={appearance.data?.color} aria-hidden="true">{appearance.data?.emoji ?? '✨'}</span><div><strong>{entry.pathName || i18n.t('offline.retainedPath')}</strong><small>{duration(i18n, entry.seconds)}</small>{entry.pending && <small>{i18n.t('offline.pending')}</small>}</div></div>;
 }

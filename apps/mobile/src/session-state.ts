@@ -17,12 +17,14 @@ type MobileSessionEffects = {
 type MobileSessionStorageEffects = {
   read(): Promise<string | null>;
   write(session: MobileSession): Promise<void>;
+  pause?(owner: string): Promise<void>;
   discard(): Promise<void>;
 };
 
 export type SerializedMobileSessionStorage = {
   read(): Promise<string | null>;
   persist(session: MobileSession, current: () => boolean): Promise<void>;
+  pause(owner: string, expectedToken: string, current: () => boolean): Promise<boolean>;
   discard(): Promise<void>;
   ready(): Promise<void>;
 };
@@ -52,6 +54,17 @@ export function createSerializedMobileSessionStorage(
     read: () => serialize(effects.read),
     persist: (session, current) => serialize(async () => {
       if (current()) await effects.write(session);
+    }),
+    pause: (owner, expectedToken, current) => serialize(async () => {
+      if (!current()) return false;
+      const raw = await effects.read();
+      const stored = raw ? JSON.parse(raw) as Record<string, unknown> : null;
+      // A late rejection must not replace a refresh or another account's newer
+      // credential. This comparison runs in the same serialized write queue.
+      if (!current() || stored?.token !== expectedToken || stored.ownerId !== owner) return false;
+      if (!effects.pause) throw unreadableStorageFailure();
+      await effects.pause(owner);
+      return true;
     }),
     discard: () => serialize(effects.discard),
     ready: async () => {

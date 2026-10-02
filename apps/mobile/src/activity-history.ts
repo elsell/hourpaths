@@ -12,7 +12,7 @@ export type Activity = {
   createdAt: string;
   updatedAt: string;
 };
-export type ActivityDetail = { activity: Activity; version: number };
+export type ActivityDetail = { activity: Activity; version: number; retained?: boolean; pending?: boolean };
 export type ActivityRevision = Activity & { version: number; replacedAt: string };
 export type ManualActivityDefaults = { currentInstant: string; localDate: string; localStartTime: string; timeZone: string };
 export const retainedCalendarDayTimeZone = ['U', 'T', 'C'].join('');

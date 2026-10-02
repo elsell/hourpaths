@@ -166,6 +166,9 @@ func (r *Repository) StartTimer(ctx context.Context, command application.StartTi
 			activeTimerConflict = true
 			return nil
 		}
+		if err := registerOnlineTimer(tx, *fromTimer(canonicalTimer)); err != nil {
+			return err
+		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err
 		}
@@ -242,6 +245,9 @@ func (r *Repository) StopTimer(ctx context.Context, command application.StopTime
 			if err := persistCompletedActivity(tx, entry); err != nil {
 				return err
 			}
+		}
+		if err := settleOfflineTimer(tx, row, entry, saved, command.StoppedAt, "stopped"); err != nil {
+			return err
 		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err
@@ -747,21 +753,6 @@ func replayedUpdate(tx *gorm.DB, command application.UpdateActivityCommand) (app
 		return application.UpdateActivityResult{}, true, err
 	}
 	return application.UpdateActivityResult{Activity: entry, Revision: domain.ActivityRevision{Activity: prior, ReplacedAt: row.ReplacedAt.UTC()}, Version: version, AccumulatedSeconds: projection.AccumulatedSeconds, IntervalProgress: projection.IntervalProgress, Replayed: true}, true, nil
-}
-
-func mutationResultUpdates(timer timerModel, entry domain.RecordedActivity, saved bool) map[string]any {
-	updates := map[string]any{
-		"result_started_at":     timer.StartedAt,
-		"result_time_zone":      timer.OccurrenceTimeZone,
-		"result_activity_saved": saved,
-	}
-	if saved {
-		updates["result_activity_id"] = entry.ID
-		updates["result_ended_at"] = entry.EndedAt
-		updates["result_created_at"] = entry.CreatedAt
-		updates["result_updated_at"] = entry.UpdatedAt
-	}
-	return updates
 }
 
 func fromRevision(revision domain.ActivityRevision, version int64, publicChanged bool) activityRevisionModel {

@@ -42,6 +42,9 @@ func (r *Repository) StopParticipantTimerForLeave(ctx context.Context, pathID, p
 			return false, err
 		}
 	}
+	if err := settleOfflineTimer(r.DB.WithContext(ctx), timer, entry, saved, stoppedAt, "stopped"); err != nil {
+		return false, err
+	}
 	if err := r.DB.WithContext(ctx).Create(fromAudit(event)).Error; err != nil {
 		return false, err
 	}

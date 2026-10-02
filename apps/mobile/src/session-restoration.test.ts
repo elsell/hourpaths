@@ -180,3 +180,36 @@ test('a newer owner wins over late unreadable cold-start storage', async () => {
   assert.equal(unreadableRecovery, false);
   assert.equal(activeOwner, 'replacement');
 });
+
+test('valid near-expiry Home with an account-bound cache opens before refresh', async () => {
+  let activated = false;
+  await restoreStoredSession({
+    read: async () => JSON.stringify({ token: 'stored-token', ownerId: 'alice', expiresAt: '2026-10-01T12:00:30Z', nextAction: 'home' }),
+    now: () => Date.parse('2026-10-01T12:00:00Z'), refreshLeadMs: 60000,
+    hasLocalHome: async credential => credential.ownerId === 'alice',
+    refresh: async () => {
+      assert.fail('local entry must not wait for refresh');
+    },
+    expiryAdvanced: () => true, current: () => true,
+    revokeSuperseded: async () => assert.fail('unexpected revocation'),
+    activate: async credential => { assert.equal(credential.ownerId, 'alice'); activated = true; },
+    handleFailure: async error => { throw error; }, handleUnreadable: async () => assert.fail('valid credential'),
+  });
+  assert.equal(activated, true);
+});
+
+
+test('a credential-free retained account restores only local Stop, never authentication', async () => {
+  const owners: string[] = [];
+  await restoreStoredSession({
+    read: async () => JSON.stringify({ state: 'sign_in_required', ownerId: 'alice' }),
+    now: () => Date.parse('2026-10-01T12:00:00Z'), refreshLeadMs: 60000,
+    restoreRetained: async owner => { owners.push(owner); },
+    refresh: async () => { throw new Error('must_not_refresh'); },
+    expiryAdvanced: () => true, current: () => true,
+    revokeSuperseded: async () => assert.fail('no credential'),
+    activate: async () => assert.fail('not authenticated'),
+    handleFailure: async error => { throw error; }, handleUnreadable: async () => assert.fail('valid retained owner'),
+  });
+  assert.deepEqual(owners, ['alice']);
+});

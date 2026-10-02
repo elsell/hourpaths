@@ -11,6 +11,27 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Controlled PostgreSQL tests: runtime-role enforcement and transactional migration setup.
+    'apps/api/internal/adapters/gormstore/activity/offline_postgres_test.go': (
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Raw("SELECT to_regclass(\'public.offline_timer_state_models\') IS NOT NULL").Scan(&present).Error; err != nil {',
+        '\t\tif err := db.Exec(statement).Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("RESET ROLE").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\t\t\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\t\t\tif err := db.Exec("RESET ROLE").Error; err != nil {',
+        '\t\t\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\t\t\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+        '\t\t\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+    ),
     "apps/api/internal/adapters/gormstore/activation_repository.go": (
         '\t\tif err := tx.Exec("SELECT pg_advisory_xact_lock_shared(?)", '
         "policyPublisherAdvisoryLock).Error; err != nil { // hourpaths-direct-sql: allow "

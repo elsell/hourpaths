@@ -1,5 +1,5 @@
 import { createSessionApiClient, generatedResponse } from '@hourpaths/api-client';
-import { classifySessionFailure, createSessionOperationOwner, declineDuplicateEmailRecovery, exchangeSessionCredential, isSessionFailure, isValidSessionCredential, refreshSessionCredential, sessionFailureFromResponse, type ClientRuntimeConfig, type SessionCredential, type SessionFailure, type SessionNextAction, type SessionOperationTicket, type SessionRefreshResponse } from '@hourpaths/client-core';
+import { retainedAccount, readRetainedAccount, classifySessionFailure, createSessionOperationOwner, declineDuplicateEmailRecovery, exchangeSessionCredential, isSessionFailure, isValidSessionCredential, refreshSessionCredential, sessionFailureFromResponse, type ClientRuntimeConfig, type SessionCredential, type SessionFailure, type SessionNextAction, type SessionOperationTicket, type SessionRefreshResponse } from '@hourpaths/client-core';
 import { problemMessageKey, type MessageKey } from '@hourpaths/i18n';
 import { beginProviderSignIn, completeProviderSignIn, type ApplicationDestination } from './provider-auth';
 
@@ -26,9 +26,18 @@ export function readApplicationSession(storage: SessionStorageReader): Applicati
   try {
     const value: unknown = JSON.parse(raw);
     if (isValidSessionCredential(value)) return value;
+    if (readRetainedAccount(value)) return null;
   } catch { /* Invalid records share the same destructive recovery boundary. */ }
   discardLocalSession(storage);
   throw unreadableLocalSession();
+}
+export function retainedApplicationAccount(storage: Pick<Storage, 'getItem'> = window.sessionStorage): string | null {
+  try { return readRetainedAccount(JSON.parse(storage.getItem(sessionKey) ?? 'null'))?.ownerId ?? null; }
+  catch { return null; }
+}
+export function pauseApplicationSession(owner: string, storage: SessionStorageWriter = window.sessionStorage): void {
+  applicationSessionOperations.invalidate();
+  storage.setItem(sessionKey, JSON.stringify(retainedAccount(owner)));
 }
 export function applicationSession(): ApplicationSession | null { return readApplicationSession(window.sessionStorage); }
 export function applicationSessionExpired(session: ApplicationSession, now = Date.now()): boolean {

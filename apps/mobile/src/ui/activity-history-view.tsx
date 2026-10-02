@@ -20,6 +20,8 @@ const i18n = createDeviceTranslator(getLocales);
 
 export function ActivityHistoryView({
   activities,
+  retained = false,
+  incomplete = false,
   busy,
   errorText,
   hasMore,
@@ -29,6 +31,8 @@ export function ActivityHistoryView({
   onRetry,
 }: {
   activities: readonly ActivityDetail[];
+  retained?: boolean;
+  incomplete?: boolean;
   busy: boolean;
   errorText?: string;
   hasMore: boolean;
@@ -57,15 +61,18 @@ export function ActivityHistoryView({
     </View>;
   }
 
+  const retainedNotice = retained ? <StatusBanner tone="offline" text={i18n.t(incomplete ? 'offline.historyIncomplete' : 'offline.historyRetained')} /> : null;
+  if (presentation.showEmpty && retained && incomplete) return <View style={styles.stack}>{retainedNotice}</View>;
   if (presentation.showEmpty) {
-    return <NativeContentUnavailable
+    return <View style={styles.stack}>{retainedNotice}<NativeContentUnavailable
       description={i18n.t('pathDetails.historyEmptyExplanation')}
       systemImage="clock.arrow.circlepath"
       title={i18n.t('pathDetails.historyEmpty')}
-    />;
+    /></View>;
   }
 
   return <View style={styles.stack}>
+    {retainedNotice}
     {groupActivitiesByOccurrenceDay(activities).map((day) => <View key={day.localDate} style={styles.day}>
       <ThemedText accessibilityRole="header" style={styles.dayHeading}>
         {i18n.date(retainedCalendarDayDate(day.localDate), {
@@ -118,7 +125,9 @@ function ActivityHistoryRow({
       participant: detail.activity.participantId,
       time,
     })}
-    accessibilityRole="button"
+    accessibilityHint={detail.pending ? i18n.t('offline.pending') : undefined}
+    accessibilityRole={detail.retained || detail.pending ? "text" : "button"}
+    disabled={detail.retained || detail.pending}
     onPress={onPress}
     style={({ pressed }) => [
       styles.row,
@@ -129,6 +138,7 @@ function ActivityHistoryRow({
     <View style={styles.rowCopy}>
       <View style={styles.rowHeading}>
         <ThemedText style={styles.time}>{time}</ThemedText>
+        {detail.pending ? <ThemedText style={styles.edited}>{i18n.t('offline.pending')}</ThemedText> : null}
         {edited ? <ThemedText style={styles.edited}>{i18n.t('pathDetails.edited')}</ThemedText> : null}
       </View>
       <View style={[styles.metadata, compact ? styles.metadataCompact : null]}>
@@ -138,7 +148,7 @@ function ActivityHistoryRow({
         <ThemedText style={styles.duration}>{duration}</ThemedText>
       </View>
     </View>
-    <SettingsIcon systemName="chevron.right" variant="disclosure" />
+    {!detail.retained && !detail.pending ? <SettingsIcon systemName="chevron.right" variant="disclosure" /> : null}
   </Pressable>;
 }
 

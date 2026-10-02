@@ -59,3 +59,30 @@ test('maintenance retries temporary failure without losing the session and stops
   now += 1000; await controller.maintain(); assert.equal(calls, 2);
   now = initial.expiresAt; await controller.maintain(); assert.equal(stored, null);
 });
+
+test('offline owner binding is retained with the session and a late profile cannot bind a replacement account', () => {
+  let stored: Session | null = initial;
+  const controller = new SessionController(initial, { read: () => stored, write: value => { stored = value; }, clear: () => { stored = null; } }, {
+    refresh: async value => value, revoke: async () => undefined,
+  }, () => 0, () => undefined);
+  assert.equal(controller.bindOwner('original', 'alice'), true);
+  assert.equal(controller.owner(), 'alice');
+  assert.equal(stored?.ownerId, 'alice');
+  stored = { ...initial, token: 'replacement-account', ownerId: 'bob' };
+  assert.equal(controller.bindOwner('original', 'alice'), false);
+  assert.equal(controller.owner(), null);
+  assert.equal(stored.ownerId, 'bob');
+});
+
+test('rejection atomically replaces a verified credential with a retained account reference', () => {
+  let stored: Session | null = { ...initial, ownerId: 'alice' };
+  let retained: string | null = null;
+  const controller = new SessionController(stored, {
+    read: () => stored, write: value => { stored = value; }, clear: () => { stored = null; retained = null; },
+    pause: owner => { stored = null; retained = owner; }, retainedOwner: () => retained,
+  }, { refresh: async value => value, revoke: async () => undefined }, () => 0, () => undefined);
+  controller.reject(initial.token);
+  assert.equal(controller.token(), null);
+  assert.equal(stored, null);
+  assert.equal(retained, 'alice');
+});

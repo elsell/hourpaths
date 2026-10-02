@@ -37,8 +37,8 @@ test('Home derives running timer count and delegates safe resolution at the curr
   assert.match(page, /notificationLifecycleState\.current/);
   assert.match(page, /current\.session === currentSession/);
   assert.match(page, /authorizeSignOut/);
-  assert.match(page, /timerOperations\.stop/);
-  assert.match(page, /applyOwnedTimerState\(ownerID, currentSession, timer\.pathId, presentation\.state\)/);
+  assert.match(page, /durableMobileHome\(\)\)\.stop\(timer\.pathId, timerID\)/);
+  assert.match(page, /applyOwnedTimerState\(ownerID, currentSession, timer\.pathId, state\)/);
   assert.match(page, /sessionOperations\.invalidate\(\);[\s\S]*await deregisterPushSession\(disposedSession\)/);
   assert.match(page, /active\.session !== disposedSession/);
   assert.match(page, /resetNotifications\(\);[\s\S]*void setNativeNotificationBadge\(0\)/);

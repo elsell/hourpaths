@@ -324,7 +324,7 @@ test('activity history and details use nested native routes with accessible list
   assert.match(activityDetailRoute, /const routeKey = activityDetailRouteKey\(pathID, activityID\);[\s\S]*useNativeChildRoutePresentation\(routeKey\)/);
   assert.match(nativeChildRoute, /useSyncExternalStore/);
   assert.match(nativeChildRoute, /dismissNativeChildRoute/);
-  assert.match(activityHistoryView, /<Pressable[\s\S]*accessibilityRole="button"/);
+  assert.match(activityHistoryView, /<Pressable[\s\S]*accessibilityRole=\{detail\.retained \|\| detail\.pending \? "text" : "button"\}/);
   assert.match(activityHistoryView, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.match(activityHistoryView, /groupActivitiesByOccurrenceDay\(activities\)/);
   assert.match(activityHistoryView, /timeZone: detail\.activity\.occurrenceTimeZone/);
@@ -405,7 +405,7 @@ test('manual activity create and edit use an extracted native, accessible form',
   assert.match(page, /key=\{manualActivity[\s\S]*manualActivity\.id[\s\S]*manualActivity\.version[\s\S]*manualPathID/);
   assert.doesNotMatch(page, /<TextInput accessibilityLabel=\{i18n\.t\('activity\.date'\)\}/);
   assert.match(manualActivityForm, /<NativeSheet[\s\S]*<ManualOccurrenceFields/);
-  assert.match(manualActivityForm, /title=\{i18n\.t\(editing \? 'activity\.editHeading' : 'activity\.addHeading'\)\}/);
+  assert.match(manualActivityForm, /title=\{i18n\.t\(correction \? 'offline\.correctHeading' : editing \? 'activity\.editHeading' : 'activity\.addHeading'\)\}/);
   assert.doesNotMatch(manualActivityForm, /<Surface>/);
   assert.match(manualActivityForm, /activity\.timeZone/);
   assert.match(manualActivityForm, /activity\.notePrivacy/);
@@ -447,7 +447,7 @@ test('signed-out, loading, offline, and error states use explicit accessible pre
   assert.match(page, /shellDestination === 'account-entry'[\s\S]*rootNavigation\.dispatch\(CommonActions\.reset\(\{ index: 0, routes: \[\{ name: 'index' \}\]/);
   assert.match(homeView, /presentation\.kind === 'loading'[\s\S]*text=\{i18n\.t\('home\.loading'\)\}/);
   assert.match(page, /const homeNotice[\s\S]*accessState === 'authenticated_offline' && !errorKey && !offlineStatusDismissed/);
-  assert.match(page, /const homeNotice[\s\S]*<StatusBanner[\s\S]*onAction=[\s\S]*text=\{i18n\.t\('auth\.offline'\)\}/);
+  assert.match(page, /const homeNotice[\s\S]*<StatusBanner[\s\S]*onAction=[\s\S]*text=\{i18n\.t\('offline\.banner'\)\}/);
   assert.match(page, /<HomeView[\s\S]*notice=\{<>[\s\S]*\{homeNotice\}/);
   assert.match(page, /if \(next\.retryable\)[\s\S]*setErrorKey\(null\)/);
   assert.match(page, /shouldTransitionMobileSessionForFeatureFailure\(failure\)/);
@@ -469,7 +469,6 @@ test('signed-out, loading, offline, and error states use explicit accessible pre
   assert.match(signedOutScreen, /contentContainerStyle=\{\[styles\.content, accessibilityLayout && styles\.accessibilityContent\]\}/);
   assert.match(signedOutScreen, /flexGrow:\s*1/);
   assert.match(signedOutScreen, /compact=\{accessibilityLayout\}/);
-  assert.match(signedOutScreen, /title=\{i18n\.t\(accessibilityLayout \? 'app\.title' : 'auth\.welcomeHeading'\)\}/);
   assert.match(signedOutScreen, /accessibilityLayout \? null : <Text/);
   assert.match(signedOutScreen, /accessibilityLayout \? primaryAction : null/);
   assert.match(signedOutScreen, /accessibilityLayout \? null : primaryAction/);

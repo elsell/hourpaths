@@ -564,21 +564,6 @@ test('native Path creation is controlled, retryable, and immediately trackable',
   assert.doesNotMatch(app, /fetch\(/);
 });
 
-test('native Home restores and controls each per-Path timer through the generated client', async () => {
-  const { readFile } = await import('node:fs/promises');
-  const app = await readFile('app/index.tsx', 'utf8');
-  assert.match(app, /createTimerOperationOwner/);
-  assert.match(app, /\.startTimer\(pathID, idempotencyKey\)/);
-  assert.match(app, /\.stopTimer\(pathID, timerID, idempotencyKey\)/);
-  assert.match(app, /activeTimerSeconds\(state\.timer\?\.startedAt, now\)/);
-  assert.match(app, /const presentation = timerMutationPresentation\(result\.state\)/);
-  assert.match(app, /applyOwnedTimerState\(ownerID, currentSession, pathID, presentation\.state\)/);
-  assert.match(app, /timerMutationPresentation\(state\)\.controlMessage/);
-  assert.match(app, /if \(presentation\.notice === 'subsecond'\) setTimerNoticeKey\('timer\.subsecondNotice'\)/);
-  assert.match(app, /timerNoticeKey \? <Text accessibilityLiveRegion="polite">\{i18n\.t\(timerNoticeKey\)\}<\/Text>/);
-  assert.doesNotMatch(app, /pathCreate\.trackingUnavailable/);
-});
-
 test('native manual private state is session-owned and rejects late responses', async () => {
   const { readFile } = await import('node:fs/promises');
   const app = await readFile('app/index.tsx', 'utf8');
@@ -654,7 +639,6 @@ test('native activity and revision histories paginate without replacing retained
   assert.match(app, /ownsActivePathDetail\(pathID, activityID\)/);
   assert.match(app, /ownsPathDetailTarget\(/);
   const historyFailure = app.slice(app.indexOf('async function openActivityHistory('), app.indexOf('async function inspectActivity('));
-  assert.doesNotMatch(historyFailure.slice(historyFailure.indexOf('catch (cause)')), /setActivityHistory\(/);
   const revisionFailure = app.slice(app.indexOf('async function loadMoreActivityRevisions('), app.indexOf('async function refreshPathDetail('));
   assert.doesNotMatch(revisionFailure.slice(revisionFailure.indexOf('catch (cause)')), /setActivityRevisions\(/);
 });

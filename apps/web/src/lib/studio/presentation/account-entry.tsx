@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { MessageKey, Translator } from '@hourpaths/i18n';
 import { EntryController } from '../entry/application/entry-controller';
 import type { EntryService } from '../entry/ports/entry-service';
@@ -6,15 +6,15 @@ import type { EntryError, EntryFields } from '../entry/domain/entry';
 import './studio.css';
 
 const errors: Record<EntryError, MessageKey> = { unavailable: 'errors.temporarilyUnavailable', expired: 'errors.sessionExpired', storage: 'errors.localSessionUnreadable', username: 'onboarding.usernameUnavailable', policy: 'onboarding.policySetChanged', timeZone: 'onboarding.timeZoneUnavailable', locale: 'onboarding.localeUnavailable', validation: 'errors.validationFailed', signIn: 'errors.signInFailed', callback: 'errors.callbackFailed', superseded: 'errors.sessionExpired', rejected: 'errors.apiRejected', forbidden: 'errors.forbidden', identity: 'errors.identityTokenRejected', rateLimited: 'errors.rateLimited' };
-export function AccountEntry({ service, i18n, callback = false }: { service: EntryService; i18n: Translator; callback?: boolean }) {
+export function AccountEntry({ service, i18n, callback = false, retained }: { service: EntryService; i18n: Translator; callback?: boolean; retained?: ReactNode }) {
   const [, update] = useState(0);
   const [controller] = useState(() => new EntryController(service, () => Date.now(), () => update(value => value + 1)));
   useEffect(() => { void controller.initialize(callback); const timer = setInterval(() => controller.maintain(), 1000); return () => { clearInterval(timer); controller.dispose(); }; }, [controller, callback]);
   const state = controller.state;
-  const title = state.phase === 'onboarding' ? 'onboarding.heading' : state.phase === 'recovery' ? 'duplicateEmailRecovery.heading' : 'auth.welcomeHeading';
+  const title = state.phase === 'onboarding' ? 'onboarding.heading' : state.phase === 'recovery' ? 'duplicateEmailRecovery.heading' : retained ? 'offline.signInRequired' : 'auth.welcomeHeading';
   return <div className="studio studio-entry"><header className="studio-entry-brand"><a className="studio-brand" href="/studio"><span aria-hidden="true">◉</span> HourPaths</a></header><main className="studio-entry-card"><h1>{i18n.t(title)}</h1>
     {state.phase === 'loading' || state.phase === 'home' ? <p role="status">{i18n.t(callback ? 'auth.signingIn' : 'common.loading')}</p> : null}
-    {state.phase === 'entry' && <><p className="studio-entry-intro">{i18n.t('auth.welcomeBody')}</p><button className="studio-primary studio-entry-primary" disabled={state.busy} onClick={() => void controller.begin()}>{i18n.t('auth.signIn')}</button>{state.busy && <p role="status">{i18n.t('auth.preparingSignIn')}</p>}</>}
+    {state.phase === 'entry' && <>{retained ?? <p className="studio-entry-intro">{i18n.t('auth.welcomeBody')}</p>}<button className="studio-primary studio-entry-primary" disabled={state.busy} onClick={() => void controller.begin()}>{i18n.t('auth.signIn')}</button>{state.busy && <p role="status">{i18n.t('auth.preparingSignIn')}</p>}</>}
     {state.phase === 'onboarding' && <Onboarding controller={controller} i18n={i18n} />}
     {state.phase === 'recovery' && <><p>{i18n.t('duplicateEmailRecovery.notice')}</p><p className="studio-entry-intro">{i18n.t('duplicateEmailRecovery.separateExplanation')}</p><div className="studio-entry-actions"><button disabled={state.busy} onClick={() => void controller.signOut()}>{i18n.t('duplicateEmailRecovery.returnToSignIn')}</button><button className="studio-primary" disabled={state.busy} onClick={() => void controller.decline()}>{i18n.t('duplicateEmailRecovery.decline')}</button></div>{state.busy && <p role="status">{i18n.t('duplicateEmailRecovery.declining')}</p>}</>}
     {state.error && <div role="alert" className="studio-entry-error" id="entry-error"><p>{i18n.t(errors[state.error])}</p>{state.phase === 'onboarding' && !state.review && <button disabled={state.busy} onClick={() => void controller.retry()}>{i18n.t('common.retry')}</button>}</div>}

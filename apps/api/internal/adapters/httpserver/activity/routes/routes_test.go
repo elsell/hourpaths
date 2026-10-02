@@ -477,3 +477,7 @@ func TestTimerRoutesConcealDeniedAndMissingResourcesIdentically(t *testing.T) {
 		})
 	}
 }
+
+func (s controlledService) SynchronizeTimer(context.Context, string, string, string, application.OfflineTimerInput) (application.OfflineTimerResult, error) {
+	return application.OfflineTimerResult{Outcome: "accepted"}, s.err
+}

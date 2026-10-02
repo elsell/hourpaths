@@ -59,7 +59,7 @@ test('rotated request rejection becomes retryable without discarding the current
 });
 
 test('manual activity uses native sheet actions and risk-scoped dismissal', () => {
-  assert.match(manualForm, /title=\{i18n\.t\(editing \? 'activity\.editHeading' : 'activity\.addHeading'\)\}/);
+  assert.match(manualForm, /title=\{i18n\.t\(correction \? 'offline\.correctHeading' : editing \? 'activity\.editHeading' : 'activity\.addHeading'\)\}/);
   assert.match(manualForm, /leadingAction=\{\{[\s\S]*common\.cancel/);
   assert.match(manualForm, /trailingAction=\{\{[\s\S]*common\.retry[\s\S]*activity\.saveEdit[\s\S]*activity\.save/);
   assert.match(manualForm, /dismissible=\{!busy\}/);
