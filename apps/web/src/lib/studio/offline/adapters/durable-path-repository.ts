@@ -89,12 +89,14 @@ export function durablePathRepository(
         const paths = await remote.list(false, signal);
         if (current.refreshTimeZone) current.timeZone = await current.refreshTimeZone();
         current.assertCurrent();
+        signal?.throwIfAborted();
         const participating = paths.filter(path => path.canTrack && !path.archived);
         const values = await mapPaths(participating, async path => {
           const [summary, appearance] = await Promise.all([remote.tracking(path.id, signal), remote.appearance(path.id, signal)]);
           current.assertCurrent();
           return { path, summary, appearance };
         });
+        signal?.throwIfAborted();
         const retained = await current.tracking.retainHome(participating.map(path => ({ id: path.id, name: path.name, timeZone: current.timeZone, goal: path.goal })),
           values.map(({ path, summary }) => ({ pathId: path.id, summary, timer: summary.activeSession ? {
             id: summary.activeSession.id, pathId: path.id, startedAt: summary.activeSession.originalStartedAt ?? new Date(summary.activeSession.startedAt).toISOString(),

@@ -89,3 +89,24 @@ test('Studio Home hydrates hidden Paths before offline restart and preserves its
   assert.equal((await restored.appearance('reading')).color, 'mint');
   assert.ok(requests.includes('/v1/paths/reading/timer'));
 });
+
+test('cancelled empty Home hydration cannot commit after its timezone read completes', async context => {
+  const server = createServer((_request, response) => {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ data: [], meta: { homePreferences: { orderMethod: 'manual' } } }));
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise<void>(resolve => { server.closeAllConnections(); server.close(() => resolve()); }));
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  let row: TrackingSnapshot | null = null, savedHome = false;
+  const tracking = new OfflineTracking({ read: async () => row, commit: async (_owner, _revision, value) => { row = value; return true; } },
+    'alice', () => Date.parse('2026-10-01T12:00:00Z'), () => 'unused');
+  const cancellation = new AbortController();
+  const repository = durablePathRepository(apiPathRepository(`http://127.0.0.1:${address.port}`, () => 'session', () => {}), {
+    readHome: async () => null, saveHome: async () => { savedHome = true; }, savePaths: async () => {}, saveAppearance: async () => {},
+  }, async () => ({ owner: 'alice', timeZone: utcTimeZone, tracking, assertCurrent: () => {}, wake: () => {},
+    refreshTimeZone: async () => { cancellation.abort(); return utcTimeZone; } }), () => false);
+  await assert.rejects(repository.list(false, cancellation.signal), cancellation.signal.reason);
+  assert.equal(row, null);
+  assert.equal(savedHome, false);
+});
