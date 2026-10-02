@@ -96,9 +96,9 @@ tester group ([Apple status evidence](https://github.com/elsell/hourpaths/action
 Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
-The active next slice is durable manual activity creation and editing, including
-causal replay and revision-preserving conflicts. Cold offline entry and complete
-cross-device/device acceptance remain explicit area 2 closure requirements.
+The active next slice is the public Studio shell for cold offline entry. Durable
+web session restoration, large-account hydration, and complete cross-device/device
+acceptance remain explicit area 2 closure requirements.
 
 The manual-activity slice now has a durable account queue, immutable replay,
 owner-only causal metadata, retained losing revisions, and Studio/mobile form
@@ -107,12 +107,14 @@ versus delayed offline edits, deletion retries, and invalid pre-membership
 occurrences. Browser acceptance on warm revision `a0120a6` demonstrated offline
 create/edit/reload/reconnect with unchanged operation IDs and a server-backed
 saved note. Later precision and validation fixes have focused regression evidence.
-PR #104 remains unmerged and unreleased. Final review found two causal-ordering
-failures, now fixed with regressions covering timer receipt time and observed
-microsecond precision. Candidate gates also caught an obsolete direct-API
-assertion and the readiness migration version; both are corrected. Required
-candidate gates and owner approval remain pending. No additional acceptance area
-is closed.
+PR #104 merged as `2c28dfa` after owner approval and all five candidate gates;
+main CI also passed. Release v0.29.0 published that revision and GitOps
+`fc6f1ea2bee06041ef440981ba6e7b9e517b36dc` was Ready/Healthy, with successful
+API/web rollouts and migrations. TestFlight 0.29.0 (280) is VALID, IN_BETA_TESTING
+and assigned to the internal group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37058487080)).
+PR #103 also merged; this release attached and read-back verified TestFlight
+release notes. Android publication remains in progress. No additional acceptance
+area is closed.
 
 
 Browser acceptance on warm web revision `e2b1f8e` and API `0308245` demonstrated
@@ -123,3 +125,13 @@ new Path through Home. This closes the direct-editor regression, not area 2.
 Large shared fixture accounts still exhaust the read quota during concurrent
 Home/history hydration; retain this as an area 2 delivery issue. Do not raise
 server limits or claim large-account acceptance from the isolated conflict check.
+
+Cold-shell browser acceptance on production-built warm web `ea6e725` restored
+an offline running timer after reload, stopped it locally, opened a nested manual
+activity editor directly, and replayed exactly one activity after reconnect.
+Actual CacheStorage held only 19 public shell/build requests. A fresh signed-out
+tab exposed no retained account, and an expired tab showed account entry instead
+of Path data. Focused cache tests cover explicit server rejection, failed update
+preservation and exclusion of API/provider/non-Studio requests. The shell slice
+is not yet merged or released; it does not close durable web session restoration
+or the remaining area 2 acceptance requirements.
