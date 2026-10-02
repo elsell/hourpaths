@@ -8023,9 +8023,9 @@ export function HomeScreen() {
       }}
     />)}
     {nativeTrackingState?.owner === ownedHomeDestination.profile.id ? nativeTrackingState.notices.map(notice => <StatusBanner
-      key={notice.id} tone="error" text={[
+      key={notice.id} tone={notice.reason === 'subsecond' ? 'offline' : 'error'} text={[
         notice.pathId ? nativeTrackingState.paths.find(path => path.id === notice.pathId)?.name : undefined,
-        i18n.t(`offline.rejection.${notice.reason}`),
+        i18n.t(notice.reason === 'subsecond' ? 'timer.subsecondNotice' : `offline.rejection.${notice.reason}`),
         notice.reason === 'archived' ? i18n.t('offline.archiveAmounts', {
           saved: formatSessionClock(notice.savedSeconds ?? 0, i18n),
           discarded: formatSessionClock(notice.discardedSeconds ?? 0, i18n),

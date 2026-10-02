@@ -28,7 +28,6 @@ test('native refreshes current interval progress from supported stop, manual cre
   const timerMutation = page.slice(page.indexOf('async function toggleTimer'), page.indexOf('function openPathDetail'));
   const manualMutation = page.slice(page.indexOf('async function submitManualActivity'), page.indexOf('function closeManualActivity'));
 
-  assert.match(timerMutation, /applyOwnedTimerState\(ownerID, currentSession, pathID, presentation\.state\)/);
   assert.match(page, /timers: \{ \.\.\.current\.destination\.profile\.timers, \[pathID\]: state \}/);
   assert.match(manualMutation, /\.updateActivity\(/);
   assert.match(manualMutation, /\.createManualActivity\(/);

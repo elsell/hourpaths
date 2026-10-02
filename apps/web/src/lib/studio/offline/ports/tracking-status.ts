@@ -5,7 +5,7 @@ export interface ClockCorrectionView {
 
 interface TrackingNoticeView {
   id: string;
-  reason: 'membership' | 'deleted' | 'conflict' | 'archived' | 'validation';
+  reason: 'membership' | 'deleted' | 'conflict' | 'archived' | 'validation' | 'subsecond';
   pathName?: string;
   savedSeconds?: number;
   discardedSeconds?: number;

@@ -33,7 +33,7 @@ export type TrackingOutcome = { activity?: RetainedActivity | null; serverTimerI
   kind: 'rejected'; reason: TrackingRejection; disclosePath: boolean; savedSeconds?: number; discardedSeconds?: number;
 });
 export interface TrackingSync { send(owner: string, operation: TrackingOperation): Promise<TrackingOutcome> }
-export interface TrackingNotice { id: string; reason: TrackingRejection; pathId?: string; savedSeconds?: number; discardedSeconds?: number }
+export interface TrackingNotice { id: string; reason: TrackingRejection | 'subsecond'; pathId?: string; savedSeconds?: number; discardedSeconds?: number }
 export interface TrackingSnapshot {
   owner: string;
   revision: number;
@@ -381,6 +381,7 @@ export class OfflineTracking {
         state.corrections.push({ timer, endedAt });
       } else {
         state.operations.push({ ...timer, timerId, operationId, kind: 'stop', endedAt });
+        if (Date.parse(endedAt) - Date.parse(timer.startedAt) < 1000) state.notices.push({ id: operationId, reason: 'subsecond', pathId: timer.pathId });
       }
   }
 }

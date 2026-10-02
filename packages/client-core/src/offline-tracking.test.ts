@@ -320,3 +320,17 @@ test('offline daily rollover keeps lifetime time once and moves only the overlap
   assert.equal((await nextDay.tracking(path.id))?.period?.savedSeconds, 0);
   assert.equal((await nextDay.tracking(path.id))?.savedTotalSeconds, 1890);
 });
+
+test('a positive subsecond stop retains a quiet notice across restart without dropping its sync commands', async () => {
+  const store = new DurableFake();
+  const first = client(store, 'alice', '2026-10-01T12:00:00Z', 'short');
+  await first.retainPaths([path]);
+  const timer = await first.start(path.id);
+  const restored = client(store, 'alice', '2026-10-01T12:00:00.500Z', 'stop');
+  await restored.stop(timer.id);
+  const state = await client(store, 'alice', '2026-10-01T12:00:02Z', 'read').snapshot();
+  assert.equal(state.timers.length, 0);
+  assert.deepEqual(state.operations.map(value => value.kind), ['start', 'stop']);
+  assert.equal(state.notices[0]?.reason, 'subsecond');
+  assert.equal(state.notices[0]?.pathId, path.id);
+});

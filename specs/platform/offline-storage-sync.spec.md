@@ -164,6 +164,9 @@ Local queue notifications must not refetch every Path. A completed replay must
 refresh only affected Path timers and, when recorded activity changed, history.
 Home refresh must hydrate timers before refreshing rendered projections.
 Ordinary detail and edit refreshes must still read fresh server totals.
+A positive timer interval shorter than one second must retain the existing
+quiet not-saved notice after a durable stop, including across restart, while
+keeping start/stop replay commands to settle the server timer.
 Both clients must show the saved and discarded durations for an archival
 rejection. A rejection may display its retained Path name only when the replay
 outcome permits identifying that Path; inaccessible resources remain unnamed.
