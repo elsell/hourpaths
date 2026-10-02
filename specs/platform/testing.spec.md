@@ -488,3 +488,10 @@ age, image, native and authorization checks remain required. Remove the
 exception as soon as a reviewed patched package can be installed; do not extend
 its deadline without renewed owner approval. No public signature-verification
 feature may be added using this affected dependency under this exception.
+
+## Large pull-request merge evidence
+
+The checked merge gate must validate complete paginated file metadata even when
+patch text exceeds operating-system argument or environment limits. Transporting
+that metadata must not weaken exact-head approval, rename coverage, file-count
+validation, trusted-main policy comparison, or the five required checks.
