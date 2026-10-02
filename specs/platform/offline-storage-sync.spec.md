@@ -232,3 +232,15 @@ equal-instant and backward-clock causal edits; preservation of losing revisions;
 delete-versus-edit; membership loss; and isolation of unrelated/account-switched
 work. Native and Studio must reuse their current activity forms and display
 unsynchronized state without requiring a separate sync workflow.
+
+### Rate-limited retained reads
+
+Studio Home and retained-history hydration must retry a rate-limited read at
+its current page or Path, rather than repeatedly restart the entire snapshot.
+The generated API adapter may retry only authenticated GET requests, at most
+twice, honoring a bounded numeric Retry-After delay (60 seconds when absent).
+It must not replay mutations, suppress an authentication rejection, or send a
+retry after its signal is aborted or its credential is replaced. A delay beyond
+60 seconds must return the rate-limit response for ordinary recovery. Complete
+snapshot and account fences remain required. Server limits must not be raised
+or bypassed to make a large participating-Path list hydrate.

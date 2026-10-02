@@ -14,13 +14,13 @@ export function apiHistorySource(apiURL: string, token: () => string | null, pat
   };
   return {
     async initial(signal) {
-      const profile = accepted(await createSessionApiClient(apiURL, token, signal, rejected).profile());
+      const profile = accepted(await createSessionApiClient(apiURL, token, signal, rejected, { retryRateLimitedReads: true }).profile());
       const all = [...await paths.list(false, signal), ...await paths.list(true, signal)];
       const unique = [...new Map(all.map(path => [path.id, path])).values()];
       return { participantId: profile.id, streams: unique.map(path => ({ pathId: path.id, pathName: path.name, remaining: [], cursor: null, loaded: false })) };
     },
     async read(pathId, pathName, participantId, cursor, signal) {
-      const response = await createSessionApiClient(apiURL, token, signal, rejected).activities(pathId, cursor ?? undefined, participantId);
+      const response = await createSessionApiClient(apiURL, token, signal, rejected, { retryRateLimitedReads: true }).activities(pathId, cursor ?? undefined, participantId);
       const items = accepted(response).map(({ activity, version }) => {
         const startedAt = Date.parse(activity.startedAt);
         const endedAt = Date.parse(activity.endedAt);

@@ -22,7 +22,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     assertAlive();
     let owner = session.owner();
     const credential = session.token()!;
-    const api = createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value));
+    const api = createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value), { retryRateLimitedReads: true });
     if (!owner) {
       const profile = await api.profile();
       if (!profile.response.ok || !profile.data || !session.bindOwner(credential, profile.data.data.id)) throw new Error('tracking_session_unavailable');
@@ -46,7 +46,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     new Intl.DateTimeFormat('en', { timeZone });
     assertCurrent();
     const sync = apiTrackingSync(requested => !disposed && session.owner() === requested && session.token()
-      ? createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value)) : null);
+      ? createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value), { retryRateLimitedReads: true }) : null);
     let replayChange: TrackingChange = {};
     worker = new TrackingReplayWorker(async () => {
       const snapshot = await tracking.snapshot();

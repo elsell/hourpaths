@@ -99,7 +99,16 @@ export type PathGoalUpdateDraft =
 export type PathGoalMutationResult = components['schemas']['PathGoalMutationResult'];
 export type PathArchiveStateDraft =
   Omit<components['schemas']['PathArchiveStateUpdate'], '$schema' | 'confirmed'> & { confirmed: true };
-export function createApiClient(baseUrl: string, tokenProvider: TokenProvider, signal?: AbortSignal, rejected?: (token: string | null) => void) {
+export interface ReadRetryOptions { retryRateLimitedReads?: boolean }
+function waitForReadRetry(milliseconds: number, signal?: AbortSignal | null): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cancelled = () => { clearTimeout(timer); signal?.removeEventListener('abort', cancelled); reject(new Error('read_retry_cancelled')); };
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', cancelled); resolve(); }, milliseconds);
+    signal?.addEventListener('abort', cancelled, { once: true });
+    if (signal?.aborted) cancelled();
+  });
+}
+export function createApiClient(baseUrl: string, tokenProvider: TokenProvider, signal?: AbortSignal, rejected?: (token: string | null) => void, options: ReadRetryOptions = {}) {
   return createClient<paths>({
     baseUrl,
     fetch: async (input, init = {}) => {
@@ -109,9 +118,19 @@ export function createApiClient(baseUrl: string, tokenProvider: TokenProvider, s
       new Headers(requestInit.headers).forEach((value, key) => headers.set(key, value));
       headers.delete('Authorization');
       if (token) headers.set('Authorization', `Bearer ${token}`);
-      const response = await fetch(input, { ...requestInit, headers, ...(signal ? { signal } : {}) });
-      if (response.status === 401) rejected?.(token);
-      return response;
+      const requestSignal = signal ?? requestInit.signal ?? (input instanceof Request ? input.signal : undefined);
+      const method = requestInit.method ?? (input instanceof Request ? input.method : 'GET');
+      for (let attempt = 0; ; attempt++) {
+        const response = await fetch(input, { ...requestInit, headers, ...(requestSignal ? { signal: requestSignal } : {}) });
+        if (response.status === 401) rejected?.(token);
+        if (!options.retryRateLimitedReads || !token || method !== 'GET' || response.status !== 429 || attempt >= 2) return response;
+        const header = response.headers.get('Retry-After');
+        const seconds = header !== null && /^\d+$/.test(header) ? Number(header) : 60;
+        if (seconds > 60) return response;
+        await response.body?.cancel();
+        await waitForReadRetry(seconds * 1000, requestSignal);
+        if (requestSignal?.aborted || await tokenProvider() !== token) throw new Error('read_retry_cancelled');
+      }
     }
   });
 }
@@ -131,9 +150,9 @@ export function generatedResponse<T>(result: GeneratedOperationResult<T>) {
   };
 }
 
-export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProvider, signal?: AbortSignal, rejected?: (token: string | null) => void) {
+export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProvider, signal?: AbortSignal, rejected?: (token: string | null) => void, options: ReadRetryOptions = {}) {
   const publicClient = createApiClient(baseUrl, () => null, signal);
-  const authenticatedClient = createApiClient(baseUrl, tokenProvider, signal, rejected);
+  const authenticatedClient = createApiClient(baseUrl, tokenProvider, signal, rejected, options);
   return {
     exchange: (identityToken: string) => publicClient.POST('/v1/sessions', {
       body: { identityToken, longLivedSession: true },

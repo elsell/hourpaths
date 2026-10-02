@@ -16,14 +16,14 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
   const accepted = <T>(result: { data?: { data: T }; response: Response }): T => {
     return required(result);
   };
-  const client = createSessionApiClient(baseURL, token, undefined, rejected);
+  const client = createSessionApiClient(baseURL, token, undefined, rejected, { retryRateLimitedReads: true });
   const tracking = async (pathId: string, signal?: AbortSignal) =>
-    trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).currentTimer(pathId)));
+    trackingFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true }).currentTimer(pathId)));
   return {
-    visibilityCommands: key => sharedVisibilityCommands(signal => createSessionApiClient(baseURL, token, signal, rejected), key),
-    leaveCommands: key => sharedLeaveCommands(signal => createSessionApiClient(baseURL, token, signal, rejected), key, leaveRecovery),
+    visibilityCommands: key => sharedVisibilityCommands(signal => createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true }), key),
+    leaveCommands: key => sharedLeaveCommands(signal => createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true }), key, leaveRecovery),
     async read(pathId, signal) {
-      const value = pathFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected).path(pathId)));
+      const value = pathFromAPI(accepted(await createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true }).path(pathId)));
       if (value.id !== pathId) throw new PathRequestError(502);
       return value;
     },
@@ -69,7 +69,7 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
       accepted(await client.savePathAppearance(pathId, { color: appearance.color, emoji: appearance.emoji, expectedRevision: appearance.revision }, operationId));
     },
     async appearance(pathID, signal) {
-      const dto = accepted(await createSessionApiClient(baseURL, token, signal, rejected).pathAppearance(pathID));
+      const dto = accepted(await createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true }).pathAppearance(pathID));
       const colors = ['coral', 'lavender', 'gold', 'mint', 'blue', 'pink'] as const;
       const hash = Array.from(pathID).reduce((value, character) => (value * 31 + character.codePointAt(0)!) >>> 0, 0);
       if (dto.revision === 0) return { color: colors[hash % colors.length]!, emoji: '✨', revision: 0 };
@@ -82,7 +82,7 @@ export function apiPathRepository(baseURL: string, token: () => string | null, r
       let order: 'recent' | 'alphabetical' | 'manual' = 'recent';
       const seen = new Set<string>();
       do {
-        const reader = createSessionApiClient(baseURL, token, signal, rejected);
+        const reader = createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true });
         const response = await (archived ? reader.archivedPaths(cursor) : reader.paths(cursor));
         paths.push(...accepted(response).map(pathFromAPI));
         order = response.data!.meta.homePreferences.orderMethod;
