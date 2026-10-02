@@ -120,6 +120,6 @@ test('retained history carries observed edit order into the next offline edit', 
   const stamp = { authoredAt: new Date(now + 60000).toISOString(), counter: 4 };
   const history = durableHistoryRepository({ page: async () => ({ items: [{ ...entry('remote'), editStamp: stamp, note: 'remote', createdAt: new Date(now - 60000).toISOString(), updatedAt: new Date(now).toISOString() }], next: null }) }, env.runtime, () => true, 25, () => now);
   assert.equal(await history.refresh(), true);
-  await env.tracking.editRecordedActivity('remote', { startedAt: new Date(now - 180000).toISOString(), durationSeconds: 90, note: 'offline next' });
+  await env.tracking.editRecordedActivity('remote', { startedAt: new Date(now - 180000).toISOString(), durationSeconds: 90, note: 'offline-next' });
   assert.deepEqual((await env.tracking.snapshot()).activityOperations?.[0]?.stamp, { authoredAt: stamp.authoredAt, counter: 5 });
 });

@@ -249,6 +249,6 @@ test('native manual create and edit survive restart and update totals without a 
   assert.equal((await env.core().snapshot()).activityOperations?.length, 2);
   assert.equal((await env.core().localHistory('guitar')).items[0]?.note, 'revised');
   env.leave();
-  await assert.rejects(restored.saveActivity('guitar', saved.id, { startedAt: '2026-10-01T11:57:00Z', durationSeconds: 100, note: 'wrong account' }), /superseded/);
+  await assert.rejects(restored.saveActivity('guitar', saved.id, { startedAt: '2026-10-01T11:57:00Z', durationSeconds: 100, note: 'wrong-account' }), /superseded/);
   restored.dispose();
 });
