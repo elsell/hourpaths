@@ -81,3 +81,17 @@ completion watchers; report meaningful completion/failure/actionable changes,
 not unchanged polling results.
 
 Authorities: [Studio](../experience/web-studio.spec.md), [web boundaries](web-studio-architecture.spec.md), [offline](../sync/offline.spec.md), [deletion](../accounts/deletion.spec.md), [authentication](../accounts/authentication.spec.md), [notifications](../notifications/notifications.spec.md), [reminders](../notifications/reminders.spec.md), [native clients](clients.spec.md), [profile](../accounts/profile.spec.md), [visibility](../social/visibility.spec.md), [following](../social/following.spec.md), [preferences](../accounts/preferences.spec.md), [policies](../safety/user-policies.spec.md), [moderation](../safety/moderation.spec.md), [analytics](../analytics/stats-history.spec.md), [Path details](../experience/path-details.spec.md), and [accessibility](../experience/accessibility.spec.md).
+
+
+## Area 2 delivery progress
+
+PR #100 merged as `69fa9d4` on October 2 with durable timers, retained Home/history,
+clock correction, replay and account fences. Its five PR gates passed, including
+native Android/iOS compilation; browser offline/reload/reconnect and subsecond
+notice acceptance passed. Release availability is pending and is not credited
+as shipped. PR #101 fixes the demonstrated merge-evidence payload limit without
+weakening approval or check requirements.
+
+The active next slice is durable manual activity creation and editing, including
+causal replay and revision-preserving conflicts. Cold offline entry and complete
+cross-device/device acceptance remain explicit area 2 closure requirements.

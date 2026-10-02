@@ -1,3 +1,4 @@
+import { createRecordedActivity, editRecordedActivity, recordedActivityChanges, recordedActivityDelta, type ActivityEditStamp, type RecordedActivityInput, type RecordedActivityOperation } from './offline-recorded-activity';
 import { currentGoalPeriod, type CalendarGoal } from './calendar-goal';
 /** Credential loss pauses replay while preserving the account's durable work. */
 export class TrackingReplaySuspended extends Error {
@@ -26,6 +27,7 @@ export interface TrackingOperation extends LocalTimer {
 }
 export type TrackingRejection = 'membership' | 'deleted' | 'conflict' | 'archived' | 'validation';
 export interface RetainedActivity {
+  editStamp?: ActivityEditStamp;
   version?: number; note?: string; createdAt?: string; updatedAt?: string;
   id: string; owner: string; pathId: string; pathName?: string; startedAt: string; endedAt: string; timeZone: string;
 }
@@ -45,6 +47,7 @@ export interface TrackingSnapshot {
   unreflected: RetainedActivity[];
   timers: LocalTimer[];
   operations: TrackingOperation[];
+  activityOperations?: RecordedActivityOperation[];
   corrections: { timer: LocalTimer; endedAt: string; reviewedStartedAt?: string }[];
   notices: TrackingNotice[];
 }
@@ -175,7 +178,7 @@ export class OfflineTracking {
     if (this.disposed) throw new Error('tracking_disposed');
     this.validateTracking(pathId, summary, timer);
     const state = await this.snapshot();
-    if (state.revision !== expectedRevision || state.unavailablePaths?.includes(pathId) || state.corrections.some(value => value.timer.pathId === pathId) || state.operations.some(value => value.pathId === pathId)) return false;
+    if (state.revision !== expectedRevision || state.unavailablePaths?.includes(pathId) || state.corrections.some(value => value.timer.pathId === pathId) || (state.activityOperations ?? []).some(value => value.activity.pathId === pathId) || state.operations.some(value => value.pathId === pathId)) return false;
     this.applyTracking(state, pathId, summary, timer);
     state.revision++;
     if (this.disposed) throw new Error('tracking_disposed');
@@ -214,7 +217,7 @@ export class OfflineTracking {
     state.paths = copy(paths);
     state.unavailablePaths = state.unavailablePaths?.filter(id => !identifiers.has(id));
     for (const entry of entries) {
-      if (!state.corrections.some(value => value.timer.pathId === entry.pathId) && !state.operations.some(operation => operation.pathId === entry.pathId)) this.applyTracking(state, entry.pathId, entry.summary, entry.timer);
+      if (!(state.activityOperations ?? []).some(value => value.activity.pathId === entry.pathId) && !state.corrections.some(value => value.timer.pathId === entry.pathId) && !state.operations.some(operation => operation.pathId === entry.pathId)) this.applyTracking(state, entry.pathId, entry.summary, entry.timer);
     }
     state.revision++;
     if (this.disposed) throw new Error('tracking_disposed');
@@ -252,10 +255,10 @@ export class OfflineTracking {
     }
     const periodDelta = period ? periodIntervals.reduce((sum, value) => sum + seconds(Math.max(period.startsAt, Date.parse(value.startedAt)), Math.min(period.endsAt, Date.parse(value.endedAt))), 0) : 0;
     const timer = state.timers.find(value => value.pathId === pathId);
-    return { savedTotalSeconds: summary.savedTotalSeconds + total,
-      period: period ? { ...period, savedSeconds: period.savedSeconds + periodDelta } : null,
+    return { savedTotalSeconds: summary.savedTotalSeconds + total + recordedActivityDelta(state, pathId),
+      period: period ? { ...period, savedSeconds: period.savedSeconds + periodDelta + recordedActivityDelta(state, pathId, period) } : null,
       activeSession: timer ? { id: timer.id, startedAt: Date.parse(timer.startedAt), originalStartedAt: timer.startedAt, timeZone: timer.timeZone } : null,
-      pending: pending.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)) };
+      pending: (state.activityOperations ?? []).some(operation => operation.activity.pathId === pathId) || pending.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)) };
   }
   /** The complete server timer snapshot is adopted only against the revision
    * captured before fetching. Pending local starts remain visible until replay. */
@@ -303,7 +306,9 @@ export class OfflineTracking {
     if (state.revision !== expectedRevision) return false;
     const instant = this.now();
     const cutoff = instant - 90 * 24 * 60 * 60 * 1000;
-    state.history = copy(entries.filter(entry => Date.parse(entry.endedAt) >= cutoff));
+    const pendingIds = new Set((state.activityOperations ?? []).map(value => value.activity.id));
+    state.history = copy([...entries.filter(entry => !pendingIds.has(entry.id)), ...state.history.filter(entry => pendingIds.has(entry.id))]
+      .filter(entry => Date.parse(entry.endedAt) >= cutoff));
     state.historyRetainedAt = new Date(instant).toISOString();
     state.revision++;
     if (this.disposed) throw new Error('tracking_disposed');
@@ -311,10 +316,13 @@ export class OfflineTracking {
   }
   async pendingHistory(): Promise<RetainedActivity[]> {
     const state = await this.snapshot();
-    return state.operations.filter(operation => operation.kind !== 'start' && operation.endedAt
+    const timers: RetainedActivity[] = state.operations.filter(operation => operation.kind !== 'start' && operation.endedAt
       && Date.parse(operation.endedAt) - Date.parse(operation.correctedStartedAt ?? operation.startedAt) >= 1000)
       .map(operation => ({ id: operation.operationId, owner: this.owner, pathId: operation.pathId,
         startedAt: operation.correctedStartedAt ?? operation.startedAt, endedAt: operation.endedAt!, timeZone: operation.timeZone }));
+    const entries = new Map(timers.map(value => [value.id, value]));
+    for (const { activity } of recordedActivityChanges(state)) entries.set(activity.id, activity);
+    return [...entries.values()];
   }
   async localHistory(pathId: string): Promise<{ items: (RetainedActivity & { pending: boolean })[]; incomplete: boolean }> {
     const state = await this.snapshot();
@@ -325,7 +333,11 @@ export class OfflineTracking {
         id: operation.operationId, owner: this.owner, pathId, startedAt: operation.correctedStartedAt ?? operation.startedAt, endedAt: operation.endedAt!,
         timeZone: operation.timeZone, pending: true,
       }));
-    return { items: [...saved, ...pending].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.id.localeCompare(a.id)), incomplete: !state.historyRetainedAt };
+    const items = new Map([...saved, ...pending].map(entry => [entry.id, entry]));
+    for (const { activity } of recordedActivityChanges(state)) {
+      if (activity.pathId === pathId) items.set(activity.id, { ...activity, pending: true });
+    }
+    return { items: [...items.values()].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.id.localeCompare(a.id)), incomplete: !state.historyRetainedAt };
   }
   async retainPaths(paths: RetainedTrackingPath[], expectedRevision?: number): Promise<boolean> {
     for (const path of paths) this.validatePath(path);
@@ -338,6 +350,14 @@ export class OfflineTracking {
     state.revision++;
     if (this.disposed) throw new Error('tracking_disposed');
     return this.store.commit(this.owner, revision, state);
+  }
+  async createManualActivity(input: RecordedActivityInput & { pathId: string }): Promise<RetainedActivity> {
+    const now = this.now(), id = this.newId(), operationId = this.newId();
+    return this.change(state => createRecordedActivity(state, input, now, id, operationId));
+  }
+  async editRecordedActivity(activityId: string, input: RecordedActivityInput): Promise<RetainedActivity> {
+    const now = this.now(), operationId = this.newId();
+    return this.change(state => editRecordedActivity(state, activityId, input, now, operationId));
   }
   async start(pathId: string): Promise<LocalTimer> {
     // IDs and instants are captured once, before any storage contention retry.
