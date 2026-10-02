@@ -88,10 +88,23 @@ Authorities: [Studio](../experience/web-studio.spec.md), [web boundaries](web-st
 PR #100 merged as `69fa9d4` on October 2 with durable timers, retained Home/history,
 clock correction, replay and account fences. Its five PR gates passed, including
 native Android/iOS compilation; browser offline/reload/reconnect and subsecond
-notice acceptance passed. Release availability is pending and is not credited
-as shipped. PR #101 fixes the demonstrated merge-evidence payload limit without
+notice acceptance passed. The successful [release](https://github.com/elsell/hourpaths/actions/runs/37003991427)
+published revision `69fa9d4`; GitOps `c5494a8f766190da2df331fe49194c3825168578`
+was Ready/Healthy with completed API/web rollouts and public Studio HTTP 200.
+The iOS archive/upload succeeded; Apple availability and device acceptance
+remain unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
 The active next slice is durable manual activity creation and editing, including
 causal replay and revision-preserving conflicts. Cold offline entry and complete
 cross-device/device acceptance remain explicit area 2 closure requirements.
+
+The manual-activity slice now has a durable account queue, immutable replay,
+owner-only causal metadata, retained losing revisions, and Studio/mobile form
+integration. Focused PostgreSQL acceptance covers lost acknowledgements, online
+versus delayed offline edits, deletion retries, and invalid pre-membership
+occurrences. Browser acceptance on warm revision `a0120a6` demonstrated offline
+create/edit/reload/reconnect with unchanged operation IDs and a server-backed
+saved note. Later precision and validation fixes have focused regression evidence.
+This slice remains unmerged and unreleased; final review and candidate gates
+are outstanding. No additional acceptance area is closed.
