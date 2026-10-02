@@ -44,17 +44,20 @@ test('Studio offline cache cannot expose tracking for a confirmed inaccessible P
 });
 
 test('Studio Home hydrates hidden Paths before offline restart and preserves its complete cache when one read fails', async context => {
-  let offline = false, failSecond = false, sequence = 0;
+  let offline = false, failSecond = false, sequence = 0, interruptHydration = false, savedSeconds = 60;
   const requests: string[] = [];
   const server = createServer((request, response) => {
     const url = new URL(request.url!, 'http://localhost').pathname; requests.push(url);
     if (offline || failSecond && url === '/v1/paths/reading/timer') { response.writeHead(503); response.end('{}'); return; }
+    if (interruptHydration && url === '/v1/paths/reading/timer' && row) {
+      row = { ...row, revision: row.revision + 1 }; interruptHydration = false;
+    }
     let body: unknown;
     if (url === '/v1/paths') body = { data: ['guitar', 'reading'].map((id, position) => ({ id, name: id, visibility: 'private', home: { manualPosition: position },
       intervalGoal: { targetSeconds: 1800, recurrence: 'daily', alignment: { hour: 0 } },
       capabilities: { trackTime: true, renamePath: true, manageGoals: true, manageLifecycle: true } })),
       meta: { homePreferences: { orderMethod: 'manual' } } };
-    else if (url.endsWith('/timer')) body = { data: { accumulatedSeconds: 60, running: false, intervalProgress: { accumulatedSeconds: 60, targetSeconds: 1800,
+    else if (url.endsWith('/timer')) body = { data: { accumulatedSeconds: savedSeconds, running: false, intervalProgress: { accumulatedSeconds: savedSeconds, targetSeconds: 1800,
       startedAt: '2026-10-01T00:00:00Z', endedAt: '2026-10-02T00:00:00Z' } } };
     else if (url.startsWith('/v1/me/path-appearances/')) body = { data: { revision: 2, color: 'mint', emoji: '🎸' } };
     else { response.writeHead(404); response.end('{}'); return; }
@@ -83,6 +86,8 @@ test('Studio Home hydrates hidden Paths before offline restart and preserves its
   const first = create(); await first.list(false);
   assert.equal((await store.read('alice'))?.summaries.reading.savedTotalSeconds, 60);
   const retained = await cache.readHome('alice'); assert.equal(retained?.appearances.reading.emoji, '🎸');
+  interruptHydration = true; savedSeconds = 90; await first.list(false);
+  assert.equal((await store.read('alice'))?.summaries.reading.savedTotalSeconds, 90);
   failSecond = true; await first.list(false); assert.deepEqual(await cache.readHome('alice'), retained);
   offline = true; const restored = create(); await restored.list(false);
   const reading = await restored.start('reading', 'start-hidden'); assert.ok(reading.activeSession);

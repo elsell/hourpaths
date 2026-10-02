@@ -84,39 +84,46 @@ export function durablePathRepository(
         const retained = await retainedPaths();
         if (retained) return retained;
       }
-      try {
-        const before = await current.tracking.snapshot();
-        const paths = await remote.list(false, signal);
-        if (current.refreshTimeZone) current.timeZone = await current.refreshTimeZone();
-        current.assertCurrent();
-        signal?.throwIfAborted();
-        const participating = paths.filter(path => path.canTrack && !path.archived);
-        const values = await mapPaths(participating, async path => {
-          const [summary, appearance] = await Promise.all([remote.tracking(path.id, signal), remote.appearance(path.id, signal)]);
+      async function hydrate(retries: number): Promise<readonly Path[]> {
+        try {
+          const before = await current.tracking.snapshot();
+          const paths = await remote.list(false, signal);
+          if (current.refreshTimeZone) current.timeZone = await current.refreshTimeZone();
           current.assertCurrent();
-          return { path, summary, appearance };
-        });
-        signal?.throwIfAborted();
-        const retained = await current.tracking.retainHome(participating.map(path => ({ id: path.id, name: path.name, timeZone: current.timeZone, goal: path.goal })),
-          values.map(({ path, summary }) => ({ pathId: path.id, summary, timer: summary.activeSession ? {
-            id: summary.activeSession.id, pathId: path.id, startedAt: summary.activeSession.originalStartedAt ?? new Date(summary.activeSession.startedAt).toISOString(),
-            timeZone: summary.activeSession.timeZone ?? current.timeZone,
-          } : null })), before.revision);
-        if (!retained) throw new PathRequestError(503);
-        current.assertCurrent();
-        await cache.saveHome(current.owner, participating, Object.fromEntries(values.map(value => [value.path.id, value.appearance])));
-        current.assertCurrent();
-        for (const path of participating) {
-          prefetchedTracking.add(ownedKey(current.owner, path.id)); prefetchedAppearance.add(ownedKey(current.owner, path.id));
+          signal?.throwIfAborted();
+          const participating = paths.filter(path => path.canTrack && !path.archived);
+          const values = await mapPaths(participating, async path => {
+            const [summary, appearance] = await Promise.all([remote.tracking(path.id, signal), remote.appearance(path.id, signal)]);
+            current.assertCurrent();
+            return { path, summary, appearance };
+          });
+          signal?.throwIfAborted();
+          const retained = await current.tracking.retainHome(participating.map(path => ({ id: path.id, name: path.name, timeZone: current.timeZone, goal: path.goal })),
+            values.map(({ path, summary }) => ({ pathId: path.id, summary, timer: summary.activeSession ? {
+              id: summary.activeSession.id, pathId: path.id, startedAt: summary.activeSession.originalStartedAt ?? new Date(summary.activeSession.startedAt).toISOString(),
+              timeZone: summary.activeSession.timeZone ?? current.timeZone,
+            } : null })), before.revision);
+          if (!retained) {
+            signal?.throwIfAborted();
+            if (retries > 0) return hydrate(retries - 1);
+            throw new PathRequestError(503);
+          }
+          current.assertCurrent();
+          await cache.saveHome(current.owner, participating, Object.fromEntries(values.map(value => [value.path.id, value.appearance])));
+          current.assertCurrent();
+          for (const path of participating) {
+            prefetchedTracking.add(ownedKey(current.owner, path.id)); prefetchedAppearance.add(ownedKey(current.owner, path.id));
+          }
+          const unavailable = (await current.tracking.snapshot()).unavailablePaths ?? [];
+          return paths.filter(path => !unavailable.includes(path.id));
+        } catch (error) {
+          if (signal?.aborted || !temporary(error)) throw error;
+          const retained = await retainedPaths();
+          if (!retained) throw error;
+          return retained;
         }
-        const unavailable = (await current.tracking.snapshot()).unavailablePaths ?? [];
-        return paths.filter(path => !unavailable.includes(path.id));
-      } catch (error) {
-        if (signal?.aborted || !temporary(error)) throw error;
-        const retained = await retainedPaths();
-        if (!retained) throw error;
-        return retained;
       }
+      return hydrate(2);
     },
     async read(pathId, signal) {
       try { return await remote.read(pathId, signal); }
