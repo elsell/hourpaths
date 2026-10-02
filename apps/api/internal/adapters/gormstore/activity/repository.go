@@ -369,6 +369,14 @@ func (r *Repository) UpdateActivity(ctx context.Context, command application.Upd
 			return err
 		}
 		prior := toActivity(current)
+		previousOrder, err := loadEditOrder(tx, prior)
+		if err != nil {
+			return err
+		}
+		nextOrder, err := domain.NextActivityEditOrder(command.UpdatedAt, previousOrder, command.Idempotency.Key)
+		if err != nil {
+			return ports.ErrInvalidArgument
+		}
 		edited, revision, err := prior.EditByOwner(command.ParticipantID, command.Edit, command.UpdatedAt)
 		if err != nil {
 			return ports.ErrInvalidArgument
@@ -404,6 +412,9 @@ func (r *Repository) UpdateActivity(ctx context.Context, command application.Upd
 		}
 		if updated.RowsAffected != 1 {
 			return ports.ErrNotFound
+		}
+		if err := saveEditOrder(tx, command.ActivityID, nextOrder); err != nil {
+			return err
 		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err

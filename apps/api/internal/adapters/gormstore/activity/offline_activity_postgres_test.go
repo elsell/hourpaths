@@ -70,4 +70,28 @@ func TestPostgresRecordedReplayRetainsLosingEdit(t *testing.T) {
 	if err := db.Model(&activityRevisionModel{}).Where("activity_id = ?", "recorded-entry").Count(&revisions).Error; err != nil || revisions != 2 {
 		t.Fatalf("revisions=%d err=%v", revisions, err)
 	}
+	online := application.UpdateActivityCommand{ActivityID: create.Activity.ID, PathID: create.Activity.PathID, ParticipantID: create.Activity.ParticipantID, Edit: domain.ActivityEdit{StartedAt: create.Activity.StartedAt, DurationSeconds: 90, OccurrenceTimeZone: "UTC", Note: "online"}, UpdatedAt: now.Add(time.Minute), Idempotency: idempotency(create.Activity.ParticipantID, application.UpdateActivityOperation, "recorded-online-0001", 4), Audit: activityAudit("recorded-online-audit", create.Activity.ParticipantID, create.Activity.ID, audit.ResourceUpdated, now.Add(time.Minute))}
+	if _, err := repo.UpdateActivity(context.Background(), online); err != nil {
+		t.Fatal(err)
+	}
+	delayed := makeCommand("edit", "delayed", "recorded-delayed-0001", 0, 5)
+	delayed.Activity.UpdatedAt = now.Add(2 * time.Minute)
+	delayed.Audit.OccurredAt = delayed.Activity.UpdatedAt
+	result, err := repo.SynchronizeActivity(context.Background(), delayed)
+	if err != nil || result.Activity == nil || result.Activity.Note != "online" {
+		t.Fatalf("delayed replaced online: %+v err=%v", result, err)
+	}
+
+	deletedAt := now.Add(3 * time.Minute)
+	deletion := application.DeleteActivityCommand{ActivityID: create.Activity.ID, PathID: create.Activity.PathID, ParticipantID: create.Activity.ParticipantID, Idempotency: idempotency(create.Activity.ParticipantID, application.DeleteActivityOperation, "recorded-delete-0001", 6), Audit: activityAudit("recorded-delete-audit", create.Activity.ParticipantID, create.Activity.ID, audit.ResourceDeleted, deletedAt)}
+	if _, err := repo.DeleteActivity(context.Background(), deletion); err != nil {
+		t.Fatal(err)
+	}
+	for _, command := range []application.OfflineActivityCommand{create, newer, delayed, makeCommand("edit", "after delete", "recorded-deleted-0001", 0, 7), makeCommand("create", "resurrect", "recorded-recreate-0001", 0, 8)} {
+		result, err := repo.SynchronizeActivity(context.Background(), command)
+		if err != nil || result.Outcome != "deleted" || result.Activity != nil {
+			t.Fatalf("deleted replay resurrected: %+v err=%v", result, err)
+		}
+	}
+
 }
