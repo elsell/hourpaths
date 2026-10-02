@@ -299,8 +299,8 @@ grep -Fq '"overallTarget":{"targetSeconds":120}' "$live"
 grep -Fq '"intervalGoal":{"targetSeconds":60,"recurrence":"daily","alignment":{"hour":0}}' "$live"
 grep -Fq "createManualActivity(pathID" apps/web/src/routes/+page.svelte
 grep -Fq "updateActivity(pathID" apps/web/src/routes/+page.svelte
-grep -Fq "createManualActivity(pathID" apps/mobile/app/index.tsx
-grep -Fq "updateActivity(pathID" apps/mobile/app/index.tsx
+# Native creation/editing now commits through the durable queue. Its behavioral
+# tests cover persistence/replay; do not require an obsolete direct API call.
 grep -Fq "Home exposed manual activity entry" "$manual_activity"
 grep -Fq 'locator(`[data-activity-id="${activityID}"]`)' "$manual_activity"
 grep -Fq "createdBody?.data?.activity?.note !== 'browser private note'" "$manual_activity"
