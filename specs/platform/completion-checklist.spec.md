@@ -91,8 +91,9 @@ native Android/iOS compilation; browser offline/reload/reconnect and subsecond
 notice acceptance passed. The successful [release](https://github.com/elsell/hourpaths/actions/runs/37003991427)
 published revision `69fa9d4`; GitOps `c5494a8f766190da2df331fe49194c3825168578`
 was Ready/Healthy with completed API/web rollouts and public Studio HTTP 200.
-The iOS archive/upload succeeded; Apple availability and device acceptance
-remain unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
+TestFlight 0.28.0 (267) is VALID, IN_BETA_TESTING and assigned to the internal
+tester group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37011326744)).
+Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
 The active next slice is durable manual activity creation and editing, including
@@ -106,5 +107,9 @@ versus delayed offline edits, deletion retries, and invalid pre-membership
 occurrences. Browser acceptance on warm revision `a0120a6` demonstrated offline
 create/edit/reload/reconnect with unchanged operation IDs and a server-backed
 saved note. Later precision and validation fixes have focused regression evidence.
-This slice remains unmerged and unreleased; final review and candidate gates
-are outstanding. No additional acceptance area is closed.
+PR #104 remains unmerged and unreleased. Final review found two causal-ordering
+failures, now fixed with regressions covering timer receipt time and observed
+microsecond precision. Candidate gates also caught an obsolete direct-API
+assertion and the readiness migration version; both are corrected. Required
+candidate gates and owner approval remain pending. No additional acceptance area
+is closed.
