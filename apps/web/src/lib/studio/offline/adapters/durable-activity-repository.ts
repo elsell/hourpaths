@@ -15,7 +15,18 @@ export function durableActivityRepository(remote: ActivityRepository, runtime: (
     ...remote,
     async defaults(pathId, signal) {
       const current = await runtime(); current.assertCurrent();
-      try { const value = await remote.defaults(pathId, signal); current.assertCurrent(); return value; }
+      try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const before = await current.tracking.snapshot();
+          const value = await remote.defaults(pathId, signal); current.assertCurrent();
+          signal?.throwIfAborted();
+          if (!value.canTrack || before.paths.some(path => path.id === pathId) && !before.unavailablePaths?.includes(pathId)) return value;
+          if (await current.tracking.retainActivityPath({ id: pathId, name: value.pathName, timeZone: value.timeZone, goal: value.goal }, before.revision)) {
+            current.assertCurrent(); return value;
+          }
+        }
+        throw new Error('activity_path_changed');
+      }
       catch (error) {
         if (signal?.aborted || !temporary(error)) throw error;
         const state = await current.tracking.snapshot(); current.assertCurrent();

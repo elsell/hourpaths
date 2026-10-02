@@ -156,3 +156,24 @@ test('an edit after clock rollback preserves observed microsecond causal precisi
   await core.editRecordedActivity('entry', { startedAt: '2026-10-02T11:00:00Z', durationSeconds: 60, note: 'revised' });
   assert.deepEqual((await core.snapshot()).activityOperations![0].stamp, { authoredAt: '2026-10-02T12:00:00.123456Z', counter: 5 });
 });
+
+
+test('a scoped editor read restores only its Path and cannot overwrite a newer rejection', async () => {
+  const store = new Ledger();
+  const core = new OfflineTracking(store, 'alice', () => Date.parse('2026-10-02T12:00:00Z'), () => 'operation');
+  const guitar = { id: 'guitar', name: 'Guitar', timeZone: 'UTC' };
+  const piano = { id: 'piano', name: 'Piano', timeZone: 'UTC' };
+  await core.retainPaths([guitar, piano]);
+  const rejected = await core.snapshot();
+  rejected.unavailablePaths = ['guitar', 'piano'];
+  rejected.revision++;
+  assert.equal(await store.commit('alice', rejected.revision - 1, rejected), true);
+  assert.equal(await core.retainActivityPath(guitar, rejected.revision), true);
+  const restored = await core.snapshot();
+  assert.deepEqual(restored.unavailablePaths, ['piano']);
+  assert.equal(restored.paths.length, 2);
+  assert.equal(await core.retainActivityPath(piano, rejected.revision), false);
+  assert.deepEqual((await core.snapshot()).unavailablePaths, ['piano']);
+  core.dispose();
+  await assert.rejects(core.retainActivityPath(piano, restored.revision), /tracking_disposed/);
+});

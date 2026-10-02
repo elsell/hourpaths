@@ -197,6 +197,10 @@ activity identity and operation identity before reporting success. Commands must
 use the locally retained participating Path and occurrence IANA zone; a server
 profile-zone change must not reinterpret an already authored occurrence.
 Existing recorded entries retain their occurrence zone when edited.
+Opening an activity editor directly must retain its freshly authorized
+participating Path, including its goal and occurrence zone, before enabling a
+durable save. This scoped read must not replace other retained Paths or clear
+unrelated access rejections, and must fence concurrent account/ledger changes.
 
 The account ledger must retain a separate typed recorded-activity command queue,
 using the same atomic revision as timers and retained history. Creation must

@@ -123,3 +123,13 @@ test('retained history carries observed edit order into the next offline edit', 
   await env.tracking.editRecordedActivity('remote', { startedAt: new Date(now - 180000).toISOString(), durationSeconds: 90, note: 'offline-next' });
   assert.deepEqual((await env.tracking.snapshot()).activityOperations?.[0]?.stamp, { authoredAt: stamp.authoredAt, counter: 5 });
 });
+
+test('direct activity entry retains its authorized Path before saving without a Home visit', async () => {
+  const { durableActivityRepository } = await import('./studio/offline/adapters/durable-activity-repository');
+  const env = setup();
+  const unavailable = async (): Promise<never> => { throw new TypeError('offline'); };
+  const repository = durableActivityRepository({ defaults: async () => ({ pathName: 'guitar', currentInstant: now, timeZone: utcTimeZone, canTrack: true }), save: unavailable, detail: unavailable, revisions: unavailable, remove: unavailable }, env.runtime, failure => failure instanceof TypeError, () => now);
+  await repository.defaults('path');
+  const saved = await repository.save({ pathId: 'path', activityId: null, operationId: 'direct-1', input: { localDate: '2026-10-02', localTime: '11:58:00', seconds: 60, note: 'direct' } });
+  assert.equal((await env.tracking.localHistory('path')).items[0].id, saved.id);
+});

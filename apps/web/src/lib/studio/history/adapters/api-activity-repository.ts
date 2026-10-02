@@ -22,7 +22,7 @@ export function apiActivityRepository(baseURL: string, token: () => string | nul
       const currentInstant = Date.parse(defaults.currentInstant);
       if (path.id !== pathId || !path.name || !Number.isFinite(currentInstant)) throw new Error('activity_defaults_invalid');
       new Intl.DateTimeFormat('en', { timeZone: defaults.timeZone }).format(currentInstant);
-      return { pathName: path.name, currentInstant, timeZone: defaults.timeZone, canTrack: path.capabilities.trackTime };
+      return { pathName: path.name, currentInstant, timeZone: defaults.timeZone, canTrack: path.capabilities.trackTime, goal: path.intervalGoal ? { targetSeconds: path.intervalGoal.targetSeconds, recurrence: path.intervalGoal.recurrence, alignment: { ...path.intervalGoal.alignment } } : null };
     },
     async save(review) {
       const body = { localDate: review.input.localDate, localStartTime: review.input.localTime, durationSeconds: review.input.seconds, note: review.input.note };

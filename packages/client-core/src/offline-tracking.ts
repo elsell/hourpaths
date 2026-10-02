@@ -387,6 +387,18 @@ export class OfflineTracking {
     if (this.disposed) throw new Error('tracking_disposed');
     return this.store.commit(this.owner, revision, state);
   }
+  /** A fresh authorized editor read may retain one Path without claiming Home is complete. */
+  async retainActivityPath(path: RetainedTrackingPath, expectedRevision: number): Promise<boolean> {
+    this.validatePath(path);
+    if (this.disposed) throw new Error('tracking_disposed');
+    const state = await this.snapshot();
+    if (state.revision !== expectedRevision) return false;
+    state.paths = [...state.paths.filter(value => value.id !== path.id), copy(path)];
+    state.unavailablePaths = state.unavailablePaths?.filter(id => id !== path.id);
+    state.revision++;
+    if (this.disposed) throw new Error('tracking_disposed');
+    return this.store.commit(this.owner, expectedRevision, state);
+  }
   async createManualActivity(input: RecordedActivityInput & { pathId: string }): Promise<RetainedActivity> {
     const now = this.now(), id = this.newId(), operationId = this.newId();
     return this.change(state => createRecordedActivity(state, input, now, id, operationId));
