@@ -389,6 +389,9 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     savePathAppearance: (pathID: string, body: components['schemas']['AppearanceSaveInputBody'], idempotencyKey: string) => authenticatedClient.PUT('/v1/me/path-appearances/{pathID}', {
       params: { path: { pathID }, header: { 'Idempotency-Key': idempotencyKey } }, body,
     }),
+    synchronizeOfflineActivity: (pathId: string, body: components['schemas']['OfflineActivityInput'], idempotencyKey: string) => authenticatedClient.POST('/v1/paths/{pathId}/offline-activity', {
+      params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } }, body,
+    }),
     synchronizeOfflineTimer: (pathId: string, body: components['schemas']['OfflineTimerInput'], idempotencyKey: string) => authenticatedClient.POST('/v1/paths/{pathId}/offline-timer', {
       params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } }, body,
     }),

@@ -82,7 +82,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
         new Intl.DateTimeFormat('en', { timeZone: configured.data.data.timeZone });
         return configured.data.data.timeZone;
       }, wake: () => { notify(); void worker?.wake(); } };
-    if (retained.operations.length) current.wake();
+    if (retained.operations.length || retained.activityOperations?.length) current.wake();
     return current;
   }
   function runtime(): Promise<TrackingRuntime> {
@@ -98,7 +98,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       context.assertCurrent();
       const offline = !connected() || !serverAvailable;
       return { offline, showBanner: offline && !bannerDismissed,
-        pending: state.operations.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)), unavailablePathIds: state.unavailablePaths ?? [],
+        pending: Boolean(state.activityOperations?.length) || state.operations.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)), unavailablePathIds: state.unavailablePaths ?? [],
         corrections: state.corrections.map(value => ({ id: value.timer.id, pathName: state.paths.find(path => path.id === value.timer.pathId)?.name ?? '',
           reviewedStartedAt: value.reviewedStartedAt, startedAt: value.timer.startedAt, endedAt: value.endedAt, timeZone: value.timer.timeZone })),
         notices: state.notices.map(notice => ({ ...notice, pathName: state.paths.find(path => path.id === notice.pathId)?.name })) };

@@ -47,7 +47,8 @@ export function mobileOfflineHome(dependencies: {
       sync: dependencies.sync(owner, () => context === next && next.credential && Date.parse(next.credential.expiresAt) > dependencies.now() ? next.credential : null),
       changed: async () => {
         await publish(next);
-        if (!(await tracking.snapshot()).operations.length && context === next && !next.paused) void next.refreshWorker.wake();
+        const state = await tracking.snapshot();
+        if (!state.operations.length && !state.activityOperations?.length && context === next && !next.paused) void next.refreshWorker.wake();
       },
     });
     next.refreshWorker = new TrackingReplayWorker(async () => {
