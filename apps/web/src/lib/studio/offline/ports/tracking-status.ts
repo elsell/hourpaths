@@ -19,8 +19,13 @@ export interface TrackingStatus {
   notices: TrackingNoticeView[];
   corrections: ClockCorrectionView[];
 }
+export interface TrackingChange {
+  refreshHome?: boolean;
+  pathIds?: readonly string[];
+  historyChanged?: boolean;
+}
 export interface OfflineStatus {
-  subscribe(listener: (refreshHome?: boolean) => void): () => void;
+  subscribe(listener: (change?: TrackingChange) => void): () => void;
   snapshot(): Promise<TrackingStatus>;
   dismissBanner(): void;
   dismissNotice(id: string): Promise<void>;

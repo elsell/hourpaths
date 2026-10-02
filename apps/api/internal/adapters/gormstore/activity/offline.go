@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/progresslock"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/activity"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
@@ -58,7 +59,7 @@ func (r *Repository) SynchronizeTimer(ctx context.Context, command application.O
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Serialize this account's offline identities across Paths before the normal
 		// progress/Path locks. Reusing a client identity on another Path cannot race.
-		if err := tx.Exec("SELECT pg_advisory_xact_lock(hashtextextended(?, 0))", "offline-timers:"+command.Timer.ParticipantID).Error; err != nil {
+		if err := progresslock.LockKey(tx, "offline-timers:"+command.Timer.ParticipantID); err != nil {
 			return err
 		}
 		joined, archived, err := lockPathMembership(tx, command.Timer.PathID, command.Timer.ParticipantID)

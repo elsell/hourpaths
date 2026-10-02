@@ -1,5 +1,5 @@
 import { PathRequestError } from '../../paths/adapters/path-mapping';
-import type { TrackingStatus } from '../ports/tracking-status';
+import type { TrackingChange, TrackingStatus } from '../ports/tracking-status';
 import { createSessionApiClient } from '@hourpaths/api-client';
 import { OfflineTracking, TrackingReplayWorker, apiTrackingSync } from '@hourpaths/client-core';
 import type { SessionController } from '../../session/application/session-controller';
@@ -15,8 +15,8 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
   let pending: Promise<TrackingRuntime> | null = null;
   let current: TrackingRuntime | null = null;
   let worker: TrackingReplayWorker | null = null;
-  const listeners = new Set<(refreshHome?: boolean) => void>();
-  const notify = (refreshHome = false) => { if (!disposed) for (const listener of listeners) listener(refreshHome); };
+  const listeners = new Set<(change?: TrackingChange) => void>();
+  const notify = (change: TrackingChange = {}) => { if (!disposed) for (const listener of listeners) listener(change); };
   const assertAlive = () => { if (disposed || !session.token()) throw new Error('tracking_session_unavailable'); };
   async function initialize(): Promise<TrackingRuntime> {
     assertAlive();
@@ -47,9 +47,15 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     assertCurrent();
     const sync = apiTrackingSync(requested => !disposed && session.owner() === requested && session.token()
       ? createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value)) : null);
-    worker = new TrackingReplayWorker(() => tracking.replay(sync), (work, delay) => {
+    let replayChange: TrackingChange = {};
+    worker = new TrackingReplayWorker(async () => {
+      const snapshot = await tracking.snapshot();
+      const queued = snapshot.operations.filter(operation => !snapshot.corrections.some(value => value.timer.id === operation.timerId));
+      replayChange = { pathIds: [...new Set(queued.map(operation => operation.pathId))], historyChanged: queued.some(operation => operation.kind !== 'start') };
+      await tracking.replay(sync);
+    }, (work, delay) => {
       const timer = setTimeout(work, delay); return () => clearTimeout(timer);
-    }, () => { assertCurrent(); notify(); });
+    }, () => { assertCurrent(); notify(replayChange); });
     current = { owner: boundOwner, timeZone, tracking, assertCurrent, connected,
       reportNetwork: available => {
         assertCurrent();
@@ -61,7 +67,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
           const delay = Math.min(60_000, 1000 * 2 ** Math.min(networkFailures++, 6));
           networkRetry = setTimeout(() => {
             networkRetry = null;
-            if (!disposed && connected()) notify(true);
+            if (!disposed && connected()) notify({ refreshHome: true });
           }, delay);
         }
         if (serverAvailable === available) return;
@@ -112,11 +118,11 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       context.assertCurrent();
       notify();
     },
-    subscribe(listener: (refreshHome?: boolean) => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    subscribe(listener: (change?: TrackingChange) => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; },
     retry(): void {
       if (disposed) return;
       if (connected()) bannerDismissed = false;
-      notify(true);
+      notify({ refreshHome: true });
       if (connected()) { worker?.setPaused(false); void worker?.wake(); }
     },
     dispose(): void { disposed = true; if (networkRetry) clearTimeout(networkRetry); worker?.dispose(); current?.tracking.dispose(); listeners.clear(); void store.close(); },

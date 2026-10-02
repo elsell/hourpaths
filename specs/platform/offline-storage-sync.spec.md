@@ -160,9 +160,10 @@ even if the browser still reports a network connection. A successful fresh Home
 read must clear that state.
 Temporary Home read failures, including rate limits, must retry with bounded
 backoff while preserving the cache and account-scoped pending work.
-Timer rendering and local queue notifications must use the retained timer
-projection without refetching every Path. Home refresh owns remote timer
-hydration, so reconnecting or settling a command does not multiply timer reads.
+Local queue notifications must not refetch every Path. A completed replay must
+refresh only affected Path timers and, when recorded activity changed, history.
+Home refresh must hydrate timers before refreshing rendered projections.
+Ordinary detail and edit refreshes must still read fresh server totals.
 Both clients must show the saved and discarded durations for an archival
 rejection. A rejection may display its retained Path name only when the replay
 outcome permits identifying that Path; inaccessible resources remain unnamed.
@@ -176,3 +177,11 @@ splitting, lost membership, device-clock correction, and unrelated queue
 preservation. Run adversarial REST/persistence checks for the new boundary and
 real platform persistence tests. Existing behavior tests should be reused;
 source-shape assertions are not evidence of durable operation.
+
+### Database verification boundaries
+
+Offline replay must reuse the reviewed transaction advisory-lock adapter. Its
+controlled PostgreSQL integration tests may execute exact allowlisted SQL to
+inspect and install the embedded migration transactionally and switch between
+migrator and runtime roles. This exception must not authorize application SQL
+or arbitrary test files.

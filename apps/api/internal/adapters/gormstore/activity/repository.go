@@ -755,21 +755,6 @@ func replayedUpdate(tx *gorm.DB, command application.UpdateActivityCommand) (app
 	return application.UpdateActivityResult{Activity: entry, Revision: domain.ActivityRevision{Activity: prior, ReplacedAt: row.ReplacedAt.UTC()}, Version: version, AccumulatedSeconds: projection.AccumulatedSeconds, IntervalProgress: projection.IntervalProgress, Replayed: true}, true, nil
 }
 
-func mutationResultUpdates(timer timerModel, entry domain.RecordedActivity, saved bool) map[string]any {
-	updates := map[string]any{
-		"result_started_at":     timer.StartedAt,
-		"result_time_zone":      timer.OccurrenceTimeZone,
-		"result_activity_saved": saved,
-	}
-	if saved {
-		updates["result_activity_id"] = entry.ID
-		updates["result_ended_at"] = entry.EndedAt
-		updates["result_created_at"] = entry.CreatedAt
-		updates["result_updated_at"] = entry.UpdatedAt
-	}
-	return updates
-}
-
 func fromRevision(revision domain.ActivityRevision, version int64, publicChanged bool) activityRevisionModel {
 	return activityRevisionModel{ActivityID: revision.Activity.ID, Version: version, StartedAt: revision.Activity.StartedAt, EndedAt: revision.Activity.EndedAt, OccurrenceTimeZone: revision.Activity.OccurrenceTimeZone, Note: optionalNote(revision.Activity.Note), PublicChanged: publicChanged, UpdatedAt: revision.Activity.UpdatedAt, ReplacedAt: revision.ReplacedAt}
 }

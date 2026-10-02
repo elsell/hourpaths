@@ -83,17 +83,19 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
-  useEffect(() => d.offline?.subscribe((refreshHome) => {
-    if (refreshHome) {
+  useEffect(() => d.offline?.subscribe((change = {}) => {
+    if (change.refreshHome) {
       const queryKey = [d.accountScope, 'paths'];
-      void client.cancelQueries({ queryKey }).then(() => client.invalidateQueries({ queryKey }));
+      void client.cancelQueries({ queryKey }).then(() => client.invalidateQueries({ queryKey }))
+        .then(() => client.invalidateQueries({ queryKey: [d.accountScope, 'tracking'] }));
+    } else {
+      for (const pathId of change.pathIds ?? []) void client.invalidateQueries({ queryKey: [d.accountScope, 'tracking', pathId] });
     }
     void client.fetchQuery({ queryKey: [d.accountScope, 'offlineState'], queryFn: () => d.offline!.snapshot(), staleTime: 0 }).then(state => {
       if (!state.unavailablePathIds?.length) return;
       client.setQueriesData<readonly Path[]>({ queryKey: [d.accountScope, 'paths'] }, paths => paths?.filter(path => !state.unavailablePathIds!.includes(path.id)));
     }).catch(() => undefined);
-    void client.invalidateQueries({ queryKey: [d.accountScope, 'tracking'] });
-    void client.invalidateQueries({ queryKey: [d.accountScope, 'history'] });
+    if (change.refreshHome || change.historyChanged) void client.invalidateQueries({ queryKey: [d.accountScope, 'history'] });
   }), [d, client]);
   useEffect(() => {
     const key = [d.accountScope, 'notificationOperation'];
@@ -166,7 +168,7 @@ function PathRow({ path, dependencies: d, move, moving, initialDetails = false }
       const session = query.data?.activeSession;
       return session ? d.paths.stop(path.id, session.id, d.operationId()) : d.paths.start(path.id, d.operationId());
     },
-    onSuccess: value => { client.setQueryData(key, value); setNow(d.now()); void client.invalidateQueries({ queryKey: [d.accountScope, 'history'] }); },
+    onSuccess: value => { client.setQueryData(key, value); setNow(d.now()); if (!value.activeSession) void client.invalidateQueries({ queryKey: [d.accountScope, 'history'] }); },
   });
   const format = (seconds: number) => duration(d.i18n, seconds);
   const value = path.goal ? progress?.periodSeconds : progress?.totalSeconds;
