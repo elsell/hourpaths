@@ -14,20 +14,20 @@ export function apiHistorySource(apiURL: string, token: () => string | null, pat
   };
   return {
     async initial(signal) {
-      const profile = accepted(await createSessionApiClient(apiURL, token, signal, rejected).profile());
+      const profile = accepted(await createSessionApiClient(apiURL, token, signal, rejected, { retryRateLimitedReads: true }).profile());
       const all = [...await paths.list(false, signal), ...await paths.list(true, signal)];
       const unique = [...new Map(all.map(path => [path.id, path])).values()];
       return { participantId: profile.id, streams: unique.map(path => ({ pathId: path.id, pathName: path.name, remaining: [], cursor: null, loaded: false })) };
     },
     async read(pathId, pathName, participantId, cursor, signal) {
-      const response = await createSessionApiClient(apiURL, token, signal, rejected).activities(pathId, cursor ?? undefined, participantId);
-      const items = accepted(response).map(({ activity }) => {
+      const response = await createSessionApiClient(apiURL, token, signal, rejected, { retryRateLimitedReads: true }).activities(pathId, cursor ?? undefined, participantId);
+      const items = accepted(response).map(({ activity, version }) => {
         const startedAt = Date.parse(activity.startedAt);
         const endedAt = Date.parse(activity.endedAt);
         if (activity.pathId !== pathId || activity.participantId !== participantId || !Number.isFinite(startedAt) || !Number.isFinite(endedAt) || endedAt <= startedAt || !Number.isFinite(activity.durationSeconds) || activity.durationSeconds < 0) throw new Error('history_invalid');
         // Validate the authoritative occurrence zone before presentation formats it.
         new Intl.DateTimeFormat('en', { timeZone: activity.occurrenceTimeZone }).format(startedAt);
-        return { id: activity.id, pathId, pathName, startedAt, endedAt, seconds: activity.durationSeconds, timeZone: activity.occurrenceTimeZone };
+        return { editStamp: activity.editOrder ? { authoredAt: activity.editOrder.authoredAt, counter: activity.editOrder.counter } : undefined, originalStartedAt: activity.startedAt, originalEndedAt: activity.endedAt, note: activity.note ?? '', version, createdAt: activity.createdAt, updatedAt: activity.updatedAt, id: activity.id, pathId, pathName, startedAt, endedAt, seconds: activity.durationSeconds, timeZone: activity.occurrenceTimeZone };
       });
       return { items, next: response.data?.meta.nextCursor ?? null };
     },

@@ -484,3 +484,12 @@ test('reviewed offline intervals preserve the established DST gap and repeated-h
   assert.deepEqual(reviewedManualActivityInterval({ localDate: '2026-03-08', localTime: '02:30:00', durationSeconds: '60', occurrenceTouched: true }, now),
     { startedAt: '2026-03-08T07:30:00.000Z', endedAt: '2026-03-08T07:31:00.000Z' });
 });
+
+test('note edits preserve precise timestamps and the original side of a repeated hour', () => {
+  const now = manualActivityParticipantNow('2026-11-02T12:00:00Z', 'America/New_York');
+  const form = { localDate: '2026-11-01', localTime: '01:30:00', durationSeconds: '60', occurrenceTouched: true };
+  assert.deepEqual(reviewedManualActivityInterval(form, now, '2026-11-01T06:30:00.123456Z'), {
+    startedAt: '2026-11-01T06:30:00.123456Z', endedAt: '2026-11-01T06:31:00.123456Z',
+  });
+  assert.equal(reviewedManualActivityInterval({ ...form, localTime: '01:31:00' }, now, '2026-11-01T06:30:00.123456Z').startedAt, '2026-11-01T05:31:00.000Z');
+});

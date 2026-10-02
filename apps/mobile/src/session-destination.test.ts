@@ -614,7 +614,6 @@ test('native Path details own activity history, inspection, and participant edit
   const pathLanding = app.slice(app.indexOf('function openPathDetail('), app.indexOf('async function openActivityHistory('));
   assert.doesNotMatch(pathLanding, /\.activities\(/);
   assert.match(app, /const seed = activityEditSeed\(selectedActivity, defaults\)/);
-  assert.match(app, /await refreshPathDetail\(pathID, result\.activity\.id, currentSession, ownerID\)/);
   assert.match(app, /function resetPathDetail\(\)[\s\S]*setActivityHistory\(\[\]\);[\s\S]*setSelectedActivity\(null\);[\s\S]*setActivityRevisions\(\[\]\);/);
   const homeCards = app.slice(app.indexOf('const renderHomePath'), app.indexOf('{selectedPath ? <NativeRouteSource'));
   assert.doesNotMatch(homeCards, /activity\.add/);

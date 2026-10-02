@@ -23,8 +23,8 @@ export function OfflineStatusPanel({ service, accountScope, i18n, now }: { servi
       </div>}
     </div>)}
     {state.notices.map(notice => <div className="studio-sync-message" key={notice.id}>
-      <p>{notice.pathName && <strong>{notice.pathName}<br /></strong>}{i18n.t(notice.reason === 'subsecond' ? 'timer.subsecondNotice' : `offline.rejection.${notice.reason}`)}
-        {notice.reason === 'archived' && <span> {i18n.t('offline.archiveAmounts', {
+      <p>{notice.pathName && <strong>{notice.pathName}<br /></strong>}{i18n.t(notice.subject === 'activity' && notice.reason === 'archived' ? 'offline.activityArchived' : notice.reason === 'subsecond' ? 'timer.subsecondNotice' : `offline.rejection.${notice.reason}`)}
+        {notice.reason === 'archived' && notice.subject !== 'activity' && <span> {i18n.t('offline.archiveAmounts', {
           saved: duration(i18n, notice.savedSeconds ?? 0), discarded: duration(i18n, notice.discardedSeconds ?? 0),
         })}</span>}</p>
       <button disabled={dismiss.isPending} onClick={() => dismiss.mutate(notice.id)}>{i18n.t('common.dismiss')}</button>

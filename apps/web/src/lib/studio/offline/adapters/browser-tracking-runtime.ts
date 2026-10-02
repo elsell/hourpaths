@@ -22,7 +22,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     assertAlive();
     let owner = session.owner();
     const credential = session.token()!;
-    const api = createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value));
+    const api = createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value), { retryRateLimitedReads: true });
     if (!owner) {
       const profile = await api.profile();
       if (!profile.response.ok || !profile.data || !session.bindOwner(credential, profile.data.data.id)) throw new Error('tracking_session_unavailable');
@@ -46,12 +46,13 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     new Intl.DateTimeFormat('en', { timeZone });
     assertCurrent();
     const sync = apiTrackingSync(requested => !disposed && session.owner() === requested && session.token()
-      ? createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value)) : null);
+      ? createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value), { retryRateLimitedReads: true }) : null);
     let replayChange: TrackingChange = {};
     worker = new TrackingReplayWorker(async () => {
       const snapshot = await tracking.snapshot();
       const queued = snapshot.operations.filter(operation => !snapshot.corrections.some(value => value.timer.id === operation.timerId));
-      replayChange = { pathIds: [...new Set(queued.map(operation => operation.pathId))], historyChanged: queued.some(operation => operation.kind !== 'start') };
+      const activities = snapshot.activityOperations ?? [];
+      replayChange = { pathIds: [...new Set([...queued.map(operation => operation.pathId), ...activities.map(operation => operation.activity.pathId)])], historyChanged: activities.length > 0 || queued.some(operation => operation.kind !== 'start') };
       await tracking.replay(sync);
     }, (work, delay) => {
       const timer = setTimeout(work, delay); return () => clearTimeout(timer);
@@ -82,7 +83,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
         new Intl.DateTimeFormat('en', { timeZone: configured.data.data.timeZone });
         return configured.data.data.timeZone;
       }, wake: () => { notify(); void worker?.wake(); } };
-    if (retained.operations.length) current.wake();
+    if (retained.operations.length || retained.activityOperations?.length) current.wake();
     return current;
   }
   function runtime(): Promise<TrackingRuntime> {
@@ -98,7 +99,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       context.assertCurrent();
       const offline = !connected() || !serverAvailable;
       return { offline, showBanner: offline && !bannerDismissed,
-        pending: state.operations.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)), unavailablePathIds: state.unavailablePaths ?? [],
+        pending: Boolean(state.activityOperations?.length) || state.operations.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)), unavailablePathIds: state.unavailablePaths ?? [],
         corrections: state.corrections.map(value => ({ id: value.timer.id, pathName: state.paths.find(path => path.id === value.timer.pathId)?.name ?? '',
           reviewedStartedAt: value.reviewedStartedAt, startedAt: value.timer.startedAt, endedAt: value.endedAt, timeZone: value.timer.timeZone })),
         notices: state.notices.map(notice => ({ ...notice, pathName: state.paths.find(path => path.id === notice.pathId)?.name })) };

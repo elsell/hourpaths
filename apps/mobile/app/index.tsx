@@ -1,6 +1,6 @@
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
 import { retainedHistoryDetails } from '../src/offline/retained-history-presentation';
-import { retainedAccount, apiTrackingHistory, apiTrackingSync, type TrackingSnapshot } from '@hourpaths/client-core';
+import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualActivityInterval, type TrackingSnapshot } from '@hourpaths/client-core';
 import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
 import { openNativeOfflineStorage } from '../src/offline/native-tracking-store';
 import { initialStatsSelection, type StatsSelection, type StatsState } from '@hourpaths/client-core';
@@ -7335,6 +7335,7 @@ export function HomeScreen() {
           setActivityHistoryCursor(null);
           setActivityHistoryLocal({ retained: true, incomplete: retained.incomplete });
           setPathDetailBusy(false);
+          if (retained.items.some(entry => entry.pending)) return;
         }
       }
       const page = await loadActivityPage(currentSession, pathID, cursor);
@@ -7389,7 +7390,14 @@ export function HomeScreen() {
     setPathDetailBusy(true);
     setPathDetailErrorKey(null);
     let detailLoaded = false;
+    let retainedDetail: ReturnType<typeof retainedHistoryDetails>[number] | undefined;
     try {
+      const retained = await nativeOffline.current?.history(pathID);
+      if (!ticket.current() || !ownsActivePathDetail(pathID, activityID)) return;
+      const entry = retained?.items.find(value => value.id === activityID && value.note !== undefined && value.createdAt && value.updatedAt);
+      if (entry) retainedDetail = retainedHistoryDetails([entry])[0];
+      if (retainedDetail?.pending) { setSelectedActivity(retainedDetail); return; }
+
       const detail = await validateSessionCredential<ActivityDetail>(currentSession, async (credential) => generatedResponse(
         await createSessionApiClient(apiURL, () => credential.token).activity(pathID, activityID),
       ));
@@ -7407,6 +7415,10 @@ export function HomeScreen() {
         if (notificationLifecycleState.current.session === currentSession) {
           await handleSessionFailure(failure, currentSession, 'profile', ticket);
         } else setPathDetailErrorKey(localizedFailure({ kind: 'network' }, 'errors.temporarilyUnavailable'));
+      }
+      else if (!detailLoaded && retainedDetail && classifySessionFailure(failure).retryable) {
+        setSelectedActivity(retainedDetail);
+        setActivityRevisionErrorKey('errors.temporarilyUnavailable');
       }
       else if (detailLoaded && pathDetailTarget.current?.activityID === activityID) {
         setActivityRevisionErrorKey(localizedFailure(failure, 'errors.temporarilyUnavailable'));
@@ -7490,9 +7502,12 @@ export function HomeScreen() {
     setManualBusy(true);
     setManualErrorKey(null);
     try {
-      const defaults = await validateSessionCredential<ManualActivityDefaults>(currentSession, async (credential) => generatedResponse(
-        await createSessionApiClient(apiURL, () => credential.token).manualActivityDefaults(selectedPathID),
-      ));
+      const durable = await durableMobileHome();
+      const value = selectedActivity.activity;
+      await durable.retainActivity({ id: value.id, owner: value.participantId, pathId: value.pathId,
+        startedAt: value.startedAt, endedAt: value.endedAt, timeZone: value.occurrenceTimeZone,
+        note: value.note ?? '', editStamp: value.editOrder ? { authoredAt: value.editOrder.authoredAt, counter: value.editOrder.counter } : undefined, version: selectedActivity.version, createdAt: value.createdAt, updatedAt: value.updatedAt });
+      const defaults = await durable.activityDefaults(selectedPathID);
       if (!ticket.current() || manualOwnerID.current !== ownerID) return;
       const seed = activityEditSeed(selectedActivity, defaults);
       setManualPathID(selectedPathID);
@@ -7528,9 +7543,7 @@ export function HomeScreen() {
     manualOwnerID.current = ownerID;
     setManualBusy(true); setManualErrorKey(null);
     try {
-      const defaults = await validateSessionCredential<ManualActivityDefaults>(currentSession, async (credential) => generatedResponse(
-        await createSessionApiClient(apiURL, () => credential.token).manualActivityDefaults(pathID),
-      ));
+      const defaults = await (await durableMobileHome()).activityDefaults(pathID);
       if (!ticket.current() || manualOwnerID.current !== ownerID) return;
       setManualPathID(pathID); setManualDefaults(defaults); setManualDefaultsLoadedAt(Date.now());
       const form = createManualActivityFormState(manualActivityParticipantNow(defaults.currentInstant, defaults.timeZone));
@@ -7576,27 +7589,31 @@ export function HomeScreen() {
     const currentSession = session;
     const pathID = manualPathID;
     const activity = manualActivity;
-    const idempotencyKey = manualIdempotencyKey;
     const ownerID = manualOwnerID.current;
     if (!ownerID) return;
     const ticket = manualOperations.issue();
     setManualBusy(true); setManualErrorKey(null);
     try {
-      const body = { localDate: serialized.fields.localDate, localStartTime: serialized.fields.localTime, durationSeconds: serialized.fields.durationSeconds, note: manualNote || undefined };
-      const result = await validateSessionCredential<ActivityMutationResult>(currentSession, async (credential) => generatedResponse(
-        activity
-          ? await createSessionApiClient(apiURL, () => credential.token).updateActivity(pathID, activity.id, body, idempotencyKey)
-          : await createSessionApiClient(apiURL, () => credential.token).createManualActivity(pathID, body, idempotencyKey),
-      ));
+      const durable = await durableMobileHome();
+      const existing = activity ? (await durable.history(pathID)).items.find(entry => entry.id === activity.id) : undefined;
+      const interval = reviewedManualActivityInterval(manualForm, mobileManualNow(), existing?.startedAt);
+      const result = await durable.saveActivity(pathID, activity?.id ?? null, {
+        startedAt: interval.startedAt, durationSeconds: serialized.fields.durationSeconds, note: manualNote,
+      });
       if (!ticket.current() || manualOwnerID.current !== ownerID) return;
-      setManualActivity({ id: result.activity.id, version: result.version }); setManualIdempotencyKey(Crypto.randomUUID());
-      setManualSavedVersion(result.version);
+      const version = result.version ?? 1;
+      setManualActivity({ id: result.id, version }); setManualIdempotencyKey(Crypto.randomUUID());
+      setManualSavedVersion(version);
       manualDraftBaseline.current = manualActivityDraft(manualForm, manualNote);
-      setDestination((current) => current?.kind === 'home' && current.profile.id === ownerID
-        ? { ...current, profile: { ...current.profile, timers: { ...current.profile.timers, [pathID]: { ...(current.profile.timers[pathID] ?? { running: false }), accumulatedSeconds: result.accumulatedSeconds, intervalProgress: result.intervalProgress } } } }
-        : current);
-      await refreshHomeOrganizationPath(pathID, currentSession, ownerID);
-      if (selectedPathID === pathID) await refreshPathDetail(pathID, result.activity.id, currentSession, ownerID);
+      if (selectedPathID === pathID) {
+        const retained = await durable.history(pathID);
+        if (!ticket.current() || manualOwnerID.current !== ownerID) return;
+        setActivityHistory(retainedHistoryDetails(retained.items));
+        setActivityHistoryCursor(null);
+        setActivityHistoryLocal({ retained: true, incomplete: retained.incomplete });
+        const detail = retainedHistoryDetails([{ ...result, pending: true }])[0];
+        if (detail) setSelectedActivity(detail);
+      }
     } catch (cause) {
       if (!ticket.current()) return;
       const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
@@ -8025,8 +8042,8 @@ export function HomeScreen() {
     {nativeTrackingState?.owner === ownedHomeDestination.profile.id ? nativeTrackingState.notices.map(notice => <StatusBanner
       key={notice.id} tone={notice.reason === 'subsecond' ? 'offline' : 'error'} text={[
         notice.pathId ? nativeTrackingState.paths.find(path => path.id === notice.pathId)?.name : undefined,
-        i18n.t(notice.reason === 'subsecond' ? 'timer.subsecondNotice' : `offline.rejection.${notice.reason}`),
-        notice.reason === 'archived' ? i18n.t('offline.archiveAmounts', {
+        i18n.t(notice.subject === 'activity' && notice.reason === 'archived' ? 'offline.activityArchived' : notice.reason === 'subsecond' ? 'timer.subsecondNotice' : `offline.rejection.${notice.reason}`),
+        notice.reason === 'archived' && notice.subject !== 'activity' ? i18n.t('offline.archiveAmounts', {
           saved: formatSessionClock(notice.savedSeconds ?? 0, i18n),
           discarded: formatSessionClock(notice.discardedSeconds ?? 0, i18n),
         }) : undefined,

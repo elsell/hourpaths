@@ -1,6 +1,7 @@
 import { manualActivityParticipantNow, type ManualActivityFormState } from '@hourpaths/client-core';
 
 export type Activity = {
+  editOrder?: { authoredAt: string; counter: number; operationId: string };
   id: string;
   pathId: string;
   participantId: string;

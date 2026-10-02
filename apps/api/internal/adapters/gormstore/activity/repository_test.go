@@ -343,11 +343,13 @@ func TestPostgresManualActivityCreateEditRevisionReplayAndPrivacy(t *testing.T) 
 	}
 
 	ownerView, version, err := repository.GetActivity(context.Background(), participantID, pathID, entry.ID)
-	if err != nil || ownerView != noteOnlyResult.Activity || version != 3 {
+	expectedOwner := noteOnlyResult.Activity
+	expectedOwner.EditOrder, _ = domain.NewActivityEditOrder(noteOnlyResult.Activity.UpdatedAt, 0, "note-only-update-key")
+	if err != nil || ownerView != expectedOwner || version != 3 {
 		t.Fatalf("owner GetActivity() = %+v, %d, %v", ownerView, version, err)
 	}
 	otherView, otherVersion, err := repository.GetActivity(context.Background(), "another-viewer", pathID, entry.ID)
-	if err != nil || otherView.Note != "" || otherVersion != 2 || otherView.ID != entry.ID || otherView.UpdatedAt != publicUpdatedAt {
+	if err != nil || otherView.Note != "" || otherView.EditOrder != (domain.ActivityEditOrder{}) || otherVersion != 2 || otherView.ID != entry.ID || otherView.UpdatedAt != publicUpdatedAt {
 		t.Fatalf("redacted GetActivity() = %+v, %d, %v", otherView, otherVersion, err)
 	}
 	page := application.ActivityRevisionPageRequest{Limit: 25, Snapshot: now.Add(time.Minute)}
@@ -374,11 +376,11 @@ func TestPostgresManualActivityCreateEditRevisionReplayAndPrivacy(t *testing.T) 
 	}
 	activityPage := application.ActivityPageRequest{Limit: 25, Snapshot: now.Add(time.Minute)}
 	ownerList, err := repository.ListActivities(context.Background(), participantID, pathID, activityPage)
-	if err != nil || len(ownerList.Items) != 1 || ownerList.Items[0].Version != 3 || ownerList.Items[0].Activity != noteOnlyResult.Activity {
+	if err != nil || len(ownerList.Items) != 1 || ownerList.Items[0].Version != 3 || ownerList.Items[0].Activity != expectedOwner {
 		t.Fatalf("owner activity list = %+v, %v", ownerList, err)
 	}
 	otherList, err := repository.ListActivities(context.Background(), "another-viewer", pathID, activityPage)
-	if err != nil || len(otherList.Items) != 1 || otherList.Items[0].Version != 2 || otherList.Items[0].Activity.Note != "" || otherList.Items[0].Activity.UpdatedAt != publicUpdatedAt {
+	if err != nil || len(otherList.Items) != 1 || otherList.Items[0].Version != 2 || otherList.Items[0].Activity.Note != "" || otherList.Items[0].Activity.EditOrder != (domain.ActivityEditOrder{}) || otherList.Items[0].Activity.UpdatedAt != publicUpdatedAt {
 		t.Fatalf("redacted activity list = %+v, %v", otherList, err)
 	}
 	denied := update
@@ -389,7 +391,7 @@ func TestPostgresManualActivityCreateEditRevisionReplayAndPrivacy(t *testing.T) 
 		t.Fatalf("cross-owner update error = %v", err)
 	}
 	unchanged, unchangedVersion, err := repository.GetActivity(context.Background(), participantID, pathID, entry.ID)
-	if err != nil || unchanged != noteOnlyResult.Activity || unchangedVersion != 3 {
+	if err != nil || unchanged != expectedOwner || unchangedVersion != 3 {
 		t.Fatalf("denied update changed activity: %+v, %d, %v", unchanged, unchangedVersion, err)
 	}
 

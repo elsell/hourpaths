@@ -24,16 +24,6 @@ test('native interval progress exposes zero, partial, and over-target state with
   assert.match(progressIndicator, /<Text[^>]*>\{text\}<\/Text>/);
 });
 
-test('native refreshes current interval progress from supported stop, manual create, and edit results', () => {
-  const timerMutation = page.slice(page.indexOf('async function toggleTimer'), page.indexOf('function openPathDetail'));
-  const manualMutation = page.slice(page.indexOf('async function submitManualActivity'), page.indexOf('function closeManualActivity'));
-
-  assert.match(page, /timers: \{ \.\.\.current\.destination\.profile\.timers, \[pathID\]: state \}/);
-  assert.match(manualMutation, /\.updateActivity\(/);
-  assert.match(manualMutation, /\.createManualActivity\(/);
-  assert.match(manualMutation, /intervalProgress:\s*result\.intervalProgress/);
-});
-
 test('native immediately presents zero interval progress for a newly created interval goal', () => {
   const creation = page.slice(page.indexOf('async function createPath'), page.indexOf('async function toggleTimer'));
 

@@ -7,6 +7,42 @@ type SessionAPI = ReturnType<typeof createSessionApiClient>;
  * Generated wire values terminate here, before the tracking application port. */
 export function apiTrackingSync(clientForOwner: (owner: string) => SessionAPI | null): TrackingSync {
   return {
+    async sendActivity(owner, operation) {
+      const client = clientForOwner(owner);
+      if (!client) throw new TrackingReplaySuspended();
+      const entry = operation.activity;
+      if (entry.owner !== owner) throw new Error('tracking_sync_invalid');
+      const durationSeconds = Math.floor((Date.parse(entry.endedAt) - Date.parse(entry.startedAt)) / 1000);
+      if (!Number.isSafeInteger(durationSeconds) || durationSeconds < 1) throw new Error('tracking_sync_invalid');
+      const response = await client.synchronizeOfflineActivity(entry.pathId, {
+        kind: operation.kind, activityId: entry.id, startedAt: entry.startedAt, durationSeconds,
+        occurrenceTimeZone: entry.timeZone, note: entry.note ?? '',
+        authoredAt: operation.stamp.authoredAt, counter: operation.stamp.counter,
+      }, operation.operationId);
+      if (!clientForOwner(owner)) throw new TrackingReplaySuspended();
+      const status = response.response.status;
+      if (status === 401) throw new TrackingReplaySuspended();
+      if (status === 403 || status === 404) {
+        if (response.error?.operation !== 'synchronize-offline-path-activity') throw new Error('tracking_sync_temporarily_unavailable');
+        return { kind: 'rejected', reason: 'membership', disclosePath: false };
+      }
+      if (status === 400 || status === 409 || status === 422) return { kind: 'rejected', reason: 'validation', disclosePath: true };
+      if (!response.response.ok || !response.data) throw new Error('tracking_sync_temporarily_unavailable');
+      const result = response.data.data;
+      if (result.outcome === 'deleted' || result.outcome === 'archived') {
+        if (result.activity || result.order) throw new Error('tracking_sync_invalid');
+        return { kind: 'rejected', reason: result.outcome, disclosePath: true };
+      }
+      const saved = result.activity, order = result.order;
+      if (result.outcome !== 'accepted' || !saved || !order || saved.id !== entry.id
+        || saved.participantId !== owner || saved.pathId !== entry.pathId
+        || !Number.isFinite(Date.parse(order.authoredAt)) || !Number.isSafeInteger(order.counter) || order.counter < 0
+        || typeof order.operationId !== 'string' || !order.operationId) throw new Error('tracking_sync_invalid');
+      return { kind: 'accepted', activity: { id: saved.id, owner, pathId: saved.pathId,
+        startedAt: saved.startedAt, endedAt: saved.endedAt, timeZone: saved.occurrenceTimeZone,
+        note: saved.note ?? '', createdAt: saved.createdAt, updatedAt: saved.updatedAt,
+        editStamp: { authoredAt: order.authoredAt, counter: order.counter } } };
+    },
     async send(owner, operation) {
       const client = clientForOwner(owner);
       if (!client) throw new TrackingReplaySuspended();

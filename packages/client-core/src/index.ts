@@ -358,9 +358,19 @@ export function serializeManualActivityForm(
 
 /** Resolve a reviewed local occurrence using the same zone/DST rules as the
  * existing manual-entry validator, for durable client-side commands. */
-export function reviewedManualActivityInterval(state: ManualActivityFormState, now: ManualActivityParticipantNow): { startedAt: string; endedAt: string } {
+export function reviewedManualActivityInterval(state: ManualActivityFormState, now: ManualActivityParticipantNow, originalStartedAt?: string): { startedAt: string; endedAt: string } {
   const result = serializeManualActivityForm(state, now);
   if (!result.ok) throw new Error('activity_interval_invalid');
+  if (originalStartedAt && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(originalStartedAt)) {
+    const original = Date.parse(originalStartedAt);
+    const local = participantLocalDateTime(original, now.timeZone);
+    if (local?.localDate === state.localDate && local.localTime === state.localTime) {
+      const end = original + result.fields.durationSeconds * 1000;
+      if (!Number.isFinite(end) || end > Date.parse(now.currentInstant)) throw new Error('activity_interval_invalid');
+      const fraction = originalStartedAt.match(/(\.\d+)Z$/)?.[1] ?? '';
+      return { startedAt: originalStartedAt, endedAt: new Date(end).toISOString().slice(0, 19) + fraction + 'Z' };
+    }
+  }
   const start = participantInstantValue(state, now.timeZone)!;
   return { startedAt: new Date(start).toISOString(), endedAt: new Date(start + result.fields.durationSeconds * 1000).toISOString() };
 }

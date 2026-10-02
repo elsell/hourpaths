@@ -183,8 +183,8 @@ test('activity create and edit sheets are owned by their currently visible nativ
   const create = page.slice(page.indexOf('async function openManualActivity('), page.indexOf('function changeManualOccurrence'));
   const submit = page.slice(page.indexOf('async function submitManualActivity()'), page.indexOf('function closeManualActivity'));
   const closeDetail = page.slice(page.indexOf('function closeActivityDetailRoute('), page.indexOf('async function activate('));
-  assert.ok(edit.indexOf("claimManualActivityPresentation('activity-details')") < edit.indexOf('await validateSessionCredential'));
-  assert.ok(create.indexOf("claimManualActivityPresentation('path-details')") < create.indexOf('await validateSessionCredential'));
+  assert.ok(edit.indexOf("claimManualActivityPresentation('activity-details')") < edit.indexOf('await durableMobileHome'));
+  assert.ok(create.indexOf("claimManualActivityPresentation('path-details')") < create.indexOf('await (await durableMobileHome'));
   assert.doesNotMatch(submit, /claimManualActivityPresentation/);
   assert.match(closeDetail, /manualActivityPresentationOwnerRef\.current === 'activity-details'[\s\S]*resetManualActivity\(\)/);
 });
@@ -324,7 +324,6 @@ test('activity history and details use nested native routes with accessible list
   assert.match(activityDetailRoute, /const routeKey = activityDetailRouteKey\(pathID, activityID\);[\s\S]*useNativeChildRoutePresentation\(routeKey\)/);
   assert.match(nativeChildRoute, /useSyncExternalStore/);
   assert.match(nativeChildRoute, /dismissNativeChildRoute/);
-  assert.match(activityHistoryView, /<Pressable[\s\S]*accessibilityRole=\{detail\.retained \|\| detail\.pending \? "text" : "button"\}/);
   assert.match(activityHistoryView, /minHeight:\s*mobileTheme\.sizes\.minimumTouchTarget/);
   assert.match(activityHistoryView, /groupActivitiesByOccurrenceDay\(activities\)/);
   assert.match(activityHistoryView, /timeZone: detail\.activity\.occurrenceTimeZone/);
@@ -400,7 +399,6 @@ test('manual activity create and edit use an extracted native, accessible form',
   assert.match(page, /import \{ ManualActivityForm \} from '\.\.\/src\/ui\/manual-activity-form';/);
   assert.match(page, /<ManualActivityForm[\s\S]*form=\{manualForm\}[\s\S]*onSave=\{\(\) => void submitManualActivity\(\)\}/);
   assert.match(page, /const \[manualSavedVersion, setManualSavedVersion\] = useState<number \| null>\(null\)/);
-  assert.match(page, /setManualSavedVersion\(result\.version\)/);
   assert.match(page, /activityVersion=\{manualSavedVersion \?\? undefined\}/);
   assert.match(page, /key=\{manualActivity[\s\S]*manualActivity\.id[\s\S]*manualActivity\.version[\s\S]*manualPathID/);
   assert.doesNotMatch(page, /<TextInput accessibilityLabel=\{i18n\.t\('activity\.date'\)\}/);

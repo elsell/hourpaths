@@ -73,3 +73,63 @@ test('permanent denial never falls back to retained entries and foreign cursors 
   await assert.rejects(history.page(null), error => error === denied);
   await assert.rejects(history.page({ participantId: 'bob', streams: [], retained: true }), /owner/);
 });
+
+test('queued edits replace retained and online timeline entries exactly once', async () => {
+  const env = setup();
+  await env.tracking.retainPaths([{ id: 'path', name: 'guitar', timeZone: utcTimeZone }]);
+  let offline = false;
+  const remote: HistoryRepository = { page: async () => {
+    if (offline) throw new TypeError('network');
+    return { items: [entry('editable')], next: null };
+  } };
+  const history = durableHistoryRepository(remote, env.runtime, failure => failure instanceof TypeError, 25, () => now);
+  assert.equal(await history.refresh(), true);
+  await env.tracking.editRecordedActivity('editable', { startedAt: new Date(now - 180000).toISOString(), durationSeconds: 90, note: 'edited' });
+  for (const disconnected of [false, true]) {
+    offline = disconnected;
+    const page = await history.page(null);
+    assert.equal(page.items.length, 1);
+    assert.equal(page.items[0]?.id, 'editable');
+    assert.equal(page.items[0]?.seconds, 90);
+    assert.equal(page.items[0]?.pending, true);
+  }
+});
+
+test('activity form adapter saves and reopens local entries while offline', async () => {
+  const { durableActivityRepository } = await import('./studio/offline/adapters/durable-activity-repository');
+  const env = setup();
+  await env.tracking.retainPaths([{ id: 'path', name: 'guitar', timeZone: utcTimeZone }]);
+  const unavailable = async (): Promise<never> => { throw new TypeError('offline'); };
+  const repository = durableActivityRepository({ defaults: unavailable, save: unavailable, detail: unavailable, revisions: unavailable, remove: unavailable }, env.runtime, failure => failure instanceof TypeError, () => now);
+  const defaults = await repository.defaults('path');
+  assert.equal(defaults.pathName, 'guitar');
+  const saved = await repository.save({ pathId: 'path', activityId: null, operationId: 'create-1', input: { localDate: '2026-10-02', localTime: '11:58:00', seconds: 60, note: 'first' } });
+  const first = await repository.detail('path', saved.id);
+  assert.equal(first.note, 'first');
+  await repository.save({ pathId: 'path', activityId: saved.id, operationId: 'edit-1', input: { localDate: '2026-10-02', localTime: '11:57:00', seconds: 90, note: 'revised' } });
+  const revised = await repository.detail('path', saved.id);
+  assert.equal(revised.note, 'revised');
+  assert.equal(revised.seconds, 90);
+  assert.equal((await env.tracking.localHistory('path')).items.length, 1);
+  assert.equal((await env.tracking.snapshot()).activityOperations?.length, 2);
+});
+
+test('retained history carries observed edit order into the next offline edit', async () => {
+  const env = setup();
+  await env.tracking.retainPaths([{ id: 'path', name: 'guitar', timeZone: utcTimeZone }]);
+  const stamp = { authoredAt: new Date(now + 60000).toISOString(), counter: 4 };
+  const history = durableHistoryRepository({ page: async () => ({ items: [{ ...entry('remote'), editStamp: stamp, note: 'remote', createdAt: new Date(now - 60000).toISOString(), updatedAt: new Date(now).toISOString() }], next: null }) }, env.runtime, () => true, 25, () => now);
+  assert.equal(await history.refresh(), true);
+  await env.tracking.editRecordedActivity('remote', { startedAt: new Date(now - 180000).toISOString(), durationSeconds: 90, note: 'offline-next' });
+  assert.deepEqual((await env.tracking.snapshot()).activityOperations?.[0]?.stamp, { authoredAt: stamp.authoredAt, counter: 5 });
+});
+
+test('direct activity entry retains its authorized Path before saving without a Home visit', async () => {
+  const { durableActivityRepository } = await import('./studio/offline/adapters/durable-activity-repository');
+  const env = setup();
+  const unavailable = async (): Promise<never> => { throw new TypeError('offline'); };
+  const repository = durableActivityRepository({ defaults: async () => ({ pathName: 'guitar', currentInstant: now, timeZone: utcTimeZone, canTrack: true }), save: unavailable, detail: unavailable, revisions: unavailable, remove: unavailable }, env.runtime, failure => failure instanceof TypeError, () => now);
+  await repository.defaults('path');
+  const saved = await repository.save({ pathId: 'path', activityId: null, operationId: 'direct-1', input: { localDate: '2026-10-02', localTime: '11:58:00', seconds: 60, note: 'direct' } });
+  assert.equal((await env.tracking.localHistory('path')).items[0].id, saved.id);
+});

@@ -5071,6 +5071,7 @@
   "offline.rejection.membership": "This activity wasn’t saved because participation in this Path is no longer available.",
   "offline.rejection.deleted": "This activity was deleted elsewhere. Your pending change wasn’t saved.",
   "offline.rejection.conflict": "A newer timer is running for this Path. Time from the older timer wasn’t saved.",
+  "offline.activityArchived": "This Path was archived. Your pending activity change wasn’t saved.",
   "offline.rejection.archived": "This Path was archived. Time after archival wasn’t saved.",
   "offline.rejection.validation": "This change couldn’t be saved. Review the activity before trying again.",
   "offline.archiveAmounts": "Saved: {saved}. Discarded: {discarded}.",

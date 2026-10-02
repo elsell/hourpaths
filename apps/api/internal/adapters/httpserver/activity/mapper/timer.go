@@ -50,6 +50,9 @@ func IntervalProgress(value *application.IntervalProgress) *dto.IntervalProgress
 
 func Activity(entry domain.RecordedActivity) dto.Activity {
 	result := dto.Activity{ID: entry.ID, PathID: entry.PathID, ParticipantID: entry.ParticipantID, StartedAt: entry.StartedAt, EndedAt: entry.EndedAt, OccurrenceTimeZone: entry.OccurrenceTimeZone, DurationSeconds: entry.DurationSeconds(), CreatedAt: entry.CreatedAt, UpdatedAt: entry.UpdatedAt}
+	if !entry.EditOrder.AuthoredAt.IsZero() {
+		result.EditOrder = &dto.ActivityEditOrder{AuthoredAt: entry.EditOrder.AuthoredAt, Counter: entry.EditOrder.Counter, OperationID: entry.EditOrder.OperationID}
+	}
 	if entry.Note != "" {
 		note := entry.Note
 		result.Note = &note

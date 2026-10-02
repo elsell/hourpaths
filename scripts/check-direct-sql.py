@@ -12,6 +12,11 @@ from pathlib import Path
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
     # Controlled PostgreSQL tests: runtime-role enforcement and transactional migration setup.
+    'apps/api/internal/adapters/gormstore/activity/offline_activity_postgres_test.go': (
+        '\tif err := db.Raw("SELECT to_regclass(\'public.activity_edit_order_models\') IS NOT NULL").Scan(&present).Error; err != nil {',
+        '\t\tif err := db.Exec(statement).Error; err != nil {',
+        '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
+    ),
     'apps/api/internal/adapters/gormstore/activity/offline_postgres_test.go': (
         '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',
         '\tif err := db.Exec("SET LOCAL ROLE app").Error; err != nil {',

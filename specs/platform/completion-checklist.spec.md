@@ -81,3 +81,45 @@ completion watchers; report meaningful completion/failure/actionable changes,
 not unchanged polling results.
 
 Authorities: [Studio](../experience/web-studio.spec.md), [web boundaries](web-studio-architecture.spec.md), [offline](../sync/offline.spec.md), [deletion](../accounts/deletion.spec.md), [authentication](../accounts/authentication.spec.md), [notifications](../notifications/notifications.spec.md), [reminders](../notifications/reminders.spec.md), [native clients](clients.spec.md), [profile](../accounts/profile.spec.md), [visibility](../social/visibility.spec.md), [following](../social/following.spec.md), [preferences](../accounts/preferences.spec.md), [policies](../safety/user-policies.spec.md), [moderation](../safety/moderation.spec.md), [analytics](../analytics/stats-history.spec.md), [Path details](../experience/path-details.spec.md), and [accessibility](../experience/accessibility.spec.md).
+
+
+## Area 2 delivery progress
+
+PR #100 merged as `69fa9d4` on October 2 with durable timers, retained Home/history,
+clock correction, replay and account fences. Its five PR gates passed, including
+native Android/iOS compilation; browser offline/reload/reconnect and subsecond
+notice acceptance passed. The successful [release](https://github.com/elsell/hourpaths/actions/runs/37003991427)
+published revision `69fa9d4`; GitOps `c5494a8f766190da2df331fe49194c3825168578`
+was Ready/Healthy with completed API/web rollouts and public Studio HTTP 200.
+TestFlight 0.28.0 (267) is VALID, IN_BETA_TESTING and assigned to the internal
+tester group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37011326744)).
+Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
+weakening approval or check requirements.
+
+The active next slice is durable manual activity creation and editing, including
+causal replay and revision-preserving conflicts. Cold offline entry and complete
+cross-device/device acceptance remain explicit area 2 closure requirements.
+
+The manual-activity slice now has a durable account queue, immutable replay,
+owner-only causal metadata, retained losing revisions, and Studio/mobile form
+integration. Focused PostgreSQL acceptance covers lost acknowledgements, online
+versus delayed offline edits, deletion retries, and invalid pre-membership
+occurrences. Browser acceptance on warm revision `a0120a6` demonstrated offline
+create/edit/reload/reconnect with unchanged operation IDs and a server-backed
+saved note. Later precision and validation fixes have focused regression evidence.
+PR #104 remains unmerged and unreleased. Final review found two causal-ordering
+failures, now fixed with regressions covering timer receipt time and observed
+microsecond precision. Candidate gates also caught an obsolete direct-API
+assertion and the readiness migration version; both are corrected. Required
+candidate gates and owner approval remain pending. No additional acceptance area
+is closed.
+
+
+Browser acceptance on warm web revision `e2b1f8e` and API `0308245` demonstrated
+manual creation and two independent account ledgers converging on the newer
+online edit after an older offline edit replayed; the losing revision remained
+visible. The second browser opened the editor directly without retaining the
+new Path through Home. This closes the direct-editor regression, not area 2.
+Large shared fixture accounts still exhaust the read quota during concurrent
+Home/history hydration; retain this as an area 2 delivery issue. Do not raise
+server limits or claim large-account acceptance from the isolated conflict check.

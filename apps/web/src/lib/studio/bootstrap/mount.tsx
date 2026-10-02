@@ -1,3 +1,5 @@
+import { durableActivityRepository } from '../offline/adapters/durable-activity-repository';
+import { ActivityFailure } from '../history/domain/detail';
 import { retainedTimers } from '../offline/adapters/retained-timers';
 import { RetainedTimerControls } from '../presentation/retained-timers';
 import { browserConnected, subscribeTrackingConnectivity } from '../offline/adapters/browser-tracking-connectivity';
@@ -90,7 +92,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
     ownership: apiOwnershipRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     nudges: apiNudgesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     sharing: apiSharingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
-    activities: apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    activities: durableActivityRepository(apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)), offline.runtime, error => error instanceof TypeError || error instanceof ActivityFailure && error.retryable),
     session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),
     preferences: apiPreferencesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),

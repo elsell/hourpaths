@@ -230,6 +230,15 @@ func applyOfflineTimer(tx *gorm.DB, state *offlineTimerState, command applicatio
 		if err := persistCompletedActivity(tx, resolved.Activity); err != nil {
 			return "", 0, err
 		}
+		// The offline stop predates any edit authored before reconnect. Receipt
+		// time remains audit metadata, never the timer entry's causal baseline.
+		order, err := domain.NewActivityEditOrder(postgresInstant(*command.EndedAt), 0, command.Idempotency.Key)
+		if err != nil {
+			return "", 0, err
+		}
+		if err := saveEditOrder(tx, resolved.Activity.ID, order); err != nil {
+			return "", 0, err
+		}
 		state.ActivityID = &resolved.Activity.ID
 		state.SavedSeconds = resolved.Activity.DurationSeconds()
 	}

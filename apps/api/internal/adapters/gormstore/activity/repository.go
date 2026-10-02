@@ -47,6 +47,7 @@ type activityRevisionModel struct {
 	OccurrenceTimeZone string
 	Note               *string
 	PublicChanged      bool
+	Superseded         bool
 	UpdatedAt          time.Time
 	ReplacedAt         time.Time
 }
@@ -369,6 +370,14 @@ func (r *Repository) UpdateActivity(ctx context.Context, command application.Upd
 			return err
 		}
 		prior := toActivity(current)
+		previousOrder, err := loadEditOrder(tx, prior)
+		if err != nil {
+			return err
+		}
+		nextOrder, err := domain.NextActivityEditOrder(command.UpdatedAt, previousOrder, command.Idempotency.Key)
+		if err != nil {
+			return ports.ErrInvalidArgument
+		}
 		edited, revision, err := prior.EditByOwner(command.ParticipantID, command.Edit, command.UpdatedAt)
 		if err != nil {
 			return ports.ErrInvalidArgument
@@ -404,6 +413,9 @@ func (r *Repository) UpdateActivity(ctx context.Context, command application.Upd
 		}
 		if updated.RowsAffected != 1 {
 			return ports.ErrNotFound
+		}
+		if err := saveEditOrder(tx, command.ActivityID, nextOrder); err != nil {
+			return err
 		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err
@@ -464,7 +476,15 @@ func (r *Repository) GetActivity(ctx context.Context, viewerID, pathID, activity
 			row.UpdatedAt = revisionState.LastUpdated.UTC()
 		}
 	}
-	return toActivity(row), revisionState.Count + 1, nil
+	entry := toActivity(row)
+	if row.ParticipantID == viewerID {
+		orders, err := loadOwnerEditOrders(r.DB.WithContext(ctx), viewerID, []string{entry.ID})
+		if err != nil {
+			return domain.RecordedActivity{}, 0, err
+		}
+		entry.EditOrder = orders[entry.ID]
+	}
+	return entry, revisionState.Count + 1, nil
 }
 
 func (r *Repository) ListActivities(ctx context.Context, viewerID, pathID string, page application.ActivityPageRequest) (application.ActivityPage, error) {
@@ -481,7 +501,7 @@ func (r *Repository) ListActivities(ctx context.Context, viewerID, pathID string
 	var rows []activityProjection
 	futureRevision := r.DB.WithContext(ctx).Table("recorded_activity_revision_models AS future_revision").
 		Select("future_revision.activity_id, future_revision.started_at, future_revision.ended_at, future_revision.occurrence_time_zone, future_revision.note, future_revision.updated_at").
-		Where("future_revision.activity_id = activity.id AND future_revision.replaced_at > ?", page.Snapshot).
+		Where("future_revision.activity_id = activity.id AND NOT future_revision.superseded AND future_revision.replaced_at > ?", page.Snapshot).
 		Order("future_revision.replaced_at ASC, future_revision.version ASC").Limit(1)
 	projection := r.DB.WithContext(ctx).Table("recorded_activity_models AS activity").
 		Select("activity.id, activity.path_id, activity.participant_id, CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.started_at ELSE activity.started_at END AS started_at, CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.ended_at ELSE activity.ended_at END AS ended_at, CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.occurrence_time_zone ELSE activity.occurrence_time_zone END AS occurrence_time_zone, CASE WHEN activity.participant_id = ? THEN CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.note ELSE activity.note END ELSE NULL END AS note, activity.created_at, CASE WHEN activity.participant_id = ? THEN CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.updated_at ELSE activity.updated_at END ELSE COALESCE((SELECT MAX(replaced_at) FROM recorded_activity_revision_models AS public_revision WHERE public_revision.activity_id = activity.id AND public_revision.public_changed AND public_revision.replaced_at <= ?), activity.created_at) END AS updated_at, 1 + (SELECT COUNT(*) FROM recorded_activity_revision_models AS revision WHERE revision.activity_id = activity.id AND revision.replaced_at <= ? AND (activity.participant_id = ? OR revision.public_changed)) AS version", viewerID, viewerID, page.Snapshot, page.Snapshot, viewerID).
@@ -510,6 +530,19 @@ func (r *Repository) ListActivities(ctx context.Context, viewerID, pathID string
 			StartedAt: row.StartedAt, EndedAt: row.EndedAt, OccurrenceTimeZone: row.OccurrenceTimeZone,
 			Note: row.Note, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 		}), Version: row.Version})
+	}
+	ids := make([]string, 0, len(result))
+	for _, record := range result {
+		if record.Activity.ParticipantID == viewerID {
+			ids = append(ids, record.Activity.ID)
+		}
+	}
+	orders, err := loadOwnerEditOrders(r.DB.WithContext(ctx), viewerID, ids)
+	if err != nil {
+		return application.ActivityPage{}, err
+	}
+	for index := range result {
+		result[index].Activity.EditOrder = orders[result[index].Activity.ID]
 	}
 	return application.ActivityPage{Items: result, HasMore: hasMore}, nil
 }
@@ -753,38 +786,4 @@ func replayedUpdate(tx *gorm.DB, command application.UpdateActivityCommand) (app
 		return application.UpdateActivityResult{}, true, err
 	}
 	return application.UpdateActivityResult{Activity: entry, Revision: domain.ActivityRevision{Activity: prior, ReplacedAt: row.ReplacedAt.UTC()}, Version: version, AccumulatedSeconds: projection.AccumulatedSeconds, IntervalProgress: projection.IntervalProgress, Replayed: true}, true, nil
-}
-
-func fromRevision(revision domain.ActivityRevision, version int64, publicChanged bool) activityRevisionModel {
-	return activityRevisionModel{ActivityID: revision.Activity.ID, Version: version, StartedAt: revision.Activity.StartedAt, EndedAt: revision.Activity.EndedAt, OccurrenceTimeZone: revision.Activity.OccurrenceTimeZone, Note: optionalNote(revision.Activity.Note), PublicChanged: publicChanged, UpdatedAt: revision.Activity.UpdatedAt, ReplacedAt: revision.ReplacedAt}
-}
-
-func fromTimer(timer domain.RunningTimer) *timerModel {
-	return &timerModel{ID: timer.ID, PathID: timer.PathID, ParticipantID: timer.ParticipantID, StartedAt: timer.StartedAt, OccurrenceTimeZone: timer.OccurrenceTimeZone}
-}
-
-func toTimer(row timerModel) domain.RunningTimer {
-	return domain.RunningTimer{ID: row.ID, PathID: row.PathID, ParticipantID: row.ParticipantID, StartedAt: row.StartedAt.UTC(), OccurrenceTimeZone: row.OccurrenceTimeZone}
-}
-
-func fromActivity(activity domain.RecordedActivity) *activityModel {
-	return &activityModel{ID: activity.ID, PathID: activity.PathID, ParticipantID: activity.ParticipantID, StartedAt: activity.StartedAt, EndedAt: activity.EndedAt, OccurrenceTimeZone: activity.OccurrenceTimeZone, Note: optionalNote(activity.Note), CreatedAt: activity.CreatedAt, UpdatedAt: activity.UpdatedAt}
-}
-
-func toActivity(row activityModel) domain.RecordedActivity {
-	return domain.RecordedActivity{ID: row.ID, PathID: row.PathID, ParticipantID: row.ParticipantID, StartedAt: row.StartedAt.UTC(), EndedAt: row.EndedAt.UTC(), OccurrenceTimeZone: row.OccurrenceTimeZone, Note: noteValue(row.Note), CreatedAt: row.CreatedAt.UTC(), UpdatedAt: row.UpdatedAt.UTC()}
-}
-
-func optionalNote(note string) *string {
-	if note == "" {
-		return nil
-	}
-	return &note
-}
-
-func noteValue(note *string) string {
-	if note == nil {
-		return ""
-	}
-	return *note
 }

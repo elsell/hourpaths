@@ -11,7 +11,7 @@ export function retainedTimers(owner: string, store: TrackingStore, current: () 
     assertCurrent();
     const state = await tracking.snapshot();
     assertCurrent();
-    return { pending: state.operations.length > 0, timers: state.timers.map(timer => ({
+    return { pending: state.operations.length > 0 || Boolean(state.activityOperations?.length), timers: state.timers.map(timer => ({
       id: timer.id, name: state.paths.find(path => path.id === timer.pathId)?.name ?? '', startedAt: Date.parse(timer.startedAt),
     })) };
   };

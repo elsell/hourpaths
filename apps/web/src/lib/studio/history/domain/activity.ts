@@ -1,4 +1,11 @@
 export interface RecordedActivity {
+  readonly editStamp?: { authoredAt: string; counter: number };
+  readonly originalStartedAt?: string;
+  readonly originalEndedAt?: string;
+  readonly note?: string;
+  readonly version?: number;
+  readonly createdAt?: string;
+  readonly updatedAt?: string;
   readonly id: string;
   readonly pathId: string;
   readonly pathName: string;

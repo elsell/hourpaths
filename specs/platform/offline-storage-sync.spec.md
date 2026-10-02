@@ -9,8 +9,9 @@ owns account access, revocation and sign-out. This document defines technical
 boundaries for implementing those rules without changing their scope.
 The first delivery covers offline timers, retained participating Paths/history,
 restart, synchronization and timer failure/conflict handling in mobile and
-Studio. Manual creation and recorded-entry editing use the same durable queue
-in the next delivery. Neither delivery alone closes checklist area 2.
+Studio. Manual creation and recorded-entry editing extend the same account ledger and
+replay worker in the active second delivery. Neither delivery alone closes
+checklist area 2; cold offline entry and cross-device/device acceptance remain.
 
 ## Local ownership and atomic persistence
 
@@ -188,3 +189,62 @@ controlled PostgreSQL integration tests may execute exact allowlisted SQL to
 inspect and install the embedded migration transactionally and switch between
 migrator and runtime roles. This exception must not authorize application SQL
 or arbitrary test files.
+
+## Durable recorded-activity operations
+
+Manual creation and editing must commit their complete occurrence, note, stable
+activity identity and operation identity before reporting success. Commands must
+use the locally retained participating Path and occurrence IANA zone; a server
+profile-zone change must not reinterpret an already authored occurrence.
+Existing recorded entries retain their occurrence zone when edited.
+Opening an activity editor directly must retain its freshly authorized
+participating Path, including its goal and occurrence zone, before enabling a
+durable save. This scoped read must not replace other retained Paths or clear
+unrelated access rejections, and must fence concurrent account/ledger changes.
+
+The account ledger must retain a separate typed recorded-activity command queue,
+using the same atomic revision as timers and retained history. Creation must
+precede dependent edits. Editing a pending timer result must retain a durable
+mapping from its local identity to the acknowledged server entry, rather than
+create a replacement activity. Timer acknowledgements, history refreshes and
+account replacement must not lose pending edits or publish another account's data.
+
+Pending presentation must overlay the latest local version on one logical entry.
+Lifetime and goal-period totals must apply the difference from the acknowledged
+version exactly once, including changed intervals crossing goal boundaries.
+Fresh server summaries must replace acknowledged deltas only after the associated
+queue settles. History refresh must preserve the overlay and revision history.
+
+Independent concurrent edits must order by their authored UTC instant, logical
+counter and stable operation ID. A device must advance its per-entry logical
+clock from its last observed version before authoring another edit, preserving
+causal order even when its wall clock moves backward or multiple edits share an
+instant. These ordering fields are metadata; server receipt time remains the
+validated persistence/audit time. The server must apply this ordering to online
+and offline writes under the same entry lock. A superseded but authorized edit
+must remain in the entry's revision history without replacing the winning content.
+
+Deletion must remain terminal for creation retries and edits. A rejected edit
+must remove its pending overlay and the deleted local entry, retain a plain
+account-owned explanation, and leave unrelated activity and operations intact.
+Validation, membership, Path lifecycle and authorization remain authoritative on
+the server; synchronization must not bypass their existing ports or atomic audit.
+
+Acceptance must cover offline create followed by multiple edits and restart;
+acknowledgement loss with identical operation IDs; older edits arriving last;
+equal-instant and backward-clock causal edits; preservation of losing revisions;
+delete-versus-edit; membership loss; and isolation of unrelated/account-switched
+work. Native and Studio must reuse their current activity forms and display
+unsynchronized state without requiring a separate sync workflow.
+
+### Rate-limited retained reads
+
+Studio Home, direct activity editor reads, and retained-history hydration must retry a rate-limited read at
+its current page or Path, rather than repeatedly restart the entire snapshot.
+The generated API adapter may retry only authenticated GET requests, at most
+twice, honoring a bounded numeric Retry-After delay (60 seconds when absent).
+It must not replay mutations, suppress an authentication rejection, or send a
+retry after its signal is aborted or its credential is replaced. A delay beyond
+60 seconds must return the rate-limit response for ordinary recovery. Complete
+snapshot and account fences remain required. Server limits must not be raised
+or bypassed to make a large participating-Path list hydrate.

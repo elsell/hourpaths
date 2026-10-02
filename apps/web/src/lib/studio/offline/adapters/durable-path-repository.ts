@@ -53,7 +53,7 @@ export function durablePathRepository(
       const before = await current.tracking.snapshot();
       if (prefetchedTracking.delete(ownedKey(current.owner, pathId))) return requireView(current, pathId);
       if (current.connected?.() === false && Object.hasOwn(before.summaries, pathId)) return requireView(current, pathId);
-      if (before.operations.some(value => value.pathId === pathId)) return requireView(current, pathId);
+      if (before.operations.some(value => value.pathId === pathId) || before.activityOperations?.some(value => value.activity.pathId === pathId)) return requireView(current, pathId);
       try {
         const value = await remote.tracking(pathId, signal);
         current.assertCurrent();
