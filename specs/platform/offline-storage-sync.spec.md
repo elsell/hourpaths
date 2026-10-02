@@ -158,6 +158,8 @@ must follow the product specification, including dismissal reset on reconnect.
 Both clients must show the saved and discarded durations for an archival
 rejection. A rejection may display its retained Path name only when the replay
 outcome permits identifying that Path; inaccessible resources remain unnamed.
+Creating a Path while Home is loading must supersede the pre-creation Home
+request and refresh the complete cache, so the new Path is immediately usable.
 
 Acceptance must demonstrate process restart with original timer instants,
 acknowledgement loss and duplicate replay, same-account restoration and different
