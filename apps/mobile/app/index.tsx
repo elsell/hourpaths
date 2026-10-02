@@ -7594,8 +7594,9 @@ export function HomeScreen() {
     const ticket = manualOperations.issue();
     setManualBusy(true); setManualErrorKey(null);
     try {
-      const interval = reviewedManualActivityInterval(manualForm, mobileManualNow());
       const durable = await durableMobileHome();
+      const existing = activity ? (await durable.history(pathID)).items.find(entry => entry.id === activity.id) : undefined;
+      const interval = reviewedManualActivityInterval(manualForm, mobileManualNow(), existing?.startedAt);
       const result = await durable.saveActivity(pathID, activity?.id ?? null, {
         startedAt: interval.startedAt, durationSeconds: serialized.fields.durationSeconds, note: manualNote,
       });

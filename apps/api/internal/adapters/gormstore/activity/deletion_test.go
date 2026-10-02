@@ -64,7 +64,9 @@ func TestPostgresDeleteActivityTombstonesReplayAndPreservesUnrelatedState(t *tes
 	if _, err := repository.DeleteActivity(context.Background(), denied); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatalf("cross-owner DeleteActivity() error = %v", err)
 	}
-	if retained, _, err := repository.GetActivity(context.Background(), participantID, pathID, target.ID); err != nil || retained != updated.Activity {
+	expectedRetained := updated.Activity
+	expectedRetained.EditOrder, _ = domain.NewActivityEditOrder(updatedAt, 0, "delete-update-target")
+	if retained, _, err := repository.GetActivity(context.Background(), participantID, pathID, target.ID); err != nil || retained != expectedRetained {
 		t.Fatalf("denied deletion changed target: %+v, %v", retained, err)
 	}
 

@@ -54,7 +54,7 @@ export function durableActivityRepository(remote: ActivityRepository, runtime: (
       const path = state.paths.find(value => value.id === review.pathId);
       if (!path || review.activityId && !existing) throw new Error('activity_not_retained');
       const timeZone = existing?.timeZone ?? path.timeZone;
-      const interval = reviewedManualActivityInterval({ localDate: review.input.localDate, localTime: review.input.localTime, durationSeconds: String(review.input.seconds), occurrenceTouched: true }, manualActivityParticipantNow(new Date(now()).toISOString(), timeZone));
+      const interval = reviewedManualActivityInterval({ localDate: review.input.localDate, localTime: review.input.localTime, durationSeconds: String(review.input.seconds), occurrenceTouched: true }, manualActivityParticipantNow(new Date(now()).toISOString(), timeZone), existing?.startedAt);
       const input = { startedAt: interval.startedAt, durationSeconds: review.input.seconds, note: review.input.note };
       const saved = review.activityId ? await current.tracking.editRecordedActivity(review.activityId, input) : await current.tracking.createManualActivity({ ...input, pathId: review.pathId });
       current.assertCurrent(); current.wake();
