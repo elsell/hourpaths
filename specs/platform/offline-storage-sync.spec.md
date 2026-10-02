@@ -239,7 +239,7 @@ unsynchronized state without requiring a separate sync workflow.
 
 ### Rate-limited retained reads
 
-Studio Home and retained-history hydration must retry a rate-limited read at
+Studio Home, direct activity editor reads, and retained-history hydration must retry a rate-limited read at
 its current page or Path, rather than repeatedly restart the entire snapshot.
 The generated API adapter may retry only authenticated GET requests, at most
 twice, honoring a bounded numeric Retry-After delay (60 seconds when absent).

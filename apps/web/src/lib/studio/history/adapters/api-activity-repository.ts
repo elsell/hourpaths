@@ -13,7 +13,7 @@ function snapshot(value: APIDetail['activity'], version: number, pathId: string,
   return { editStamp: value.editOrder ? { authoredAt: value.editOrder.authoredAt, counter: value.editOrder.counter } : undefined, originalStartedAt: value.startedAt, originalEndedAt: value.endedAt, createdAt: value.createdAt, updatedAt: value.updatedAt, id: activityId, pathId, participantId: value.participantId, startedAt, endedAt, seconds: value.durationSeconds, timeZone: value.occurrenceTimeZone, version, note: value.participantId === owner ? value.note ?? null : null };
 }
 export function apiActivityRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): ActivityRepository {
-  const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected);
+  const client = (signal?: AbortSignal) => createSessionApiClient(baseURL, token, signal, rejected, { retryRateLimitedReads: true });
   return {
     async defaults(pathId, signal) {
       const api = client(signal);
