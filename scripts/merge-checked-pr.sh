@@ -118,14 +118,15 @@ files_json="$(
 readonly files_json
 
 approval_body="$(
-  PR_JSON="$pr_json" FILES_JSON="$files_json" python3 - \
-    "$repository" "$pr_number" "$expected_head_sha" <<'PY'
+  PR_JSON="$pr_json" python3 - \
+    "$repository" "$pr_number" "$expected_head_sha" 3<<<"$files_json" <<'PY'
 import json
 import os
 import sys
 
 try:
-    pages = json.loads(os.environ["FILES_JSON"])
+    with os.fdopen(3, encoding="utf-8") as file_metadata:
+        pages = json.load(file_metadata)
     changed_files = json.loads(os.environ["PR_JSON"])["changedFiles"]
 except (KeyError, json.JSONDecodeError):
     raise SystemExit("pull request file results are not valid JSON")

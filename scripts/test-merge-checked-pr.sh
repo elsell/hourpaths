@@ -657,6 +657,16 @@ MERGE_CHECKED_REVIEWS_FIXTURE="$test_dir/fixtures/reviews-dismissed.json" \
     42 "$valid_sha"
 test "$(wc -l <"$test_dir/calls" | tr -d ' ')" -eq 5
 
+# Large patches must not exceed exec environment limits or bypass file validation.
+python3 - "$test_dir/fixtures/files-large.json" <<'PYLARGE'
+import json, sys
+from pathlib import Path
+Path(sys.argv[1]).write_text(json.dumps([[{"filename": "apps/api/main.go", "patch": "x" * 200000}]]))
+PYLARGE
+MERGE_CHECKED_FILES_FIXTURE="$test_dir/fixtures/files-large.json" \
+  run_subject "$test_dir/fixtures/view-valid.json" "$test_dir/fixtures/checks-valid.json" 42 "$valid_sha" >"$test_dir/large.out"
+grep -q '^merged$' "$test_dir/large.out"
+
 write_checks_fixture() {
   printf '%s\n' "$1" >"$test_dir/fixtures/checks-case.json"
 }
