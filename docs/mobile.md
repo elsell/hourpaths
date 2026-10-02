@@ -144,3 +144,31 @@ rejection, revocation, or malformed secure storage removes it. Product-specific
 offline data and mutation synchronization remain application concerns. Cold
 launch reads secure storage before OIDC discovery succeeds, so an existing valid
 application session can enter offline mode without provider connectivity.
+
+## Release notes
+
+TestFlight and Google Play releases share `scripts/release-notes.mjs`, adopted
+from make-app. Add reviewed user-facing bullets to a feature, fix, or performance
+squash commit (the first-parent release history is authoritative):
+
+```text
+fix(mobile): preserve activity after reconnect
+
+Release notes:
+- Keep recorded activity when your connection drops.
+- Resume syncing automatically when you reconnect.
+```
+
+Only shipped behavior belongs in these bullets. Avoid internal implementation or
+private operational details. Existing `TestFlight notes:` sections remain
+supported; without reviewed bullets, feature/fix/performance subjects are used.
+Notes cover the interval since the previous stable tag and duplicate highlights
+are removed. TestFlight includes the version/build and a changelog link; Play
+uses the same highlights within its 500-character limit.
+
+The TestFlight workflow waits for the exact uploaded build and verifies its saved
+English notes. The Google Play workflow includes English notes in the same edit
+that uploads and assigns the bundle to internal testing. No new credentials or
+store permissions are required. A failed notes step is a release failure, not
+proof of tester availability. These workflows do not submit a public App Store
+version or promote a Google Play release.

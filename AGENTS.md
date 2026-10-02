@@ -365,6 +365,12 @@ This is a spec-driven, security-conscious application. Specifications under
 
 ## Native mobile delivery
 
+- Include a concise `Release notes:` section with user-facing bullets in mobile
+  feature/fix/performance squash messages. Store notes use these reviewed
+  highlights from the exact stable release tag; omit internal implementation,
+  credentials, and private operational details. See
+  `specs/platform/clients.spec.md#store-release-notes`.
+
 - Do not call an Expo export a native build. Preserve separate export, clean
   prebuild, Android Gradle, iOS Xcode, development-client, and signed-release gates.
 - Keep callback scheme, iOS bundle identifier, Android package, application

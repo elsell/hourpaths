@@ -123,6 +123,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ needs.gate.outputs.source_sha }}
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
         with:
@@ -271,6 +272,15 @@ jobs:
         run: xcrun altool --upload-app --type ios --file "$IPA_PATH" --apiKey "$ASC_API_KEY_ID" --apiIssuer "$ASC_API_ISSUER_ID" --output-format xml
         env:
           API_PRIVATE_KEYS_DIR: ${{ runner.temp }}/private_keys
+
+      - name: Publish verified build notes
+        run: node scripts/testflight-notes.mjs
+        env:
+          MOBILE_BUILD_NUMBER: ${{ env.HOURPATHS_MOBILE_BUILD_NUMBER }}
+          MOBILE_BUNDLE_ID: ${{ env.APPLE_BUNDLE_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
 
       - name: Cleanup signing material
         if: always()

@@ -31,6 +31,7 @@ check:
 	python3 scripts/test-google-play-delivery.py
 	node --test scripts/configure-android-release-signing.test.mjs
 	node --test scripts/google-play-api.test.mjs
+	node --test scripts/release-notes.test.mjs scripts/test-testflight-notes.mjs
 	python3 scripts/test-client-api-boundary.py
 	node scripts/check-client-api-boundary.test.mjs
 	python3 scripts/test-generated-contract-drift.py
