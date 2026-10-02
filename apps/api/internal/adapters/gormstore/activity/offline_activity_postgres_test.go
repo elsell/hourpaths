@@ -92,6 +92,27 @@ func TestPostgresRecordedReplayRetainsLosingEdit(t *testing.T) {
 	if len(snapshotPage.Items) != 1 || snapshotPage.Items[0].Activity.Note != "newer" {
 		t.Fatalf("losing revision altered snapshot: %+v", snapshotPage)
 	}
+	// A pending timer edit was authored before reconnect, but after its stop.
+	seedParticipantAndPath(t, db, "offline-owner", "offline-path", now)
+	start := offlineCommand(t, "edited", "start", now.Add(-time.Hour), time.Time{}, now, 10)
+	if _, err := repo.SynchronizeTimer(context.Background(), start); err != nil {
+		t.Fatal(err)
+	}
+	stop := offlineCommand(t, "edited", "stop", start.Timer.StartedAt, now.Add(-59*time.Minute), now, 11)
+	saved, err := repo.SynchronizeTimer(context.Background(), stop)
+	if err != nil || saved.Activity == nil {
+		t.Fatalf("stop=%+v err=%v", saved, err)
+	}
+	pending := makeCommand("edit", "pending-edit", "recorded-timer-edit-0001", -58*time.Minute, 12)
+	pending.Activity = *saved.Activity
+	pending.Activity.Note = "pending-edit"
+	pending.Idempotency = idempotency("offline-owner", application.OfflineActivityOperation, "recorded-timer-edit-0001", 12)
+	pending.Audit = activityAudit("pending-timer-audit", "offline-owner", saved.Activity.ID, audit.ResourceUpdated, now)
+	edited, err := repo.SynchronizeActivity(context.Background(), pending)
+	if err != nil || edited.Activity == nil || edited.Activity.Note != "pending-edit" {
+		t.Fatalf("pending edit lost to receipt time: %+v err=%v", edited, err)
+	}
+
 	online := application.UpdateActivityCommand{ActivityID: create.Activity.ID, PathID: create.Activity.PathID, ParticipantID: create.Activity.ParticipantID, Edit: domain.ActivityEdit{StartedAt: create.Activity.StartedAt, DurationSeconds: 90, OccurrenceTimeZone: "UTC", Note: "online"}, UpdatedAt: now.Add(time.Minute), Idempotency: idempotency(create.Activity.ParticipantID, application.UpdateActivityOperation, "recorded-online-0001", 4), Audit: activityAudit("recorded-online-audit", create.Activity.ParticipantID, create.Activity.ID, audit.ResourceUpdated, now.Add(time.Minute))}
 	if _, err := repo.UpdateActivity(context.Background(), online); err != nil {
 		t.Fatal(err)

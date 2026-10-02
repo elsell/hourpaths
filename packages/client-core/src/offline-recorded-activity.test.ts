@@ -147,3 +147,12 @@ test('an edit of a pending timer result waits for its recorded identity and upda
   assert.equal(items.length, 1); assert.equal(items[0].id, 'server-entry'); assert.equal(items[0].note, 'edited stop');
   assert.equal((await core.tracking('guitar'))?.savedTotalSeconds, 120);
 });
+
+
+test('an edit after clock rollback preserves observed microsecond causal precision', async () => {
+  const core = new OfflineTracking(new Ledger(), 'alice', () => Date.parse('2026-10-02T12:00:00Z'), () => 'next-edit');
+  await core.retainPaths([{ id: 'guitar', name: 'Guitar', timeZone: 'UTC' }]);
+  await core.retainActivity({ id: 'entry', owner: 'alice', pathId: 'guitar', timeZone: 'UTC', startedAt: '2026-10-02T11:00:00Z', endedAt: '2026-10-02T11:01:00Z', note: '', editStamp: { authoredAt: '2026-10-02T12:00:00.123456Z', counter: 4 } });
+  await core.editRecordedActivity('entry', { startedAt: '2026-10-02T11:00:00Z', durationSeconds: 60, note: 'revised' });
+  assert.deepEqual((await core.snapshot()).activityOperations![0].stamp, { authoredAt: '2026-10-02T12:00:00.123456Z', counter: 5 });
+});

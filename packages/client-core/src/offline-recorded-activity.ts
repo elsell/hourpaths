@@ -48,8 +48,10 @@ export function editRecordedActivity(state: TrackingSnapshot, activityId: string
   writable(state, previous.pathId);
   const observed = previous.editStamp ?? { authoredAt: previous.updatedAt ?? previous.createdAt ?? new Date(now).toISOString(), counter: 0 };
   if (!Number.isFinite(Date.parse(observed.authoredAt)) || !Number.isSafeInteger(observed.counter) || observed.counter < 0) throw new Error('activity_invalid');
-  const authored = Math.max(now, Date.parse(observed.authoredAt));
-  const stamp = { authoredAt: new Date(authored).toISOString(), counter: authored === Date.parse(observed.authoredAt) ? observed.counter + 1 : 0 };
+  // Preserve the server's microseconds when advancing its causal counter.
+  const stamp = now <= Date.parse(observed.authoredAt)
+    ? { authoredAt: observed.authoredAt, counter: observed.counter + 1 }
+    : { authoredAt: new Date(now).toISOString(), counter: 0 };
   if (!Number.isSafeInteger(stamp.counter)) throw new Error('activity_invalid');
   const activity = { ...previous, ...occurrence(input, now), updatedAt: new Date(Math.max(now, Date.parse(previous.createdAt ?? new Date(now).toISOString()))).toISOString(),
     version: (previous.version ?? 1) + 1, editStamp: stamp };
