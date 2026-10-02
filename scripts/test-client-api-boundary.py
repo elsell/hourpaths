@@ -61,6 +61,10 @@ class ClientApiBoundaryTest(unittest.TestCase):
                 "apps/web/src/lib/auth.ts": "export {};",
                 "apps/web/src/lib/studio/social/domain/activity.ts": "export {};",
                 "apps/web/src/lib/studio/bootstrap/mount.tsx": "export {};",
+                "apps/mobile/src/session-destination.ts": "export {};",
+                "apps/mobile/src/home-preference-operation.ts": "export {};",
+                "apps/web/src/lib/studio/offline/ports/home-cache.ts": "export {};",
+                "apps/web/src/lib/studio/paths/domain/path.ts": "export {};",
             })
             fixtures.update(files)
             for relative, contents in fixtures.items():

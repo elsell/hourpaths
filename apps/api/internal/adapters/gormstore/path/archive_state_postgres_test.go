@@ -32,6 +32,13 @@ func TestPostgresArchiveAtomicallyStopsOnlyPathTimersAndUnarchiveDoesNotRestartT
 	cleanupGoalUpdateFixture(t, migrationDB, users, paths)
 	t.Cleanup(func() { cleanupGoalUpdateFixture(t, migrationDB, users, paths) })
 	seedGoalUpdateUsers(t, migrationDB, now, users...)
+	for _, userID := range users {
+		if err := migrationDB.Table("user_preference_models").Create(map[string]any{
+			"user_id": userID, "first_day_of_week": 1, "current_time_zone": "Etc/UTC", "created_at": now, "updated_at": now,
+		}).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
 	existing := domain.Entity{
 		ID: domain.ID(pathID), OwnerUserID: owner,
 		Attributes: domain.Attributes{

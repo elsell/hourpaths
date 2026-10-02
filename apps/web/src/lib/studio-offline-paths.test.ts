@@ -86,6 +86,9 @@ test('Studio Home hydrates hidden Paths before offline restart and preserves its
   };
   const first = create(); await first.list(false);
   assert.equal((await store.read('alice'))?.summaries.reading.savedTotalSeconds, 60);
+  const hydratedReads = requests.length;
+  await first.tracking('reading'); await first.tracking('reading'); await first.tracking('guitar');
+  assert.equal(requests.length, hydratedReads);
   const retained = await cache.readHome('alice'); assert.equal(retained?.appearances.reading.emoji, '🎸');
   interruptHydration = true; savedSeconds = 90; await first.list(false);
   assert.equal((await store.read('alice'))?.summaries.reading.savedTotalSeconds, 90);

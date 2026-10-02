@@ -10,6 +10,8 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
   let disposed = false;
   let bannerDismissed = false;
   let serverAvailable = true;
+  let networkFailures = 0;
+  let networkRetry: ReturnType<typeof setTimeout> | null = null;
   let pending: Promise<TrackingRuntime> | null = null;
   let current: TrackingRuntime | null = null;
   let worker: TrackingReplayWorker | null = null;
@@ -51,6 +53,17 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     current = { owner: boundOwner, timeZone, tracking, assertCurrent, connected,
       reportNetwork: available => {
         assertCurrent();
+        if (available) {
+          networkFailures = 0;
+          if (networkRetry) clearTimeout(networkRetry);
+          networkRetry = null;
+        } else if (connected() && !networkRetry) {
+          const delay = Math.min(60_000, 1000 * 2 ** Math.min(networkFailures++, 6));
+          networkRetry = setTimeout(() => {
+            networkRetry = null;
+            if (!disposed && connected()) notify(true);
+          }, delay);
+        }
         if (serverAvailable === available) return;
         serverAvailable = available;
         if (available) bannerDismissed = false;
@@ -106,6 +119,6 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       notify(true);
       if (connected()) { worker?.setPaused(false); void worker?.wake(); }
     },
-    dispose(): void { disposed = true; worker?.dispose(); current?.tracking.dispose(); listeners.clear(); void store.close(); },
+    dispose(): void { disposed = true; if (networkRetry) clearTimeout(networkRetry); worker?.dispose(); current?.tracking.dispose(); listeners.clear(); void store.close(); },
   };
 }

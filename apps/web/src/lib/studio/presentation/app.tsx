@@ -84,7 +84,10 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   useEffect(() => d.offline?.subscribe((refreshHome) => {
-    if (refreshHome) void client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] });
+    if (refreshHome) {
+      const queryKey = [d.accountScope, 'paths'];
+      void client.cancelQueries({ queryKey }).then(() => client.invalidateQueries({ queryKey }));
+    }
     void client.fetchQuery({ queryKey: [d.accountScope, 'offlineState'], queryFn: () => d.offline!.snapshot(), staleTime: 0 }).then(state => {
       if (!state.unavailablePathIds?.length) return;
       client.setQueriesData<readonly Path[]>({ queryKey: [d.accountScope, 'paths'] }, paths => paths?.filter(path => !state.unavailablePathIds!.includes(path.id)));

@@ -158,6 +158,11 @@ must follow the product specification, including dismissal reset on reconnect.
 Restoring Home from cache after a temporary API failure must show offline state
 even if the browser still reports a network connection. A successful fresh Home
 read must clear that state.
+Temporary Home read failures, including rate limits, must retry with bounded
+backoff while preserving the cache and account-scoped pending work.
+Timer rendering and local queue notifications must use the retained timer
+projection without refetching every Path. Home refresh owns remote timer
+hydration, so reconnecting or settling a command does not multiply timer reads.
 Both clients must show the saved and discarded durations for an archival
 rejection. A rejection may display its retained Path name only when the replay
 outcome permits identifying that Path; inaccessible resources remain unnamed.

@@ -24,7 +24,7 @@ export function durablePathRepository(
   temporary: (failure: unknown) => boolean,
 ): PathRepository {
   let reads: Promise<unknown> = Promise.resolve();
-  const prefetchedTracking = new Set<string>(), prefetchedAppearance = new Set<string>();
+  const prefetchedAppearance = new Set<string>();
   const ownedKey = (owner: string, id: string) => `${owner}\u0000${id}`;
   async function mapPaths<T>(paths: readonly Path[], read: (path: Path) => Promise<T>): Promise<T[]> {
     const result = new Array<T>(paths.length);
@@ -51,8 +51,10 @@ export function durablePathRepository(
       const current = await runtime();
       current.assertCurrent();
       const before = await current.tracking.snapshot();
-      if (prefetchedTracking.delete(ownedKey(current.owner, pathId))) return requireView(current, pathId);
-      if (current.connected?.() === false && Object.hasOwn(before.summaries, pathId)) return requireView(current, pathId);
+      // Home owns remote hydration. Queue notifications only need the durable
+      // projection; refetching every row here amplifies each replay into N reads.
+      const conflict = before.notices.some(notice => notice.pathId === pathId && notice.reason === 'conflict');
+      if (Object.hasOwn(before.summaries, pathId) && !conflict) return requireView(current, pathId);
       if (before.operations.some(value => value.pathId === pathId)) return requireView(current, pathId);
       try {
         const value = await remote.tracking(pathId, signal);
@@ -116,7 +118,7 @@ export function durablePathRepository(
           current.assertCurrent();
           current.reportNetwork?.(true);
           for (const path of participating) {
-            prefetchedTracking.add(ownedKey(current.owner, path.id)); prefetchedAppearance.add(ownedKey(current.owner, path.id));
+            prefetchedAppearance.add(ownedKey(current.owner, path.id));
           }
           const unavailable = (await current.tracking.snapshot()).unavailablePaths ?? [];
           return paths.filter(path => !unavailable.includes(path.id));
