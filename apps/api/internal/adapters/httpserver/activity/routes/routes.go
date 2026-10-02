@@ -13,6 +13,7 @@ import (
 )
 
 type Service interface {
+	SynchronizeTimer(context.Context, string, string, string, application.OfflineTimerInput) (application.OfflineTimerResult, error)
 	StartTimer(context.Context, string, string, string) (application.StartTimerResult, error)
 	CurrentTimer(context.Context, string, string) (application.CurrentTimerResult, error)
 	StopTimer(context.Context, string, string, string, string) (application.StopTimerResult, error)
@@ -126,6 +127,7 @@ type activityDefaultsOutput struct {
 }
 
 func Register(api huma.API, service Service) {
+	registerOfflineTimer(api, service)
 	path := "/v1/paths/{pathId}/timer"
 	security := []map[string][]string{{"oidc": {}}}
 	huma.Register(api, huma.Operation{OperationID: "start-path-timer", Method: http.MethodPost, Path: path, Security: security}, func(ctx context.Context, input *mutationInput) (*stateOutput, error) {

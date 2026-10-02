@@ -37,7 +37,7 @@ const approvedWorkspacePackages = new Map([
 ]);
 const approvedExternalImports = new Set([
   '@sveltejs/kit', 'expo-auth-session', 'expo-constants', 'expo-crypto',
-  'expo-image', 'expo-linking', 'expo-localization', 'expo-notifications', 'expo-router/unstable-native-tabs', 'expo-secure-store', 'expo-web-browser',
+  'expo-image', 'expo-linking', 'expo-localization', 'expo-notifications', 'expo-router/unstable-native-tabs', 'expo-secure-store', 'expo-sqlite', 'expo-web-browser',
   '@expo/ui/community/segmented-control', '@expo/ui/swift-ui', '@expo/ui/swift-ui/modifiers',
   'i18next', 'node:assert/strict', 'node:test', 'oidc-client-ts', 'react', 'react-native',
   'react-native-safe-area-context',
@@ -45,6 +45,7 @@ const approvedExternalImports = new Set([
   ...[...approvedWorkspacePackages.values()].map((workspacePackage) => workspacePackage.name),
 ]);
 const providerImports = new Map([
+  ['apps/mobile/src/offline/native-tracking-store.ts', new Set(['expo-sqlite'])],
   ['apps/mobile/src/provider-auth.ts', new Set(['expo-auth-session', 'expo-web-browser'])],
   ['apps/mobile/src/push-notifications-native.ts', new Set(['expo-linking', 'expo-notifications'])],
   ['apps/web/src/lib/provider-auth.ts', new Set(['oidc-client-ts'])],
@@ -77,6 +78,9 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts',
+  'apps/mobile/src/offline/native-tracking-store.ts',
+  'apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts',
   ...studioHosts,
   'apps/web/src/lib/studio/presentation/avatar.tsx',
   'apps/mobile/src/policy-link-native.ts',
@@ -89,6 +93,8 @@ const protectedClientCapabilityConstructors = new Map([
   ['apps/web/src/lib/notification-convergence-browser.ts', new Set(['BroadcastChannel'])],
 ]);
 const protectedClientCapabilityCallRoots = new Map([
+  ['apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts', new Set(['window'])],
+  ['apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts', new Set(['indexedDB'])],
   ['apps/web/src/lib/notification-convergence-browser.ts', new Set(['document'])],
 ]);
 const protectedClientCapabilityManifest = 'scripts/protected-client-capability-adapters.sha256';

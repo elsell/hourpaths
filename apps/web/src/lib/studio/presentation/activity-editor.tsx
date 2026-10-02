@@ -1,3 +1,4 @@
+import { ActivityTimingFields } from './activity-timing-fields';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useBlocker, useParams } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -71,9 +72,9 @@ function ActivityForm({ pathId, defaults, detail, loadedAt, dependencies: d }: {
     <form className="studio-form studio-activity-form" onSubmit={event => { event.preventDefault(); void submit(); }}>
       <h2>{defaults.pathName}</h2><p>{d.i18n.t('activity.timeZone', { timeZone: zone })}</p>
       <fieldset disabled={busy}>
-        <div className="studio-form-pair"><label>{d.i18n.t('activity.date')}<input autoFocus required type="date" value={form.localDate} onChange={event => { changed(); setForm(overrideManualActivityOccurrence(form, { localDate: event.target.value })); }} /></label>
-        <label>{d.i18n.t('activity.startTime')}<input required type="time" step="1" value={form.localTime} onChange={event => { changed(); const value = event.target.value; setForm(overrideManualActivityOccurrence(form, { localTime: value.length === 5 ? `${value}:00` : value })); }} /></label></div>
-        <fieldset className="studio-duration-parts"><legend>{d.i18n.t('activity.durationValue')}</legend>{(['hours','minutes','seconds'] as const).map(unit => <label key={unit}>{d.i18n.t(`activity.duration.${unit}`)}<input type="number" min="0" step="1" inputMode="numeric" value={parts[unit]} onChange={event => { changed(); const next = { ...parts, [unit]: event.target.value }; setParts(next); setForm(updateManualActivityDuration(form, secondsFromDurationParts(next), now())); }} /></label>)}</fieldset>
+        <ActivityTimingFields i18n={d.i18n} form={form} parts={parts}
+          onOccurrence={patch => { changed(); setForm(overrideManualActivityOccurrence(form, patch)); }}
+          onParts={next => { changed(); setParts(next); setForm(updateManualActivityDuration(form, secondsFromDurationParts(next), now())); }} />
         <details open={Boolean(detail?.note)}><summary>{d.i18n.t('activity.note')}</summary><label>{d.i18n.t('activity.note')}<textarea rows={3} value={note} onChange={event => { changed(); setNote(event.target.value); }} /></label><small>{d.i18n.t('activity.notePrivacy')}</small></details>
         <div className="studio-form-actions">{busy ? <button type="button" disabled>{d.i18n.t('common.cancel')}</button> : <Link to="/">{d.i18n.t('common.cancel')}</Link>}<button type="submit" disabled={busy || (error === 'request' && !retryable)}>{d.i18n.t(busy ? 'activity.saving' : error === 'request' ? 'common.retry' : detail ? 'activity.saveEdit' : 'activity.save')}</button></div>
       </fieldset>

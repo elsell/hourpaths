@@ -13,6 +13,7 @@ export type PathCardProps = {
   actions?: readonly NativeRouteAction[];
   actionsAccessibilityLabel?: string;
   accumulatedText?: string;
+  statusText?: string;
   appearance?: PathAppearance;
   headline?: string;
   intervalSummary?: string;
@@ -22,7 +23,7 @@ export type PathCardProps = {
   timer?: ReactNode;
 };
 
-export function PathCard({ onLongPress, reorderHint, onFocusTarget, actions, actionsAccessibilityLabel, accumulatedText, appearance = defaultPathAppearance(''), headline, intervalSummary, name, onOpen, progress, timer }: PathCardProps) {
+export function PathCard({ onLongPress, reorderHint, onFocusTarget, actions, actionsAccessibilityLabel, accumulatedText, statusText, appearance = defaultPathAppearance(''), headline, intervalSummary, name, onOpen, progress, timer }: PathCardProps) {
   const tone = pathPalette[appearance.color];
   return <View style={[styles.card, { backgroundColor: tone.background }]}>
     {onOpen ? <Pressable ref={onFocusTarget} accessibilityLabel={name} accessibilityRole="button" accessibilityHint={onLongPress ? reorderHint : undefined} onPress={onOpen} onLongPress={onLongPress} delayLongPress={350}
@@ -36,6 +37,7 @@ export function PathCard({ onLongPress, reorderHint, onFocusTarget, actions, act
       {headline ? <Text adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[styles.headline, { color: tone.foreground }]}>{headline}</Text> : null}
       {intervalSummary ? <Text style={[styles.summary, { color: tone.foreground }]}>{intervalSummary}</Text> : null}
       {progress ? <View style={styles.progressStack}>{progress}</View> : null}
+      {statusText ? <Text style={[styles.summary, { color: tone.foreground }]}>{statusText}</Text> : null}
       {accumulatedText ? <Text style={[styles.summary, { color: tone.foreground }]}>{accumulatedText}</Text> : null}
     </View>
     {timer ? <View style={styles.timer}>{timer}</View> : null}

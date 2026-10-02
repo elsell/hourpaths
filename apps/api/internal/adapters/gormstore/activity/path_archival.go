@@ -30,7 +30,11 @@ func (r *Repository) StopPathTimersForArchive(ctx context.Context, pathID string
 		if err != nil {
 			return ports.ErrInvalidArgument
 		}
-		if saved {
+		handled, err := archiveOfflineTimer(r.DB.WithContext(ctx), row, entry, saved, stoppedAt)
+		if err != nil {
+			return err
+		}
+		if saved && !handled {
 			if err := r.DB.WithContext(ctx).Create(fromActivity(entry)).Error; err != nil {
 				return err
 			}

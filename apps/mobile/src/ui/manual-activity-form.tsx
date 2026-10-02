@@ -18,6 +18,7 @@ const i18n = createDeviceTranslator(getLocales);
 
 export function ManualActivityForm({
   activityVersion,
+  correction = false,
   busy,
   editing,
   errorText,
@@ -31,6 +32,7 @@ export function ManualActivityForm({
   timeZone,
 }: {
   activityVersion?: number;
+  correction?: boolean;
   busy: boolean;
   editing: boolean;
   errorText?: string;
@@ -57,7 +59,7 @@ export function ManualActivityForm({
     dismissible={!busy}
     leadingAction={{ disabled: busy, label: i18n.t('common.cancel'), onPress: onCancel }}
     onRequestClose={onCancel}
-    title={i18n.t(editing ? 'activity.editHeading' : 'activity.addHeading')}
+    title={i18n.t(correction ? 'offline.correctHeading' : editing ? 'activity.editHeading' : 'activity.addHeading')}
     trailingAction={{
       disabled: busy,
       label: i18n.t(errorText ? 'common.retry' : editing ? 'activity.saveEdit' : 'activity.save'),
@@ -65,6 +67,7 @@ export function ManualActivityForm({
     }}
     visible
   >
+    {correction ? <ThemedText style={styles.supporting}>{i18n.t('offline.correctBody')}</ThemedText> : null}
     <View style={styles.section}>
       <ManualOccurrenceFields busy={busy} form={form} onChange={onChangeOccurrence} />
       <ThemedText style={styles.supporting}>
@@ -87,12 +90,12 @@ export function ManualActivityForm({
       />
     </View>
 
-    <NativePrimaryButton
+    {!correction ? <NativePrimaryButton
       label={i18n.t(noteExpanded ? 'activity.hideNote' : 'activity.addNote')}
       onPress={() => setNoteExpanded((expanded) => !expanded)}
       variant="plain"
-    />
-    {noteExpanded ? <View style={styles.section}>
+    /> : null}
+    {!correction && noteExpanded ? <View style={styles.section}>
       <View style={styles.field}>
         <ThemedText style={styles.label}>{i18n.t('activity.note')}</ThemedText>
         <ThemedTextInput

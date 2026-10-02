@@ -12,15 +12,20 @@ and assigned to the internal group (status run `36905986943`).
 Physical-device encouragement acceptance remains open.
 
 The [ordered completion checklist](completion-checklist.spec.md) retains the
-entire approved audit scope in **13 remaining acceptance areas**. It identifies
+entire approved audit scope in **12 remaining acceptance areas**. It identifies
 the two remaining Studio legacy-journey groups and the explicit web cutover gate,
 and schedules offline, account lifecycle, notification delivery, and native timer
 work before further Studio-only expansion. Only one product slice is active;
 a demonstrated P0/P1 release blocker is the only additional infrastructure work.
-The release gate is closed. Path visibility is merged in PR #96 and its release pipeline is active.
-The active product slice is Studio account entry, the final legacy-journey group
-in checklist area 1. Durable offline use follows, without further Studio-only
-scope expansion.
+Path visibility (#96) is available in v0.26.0 on web and TestFlight (249).
+Studio account entry (#97) and release blockers (#98–#99) are merged with
+required gates passing. API/web revision `f006028` is deployed through GitOps
+`8e4457a`; exact images, completed rollouts, Ready/Healthy Flux and public Studio
+availability are verified. TestFlight 0.27.0 (259) is VALID, IN_BETA_TESTING and
+assigned to the internal group (status run `36956130006`). Area 1 is closed;
+physical-device acceptance remains in area 13. The sole active implementation slice is
+restart-safe offline tracking under area 2, with the prior release monitored
+independently. No further Studio-only expansion is in progress.
 
 ## Gap-closure scope and evidence
 

@@ -33,8 +33,12 @@ export function parsePathAppearance(value: SavedPathAppearance): SavedPathAppear
     (value.revision > 0 && (!Object.hasOwn(pathPalette, value.color ?? '') || !validPathEmoji(value.emoji ?? '')))) throw new Error('invalid_appearance');
   return value.revision === 0 ? { revision: 0 } : { ...value };
 }
+export type AppearanceCache = {
+  read(id: string): Promise<SavedPathAppearance | null>;
+  write(id: string, value: SavedPathAppearance): Promise<void>;
+};
 // One instance per signed-in account. Disposal invalidates in-flight results.
-export function createPathAppearanceStore(port: AppearancePort, key: () => string, changed: () => void) {
+export function createPathAppearanceStore(port: AppearancePort, key: () => string, changed: () => void, cache?: AppearanceCache) {
   let disposed = false;
   const values = new Map<string, SavedPathAppearance>();
   const tickets = new Map<string, number>();
@@ -47,12 +51,20 @@ export function createPathAppearanceStore(port: AppearancePort, key: () => strin
     if (disposed || saving.has(id)) return;
     const request = ticket(id);
     try {
+      if (cache && !values.has(id)) {
+        const retained = await cache.read(id).catch(() => null);
+        if (disposed || tickets.get(id) !== request) return;
+        if (retained) { values.set(id, parsePathAppearance(retained)); publish(); }
+      }
       const value = parsePathAppearance(await port.read(id));
       if (disposed || tickets.get(id) !== request) return;
       values.set(id, value); failures.delete(id); publish();
+      // Cosmetic cache failure must not roll back an authoritative preference.
+      await cache?.write(id, value).catch(() => undefined);
     } catch {
       if (disposed || tickets.get(id) !== request) return;
-      failures.add(id); publish();
+      if (!values.has(id)) failures.add(id);
+      publish();
     }
   }
   return {
@@ -82,7 +94,8 @@ export function createPathAppearanceStore(port: AppearancePort, key: () => strin
         const result = parsePathAppearance(await port.save(id, appearance, attempt.revision, attempt.key));
         if (disposed) return false;
         values.set(id, result); failures.delete(id); pending.delete(id); publish();
-        return true;
+        await cache?.write(id, result).catch(() => undefined);
+        return !disposed;
       } catch (error) {
         // A conflict refreshes the base revision, but preserves the draft until
         // the person explicitly retries. Unknown outcomes keep the same key.

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { createDeviceTranslator } from '../i18n';
 import { getLocales } from 'expo-localization';
@@ -9,6 +10,7 @@ import { mobileTheme } from './tokens';
 const i18n = createDeviceTranslator(getLocales);
 
 export function SignedOutScreen({
+  retained,
   errorText,
   onSignIn,
   onRetry,
@@ -17,6 +19,7 @@ export function SignedOutScreen({
   providerReady,
   sessionExpired,
 }: {
+  retained?: ReactNode;
   errorText?: string;
   onSignIn: () => void;
   onRetry: () => void;
@@ -49,13 +52,14 @@ export function SignedOutScreen({
       <ScreenHeader
         compact={accessibilityLayout}
         eyebrow={accessibilityLayout ? undefined : i18n.t('app.title')}
-        title={i18n.t(accessibilityLayout ? 'app.title' : 'auth.welcomeHeading')}
+        title={i18n.t(retained ? 'offline.signInRequired' : accessibilityLayout ? 'app.title' : 'auth.welcomeHeading')}
       />
-      {accessibilityLayout ? null : <Text style={styles.explanation}>{i18n.t('auth.welcomeBody')}</Text>}
+      {retained ? <Text style={styles.explanation}>{i18n.t('offline.signInRequiredBody')}</Text> : accessibilityLayout ? null : <Text style={styles.explanation}>{i18n.t('auth.welcomeBody')}</Text>}
     </View>
 
     <View style={[styles.actionArea, accessibilityLayout && styles.accessibilityActionArea]}>
       {accessibilityLayout ? primaryAction : null}
+      {retained}
       {recoveryErrorText ? <StatusBanner text={recoveryErrorText} tone="error" /> : null}
       {!providerDiscoveryFailed && (!providerReady || providerBusy) ? <View
         accessibilityLabel={i18n.t(providerBusy ? 'auth.signingIn' : 'auth.preparingSignIn')}

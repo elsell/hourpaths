@@ -126,3 +126,21 @@ test('feature-local failures stay local unless the credential must be discarded'
   assert.equal(shouldTransitionMobileSessionForFeatureFailure({ kind: 'http', status: 403 }), false);
   assert.equal(shouldTransitionMobileSessionForFeatureFailure({ kind: 'http', status: 404 }), false);
 });
+
+test('retained-account storage replaces only the rejected credential, never a newer refresh or account', async () => {
+  let stored = JSON.stringify({ ...current, ownerId: 'alice' });
+  const storage = createSerializedMobileSessionStorage({
+    read: async () => stored,
+    write: async value => { stored = JSON.stringify(value); },
+    pause: async owner => { stored = JSON.stringify({ state: 'sign_in_required', ownerId: owner }); },
+    discard: async () => { stored = ''; },
+  });
+  assert.equal(await storage.pause('alice', current.token, () => true), true);
+  assert.deepEqual(JSON.parse(stored), { state: 'sign_in_required', ownerId: 'alice' });
+  await storage.persist({ ...current, ownerId: 'alice', token: 'refreshed' }, () => true);
+  assert.equal(await storage.pause('alice', current.token, () => true), false);
+  assert.equal(JSON.parse(stored).token, 'refreshed');
+  await storage.persist({ ...current, ownerId: 'bob', token: 'other-account' }, () => true);
+  assert.equal(await storage.pause('alice', 'refreshed', () => true), false);
+  assert.equal(JSON.parse(stored).ownerId, 'bob');
+});

@@ -31,8 +31,9 @@ export interface Path extends PathGoals {
 }
 
 export interface TrackingSnapshot {
+  readonly pending?: boolean;
   readonly savedTotalSeconds: number;
-  readonly activeSession: { readonly id: string; readonly startedAt: number } | null;
+  readonly activeSession: { readonly id: string; readonly startedAt: number; readonly originalStartedAt?: string; readonly timeZone?: string } | null;
   readonly period: {
     readonly savedSeconds: number;
     readonly targetSeconds: number;

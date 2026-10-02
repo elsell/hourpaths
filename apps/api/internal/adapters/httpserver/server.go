@@ -127,12 +127,13 @@ type ResourceListOutput struct {
 type NoContentOutput struct{ Status int }
 
 type APIError struct {
-	Type   string              `json:"type,omitempty" format:"uri" default:"about:blank"`
-	Title  string              `json:"title,omitempty"`
-	Status int                 `json:"status,omitempty"`
-	Code   string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
-	Detail string              `json:"detail,omitempty"`
-	Errors []*huma.ErrorDetail `json:"errors,omitempty"`
+	Operation string              `json:"operation,omitempty" doc:"Operation that classified this failure, when needed for safe replay"`
+	Type      string              `json:"type,omitempty" format:"uri" default:"about:blank"`
+	Title     string              `json:"title,omitempty"`
+	Status    int                 `json:"status,omitempty"`
+	Code      string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
+	Detail    string              `json:"detail,omitempty"`
+	Errors    []*huma.ErrorDetail `json:"errors,omitempty"`
 }
 
 func (e *APIError) Error() string  { return e.Detail }

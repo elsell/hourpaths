@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { activeTimerSeconds, classifySessionFailure, createManualActivityFormState, createSessionOperationOwner, declineDuplicateEmailRecovery, exchangeSessionCredential, isValidSessionCredential, manualActivityParticipantNow, overallProgress, overrideManualActivityOccurrence, publicEndpointConfig, publicEnvironmentConfig, publicStringConfig, refreshSessionCredential, retainedSessionExpiry, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, validateSessionMutation, type SessionFailure } from './index.js';
+import { reviewedManualActivityInterval, activeTimerSeconds, classifySessionFailure, createManualActivityFormState, createSessionOperationOwner, declineDuplicateEmailRecovery, exchangeSessionCredential, isValidSessionCredential, manualActivityParticipantNow, overallProgress, overrideManualActivityOccurrence, publicEndpointConfig, publicEnvironmentConfig, publicStringConfig, refreshSessionCredential, retainedSessionExpiry, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, validateSessionMutation, type SessionFailure } from './index.js';
 
 test('active timer duration excludes previously accumulated activity', () => {
   assert.equal(activeTimerSeconds('2026-07-21T12:00:00Z', Date.parse('2026-07-21T12:01:01.900Z')), 61);
@@ -474,4 +474,13 @@ test('future validation resolves a nonexistent start forward through the gap', (
     ok: true,
     fields: { localDate: '2026-03-08', localTime: '02:30:00', durationSeconds: 1 },
   });
+});
+
+
+test('reviewed offline intervals preserve the established DST gap and repeated-hour rules', () => {
+  const now = manualActivityParticipantNow('2026-11-02T12:00:00Z', 'America/New_York');
+  assert.deepEqual(reviewedManualActivityInterval({ localDate: '2026-11-01', localTime: '01:30:00', durationSeconds: '3600', occurrenceTouched: true }, now),
+    { startedAt: '2026-11-01T05:30:00.000Z', endedAt: '2026-11-01T06:30:00.000Z' });
+  assert.deepEqual(reviewedManualActivityInterval({ localDate: '2026-03-08', localTime: '02:30:00', durationSeconds: '60', occurrenceTouched: true }, now),
+    { startedAt: '2026-03-08T07:30:00.000Z', endedAt: '2026-03-08T07:31:00.000Z' });
 });

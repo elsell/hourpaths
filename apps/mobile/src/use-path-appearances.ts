@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import { createPathAppearancePort } from '@hourpaths/api-client';
-import { createPathAppearanceStore, defaultPathAppearance, type PathAppearance, type PathColor } from '@hourpaths/client-core';
+import { createPathAppearanceStore, defaultPathAppearance, type AppearanceCache, type PathAppearance, type PathColor } from '@hourpaths/client-core';
 import { subscribeNativeAppActive } from './push-notifications-native';
 
-export function usePathAppearances(apiURL: string, accountID: string | undefined, token: string | undefined, pathIDs: string) {
+export function usePathAppearances(apiURL: string, accountID: string | undefined, token: string | undefined, pathIDs: string, cache?: (owner: string) => Promise<AppearanceCache>) {
   const [, redraw] = useState(0);
   const credential = useRef({ accountID, token });
   credential.current = { accountID, token };
@@ -13,11 +13,13 @@ export function usePathAppearances(apiURL: string, accountID: string | undefined
   const [editor, setEditor] = useState<{ accountID: string; pathID: string; revision: number; draft?: PathAppearance; inline?: boolean; busy: boolean; failed: boolean } | null>(null);
   useEffect(() => {
     if (!accountID) return;
-    const store = createPathAppearanceStore(createPathAppearancePort(apiURL, () => credential.current.accountID === accountID ? credential.current.token ?? null : null), () => Crypto.randomUUID(), () => redraw((n) => n + 1));
+    const store = createPathAppearanceStore(createPathAppearancePort(apiURL, () => credential.current.accountID === accountID ? credential.current.token ?? null : null), () => Crypto.randomUUID(), () => redraw((n) => n + 1), cache ? {
+      read: async id => (await cache(accountID)).read(id), write: async (id, value) => (await cache(accountID)).write(id, value),
+    } : undefined);
     current.current = { accountID, store };
     redraw((n) => n + 1);
     return () => { store.dispose(); if (current.current?.store === store) current.current = null; };
-  }, [accountID, apiURL]);
+  }, [accountID, apiURL, cache]);
   useEffect(() => {
     const owned = current.current;
     if (!accountID || owned?.accountID !== accountID) return;

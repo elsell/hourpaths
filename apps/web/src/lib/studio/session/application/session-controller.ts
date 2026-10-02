@@ -26,6 +26,23 @@ export class SessionController {
     return this.current.token;
   }
 
+  owner(): string | null { return this.token() ? this.current?.ownerId ?? null : null; }
+
+  /** Called only with the owner returned by a successful authenticated profile
+   * read. An old response cannot relabel a replacement session. */
+  bindOwner(expectedToken: string, ownerId: string): boolean {
+    if (!ownerId || ownerId.trim() !== ownerId || ownerId.length > 128) throw new SessionUnavailable(false);
+    if (this.token() !== expectedToken || !this.current) return false;
+    if (this.current.ownerId && this.current.ownerId !== ownerId) {
+      this.invalidate(true);
+      return false;
+    }
+    const replacement = { ...this.current, ownerId };
+    this.store.write(replacement);
+    this.current = replacement;
+    return true;
+  }
+
   async maintain(): Promise<void> {
     if (!this.token() || !this.current || this.pending || !this.renewable || this.now() < this.nextRefreshAttempt || this.current.expiresAt - this.now() > 60_000) return;
     const previousExpiry = this.current.expiresAt;
@@ -49,13 +66,14 @@ export class SessionController {
         await this.revoke(next);
         throw new SessionUnavailable(false);
       }
+      if (this.current?.ownerId) next = { ...next, ownerId: this.current.ownerId };
       this.store.write(next);
       this.current = next;
       return next;
     }).catch(error => {
       if (generation === this.generation &&
         (!(error instanceof SessionUnavailable) || !error.retryable || previous.expiresAt <= this.now())) {
-        this.invalidate(this.store.read()?.token === previous.token);
+        this.invalidate(this.store.read()?.token === previous.token, error instanceof SessionUnavailable && error.reason === 'rejected');
       }
       throw error;
     }).finally(() => { if (this.pending === operation) this.pending = null; });
@@ -65,7 +83,7 @@ export class SessionController {
 
   reject(credential: string | null): void {
     if (!credential || credential !== this.current?.token) return;
-    this.invalidate(!!this.current && this.store.read()?.token === this.current.token);
+    this.invalidate(!!this.current && this.store.read()?.token === this.current.token, true);
   }
 
   dispose(): void {
@@ -79,12 +97,15 @@ export class SessionController {
     if (previous) void this.revoke(previous);
   }
 
-  private invalidate(clear: boolean): void {
+  private invalidate(clear: boolean, retain = false): void {
     if (!this.current) return;
+    const owner = this.current.ownerId;
     this.current = null;
     this.generation++;
-    if (clear) this.store.clear();
-    this.lost();
+    try {
+      if (clear && retain && owner && this.store.pause) this.store.pause(owner);
+      else if (clear) this.store.clear();
+    } finally { this.lost(); }
   }
 
   private async revoke(session: Session): Promise<void> {

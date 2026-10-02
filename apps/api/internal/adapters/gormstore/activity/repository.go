@@ -166,6 +166,9 @@ func (r *Repository) StartTimer(ctx context.Context, command application.StartTi
 			activeTimerConflict = true
 			return nil
 		}
+		if err := registerOnlineTimer(tx, *fromTimer(canonicalTimer)); err != nil {
+			return err
+		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err
 		}
@@ -242,6 +245,9 @@ func (r *Repository) StopTimer(ctx context.Context, command application.StopTime
 			if err := persistCompletedActivity(tx, entry); err != nil {
 				return err
 			}
+		}
+		if err := settleOfflineTimer(tx, row, entry, saved, command.StoppedAt, "stopped"); err != nil {
+			return err
 		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err

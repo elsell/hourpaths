@@ -1,3 +1,8 @@
+import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
+import { retainedHistoryDetails } from '../src/offline/retained-history-presentation';
+import { retainedAccount, apiTrackingHistory, apiTrackingSync, type TrackingSnapshot } from '@hourpaths/client-core';
+import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
+import { openNativeOfflineStorage } from '../src/offline/native-tracking-store';
 import { initialStatsSelection, type StatsSelection, type StatsState } from '@hourpaths/client-core';
 import { StatsRouteSource } from '../src/ui/stats-route-presentation';
 import { usePathAppearances } from '../src/use-path-appearances';
@@ -109,6 +114,7 @@ import {
   requestNativePushPermission,
   setNativeNotificationBadge,
   stageNativePushDeregistration,
+  subscribeNativeAppActive,
 } from '../src/push-notifications-native';
 import { interactionDisabledDestinationFromAPI, type NotificationDestination, type PushPermission } from '../src/push-notifications';
 import { foregroundNotificationTargetKey, notificationDestinationTargetKey } from '../src/foreground-notification-routing';
@@ -388,6 +394,7 @@ const deviceOnboardingDefaults = {
 const serializedSessionStorage = createSerializedMobileSessionStorage({
   read: () => SecureStore.getItemAsync(storageKey),
   write: (session) => SecureStore.setItemAsync(storageKey, JSON.stringify(session)),
+  pause: owner => SecureStore.setItemAsync(storageKey, JSON.stringify(retainedAccount(owner))),
   discard: () => SecureStore.deleteItemAsync(storageKey),
 });
 let pushDeregistrationRetry: Promise<void> | null = null;
@@ -481,6 +488,10 @@ async function refreshSession(session: Session, ticket: SessionOperationTicket):
   );
   if (!replacement.nextAction) throw { kind: 'local_storage', reason: 'missing_fields' } satisfies SessionFailure;
   return replacement as Session;
+}
+async function nativeAppearanceCache(owner: string) {
+  const { appearances } = await openNativeOfflineStorage();
+  return { read: (id: string) => appearances.read(owner, id), write: (id: string, value: import('@hourpaths/client-core').SavedPathAppearance) => appearances.write(owner, id, value) };
 }
 async function loadActivityPage(session: Session, pathID: string, cursor?: string, participantID?: string): Promise<ActivityPage> {
   return validateSessionCredential<ActivityPage>(session, async (credential) => {
@@ -739,6 +750,8 @@ export function HomeScreen() {
   const [selectedPathID, setSelectedPathID] = useState<string | null>(null);
   const [activityHistoryOpen, setActivityHistoryOpen] = useState(false);
   const [activityHistory, setActivityHistory, activityHistoryRef] = useLatestState<ActivityDetail[]>([]);
+  const [clockCorrectionID, setClockCorrectionID] = useState<string | null>(null);
+  const [activityHistoryLocal, setActivityHistoryLocal] = useState({ retained: false, incomplete: false });
   const [activityHistoryCursor, setActivityHistoryCursor] = useState<string | null>(null);
   const [activityHistoryErrorKey, setActivityHistoryErrorKey] = useState<MessageKey | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityDetail | null>(null);
@@ -881,6 +894,14 @@ export function HomeScreen() {
     destination: null,
     session: null,
   });
+  const [retainedHome, setRetainedHome] = useState<{ profile: Profile; state: TrackingSnapshot } | null>(null);
+  const retainedHomeRef = useRef(retainedHome);
+  retainedHomeRef.current = retainedHome;
+  const [retainedStopBusy, setRetainedStopBusy] = useState<string | null>(null);
+  const nativeOffline = useRef<ReturnType<typeof mobileOfflineHome> | null>(null);
+  const nativeOfflineOpening = useRef<Promise<ReturnType<typeof mobileOfflineHome>> | null>(null);
+  const nativeOfflineGeneration = useRef(0);
+  const [nativeTrackingState, setNativeTrackingState] = useState<TrackingSnapshot | null>(null);
   const signOutTimerResolutions = useRef(createSignOutTimerResolutionCoordinator());
   const pushCredentials = useRef(new Map<string, string>());
   const pushRegistrationCoordinator = useRef<ReturnType<typeof createNativePushRegistrationCoordinator> | null>(null);
@@ -1389,6 +1410,7 @@ export function HomeScreen() {
     setSelectedPathID(null);
     setActivityHistoryOpen(false);
     setActivityHistory([]);
+    setActivityHistoryLocal({ retained: false, incomplete: false });
     setActivityHistoryCursor(null);
     setActivityHistoryErrorKey(null);
     setSelectedActivity(null);
@@ -1630,7 +1652,9 @@ export function HomeScreen() {
     ticket: SessionOperationTicket,
     sourceSessionToken?: string,
   ) {
+    retainedHomeRef.current = null; setRetainedHome(null);
     const activeBeforeAdoption = notificationLifecycleState.current;
+    if (nativeOffline.current && (!next.ownerId || next.ownerId !== activeBeforeAdoption.session?.ownerId)) disposeNativeTracking();
     const retainsOwnedHome = activeBeforeAdoption.destination?.kind === 'home' &&
       activeBeforeAdoption.session?.token === sourceSessionToken &&
       homeProjectionSessionToken.current === sourceSessionToken;
@@ -1868,7 +1892,10 @@ export function HomeScreen() {
         }
         setSessionRenewable(canRenew); setSession(credential);
       },
-      loadHome: (credential) => loadMobileHomeProfile(apiURL, credential),
+      loadHome: async credential => {
+        const restored = await (await durableMobileHome()).load(credential, ticket.current);
+        return restored.profile;
+      },
       loadOnboarding: async (credential) => createMobileOnboardingDraft(
         await loadMobileOnboardingProfile(apiURL, credential),
         deviceOnboardingDefaults,
@@ -1916,6 +1943,111 @@ export function HomeScreen() {
       },
     });
   }
+
+  function disposeNativeTracking() {
+    retainedHomeRef.current = null; setRetainedHome(null);
+    nativeOfflineGeneration.current++;
+    nativeOffline.current?.dispose();
+    nativeOffline.current = null;
+    nativeOfflineOpening.current = null;
+    setNativeTrackingState(null);
+  }
+
+  async function durableMobileHome() {
+    if (nativeOffline.current) return nativeOffline.current;
+    if (!nativeOfflineOpening.current) {
+      const generation = nativeOfflineGeneration.current;
+      nativeOfflineOpening.current = openNativeOfflineStorage().then(storage => {
+        if (generation !== nativeOfflineGeneration.current) throw new Error('tracking_session_superseded');
+        const service = mobileOfflineHome({
+          store: storage.tracking, home: storage.home,
+          now: () => Date.now(), newId: () => Crypto.randomUUID(),
+          schedule: (work, delay) => { const timer = setTimeout(work, delay); return () => clearTimeout(timer); },
+          owner: async credential => {
+            const profile = await validateSessionCredential<{ id: string }>(credential, async current => generatedResponse(
+              await createSessionApiClient(apiURL, () => current.token).profile(),
+            ));
+            return profile.id;
+          },
+          bind: async (credential, owner, current) => {
+            if (!current() || credential.ownerId && credential.ownerId !== owner) throw new Error('tracking_owner_mismatch');
+            await serializedSessionStorage.persist({ ...credential, ownerId: owner }, current);
+            if (!current()) throw new Error('tracking_session_superseded');
+            // This is verified local metadata on the same credential, not a
+            // token replacement or a server-supplied account selection.
+            credential.ownerId = owner;
+          },
+          history: (credential, owner) => apiTrackingHistory(requested => generation === nativeOfflineGeneration.current && requested === owner && credential.ownerId === owner
+            ? createSessionApiClient(apiURL, () => credential.token, undefined, rejected => {
+              if (rejected === credential.token) {
+                const active = notificationLifecycleState.current;
+                if (active.session?.token === rejected) void handleSessionFailure({ kind: 'http', status: 401 }, active.session);
+              }
+            }) : null, () => Date.now())(owner),
+          remote: credential => loadMobileHomeProfile(apiURL, credential),
+          timeZone: async credential => (await validateSessionCredential<{ timeZone: string }>(credential, async current => generatedResponse(
+            await createSessionApiClient(apiURL, () => current.token).configuredTimeZone(),
+          ))).timeZone,
+          sync: (owner, credential) => apiTrackingSync(requested => {
+            const current = credential();
+            return current && requested === owner && current.ownerId === owner
+              ? createSessionApiClient(apiURL, () => credential()?.token ?? null, undefined, rejected => {
+                  const active = notificationLifecycleState.current;
+                  if (generation !== nativeOfflineGeneration.current || !active.session || active.session.token !== rejected || active.session.ownerId !== owner) return;
+                  nativeOffline.current?.pause();
+                  void handleSessionFailure({ kind: 'http', status: 401 }, active.session);
+                })
+              : null;
+          }),
+          failure: async (owner, cause) => {
+            const active = notificationLifecycleState.current;
+            if (generation !== nativeOfflineGeneration.current || active.destination?.kind !== 'home' || active.destination.profile.id !== owner || !active.session) return;
+            const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
+            if (classifySessionFailure(failure).discardCredential) await handleSessionFailure(failure, active.session);
+            else if (failure.kind === 'network') setAccessState('authenticated_offline');
+          },
+          publish: (owner, profile, snapshot, replace) => {
+            const active = notificationLifecycleState.current;
+            if (generation === nativeOfflineGeneration.current && !active.session && retainedHomeRef.current?.profile.id === owner) {
+              const retained = { profile, state: snapshot };
+              retainedHomeRef.current = retained; setRetainedHome(retained);
+              return;
+            }
+            if (generation !== nativeOfflineGeneration.current || active.destination?.kind !== 'home' ||
+              active.destination.profile.id !== owner || active.session?.ownerId !== owner) return;
+            setNativeTrackingState(snapshot);
+            if (replace) { setAccessState('authenticated_online'); setOfflineStatusDismissed(false); }
+            const next = { ...active.destination, profile: replace ? profile : { ...active.destination.profile, paths: active.destination.profile.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)), timers: profile.timers } };
+            commitTimerProjectionBeforeRender(next,
+              value => { notificationLifecycleState.current = { ...active, destination: value }; }, setDestination);
+          },
+        });
+        nativeOffline.current = service;
+        return service;
+      }).catch(error => {
+        if (generation === nativeOfflineGeneration.current) nativeOfflineOpening.current = null;
+        throw error;
+      });
+    }
+    return nativeOfflineOpening.current;
+  }
+
+  useEffect(() => () => { nativeOfflineGeneration.current++; nativeOffline.current?.dispose(); }, []);
+
+  useEffect(() => {
+    if (!session || destination?.kind !== 'home' || session.ownerId !== destination.profile.id) return;
+    const credential = session;
+    let current = true;
+    const synchronize = async () => {
+      const service = nativeOffline.current;
+      if (!service || !current) return;
+      await service.present();
+      if (current && notificationLifecycleState.current.session?.token === credential.token) service.wake();
+    };
+    void synchronize().catch(() => undefined);
+    const stopForeground = subscribeNativeAppActive(() => { void synchronize().catch(() => undefined); });
+    return () => { current = false; stopForeground(); };
+  }, [session?.token, destination?.kind, destination?.kind === 'home' ? destination.profile.id : null]);
 
   async function synchronizePushPermission(
     requestPermission: boolean,
@@ -2016,26 +2148,12 @@ export function HomeScreen() {
           }
           const timerID = timerIDs.get(timer.pathId);
           if (!timerID) throw new Error('sign_out_timer_missing');
-          const result = await timerOperations.stop(timer.pathId, timerID, (idempotencyKey) =>
-            validateSessionCredential<TimerStopResult>(currentSession, async (credential) => generatedResponse(
-              await createSessionApiClient(apiURL, () => credential.token).stopTimer(
-                timer.pathId,
-                timerID,
-                idempotencyKey,
-              ),
-            )),
-          );
-          if (result.kind === 'failed') throw result.cause;
-          if (result.kind === 'superseded' || !ownsSignOutResolution(ownerID, currentSession)) {
+          const state = await (await durableMobileHome()).stop(timer.pathId, timerID);
+          if (!ownsSignOutResolution(ownerID, currentSession) || !applyOwnedTimerState(ownerID, currentSession, timer.pathId, state)) {
             signOutTimerResolutions.current.invalidate();
             throw new Error('sign_out_resolution_superseded');
           }
-          const presentation = timerMutationPresentation(result.state);
-          if (!applyOwnedTimerState(ownerID, currentSession, timer.pathId, presentation.state)) {
-            signOutTimerResolutions.current.invalidate();
-            throw new Error('sign_out_resolution_superseded');
-          }
-          return { pathId: timer.pathId, running: presentation.state.running };
+          return { pathId: timer.pathId, running: state.running };
         });
     if (!decision.authorizeSignOut) {
       return { kind: decision.kind === 'stop_failed' ? 'failed' : 'superseded' };
@@ -2064,6 +2182,7 @@ export function HomeScreen() {
     if (expected
       ? !ownsSignOutResolution(expected.ownerID, expected.session)
       : active.session !== disposedSession) return false;
+    disposeNativeTracking();
     cancelPathCreation();
     resetTimerPresentation();
     resetGoalManagement();
@@ -2110,8 +2229,25 @@ export function HomeScreen() {
     ticket?: SessionOperationTicket,
   ) {
     if (ticket && !ticket.current()) return;
-    const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
+    let failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
+    let retainedRevocation = false;
+    if (classifySessionFailure(failure).discardCredential && failure.kind === 'http') {
+      const active = notificationLifecycleState.current;
+      if (active.session && active.session.token !== current.token || !active.session && retainedHomeRef.current) return;
+      nativeOffline.current?.pause();
+      const retained = await nativeOffline.current?.retained();
+      const stillCurrent = () => ticket ? ticket.current() : notificationLifecycleState.current.session?.token === current.token;
+      if (retained && current.ownerId === retained.profile.id && stillCurrent()) {
+        try {
+          if (!await serializedSessionStorage.pause(retained.profile.id, current.token, stillCurrent)) return;
+          retainedRevocation = true;
+        } catch { failure = { kind: 'local_storage', reason: 'malformed' }; }
+        if (!stillCurrent()) return;
+        retainedHomeRef.current = retained; setRetainedHome(retained);
+      }
+    }
     if (classifySessionFailure(failure).discardCredential) {
+      nativeOffline.current?.pause();
       sessionOperations.invalidate();
       invalidateOnboardingActivation();
       await deregisterPushSession(current).catch(() => undefined);
@@ -2124,7 +2260,7 @@ export function HomeScreen() {
       resetSocialProfileDiscovery();
     }
     await applyMobileSessionFailure(failure, current, {
-      discardStored: () => serializedSessionStorage.discard(),
+      discardStored: () => retainedRevocation ? Promise.resolve() : serializedSessionStorage.discard(),
       transition: (next) => {
         setSession(next.session); setAccessState(next.accessState);
         if (!next.session) { homeProjectionSessionToken.current = null; resetManualActivity(); resetPathDetail(); resetInvitations(); resetNotifications(); resetSettingsOperations(); resetSocialProfileDiscovery(); setRetryAttempt(0); setDestination(null); setActivatingOnboarding(false); setOnboardingHomeRecovery(null); setHomeRecovery(null); }
@@ -2148,8 +2284,11 @@ export function HomeScreen() {
         if (next.retryable) setErrorKey(null);
         else setErrorKey(next.storageUnreadable ? 'errors.localSessionUnreadable' : failureMessage(failure));
       },
-      revoke: async (token) => { await createSessionApiClient(apiURL, () => token).revoke(); },
+      revoke: async (token) => { if (!retainedRevocation) await createSessionApiClient(apiURL, () => token).revoke(); },
     });
+    if (retainedRevocation && pathname !== '/home' && pathname !== '/') {
+      router.dismissAll(); router.replace('/(tabs)/home');
+    }
   }
 
   async function handleFeatureSessionFailure(
@@ -2232,6 +2371,7 @@ export function HomeScreen() {
     const ownerID = current.destination.profile.id;
     refreshExpiredTimerPeriods(current.destination.profile.timers, now, async (pathID, snapshot) => {
       try {
+        if (nativeOffline.current) { await nativeOffline.current.present(); await nativeOffline.current.refresh(); return; }
         const refreshed = await validateSessionCredential<TimerState>(credential, async (active) => generatedResponse(
           await createSessionApiClient(apiURL, () => active.token).currentTimer(pathID),
         ));
@@ -2305,6 +2445,13 @@ export function HomeScreen() {
           read: () => serializedSessionStorage.read(),
           now: () => Date.now(),
           refreshLeadMs: sessionRefreshLeadMs,
+          hasLocalHome: async current => (await durableMobileHome()).cached(current),
+          restoreRetained: async owner => {
+            const restored = await (await durableMobileHome()).restoreRetained(owner);
+            if (!ticket.current()) return;
+            retainedHomeRef.current = restored; setRetainedHome(restored);
+            setSession(null); setDestination(null); setAccessState('authentication_required');
+          },
           refresh: (current) => refreshSession(current, ticket),
           expiryAdvanced: sessionExpiryAdvanced,
           current: ticket.current,
@@ -6337,38 +6484,18 @@ export function HomeScreen() {
     setTimerErrorKeys((current) => ({ ...current, [pathID]: undefined }));
     setTimerNoticeKey(null);
     const currentSession = session;
-    const result = state.running && timerID
-      ? await timerOperations.stop(pathID, timerID, (idempotencyKey) =>
-          validateSessionCredential<TimerStopResult>(currentSession, async (credential) => generatedResponse(
-            await createSessionApiClient(apiURL, () => credential.token).stopTimer(pathID, timerID, idempotencyKey),
-          )),
-        )
-      : await timerOperations.start(pathID, (idempotencyKey) =>
-          validateSessionCredential<TimerState>(currentSession, async (credential) => generatedResponse(
-            await createSessionApiClient(apiURL, () => credential.token).startTimer(pathID, idempotencyKey),
-          )),
-        );
-    if (result.kind === 'superseded') return;
-    setTimerBusy((current) => ({ ...current, [pathID]: false }));
-    if (result.kind === 'failed') {
-      const failure: SessionFailure = isSessionFailure(result.cause) ? result.cause : { kind: 'network' };
-      if (classifySessionFailure(failure).discardCredential) {
-        timerOperations.cancel();
-        await handleSessionFailure(failure, currentSession);
-      } else {
-        setTimerErrorKeys((current) => ({ ...current, [pathID]: localizedFailure(failure, 'errors.temporarilyUnavailable') }));
+    try {
+      const tracking = await durableMobileHome();
+      const updated = state.running && timerID ? await tracking.stop(pathID, timerID) : await tracking.start(pathID);
+      applyOwnedTimerState(ownerID, currentSession, pathID, updated);
+    } catch (cause) {
+      const active = notificationLifecycleState.current;
+      if (active.session === currentSession && active.destination?.kind === 'home' && active.destination.profile.id === ownerID) {
+        setTimerErrorKeys(current => ({ ...current, [pathID]: localizedFailure(cause, 'errors.temporarilyUnavailable') }));
       }
-      return;
+    } finally {
+      setTimerBusy(current => ({ ...current, [pathID]: false }));
     }
-    const presentation = timerMutationPresentation(result.state);
-    applyOwnedTimerState(ownerID, currentSession, pathID, presentation.state);
-    if (state.running && result.state.running === false && 'saved' in result.state && result.state.saved === true) {
-      await refreshHomeOrganizationPath(pathID, currentSession, ownerID, true);
-      if (pathDetailTarget.current?.pathID === pathID && !pathDetailTarget.current.activityID && ownsActivePathDetail(pathID)) {
-        void openActivityHistory(pathID, undefined, false, true);
-      }
-    }
-    if (presentation.notice === 'subsecond') setTimerNoticeKey('timer.subsecondNotice');
     } finally {
       mutationLease.release();
     }
@@ -6439,6 +6566,7 @@ export function HomeScreen() {
     setSelectedPathID(pathID);
     setActivityHistoryOpen(false);
     setActivityHistory([]);
+    setActivityHistoryLocal({ retained: false, incomplete: false });
     setActivityHistoryCursor(null);
     setActivityHistoryErrorKey(null);
     setSelectedActivity(null);
@@ -7199,8 +7327,19 @@ export function HomeScreen() {
     setPathDetailBusy(true);
     setActivityHistoryErrorKey(null);
     try {
+      if (!cursor && nativeOffline.current) {
+        const retained = await nativeOffline.current.history(pathID).catch(() => null);
+        if (!ticket.current() || !ownsActivePathDetail(pathID, activityID)) return;
+        if (retained) {
+          setActivityHistory(retainedHistoryDetails(retained.items));
+          setActivityHistoryCursor(null);
+          setActivityHistoryLocal({ retained: true, incomplete: retained.incomplete });
+          setPathDetailBusy(false);
+        }
+      }
       const page = await loadActivityPage(currentSession, pathID, cursor);
       if (!ticket.current() || !ownsActivePathDetail(pathID, activityID)) return;
+      setActivityHistoryLocal({ retained: false, incomplete: false });
       setActivityHistory((current) => cursor ? appendUniqueActivities(current, page.items) : newestActivitiesFirst(page.items));
       setActivityHistoryCursor(page.nextCursor);
     } catch (cause) {
@@ -7210,7 +7349,18 @@ export function HomeScreen() {
         if (notificationLifecycleState.current.session === currentSession) {
           await handleSessionFailure(failure, currentSession, 'profile', ticket);
         } else setActivityHistoryErrorKey('errors.temporarilyUnavailable');
-      } else setActivityHistoryErrorKey(localizedFailure(failure, 'errors.temporarilyUnavailable'));
+      } else {
+        if (!classifySessionFailure(failure).retryable) { setActivityHistory([]); setActivityHistoryLocal({ retained: false, incomplete: false }); setActivityHistoryErrorKey(localizedFailure(failure, 'errors.temporarilyUnavailable')); return; }
+        // Restart the timeline from the retained source; never append a local
+        // page to a partially loaded server pagination stream.
+        try {
+          const retained = await nativeOffline.current?.history(pathID);
+          if (!retained || !ticket.current() || !ownsActivePathDetail(pathID, activityID)) throw cause;
+          setActivityHistory(retainedHistoryDetails(retained.items));
+          setActivityHistoryCursor(null);
+          setActivityHistoryLocal({ retained: true, incomplete: retained.incomplete });
+        } catch { if (ticket.current()) setActivityHistoryErrorKey(localizedFailure(failure, 'errors.temporarilyUnavailable')); }
+      }
     } finally { if (ticket.current()) setPathDetailBusy(false); }
   }
 
@@ -7592,7 +7742,7 @@ export function HomeScreen() {
 
   const ownedHomeDestination = destination?.kind === 'home' && session &&
     homeProjectionSessionToken.current === session.token ? destination : null;
-  const appearances = usePathAppearances(apiURL, ownedHomeDestination?.profile.id, session?.token, ownedHomeDestination ? [...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].map((path) => path.id).join('\u0000') : '');
+  const appearances = usePathAppearances(apiURL, ownedHomeDestination?.profile.id, session?.token, ownedHomeDestination ? [...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].map((path) => path.id).join('\u0000') : '', nativeAppearanceCache);
   const socialPresentationKey = [
     ownedHomeDestination?.profile.id ?? '',
     socialPresentationGeneration.current,
@@ -7774,6 +7924,7 @@ export function HomeScreen() {
     const tone = pathPalette[appearance.color];
     const pinned = homePreferences.pinnedPathIDs.includes(path.id);
     return <PathCard
+      statusText={nativeTrackingState && nativeTrackingState.owner === ownedHomeDestination?.profile.id && nativeTrackingState.operations.some(operation => operation.pathId === path.id && !nativeTrackingState.corrections.some(value => value.timer.id === operation.timerId)) ? i18n.t('offline.pending') : undefined}
       appearance={appearance}
       headline={state && (!path.intervalGoal || currentIntervalProgress) ? (state.running ? formatSessionClock : formatGoalDuration)(currentIntervalProgress?.accumulatedSeconds ?? state.accumulatedSeconds, i18n) : undefined}
       intervalSummary={currentIntervalProgress && path.intervalGoal ? i18n.t(`home.tile.${path.intervalGoal.recurrence}`, { target: formatGoalDuration(currentIntervalProgress.targetSeconds, i18n) }) : state ? i18n.t(path.intervalGoal ? 'common.loading' : 'path.progress.accumulatedLabel') : undefined}
@@ -7858,10 +8009,39 @@ export function HomeScreen() {
       : 0,
   });
   const homeNotice = ownedHomeDestination ? <>
+    {nativeTrackingState?.owner === ownedHomeDestination.profile.id ? nativeTrackingState.corrections.map(correction => <StatusBanner
+      key={correction.timer.id} tone="error"
+      text={i18n.t('offline.correctionForPath', { path: nativeTrackingState.paths.find(path => path.id === correction.timer.pathId)?.name ?? i18n.t('offline.retainedPath') })}
+      actionLabel={i18n.t('offline.review')} onAction={() => setClockCorrectionID(correction.timer.id)}
+    />) : null}
+    {nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.corrections.filter(correction => correction.timer.id === clockCorrectionID).map(correction => <OfflineClockCorrection
+      key={correction.timer.id} correction={correction} i18n={i18n} now={() => Date.now()}
+      close={() => setClockCorrectionID(null)} save={async (id, start, end) => {
+        const service = nativeOffline.current;
+        if (!service) throw new Error('tracking_session_unavailable');
+        await service.correct(id, start, end);
+      }}
+    />)}
+    {nativeTrackingState?.owner === ownedHomeDestination.profile.id ? nativeTrackingState.notices.map(notice => <StatusBanner
+      key={notice.id} tone="error" text={[
+        notice.pathId ? nativeTrackingState.paths.find(path => path.id === notice.pathId)?.name : undefined,
+        i18n.t(`offline.rejection.${notice.reason}`),
+        notice.reason === 'archived' ? i18n.t('offline.archiveAmounts', {
+          saved: formatSessionClock(notice.savedSeconds ?? 0, i18n),
+          discarded: formatSessionClock(notice.discardedSeconds ?? 0, i18n),
+        }) : undefined,
+      ].filter(Boolean).join('\n')}
+      actionLabel={i18n.t('common.dismiss')}
+      onAction={() => { void nativeOffline.current?.dismissNotice(notice.id).catch(() => setErrorKey('errors.temporarilyUnavailable')); }}
+    />) : null}
+    {nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.operations.some(operation => !nativeTrackingState.corrections.some(value => value.timer.id === operation.timerId)) ? <StatusBanner
+      text={i18n.t('offline.pending')} tone="offline" actionLabel={i18n.t('common.retry')}
+      onAction={() => nativeOffline.current?.wake()}
+    /> : null}
     {accessState === 'authenticated_offline' && !errorKey && !offlineStatusDismissed ? <StatusBanner
       actionLabel={i18n.t('common.dismiss')}
       onAction={() => setOfflineStatusDismissed(true)}
-      text={i18n.t('auth.offline')}
+      text={i18n.t('offline.banner')}
       tone="offline"
     /> : errorKey ? <StatusBanner text={i18n.t(errorKey)} tone="error" /> : null}
     {!archivedPathsOpen && homePreferenceErrorKey ? <StatusBanner
@@ -8160,6 +8340,7 @@ export function HomeScreen() {
         archived={Boolean(selectedPath.archivedAt)}
         busy={manualBusy}
         recentActivity={<RecentPathActivity
+          retained={activityHistoryLocal.retained} incomplete={activityHistoryLocal.incomplete}
           activities={activityHistory}
           busy={pathDetailBusy}
           errorText={activityHistoryErrorKey ? i18n.t(activityHistoryErrorKey) : undefined}
@@ -8564,6 +8745,7 @@ export function HomeScreen() {
         title={i18n.t('pathDetails.history')}
       >
         <ActivityHistoryView
+          retained={activityHistoryLocal.retained} incomplete={activityHistoryLocal.incomplete}
           activities={activityHistory}
           busy={pathDetailBusy}
           errorText={activityHistoryErrorKey ? i18n.t(activityHistoryErrorKey) : undefined}
@@ -8905,6 +9087,22 @@ export function HomeScreen() {
       onReturnToSignIn={() => void clearSession()}
     /> : null}
     {ready && !destination && accessState !== 'authenticated_offline' ? <SignedOutScreen
+      retained={retainedHome ? <>
+        {retainedHome.state.operations.length ? <StatusBanner text={i18n.t('offline.pending')} tone="offline" /> : null}
+        {retainedHome.state.timers.map(timer => <PathCard key={timer.id}
+          name={retainedHome.state.paths.find(path => path.id === timer.pathId)?.name ?? i18n.t('offline.retainedPath')}
+          headline={formatSessionClock(activeTimerSeconds(timer.startedAt, now), i18n)}
+          timer={<TimerControl running busy={retainedStopBusy === timer.id} actionLabel={i18n.t('timer.stop')}
+            onPress={() => {
+              if (retainedStopBusy || !nativeOffline.current) return;
+              const owner = retainedHome.profile.id;
+              setRetainedStopBusy(timer.id);
+              void nativeOffline.current.stop(timer.pathId, timer.id).catch(() => {
+                if (retainedHomeRef.current?.profile.id === owner) setErrorKey('errors.temporarilyUnavailable');
+              }).finally(() => setRetainedStopBusy(null));
+            }} />}
+        />)}
+      </> : undefined}
       errorText={errorKey ? i18n.t(errorKey) : undefined}
       onSignIn={() => void beginSignIn()}
       onRetry={providerSignIn.retry}

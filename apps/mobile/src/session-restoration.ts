@@ -1,4 +1,4 @@
-import { isValidSessionCredential, type SessionExchangeCredential } from '@hourpaths/client-core';
+import { isValidSessionCredential, readRetainedAccount, type SessionExchangeCredential } from '@hourpaths/client-core';
 
 export type StoredSession = SessionExchangeCredential;
 
@@ -6,6 +6,8 @@ type RestorationDependencies = {
   read(): Promise<string | null>;
   now(): number;
   refreshLeadMs: number;
+  restoreRetained?(owner: string): Promise<void>;
+  hasLocalHome?(current: StoredSession): Promise<boolean>;
   refresh(current: StoredSession): Promise<StoredSession>;
   expiryAdvanced(previous: string, next: string): boolean;
   current(): boolean;
@@ -31,11 +33,20 @@ export async function restoreStoredSession(dependencies: RestorationDependencies
   try {
     raw = await dependencies.read();
     if (!raw) return;
+    const retained = readRetainedAccount(JSON.parse(raw));
+    if (retained && dependencies.restoreRetained) {
+      if (dependencies.current()) await dependencies.restoreRetained(retained.ownerId);
+      return;
+    }
     current = decodeStoredSession(raw);
     if (!dependencies.current()) return;
     const now = dependencies.now();
     if (Date.parse(current.expiresAt) <= now) throw { kind: 'expired' } as const;
     let renewable = current.nextAction === 'home';
+    if (renewable && current.ownerId && await dependencies.hasLocalHome?.(current)) {
+      if (dependencies.current()) await dependencies.activate(current, renewable);
+      return;
+    }
     if (renewable && Date.parse(current.expiresAt) - now < dependencies.refreshLeadMs) {
       const previousExpiry = current.expiresAt;
       current = await dependencies.refresh(current);

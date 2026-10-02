@@ -1,3 +1,5 @@
+import type { OfflineStatus } from '../offline/ports/tracking-status';
+import { OfflineStatusPanel } from './offline-status';
 import { PathVisibilityPage } from './path-visibility';
 import { NudgeAudiencePage } from './nudge-audience';
 import type { NudgesRepository } from '../nudges/ports/nudges-repository';
@@ -39,6 +41,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  offline?: OfflineStatus;
   nudges: NudgesRepository;
   blocking: BlockingRepository;
   notifications: Notifications;
@@ -57,7 +60,7 @@ export interface StudioDependencies {
   now(): number;
 }
 export function StudioApp({ dependencies: d }: { dependencies: StudioDependencies }) {
-  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000, refetchOnWindowFocus: false } } }));
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { networkMode: 'always', retry: false, staleTime: 30_000, refetchOnWindowFocus: false }, mutations: { networkMode: 'always' } } }));
   const [router] = useState(() => {
     const root = createRootRoute({ component: Outlet });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ pathLeft: search.pathLeft === true, activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
@@ -80,6 +83,14 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
+  useEffect(() => d.offline?.subscribe(() => {
+    void client.fetchQuery({ queryKey: [d.accountScope, 'offlineState'], queryFn: () => d.offline!.snapshot(), staleTime: 0 }).then(state => {
+      if (!state.unavailablePathIds?.length) return;
+      client.setQueriesData<readonly Path[]>({ queryKey: [d.accountScope, 'paths'] }, paths => paths?.filter(path => !state.unavailablePathIds!.includes(path.id)));
+    }).catch(() => undefined);
+    void client.invalidateQueries({ queryKey: [d.accountScope, 'tracking'] });
+    void client.invalidateQueries({ queryKey: [d.accountScope, 'history'] });
+  }), [d, client]);
   useEffect(() => {
     const key = [d.accountScope, 'notificationOperation'];
     d.notifications.start({
@@ -88,7 +99,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     });
     return () => d.notifications.dispose();
   }, [d, client]);
-  return <NotificationsContext.Provider value={d.notifications}><QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider></NotificationsContext.Provider>;
+  return <NotificationsContext.Provider value={d.notifications}><QueryClientProvider client={client}>{d.offline && <OfflineStatusPanel now={d.now} service={d.offline} accountScope={d.accountScope} i18n={d.i18n} />}<RouterProvider router={router} /></QueryClientProvider></NotificationsContext.Provider>;
 }
 function PathPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const { pathId } = useParams({ strict: false }) as { pathId: string };
@@ -136,10 +147,10 @@ function PathRow({ path, dependencies: d, move, moving, initialDetails = false }
   const query = useQuery({ queryKey: key, queryFn: ({ signal }) => d.paths.tracking(path.id, signal), enabled: path.canTrack && !path.archived });
   const [now, setNow] = useState(d.now);
   useEffect(() => {
-    if (!query.data?.activeSession) return;
+    if (!query.data?.activeSession && !query.data?.period) return;
     const interval = setInterval(() => setNow(d.now()), 1000);
     return () => clearInterval(interval);
-  }, [query.data?.activeSession, d]);
+  }, [query.data?.activeSession, query.data?.period, d]);
   const progress = query.data ? currentProgress(query.data, now) : null;
   useEffect(() => {
     if (!progress?.needsPeriodRefresh) return;
@@ -165,6 +176,7 @@ function PathRow({ path, dependencies: d, move, moving, initialDetails = false }
     <div className="studio-timer-actions">{path.canTrack && !path.archived && <button className={query.data?.activeSession ? 'studio-stop' : ''} disabled={query.isPending || query.isError || mutation.isPending} onClick={() => mutation.mutate()}>
       {query.data?.activeSession ? <>{d.i18n.t('timer.stop')} · {format(progress?.sessionSeconds ?? 0)}</> : d.i18n.t('timer.start')}
     </button>}
+    {query.data?.pending && <small>{d.i18n.t('offline.pending')}</small>}
     {(query.isError || mutation.isError) && <button onClick={() => { mutation.reset(); void query.refetch(); }}>{d.i18n.t('common.retry')}</button>}</div>
     {details && <PathGoalsEditor path={path} dependencies={d} close={() => setDetails(false)} />}
   </li>;

@@ -33,38 +33,44 @@ func lockActivePathAt(tx *gorm.DB, pathID, participantID string, occurrence time
 }
 
 func lockActivePathMembership(tx *gorm.DB, pathID, participantID string) (time.Time, error) {
+	joined, archived, err := lockPathMembership(tx, pathID, participantID)
+	if err == nil && archived != nil {
+		return time.Time{}, ports.ErrConflict
+	}
+	return joined, err
+}
+
+// Offline replay may save occurrences before archival, but never bypasses current membership.
+func lockPathMembership(tx *gorm.DB, pathID, participantID string) (time.Time, *time.Time, error) {
 	if tx == nil || strings.TrimSpace(pathID) != pathID || pathID == "" || strings.TrimSpace(participantID) != participantID || participantID == "" {
-		return time.Time{}, ports.ErrInvalidArgument
+		return time.Time{}, nil, ports.ErrInvalidArgument
 	}
 	// The participant-and-Path progress lock is always acquired before row
 	// locks. Consumers such as nudges follow the same order so progress writes
 	// cannot deadlock with authorization or foreign-key row locks.
 	if err := progresslock.Lock(tx, participantID, pathID); err != nil {
-		return time.Time{}, err
+		return time.Time{}, nil, err
 	}
 	var row pathStateRow
 	err := tx.Table("path_models").Select("archived_at").Where("id = ?", pathID).
 		Clauses(clause.Locking{Strength: "SHARE", Table: clause.Table{Name: "path_models"}}).
 		Take(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return time.Time{}, ports.ErrNotFound
+		return time.Time{}, nil, ports.ErrNotFound
 	}
 	if err != nil {
-		return time.Time{}, err
-	}
-	if row.ArchivedAt != nil {
-		return time.Time{}, ports.ErrConflict
+		return time.Time{}, nil, err
 	}
 	var membership membershipStateRow
 	err = tx.Table("path_membership_models").Select("joined_at").Where("path_id = ? AND user_id = ? AND role IN ?", pathID, participantID, []string{"participant", "administrator"}).Clauses(clause.Locking{Strength: "SHARE"}).Take(&membership).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return time.Time{}, ports.ErrNotFound
+		return time.Time{}, nil, ports.ErrNotFound
 	}
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, nil, err
 	}
 	if membership.JoinedAt.IsZero() {
-		return time.Time{}, ports.ErrNotFound
+		return time.Time{}, nil, ports.ErrNotFound
 	}
-	return membership.JoinedAt.UTC(), nil
+	return membership.JoinedAt.UTC(), row.ArchivedAt, nil
 }

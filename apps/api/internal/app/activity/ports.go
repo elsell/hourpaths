@@ -168,6 +168,7 @@ type ProfileReader interface {
 }
 
 type Repository interface {
+	OfflineRepository
 	IntervalGoal(context.Context, string, string) (pathdomain.IntervalGoal, error)
 	CurrentProjection(context.Context, string, string, *IntervalProgressRequest) (CurrentTimerResult, error)
 	StartTimer(context.Context, StartTimerCommand) (StartTimerResult, error)

@@ -1,8 +1,11 @@
 import { createSessionApiClient } from '@hourpaths/api-client';
 import type { HistorySource } from '../ports/history-source';
 import type { PathRepository } from '../../paths/ports/path-repository';
+export class HistoryRequestError extends Error {
+  constructor(readonly status: number) { super("history_unavailable"); }
+}
 function required<T>(response: { data?: { data: T }; response: Response }): T {
-  if (!response.response.ok || !response.data) throw new Error('history_unavailable');
+  if (!response.response.ok || !response.data) throw new HistoryRequestError(response.response.status);
   return response.data.data;
 }
 export function apiHistorySource(apiURL: string, token: () => string | null, paths: PathRepository, rejected: (token: string | null) => void): HistorySource {
@@ -20,10 +23,11 @@ export function apiHistorySource(apiURL: string, token: () => string | null, pat
       const response = await createSessionApiClient(apiURL, token, signal, rejected).activities(pathId, cursor ?? undefined, participantId);
       const items = accepted(response).map(({ activity }) => {
         const startedAt = Date.parse(activity.startedAt);
-        if (activity.pathId !== pathId || activity.participantId !== participantId || !Number.isFinite(startedAt) || !Number.isFinite(activity.durationSeconds) || activity.durationSeconds < 0) throw new Error('history_invalid');
+        const endedAt = Date.parse(activity.endedAt);
+        if (activity.pathId !== pathId || activity.participantId !== participantId || !Number.isFinite(startedAt) || !Number.isFinite(endedAt) || endedAt <= startedAt || !Number.isFinite(activity.durationSeconds) || activity.durationSeconds < 0) throw new Error('history_invalid');
         // Validate the authoritative occurrence zone before presentation formats it.
         new Intl.DateTimeFormat('en', { timeZone: activity.occurrenceTimeZone }).format(startedAt);
-        return { id: activity.id, pathId, pathName, startedAt, seconds: activity.durationSeconds, timeZone: activity.occurrenceTimeZone };
+        return { id: activity.id, pathId, pathName, startedAt, endedAt, seconds: activity.durationSeconds, timeZone: activity.occurrenceTimeZone };
       });
       return { items, next: response.data?.meta.nextCursor ?? null };
     },
