@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+  'apps/web/src/service-worker.ts',
+  'apps/web/src/lib/offline-shell/cache.ts',
   'apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts',
   'apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts',
   'apps/mobile/src/offline/native-tracking-store.ts',
@@ -78,6 +80,7 @@ function check(files, symlinks = {}) {
 }
 
 const bypasses = {
+  'apps/web/src/lib/unreviewed-worker.ts': "import { build } from '$service-worker'; export { build };",
   'apps/web/src/lib/unreviewed-avatar.tsx': 'export const Avatar = ({url}) => <img src={url} alt="" />;',
   'apps/web/src/lib/direct.ts': "fetch(apiURL + '/v1/me');",
   'apps/web/src/lib/computed.ts': "(globalThis as any)['fe' + 'tch'](apiURL + '/v1/me');",
@@ -792,4 +795,9 @@ for (const route of ['onboarding', 'account-recovery', 'callback']) {
   result = check({ [host]: `${protectedBaseline[host]}\n<script>fetch('/v1/me');</script>\n` });
   assert.notEqual(result.status, 0, result.stderr);
   assert.match(result.stderr, new RegExp(regexEscape(host)));
+}
+
+for (const adapter of ['apps/web/src/service-worker.ts', 'apps/web/src/lib/offline-shell/cache.ts']) {
+  result = check({ [adapter]: protectedBaseline[adapter] + '\n// unreviewed shell-cache drift\n' });
+  assert.notEqual(result.status, 0, adapter);
 }

@@ -248,3 +248,34 @@ retry after its signal is aborted or its credential is replaced. A delay beyond
 60 seconds must return the rate-limit response for ordinary recovery. Complete
 snapshot and account fences remain required. Server limits must not be raised
 or bypassed to make a large participating-Path list hydrate.
+
+
+## Cold offline Studio entry
+
+After a successful online visit, Studio must retain its public application shell
+and required versioned application assets so a new tab, reload, or browser
+restart can enter Studio without connectivity. A never-visited client is not
+required to install the application without a network connection.
+
+A service-worker adapter must cache only same-origin build assets and the
+anonymous canonical Studio document. It must not cache API responses, provider
+responses, credentials, account data, mutations, or navigation outside Studio.
+Only a successful HTML response explicitly marked by the server as the public
+Studio shell may replace that document. Shell preparation must omit credentials
+and reject redirects. Failed installation must not remove the previous working
+shell or any durable account ledger.
+
+Online Studio navigation must try the network first. A failed network navigation
+may use the retained shell; an explicit server rejection must not be hidden by
+cached HTML. Static asset reads must be limited to the current build's manifest.
+Updates must not force reload an open client or discard active timers, drafts,
+or pending commands. Retiring an old shell cache must never delete account
+storage. The restored application must apply its existing account, expiry,
+revocation, and sign-out rules before exposing retained personal data.
+
+Acceptance must use a production build and real browser service-worker storage:
+visit online, create durable timer state, close the page, disconnect, reopen
+Studio and a tracking route, stop or edit while offline, then reconnect without
+duplicating activity. It must also cover expired/sign-out entry, denied responses,
+non-Studio/provider/API cache exclusion, and a failed shell update preserving the
+previous usable installation. All existing account isolation rules still apply.

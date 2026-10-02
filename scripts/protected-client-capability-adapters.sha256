@@ -11,3 +11,5 @@ ffc0fa053b13c4b063696ee3a3062424e02873fa6845bca69820185b52d2b5e1  apps/web/src/r
 b10d31a41bfd7981b15aa7318428fdead78ee5527cea2c251d63c2d61d741c89  apps/mobile/src/offline/native-tracking-store.ts
 8049f540c9eb8761fcbc40bdf1da5831d00a0b91a676a2ce522e363e6143f401  apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts
 d0c955b5120fecedb54465567559806fb09b39ded64c185339080b4a6041e743  apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts
+76208a4fcc90c401922fb762cf47bdbff8304a289d7a355bfbba13cc8db9bdf7  apps/web/src/service-worker.ts
+188ec896c102fbdba0f455153182fb3945047385c3b68575febe9ec0d30ca3a1  apps/web/src/lib/offline-shell/cache.ts

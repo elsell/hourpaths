@@ -8,6 +8,11 @@ export const handle: Handle = async ({ event, resolve }) => {
   const response = await resolve(event, {
     transformPageChunk: ({ html }) => html.replace('lang="en"', `lang="${event.locals.locale}"`)
   });
+  // The canonical Studio document contains public configuration only.
+  if (event.url.pathname === '/studio' && event.request.method === 'GET' && response.ok &&
+      response.headers.get('content-type')?.startsWith('text/html')) {
+    response.headers.set('X-HourPaths-Public-Shell', '1');
+  }
   response.headers.append('Vary', 'Accept-Language');
   const connectOrigins = new Set<string>(["'self'"]);
   for (const configured of [apiURL, oidcIssuer]) connectOrigins.add(new URL(configured).origin);
