@@ -37,7 +37,8 @@ test('opt-in retained reads retry the same endpoint but never mutations or repla
 
 test('read retries are bounded and aborting a delayed read sends no retry', async t => {
   let count = 0, delay = '0';
-  const server = createServer((_req, res) => { count++; res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': delay }); res.end('{}'); });
+  let requested = () => {};
+  const server = createServer((_req, res) => { count++; res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': delay }); res.end('{}'); requested(); });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => { server.closeAllConnections(); server.close(); });
   const address = server.address(); assert.ok(address && typeof address !== 'string');
@@ -49,8 +50,9 @@ test('read retries are bounded and aborting a delayed read sends no retry', asyn
   assert.equal(count, 4);
   delay = '60';
   const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  requested = () => { timeout = setTimeout(() => controller.abort(), 20); };
   const operation = createSessionApiClient(url, () => 'first', controller.signal, undefined, { retryRateLimitedReads: true }).profile();
-  const timeout = setTimeout(() => controller.abort(), 20);
   t.after(() => clearTimeout(timeout));
   await assert.rejects(operation, /cancelled|abort/i);
   assert.equal(count, 5);
