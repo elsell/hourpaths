@@ -113,8 +113,9 @@ main CI also passed. Release v0.29.0 published that revision and GitOps
 API/web rollouts and migrations. TestFlight 0.29.0 (280) is VALID, IN_BETA_TESTING
 and assigned to the internal group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37058487080)).
 PR #103 also merged; this release attached and read-back verified TestFlight
-release notes. Android publication remains in progress. No additional acceptance
-area is closed.
+release notes. [Google Play internal publication](https://github.com/elsell/hourpaths/actions/runs/37058182689)
+committed version code 241 with release notes; installation on a device remains
+unverified. No additional acceptance area is closed.
 
 
 Browser acceptance on warm web revision `e2b1f8e` and API `0308245` demonstrated

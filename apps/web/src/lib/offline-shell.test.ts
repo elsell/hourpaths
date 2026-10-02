@@ -21,7 +21,9 @@ function fixture() {
     request: async (url, init) => { requests.push({ url, init }); return network(url); } });
   return { buckets, requests, create, network: (next: typeof network) => { network = next; } };
 }
-const navigation = (url = 'https://app.example/studio') => ({ url, method: 'GET', mode: 'navigate' });
+const navigation = (url = 'https://app.example/studio') => ({
+  url, method: 'GET', mode: 'navigate'
+});
 
 test('cold Studio navigation and build assets survive disconnection with an anonymous shell', async () => {
   const f = fixture(), cache = f.create('one');
@@ -33,15 +35,21 @@ test('cold Studio navigation and build assets survive disconnection with an anon
   }
   f.network(async () => { throw new TypeError('offline'); });
   assert.equal(await (await cache.respond(navigation('https://app.example/studio/paths/123/history'))).text(), 'https://app.example/studio');
-  assert.equal(await (await cache.respond({ url: 'https://app.example/_app/immutable/start.js', method: 'GET', mode: 'cors' })).text(), 'https://app.example/_app/immutable/start.js');
+  assert.equal(await (await cache.respond({
+    url: 'https://app.example/_app/immutable/start.js', method: 'GET', mode: 'cors'
+  })).text(), 'https://app.example/_app/immutable/start.js');
 });
 
 test('only Studio navigations and exact same-origin build assets are intercepted', () => {
   const cache = fixture().create('one');
   for (const url of ['https://api.example/studio', 'https://app.example/api/paths', 'https://app.example/callback', 'https://app.example/studios', 'https://provider.example/authorize', 'https://app.example/_app/immutable/unknown.js']) assert.equal(cache.handles(navigation(url)), false, url);
-  assert.equal(cache.handles({ ...navigation(), method: 'POST' }), false);
+  assert.equal(cache.handles({
+    ...navigation(), method: 'POST'
+  }), false);
   assert.equal(cache.handles({ ...navigation(), mode: 'cors' }), false);
-  assert.equal(cache.handles({ url: 'https://app.example/_app/immutable/start.js?token=secret', method: 'GET', mode: 'cors' }), false);
+  assert.equal(cache.handles({
+    url: 'https://app.example/_app/immutable/start.js?token=secret', method: 'GET', mode: 'cors'
+  }), false);
 });
 
 test('explicit rejection is returned and authenticated navigation never replaces the anonymous shell', async () => {
