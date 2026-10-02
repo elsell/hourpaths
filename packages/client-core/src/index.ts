@@ -862,5 +862,3 @@ export { TrackingReplaySuspended } from './offline-tracking';
 export * from "./retained-account";
 
 export { apiTrackingHistory } from './adapters/api-tracking-history';
-
-export type { CalendarGoal } from './calendar-goal';
