@@ -341,6 +341,15 @@ export class OfflineTracking {
     if (this.disposed) throw new Error('tracking_disposed');
     return this.store.commit(this.owner, expectedRevision, state);
   }
+  /** Retain one fetched owner detail without claiming a complete history refresh. */
+  async retainActivity(entry: RetainedActivity): Promise<void> {
+    this.validateHistory([entry]);
+    await this.change(state => {
+      if (state.deletedActivityIds?.includes(entry.id) || state.unavailablePaths?.includes(entry.pathId)
+        || state.activityOperations?.some(value => activityIdentity(state, value.activity.id) === entry.id)) return;
+      state.history = [...state.history.filter(value => value.id !== entry.id), copy(entry)];
+    });
+  }
   async pendingHistory(): Promise<RetainedActivity[]> {
     const state = await this.snapshot();
     const timers: RetainedActivity[] = state.operations.filter(operation => operation.kind !== 'start' && operation.endedAt

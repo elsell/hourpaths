@@ -18,7 +18,7 @@ export function durableHistoryRepository(
     startedAt: Date.parse(entry.startedAt), endedAt: Date.parse(entry.endedAt),
     seconds: Math.floor((Date.parse(entry.endedAt) - Date.parse(entry.startedAt)) / 1000), timeZone: entry.timeZone, pending,
   });
-  const ordered = (items: RecordedActivity[]) => items.sort((a, b) => b.startedAt - a.startedAt || b.id.localeCompare(a.id));
+  const ordered = (items: RecordedActivity[]) => [...new Map(items.map(item => [item.id, item])).values()].sort((a, b) => b.startedAt - a.startedAt || b.id.localeCompare(a.id));
   async function local(current: TrackingRuntime, cursor: HistoryCursor | null): Promise<HistoryPage> {
     const state = await current.tracking.snapshot();
     const names = new Map(state.paths.map(path => [path.id, path.name]));
