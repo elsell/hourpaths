@@ -274,8 +274,14 @@ storage. The restored application must apply its existing account, expiry,
 revocation, and sign-out rules before exposing retained personal data.
 
 Acceptance must use a production build and real browser service-worker storage:
-visit online, create durable timer state, close the page, disconnect, reopen
-Studio and a tracking route, stop or edit while offline, then reconnect without
+visit online, create durable timer state, disconnect, reload the retained tab
+and open a tracking route, stop or edit while offline, then reconnect without
 duplicating activity. It must also cover expired/sign-out entry, denied responses,
 non-Studio/provider/API cache exclusion, and a failed shell update preserving the
 previous usable installation. All existing account isolation rules still apply.
+
+This shell slice preserves the existing tab-scoped web credential boundary. An
+independent tab without a credential must show account entry, even when a prior
+account has retained data. Durable web account/session restoration across closed
+tabs or browser restart remains a separate offline closure requirement; serving
+a cached document alone does not satisfy it.

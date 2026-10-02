@@ -4,6 +4,8 @@ export default {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter(),
+    // The same public shell restores every nested Studio URL offline.
+    paths: { relative: false },
     csp: {
       mode: 'nonce',
       directives: {
