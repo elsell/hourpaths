@@ -20,7 +20,7 @@ export interface TrackingStatus {
   corrections: ClockCorrectionView[];
 }
 export interface OfflineStatus {
-  subscribe(listener: () => void): () => void;
+  subscribe(listener: (refreshHome?: boolean) => void): () => void;
   snapshot(): Promise<TrackingStatus>;
   dismissBanner(): void;
   dismissNotice(id: string): Promise<void>;

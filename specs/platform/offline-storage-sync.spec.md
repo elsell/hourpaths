@@ -155,6 +155,9 @@ Mobile and Studio must use their shared controls for offline/pending state,
 correction, rejection, conflict and manual retry. All copy belongs to the shared
 locale catalog. The nonblocking offline banner and per-entry pending indicators
 must follow the product specification, including dismissal reset on reconnect.
+Restoring Home from cache after a temporary API failure must show offline state
+even if the browser still reports a network connection. A successful fresh Home
+read must clear that state.
 Both clients must show the saved and discarded durations for an archival
 rejection. A rejection may display its retained Path name only when the replay
 outcome permits identifying that Path; inaccessible resources remain unnamed.

@@ -11,6 +11,7 @@ export interface TrackingRuntime {
   assertCurrent(): void;
   wake(): void;
   connected?(): boolean;
+  reportNetwork?(available: boolean): void;
   refreshTimeZone?(): Promise<string>;
 }
 
@@ -85,6 +86,7 @@ export function durablePathRepository(
         if (retained) return retained;
       }
       async function hydrate(retries: number): Promise<readonly Path[]> {
+        let remoteComplete = false;
         try {
           const before = await current.tracking.snapshot();
           const paths = await remote.list(false, signal);
@@ -97,6 +99,7 @@ export function durablePathRepository(
             current.assertCurrent();
             return { path, summary, appearance };
           });
+          remoteComplete = true;
           signal?.throwIfAborted();
           const retained = await current.tracking.retainHome(participating.map(path => ({ id: path.id, name: path.name, timeZone: current.timeZone, goal: path.goal })),
             values.map(({ path, summary }) => ({ pathId: path.id, summary, timer: summary.activeSession ? {
@@ -111,6 +114,7 @@ export function durablePathRepository(
           current.assertCurrent();
           await cache.saveHome(current.owner, participating, Object.fromEntries(values.map(value => [value.path.id, value.appearance])));
           current.assertCurrent();
+          current.reportNetwork?.(true);
           for (const path of participating) {
             prefetchedTracking.add(ownedKey(current.owner, path.id)); prefetchedAppearance.add(ownedKey(current.owner, path.id));
           }
@@ -118,6 +122,7 @@ export function durablePathRepository(
           return paths.filter(path => !unavailable.includes(path.id));
         } catch (error) {
           if (signal?.aborted || !temporary(error)) throw error;
+          if (!remoteComplete) current.reportNetwork?.(false);
           const retained = await retainedPaths();
           if (!retained) throw error;
           return retained;

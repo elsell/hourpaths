@@ -46,6 +46,7 @@ test('Studio offline cache cannot expose tracking for a confirmed inaccessible P
 test('Studio Home hydrates hidden Paths before offline restart and preserves its complete cache when one read fails', async context => {
   let offline = false, failSecond = false, sequence = 0, interruptHydration = false, savedSeconds = 60;
   const requests: string[] = [];
+  const availability: boolean[] = [];
   const server = createServer((request, response) => {
     const url = new URL(request.url!, 'http://localhost').pathname; requests.push(url);
     if (offline || failSecond && url === '/v1/paths/reading/timer') { response.writeHead(503); response.end('{}'); return; }
@@ -80,7 +81,7 @@ test('Studio Home hydrates hidden Paths before offline restart and preserves its
   const create = () => {
     const tracking = new OfflineTracking(store, 'alice', () => Date.parse('2026-10-01T12:00:00Z'), () => `home-${++sequence}`);
     return durablePathRepository(apiPathRepository(`http://127.0.0.1:${address.port}`, () => 'session', () => {}), cache,
-      async () => ({ owner: 'alice', timeZone: utcTimeZone, tracking, assertCurrent: () => {}, wake: () => {}, connected: () => !offline }),
+      async () => ({ owner: 'alice', timeZone: utcTimeZone, tracking, assertCurrent: () => {}, wake: () => {}, connected: () => !offline, reportNetwork: value => { availability.push(value); } }),
       error => error instanceof PathRequestError && error.status === 503);
   };
   const first = create(); await first.list(false);
@@ -89,6 +90,8 @@ test('Studio Home hydrates hidden Paths before offline restart and preserves its
   interruptHydration = true; savedSeconds = 90; await first.list(false);
   assert.equal((await store.read('alice'))?.summaries.reading.savedTotalSeconds, 90);
   failSecond = true; await first.list(false); assert.deepEqual(await cache.readHome('alice'), retained);
+  assert.equal(availability.at(-1), false);
+  failSecond = false; await first.list(false); assert.equal(availability.at(-1), true);
   offline = true; const restored = create(); await restored.list(false);
   const reading = await restored.start('reading', 'start-hidden'); assert.ok(reading.activeSession);
   assert.equal((await restored.appearance('reading')).color, 'mint');

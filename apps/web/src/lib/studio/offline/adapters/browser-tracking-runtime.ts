@@ -9,11 +9,12 @@ import { IndexedDBTrackingStore } from './indexeddb-tracking-store';
 export function browserTrackingRuntime(apiURL: string, session: SessionController, store: IndexedDBTrackingStore, connected: () => boolean) {
   let disposed = false;
   let bannerDismissed = false;
+  let serverAvailable = true;
   let pending: Promise<TrackingRuntime> | null = null;
   let current: TrackingRuntime | null = null;
   let worker: TrackingReplayWorker | null = null;
-  const listeners = new Set<() => void>();
-  const notify = () => { if (!disposed) for (const listener of listeners) listener(); };
+  const listeners = new Set<(refreshHome?: boolean) => void>();
+  const notify = (refreshHome = false) => { if (!disposed) for (const listener of listeners) listener(refreshHome); };
   const assertAlive = () => { if (disposed || !session.token()) throw new Error('tracking_session_unavailable'); };
   async function initialize(): Promise<TrackingRuntime> {
     assertAlive();
@@ -48,6 +49,13 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       const timer = setTimeout(work, delay); return () => clearTimeout(timer);
     }, () => { assertCurrent(); notify(); });
     current = { owner: boundOwner, timeZone, tracking, assertCurrent, connected,
+      reportNetwork: available => {
+        assertCurrent();
+        if (serverAvailable === available) return;
+        serverAvailable = available;
+        if (available) bannerDismissed = false;
+        notify();
+      },
       refreshTimeZone: async () => {
         const configured = await api.configuredTimeZone();
         assertCurrent();
@@ -69,7 +77,8 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       context.assertCurrent();
       const state = await context.tracking.snapshot();
       context.assertCurrent();
-      return { offline: !connected(), showBanner: !connected() && !bannerDismissed,
+      const offline = !connected() || !serverAvailable;
+      return { offline, showBanner: offline && !bannerDismissed,
         pending: state.operations.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)), unavailablePathIds: state.unavailablePaths ?? [],
         corrections: state.corrections.map(value => ({ id: value.timer.id, pathName: state.paths.find(path => path.id === value.timer.pathId)?.name ?? '',
           reviewedStartedAt: value.reviewedStartedAt, startedAt: value.timer.startedAt, endedAt: value.endedAt, timeZone: value.timer.timeZone })),
@@ -90,11 +99,11 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
       context.assertCurrent();
       notify();
     },
-    subscribe(listener: () => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; },
+    subscribe(listener: (refreshHome?: boolean) => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; },
     retry(): void {
       if (disposed) return;
       if (connected()) bannerDismissed = false;
-      notify();
+      notify(true);
       if (connected()) { worker?.setPaused(false); void worker?.wake(); }
     },
     dispose(): void { disposed = true; worker?.dispose(); current?.tracking.dispose(); listeners.clear(); void store.close(); },

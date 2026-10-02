@@ -83,7 +83,8 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
-  useEffect(() => d.offline?.subscribe(() => {
+  useEffect(() => d.offline?.subscribe((refreshHome) => {
+    if (refreshHome) void client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] });
     void client.fetchQuery({ queryKey: [d.accountScope, 'offlineState'], queryFn: () => d.offline!.snapshot(), staleTime: 0 }).then(state => {
       if (!state.unavailablePathIds?.length) return;
       client.setQueriesData<readonly Path[]>({ queryKey: [d.accountScope, 'paths'] }, paths => paths?.filter(path => !state.unavailablePathIds!.includes(path.id)));
