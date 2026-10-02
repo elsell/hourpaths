@@ -47,6 +47,7 @@ type activityRevisionModel struct {
 	OccurrenceTimeZone string
 	Note               *string
 	PublicChanged      bool
+	Superseded         bool
 	UpdatedAt          time.Time
 	ReplacedAt         time.Time
 }
@@ -492,7 +493,7 @@ func (r *Repository) ListActivities(ctx context.Context, viewerID, pathID string
 	var rows []activityProjection
 	futureRevision := r.DB.WithContext(ctx).Table("recorded_activity_revision_models AS future_revision").
 		Select("future_revision.activity_id, future_revision.started_at, future_revision.ended_at, future_revision.occurrence_time_zone, future_revision.note, future_revision.updated_at").
-		Where("future_revision.activity_id = activity.id AND future_revision.replaced_at > ?", page.Snapshot).
+		Where("future_revision.activity_id = activity.id AND NOT future_revision.superseded AND future_revision.replaced_at > ?", page.Snapshot).
 		Order("future_revision.replaced_at ASC, future_revision.version ASC").Limit(1)
 	projection := r.DB.WithContext(ctx).Table("recorded_activity_models AS activity").
 		Select("activity.id, activity.path_id, activity.participant_id, CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.started_at ELSE activity.started_at END AS started_at, CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.ended_at ELSE activity.ended_at END AS ended_at, CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.occurrence_time_zone ELSE activity.occurrence_time_zone END AS occurrence_time_zone, CASE WHEN activity.participant_id = ? THEN CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.note ELSE activity.note END ELSE NULL END AS note, activity.created_at, CASE WHEN activity.participant_id = ? THEN CASE WHEN snapshot_revision.activity_id IS NOT NULL THEN snapshot_revision.updated_at ELSE activity.updated_at END ELSE COALESCE((SELECT MAX(replaced_at) FROM recorded_activity_revision_models AS public_revision WHERE public_revision.activity_id = activity.id AND public_revision.public_changed AND public_revision.replaced_at <= ?), activity.created_at) END AS updated_at, 1 + (SELECT COUNT(*) FROM recorded_activity_revision_models AS revision WHERE revision.activity_id = activity.id AND revision.replaced_at <= ? AND (activity.participant_id = ? OR revision.public_changed)) AS version", viewerID, viewerID, page.Snapshot, page.Snapshot, viewerID).

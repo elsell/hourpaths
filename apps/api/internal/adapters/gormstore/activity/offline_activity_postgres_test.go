@@ -53,6 +53,8 @@ func TestPostgresRecordedReplayRetainsLosingEdit(t *testing.T) {
 	create := makeCommand("create", "initial", "recorded-create-0001", -3*time.Minute, 1)
 	newer := makeCommand("edit", "newer", "recorded-newer-0001", -time.Minute, 2)
 	older := makeCommand("edit", "older", "recorded-older-0001", -2*time.Minute, 3)
+	older.Activity.UpdatedAt = now.Add(2 * time.Second)
+	older.Audit.OccurredAt = older.Activity.UpdatedAt
 	for _, command := range []application.OfflineActivityCommand{create, newer, older} {
 		result, err := repo.SynchronizeActivity(context.Background(), command)
 		if err != nil || result.Activity == nil {
@@ -69,6 +71,14 @@ func TestPostgresRecordedReplayRetainsLosingEdit(t *testing.T) {
 	var revisions int64
 	if err := db.Model(&activityRevisionModel{}).Where("activity_id = ?", "recorded-entry").Count(&revisions).Error; err != nil || revisions != 2 {
 		t.Fatalf("revisions=%d err=%v", revisions, err)
+	}
+	// A losing revision must not become canonical content in a historical page.
+	snapshotPage, err := repo.ListActivities(context.Background(), create.Activity.ParticipantID, create.Activity.PathID, application.ActivityPageRequest{Limit: 25, Snapshot: now.Add(time.Second)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snapshotPage.Items) != 1 || snapshotPage.Items[0].Activity.Note != "newer" {
+		t.Fatalf("losing revision altered snapshot: %+v", snapshotPage)
 	}
 	online := application.UpdateActivityCommand{ActivityID: create.Activity.ID, PathID: create.Activity.PathID, ParticipantID: create.Activity.ParticipantID, Edit: domain.ActivityEdit{StartedAt: create.Activity.StartedAt, DurationSeconds: 90, OccurrenceTimeZone: "UTC", Note: "online"}, UpdatedAt: now.Add(time.Minute), Idempotency: idempotency(create.Activity.ParticipantID, application.UpdateActivityOperation, "recorded-online-0001", 4), Audit: activityAudit("recorded-online-audit", create.Activity.ParticipantID, create.Activity.ID, audit.ResourceUpdated, now.Add(time.Minute))}
 	if _, err := repo.UpdateActivity(context.Background(), online); err != nil {

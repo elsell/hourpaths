@@ -7,4 +7,5 @@ DO $$ BEGIN
 END $$;
 DROP TABLE public.offline_activity_replay_models;
 DROP TABLE public.activity_edit_order_models;
+ALTER TABLE public.recorded_activity_revision_models DROP COLUMN superseded;
 COMMIT;

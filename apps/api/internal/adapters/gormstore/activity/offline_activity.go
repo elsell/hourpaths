@@ -117,7 +117,8 @@ func (r *Repository) SynchronizeActivity(ctx context.Context, c application.Offl
 				return err
 			}
 			publicChanged := prior.StartedAt != c.Activity.StartedAt || prior.EndedAt != c.Activity.EndedAt || prior.OccurrenceTimeZone != c.Activity.OccurrenceTimeZone
-			revision := fromRevision(merged.Revision, count+1, publicChanged)
+			revision := fromRevision(merged.Revision, count+1, publicChanged && merged.Applied)
+			revision.Superseded = !merged.Applied
 			if err := tx.Create(&revision).Error; err != nil {
 				return err
 			}

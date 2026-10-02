@@ -1,4 +1,5 @@
 BEGIN;
+ALTER TABLE public.recorded_activity_revision_models ADD COLUMN superseded boolean NOT NULL DEFAULT false;
 CREATE TABLE public.activity_edit_order_models (
  activity_id text PRIMARY KEY REFERENCES public.recorded_activity_models(id) ON DELETE CASCADE,
  authored_at timestamptz NOT NULL,
