@@ -129,7 +129,7 @@ func TestPostgresDeleteActivityTombstonesReplayAndPreservesUnrelatedState(t *tes
 
 func TestPostgresDeleteActivityCascadesEverySocialDerivativeAndKeepsDeletionTerminal(t *testing.T) {
 	db := postgresDB(t, false)
-	now := time.Now().UTC().Truncate(time.Microsecond)
+	now := time.Date(2026, time.September, 20, 12, 0, 0, 0, time.UTC)
 	participantID, pathID := "delete-social-participant", "delete-social-path"
 	seedParticipantAndPath(t, db, participantID, pathID, now)
 	seedAchievementPreference(t, db, participantID, "Etc/UTC", now)

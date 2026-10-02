@@ -66,7 +66,8 @@ security:
 	mkdir -p .bin
 	cd tools && go build -o ../.bin/govulncheck golang.org/x/vuln/cmd/govulncheck
 	cd apps/api && ../../.bin/govulncheck ./...
-	pnpm audit --audit-level low
+	python3 scripts/test-package-audit.py
+	python3 scripts/check-package-audit.py
 	python3 scripts/check-ruby-vulnerabilities.py
 
 verify: check race dependency-age security
