@@ -2,10 +2,12 @@ package activitystore
 
 import (
 	"context"
+	"errors"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/dbmigrations"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/activity"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"strings"
 	"testing"
 	"time"
@@ -49,6 +51,12 @@ func TestPostgresRecordedReplayRetainsLosingEdit(t *testing.T) {
 		event := timerAudit("audit-"+key, entry.ParticipantID, entry.ID, action, now)
 		event.TargetType = "activity"
 		return application.OfflineActivityCommand{Kind: kind, Activity: entry, Order: order, Idempotency: idempotency(entry.ParticipantID, application.OfflineActivityOperation, key, hash), Audit: event}
+	}
+	invalid := makeCommand("create", "invalid", "recorded-prejoin-0001", -time.Minute, 9)
+	invalid.Activity.StartedAt = now.AddDate(0, 0, -8)
+	invalid.Activity.EndedAt = invalid.Activity.StartedAt.Add(time.Minute)
+	if _, err := repo.SynchronizeActivity(context.Background(), invalid); !errors.Is(err, ports.ErrInvalidArgument) {
+		t.Fatalf("pre-membership occurrence classified as lost access: %v", err)
 	}
 	create := makeCommand("create", "initial", "recorded-create-0001", -3*time.Minute, 1)
 	newer := makeCommand("edit", "newer", "recorded-newer-0001", -time.Minute, 2)

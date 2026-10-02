@@ -44,7 +44,7 @@ func (r *Repository) SynchronizeActivity(ctx context.Context, c application.Offl
 			return err
 		}
 		if c.Activity.StartedAt.Before(joined) {
-			return ports.ErrNotFound
+			return ports.ErrInvalidArgument
 		}
 		var replay offlineActivityReplay
 		found := tx.Where("participant_id = ? AND key = ?", c.Activity.ParticipantID, c.Idempotency.Key).Take(&replay).Error
