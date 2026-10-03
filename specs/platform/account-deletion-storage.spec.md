@@ -114,3 +114,7 @@ behavior. This document defines its persistence and recovery boundaries.
 - The runtime database adapter must not emit raw SQL or interpolated query
   parameters through ORM logging. Application diagnostics must use the existing
   typed observability boundary rather than duplicate personal records in logs.
+- Deleted-account retention must also remove completed permission-delivery
+  records containing the deleted account as actor, owner, user subject, or user
+  resource. Cleanup must share the bounded retention batch and immutable summary.
+  It must preserve unfinished revocations and unrelated accounts' delivery records.

@@ -79,3 +79,64 @@ func TestDeletedAccountRetentionIsBoundedAndPreservesUnrelatedAudit(t *testing.T
 		t.Fatal("unbounded batch accepted")
 	}
 }
+
+func TestDeletedAccountRetentionRemovesOnlyCompletedPermissionDeliveries(t *testing.T) {
+	if *databaseDSN == "" || *retentionDSN == "" {
+		t.Skip("database and retention DSNs required")
+	}
+	admin, err := gorm.Open(postgres.Open(*databaseDSN), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	retention, err := gorm.Open(postgres.Open(*retentionDSN), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner := Runner{DB: retention}
+	expired, other := uuid.NewString(), uuid.NewString()
+	now := time.Now().UTC()
+	if err = admin.Exec("INSERT INTO account_deletion_models(user_id,deleted_at,audit_event_id,receipt_hash) VALUES (?,?,?,?)", expired, now.Add(-29*24*time.Hour-time.Hour), uuid.NewString(), make([]byte, 32)).Error; err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{uuid.NewString(), uuid.NewString(), uuid.NewString()}
+	for i, owner := range []string{expired, expired, other} {
+		var completed any = now
+		if i == 1 {
+			completed = nil
+		}
+		if err = admin.Exec("INSERT INTO authorization_outbox_models(id,resource_type,resource_id,relation,subject_type,subject_id,owner_user_id,actor_user_id,operation,completed_at,created_at) VALUES (?,'resource',?,'owner','user',?,?,?,'delete',?,?)", ids[i], uuid.NewString(), owner, owner, owner, completed, now).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := 0; i < 100; i++ {
+		n, err := runner.DeletedAccountBatch(context.Background(), 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n > 1 {
+			t.Fatal("combined cleanup exceeded batch bound")
+		}
+		if n == 0 {
+			break
+		}
+		if i == 99 {
+			t.Fatal("retention did not converge")
+		}
+	}
+	for i, id := range ids {
+		var count int64
+		if err = admin.Table("authorization_outbox_models").Where("id = ?", id).Count(&count).Error; err != nil {
+			t.Fatal(err)
+		}
+		want := int64(1)
+		if i == 0 {
+			want = 0
+		}
+		if count != want {
+			t.Fatalf("delivery %d count %d want %d", i, count, want)
+		}
+	}
+	if err = retention.Exec("DELETE FROM authorization_outbox_models WHERE id = ?", ids[1]).Error; err == nil {
+		t.Fatal("retention credential gained direct outbox deletion")
+	}
+}

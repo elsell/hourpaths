@@ -51,7 +51,7 @@ func main() {
 			}
 			total += deleted
 			if deleted < batch {
-				logger.Info("deleted account audit retention complete", "deleted_events", total)
+				logger.Info("deleted account retention complete", "deleted_records", total)
 				return
 			}
 		}
