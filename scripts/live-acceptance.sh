@@ -3122,8 +3122,8 @@ SOC04D_COMMENT_NOTIFICATION_ID
   exit 1
 }
 wait_for_push "$soc04d_comment_notification_id" |
-  NOTIFICATION_ID="$soc04d_comment_notification_id" SOC04D_PATH_NAME='Goal achievement acceptance' python3 -c \
-    'import json,os,sys;d=json.load(sys.stdin);assert d["to"]=="ExponentPushToken[path-03-owner]" and d["priority"]=="normal" and d["data"]=={"version":"1","notificationId":os.environ["NOTIFICATION_ID"]};body=d["body"];assert os.environ["SOC04D_PATH_NAME"] in body and "practice" not in body.lower()'
+  RECIPIENT_ID="$owner_id" NOTIFICATION_ID="$soc04d_comment_notification_id" SOC04D_PATH_NAME='Goal achievement acceptance' python3 -c \
+    'import json,os,sys;d=json.load(sys.stdin);assert d["to"]=="ExponentPushToken[path-03-owner]" and d["priority"]=="normal" and d["data"]=={"version":"1","notificationId":os.environ["NOTIFICATION_ID"],"recipientUserId":os.environ["RECIPIENT_ID"]};body=d["body"];assert os.environ["SOC04D_PATH_NAME"] in body and "practice" not in body.lower()'
 soc03b_feed | SOC04D_EVENT_ID="$soc04d_event_id" python3 -c \
   'import json,os,sys;items=json.load(sys.stdin)["data"]["items"];item=next(item for item in items if item["id"]==os.environ["SOC04D_EVENT_ID"]);assert item["reactions"]=={"heart":1,"applause":0,"fire":0,"strong":0,"celebrate":0} and item["viewerReaction"]=="heart" and item["commentsEnabled"] is True and item["reactionsEnabled"] is True'
 
