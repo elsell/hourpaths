@@ -304,7 +304,11 @@ must fail closed without deleting the separate pending-activity ledger.
 Application-session storage must use a reviewed browser capability adapter.
 Origin-wide mutations must compare an immutable revision under a short exclusive
 lock. Logout must leave a fresh empty revision so older tab-scoped credentials
-cannot be migrated back into an authenticated session. Token rotation must use
+cannot be migrated back into an authenticated session. Rotations must preserve a
+stable local session-family identifier; logout must clear that family even if
+another tab rotates its token before the logout obtains the lock. A new sign-in
+must establish a different family that old-family cleanup cannot clear. These
+rules also apply to the reachable legacy web entry during migration. Token rotation must use
 a separate origin-wide lock; slow network requests must not delay local logout.
 Storage changes must replace another tab's account presentation and dispose its
 old operations. OIDC provider storage remains tab-scoped.

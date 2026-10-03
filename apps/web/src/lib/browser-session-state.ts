@@ -7,6 +7,7 @@ function createState() {
   const records = browserSessionRecords(window.localStorage, window.sessionStorage,
     window.navigator.locks, () => crypto.randomUUID());
   const operations = new DurableSessionOperations(records.coordinator);
+  const observedFamilies = new Map<string, string>();
   let ready = false;
   let initializing: Promise<void> | undefined;
   let clearing = false;
@@ -19,7 +20,7 @@ function createState() {
       const revision = window.sessionStorage.getItem(signInRevisionKey);
       window.sessionStorage.removeItem(signInRevisionKey);
       // Missing or superseded intent cannot adopt a provider callback.
-      return operations.issue(revision ?? 'missing_sign_in_intent');
+      return operations.issue(revision ?? 'missing_sign_in_intent', true);
     },
     subscribe(changed: () => void): () => void {
       const listener = (event: StorageEvent) => {
@@ -40,16 +41,23 @@ function createState() {
     },
     read(): string | null {
       if (!ready) throw new Error('session_storage_not_initialized');
-      return clearing ? null : records.coordinator.read().value;
+      if (clearing) return null;
+      const record = records.coordinator.read();
+      if (record.value) {
+        const value: unknown = JSON.parse(record.value);
+        if (value && typeof value === 'object' && 'token' in value && typeof value.token === 'string') observedFamilies.set(value.token, record.family);
+      }
+      return record.value;
     },
-    async discard(value: string | null): Promise<void> {
+    async discard(value: string | null, expectedToken?: string): Promise<void> {
       operations.invalidate();
       clearing = true;
       try {
         let previous;
         try { previous = records.coordinator.read(); }
         catch { await records.discardUnreadable(); return; }
-        await records.coordinator.commit(previous.revision, value);
+        const family = expectedToken ? observedFamilies.get(expectedToken) : previous.family;
+        if (family !== undefined) await records.coordinator.discardFamily(family, value);
       }
       finally { clearing = false; }
     },

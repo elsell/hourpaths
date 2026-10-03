@@ -71,7 +71,11 @@ export class SessionController {
         throw new SessionUnavailable(false);
       }
       if (this.current?.ownerId) next = { ...next, ownerId: this.current.ownerId };
-      await this.store.write(next, previous.token);
+      try { await this.store.write(next, previous.token); }
+      catch (error) {
+        if (this.store.read()?.token !== next.token) await this.revoke(next);
+        throw error;
+      }
       if (generation !== this.generation) throw new SessionUnavailable(false);
       this.current = next;
       return next;
@@ -106,10 +110,11 @@ export class SessionController {
   private invalidate(clear: boolean, retain = false): void {
     if (!this.current) return;
     const owner = this.current.ownerId;
+    const expectedToken = this.current.token;
     this.current = null;
     this.generation++;
     if (!clear) { this.lost(); return; }
-    const removal = retain && owner && this.store.pause ? this.store.pause(owner) : this.store.clear();
+    const removal = retain && owner && this.store.pause ? this.store.pause(owner, expectedToken) : this.store.clear(expectedToken);
     if (removal) void removal.then(() => this.lost(), () => this.lost());
     else this.lost();
   }

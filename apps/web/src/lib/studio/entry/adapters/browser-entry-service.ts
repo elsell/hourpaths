@@ -29,7 +29,7 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
     return { kind: current.nextAction === 'onboarding' ? 'onboarding' : current.nextAction === 'duplicate_email_recovery' ? 'recovery' : 'home', expiresAt: Date.parse(current.expiresAt) };
   }
   function expire() {
-    if (same()) { cancelTicket(); clearApplicationSession(); }
+    if (same()) { cancelTicket(); void clearApplicationSession(undefined, current?.token); }
     current = null;
   }
   function authorized(destination?: ApplicationSession['nextAction']) {

@@ -20,10 +20,11 @@ export function browserSessionRecords(storage: StorageAccess, legacy: StorageAcc
       const parsed: unknown = JSON.parse(raw);
       if (!parsed || typeof parsed !== 'object' || !('version' in parsed) || parsed.version !== 1 ||
         !('revision' in parsed) || typeof parsed.revision !== 'string' || !parsed.revision ||
+        !('family' in parsed) || typeof parsed.family !== 'string' || !parsed.family ||
         !('value' in parsed) || parsed.value !== null && typeof parsed.value !== 'string') {
         throw new Error('session_record_unreadable');
       }
-      return { revision: parsed.revision, value: parsed.value };
+      return { revision: parsed.revision, family: parsed.family, value: parsed.value };
     },
     write(record) { storage.setItem(sessionRecordKey, JSON.stringify({ version: 1, ...record })); },
     exclusive: operation => locks.request(lockName, operation),
@@ -34,7 +35,7 @@ export function browserSessionRecords(storage: StorageAccess, legacy: StorageAcc
     discardUnreadable(): Promise<void> {
       return port.exclusive(() => {
         try { port.read(); return; }
-        catch { port.write({ revision: revision(), value: null }); }
+        catch { const id = revision(); port.write({ revision: id, family: id, value: null }); }
       });
     },
     /** A durable logout tombstone always wins over an older per-tab session. */
@@ -42,7 +43,8 @@ export function browserSessionRecords(storage: StorageAccess, legacy: StorageAcc
       return port.exclusive(() => {
         let current = port.read();
         if (!current) {
-          current = { revision: revision(), value: legacy.getItem(legacyKey) };
+          const id = revision();
+          current = { revision: id, family: id, value: legacy.getItem(legacyKey) };
           port.write(current);
         }
         legacy.removeItem(legacyKey);

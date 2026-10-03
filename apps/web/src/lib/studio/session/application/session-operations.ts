@@ -13,7 +13,7 @@ export class DurableSessionOperations {
 
   invalidate(): void { this.generation++; }
 
-  issue(expectedRevision = this.records.read().revision): DurableSessionTicket {
+  issue(expectedRevision = this.records.read().revision, newFamily = false): DurableSessionTicket {
     const generation = ++this.generation;
     let revision = expectedRevision;
     const current = () => {
@@ -23,7 +23,7 @@ export class DurableSessionOperations {
     return {
       current,
       persist: async value => {
-        const record = await this.records.commit(revision, value, current);
+        const record = await this.records.commit(revision, value, current, newFamily);
         if (!record) return false;
         revision = record.revision;
         return current();

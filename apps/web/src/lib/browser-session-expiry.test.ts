@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { applicationSessionOperations } from './auth';
+import { applicationSession, applicationSessionOperations, clearApplicationSession } from './auth';
 import { browserSessionStore } from './studio/session/adapters/browser-session';
 
 test('cold expiry replaces a verified credential with a stoppable owner reference; logout clears it', async () => {
@@ -31,6 +31,20 @@ test('cold expiry replaces a verified credential with a stoppable owner referenc
     await store.initialize?.();
     assert.equal(store.read(), null);
     assert.equal(store.retainedOwner?.(), null);
+    const active = { token: 'alice-old', expiresAt: new Date(9000).toISOString(), nextAction: 'home', ownerId: 'alice' };
+    await applicationSessionOperations.issue().persist(JSON.stringify(active));
+    assert.equal(applicationSession()?.token, active.token);
+    const durableKey = 'hourpaths_session_record_v1';
+    const before = JSON.parse(storage.getItem(durableKey)!);
+    storage.setItem(durableKey, JSON.stringify({ ...before, revision: 'other-tab-rotation', value: JSON.stringify({ ...active, token: 'alice-rotated' }) }));
+    await clearApplicationSession(undefined, active.token);
+    assert.equal(applicationSession(), null);
+    await applicationSessionOperations.issue().persist(JSON.stringify(active));
+    assert.equal(applicationSession()?.token, active.token);
+    const next = JSON.parse(storage.getItem(durableKey)!);
+    storage.setItem(durableKey, JSON.stringify({ ...next, revision: 'bob-sign-in', family: 'bob-family', value: JSON.stringify({ ...active, token: 'bob', ownerId: 'bob' }) }));
+    await clearApplicationSession(undefined, active.token);
+    assert.equal(applicationSession()?.token, 'bob');
     await applicationSessionOperations.issue().persist(JSON.stringify({
       token: 'onboarding', expiresAt: new Date(1000).toISOString(), ownerId: 'alice', nextAction: 'onboarding'
     }));

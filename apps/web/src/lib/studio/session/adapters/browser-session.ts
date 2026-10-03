@@ -18,8 +18,8 @@ export function browserSessionStore(now: () => number = () => Date.now()): Sessi
       await initializeApplicationSession();
       const value = applicationSession();
       if (value && Date.parse(value.expiresAt) <= now()) {
-        if (value.ownerId && (value.nextAction ?? 'home') === 'home') await pauseApplicationSession(value.ownerId);
-        else await clearApplicationSession();
+        if (value.ownerId && (value.nextAction ?? 'home') === 'home') await pauseApplicationSession(value.ownerId, undefined, value.token);
+        else await clearApplicationSession(undefined, value.token);
       }
     },
     read() {
@@ -31,8 +31,8 @@ export function browserSessionStore(now: () => number = () => Date.now()): Sessi
       if (applicationSession()?.token !== expectedToken) throw new SessionUnavailable(false);
       if (!await persistOwnedApplicationSession(toCredential(value), ticket)) throw new SessionUnavailable(false);
     },
-    clear() { applicationSessionOperations.invalidate(); return clearApplicationSession(); },
-    pause: owner => pauseApplicationSession(owner),
+    clear(expectedToken) { applicationSessionOperations.invalidate(); return clearApplicationSession(undefined, expectedToken); },
+    pause: (owner, expectedToken) => pauseApplicationSession(owner, undefined, expectedToken),
     retainedOwner: () => retainedApplicationAccount(),
   };
 }

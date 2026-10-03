@@ -1,5 +1,6 @@
 export interface SessionRecord {
   revision: string;
+  family: string;
   value: string | null;
 }
 

@@ -44,20 +44,20 @@ export async function initializeApplicationSession(): Promise<void> {
   try { await browserSessionState().initialize(); }
   catch { throw unreadableLocalSession(); }
 }
-export async function pauseApplicationSession(owner: string, storage?: SessionStorageWriter): Promise<void> {
+export async function pauseApplicationSession(owner: string, storage?: SessionStorageWriter, expectedToken?: string): Promise<void> {
   applicationSessionOperations.invalidate();
   const value = JSON.stringify(retainedAccount(owner));
   if (storage) storage.setItem(sessionKey, value);
-  else await browserSessionState().discard(value);
+  else await browserSessionState().discard(value, expectedToken);
 }
 export function applicationSession(): ApplicationSession | null { return readApplicationSession(durableReader); }
 export function applicationSessionExpired(session: ApplicationSession, now = Date.now()): boolean {
   return Date.parse(session.expiresAt) <= now;
 }
-export async function clearApplicationSession(storage?: SessionStorageRemover): Promise<void> {
+export async function clearApplicationSession(storage?: SessionStorageRemover, expectedToken?: string): Promise<void> {
   if (storage) discardLocalSession(storage);
   else {
-    try { await browserSessionState().discard(null); }
+    try { await browserSessionState().discard(null, expectedToken); }
     catch { /* Unreadable storage cannot grant access. */ }
   }
 }
@@ -196,7 +196,7 @@ export async function revokeApplicationSession(
   revoke: RemoteSessionRevoker = revokeRemoteApplicationSession,
 ): Promise<void> {
 	applicationSessionOperations.invalidate();
-	await clearApplicationSession(storage);
+	await clearApplicationSession(storage, session?.token);
 	if (session) {
 		try { void revoke(config, session.token).catch(() => {}); }
     catch { /* Local credential disposal must not depend on network availability. */ }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browserSessionState } from '$lib/browser-session-state';
   import StatsView from '$lib/StatsView.svelte';
   import { createPathAppearancePort, type StatsSummary } from '@hourpaths/api-client';
   import { createPathAppearanceStore, defaultPathAppearance, initialStatsSelection, type StatsState, type StatsSelection } from '@hourpaths/client-core';
@@ -613,7 +614,7 @@
     cancelSessionDeadline?.();
     cancelSessionDeadline = scheduleSessionDeadline(() => {
       applicationSessionOperations.invalidate();
-      clearApplicationSession();
+      void clearApplicationSession(undefined, session?.token);
       session = null;
       profile = null;
       paths = null;
@@ -699,7 +700,7 @@
     const presentation = webSessionFailure(failure);
     if (presentation.discardCredential) {
       applicationSessionOperations.invalidate();
-      clearApplicationSession(); session = null; profile = null; paths = null; archivedPaths = []; creatingPath = false;
+      void clearApplicationSession(undefined, session?.token); session = null; profile = null; paths = null; archivedPaths = []; creatingPath = false;
       pathCreation.cancel();
       timerOperations.cancel();
       timerStates = {};
@@ -813,7 +814,7 @@
       const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
       const presentation = webSessionFailure(failure);
       accessState = presentation.accessState;
-      if (presentation.discardCredential) { applicationSessionOperations.invalidate(); timerOperations.cancel(); resetManualActivity(); resetPathDetails(); resetInvitations(); clearApplicationSession(); session = null; timerStates = {}; }
+      if (presentation.discardCredential) { applicationSessionOperations.invalidate(); timerOperations.cancel(); resetManualActivity(); resetPathDetails(); resetInvitations(); void clearApplicationSession(undefined, session?.token); session = null; timerStates = {}; }
       else {
         if (session) presentation.retryable ? scheduleRetry(session.expiresAt, 'profile') : scheduleExpiration(session.expiresAt);
       }
@@ -865,6 +866,24 @@
       notificationConvergenceBrowser = null;
       notificationRefreshLatch.dispose();
     };
+  });
+
+  onMount(() => {
+    try {
+      return browserSessionState().subscribe(() => {
+        let replacement: ApplicationSession | null = null;
+        try { replacement = applicationSession(); } catch { /* Fail closed. */ }
+        if (replacement?.token === session?.token) return;
+        cancelSessionDeadline?.();
+        applicationSessionOperations.invalidate();
+        pathCreation.cancel();
+        timerOperations.cancel();
+        resetManualActivity(); resetPathDetails(); resetInvitations();
+        session = null; profile = null; paths = null; archivedPaths = []; timerStates = {};
+        accessState = 'authentication_required';
+        replaceApplicationLocation('/');
+      });
+    } catch { return; }
   });
 
   async function signIn() {
@@ -1123,7 +1142,7 @@
         pathCreation.cancel();
         timerOperations.cancel();
         applicationSessionOperations.invalidate();
-        resetManualActivity(); resetPathDetails(); clearApplicationSession(); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
+        resetManualActivity(); resetPathDetails(); void clearApplicationSession(undefined, session?.token); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
       }
       return;
     }
@@ -1219,7 +1238,7 @@
       if (presentation.discardCredential) {
         timerOperations.cancel();
         applicationSessionOperations.invalidate();
-        resetManualActivity(); resetPathDetails(); clearApplicationSession(); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
+        resetManualActivity(); resetPathDetails(); void clearApplicationSession(undefined, session?.token); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
       }
       return;
     }
@@ -1249,7 +1268,7 @@
     resetManualActivity();
     resetPathDetails();
     resetInvitations();
-    clearApplicationSession();
+    void clearApplicationSession(undefined, session?.token);
     session = null;
     profile = null;
     paths = null;
@@ -1274,7 +1293,7 @@
     resetManualActivity();
     resetPathDetails();
     resetInvitations();
-    clearApplicationSession();
+    void clearApplicationSession(undefined, session?.token);
     session = null;
     profile = null;
     paths = null;

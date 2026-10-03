@@ -72,3 +72,17 @@ test('a redirect callback uses its original sign-in revision rather than the acc
   assert.equal(await callback.persist('provider-response'), false);
   assert.equal(records.read().value, null);
 });
+
+test('logout clears a queued rotation of its family but preserves a replacement account', async () => {
+  const tab = origin(), first = tab(), other = tab();
+  const original = await first.replace('alice');
+  const rotating = other.commit(original.revision, 'rotated-alice');
+  const logout = first.discardFamily(original.family, null);
+  await Promise.all([rotating, logout]);
+  assert.equal(first.read().value, null);
+  const alice = await first.replace('alice');
+  const signingIn = new DurableSessionOperations(other).issue(alice.revision, true).persist('bob');
+  const staleLogout = first.discardFamily(alice.family, null);
+  await Promise.all([signingIn, staleLogout]);
+  assert.equal(first.read().value, 'bob');
+});
