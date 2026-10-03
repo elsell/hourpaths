@@ -8,9 +8,10 @@ cf555911cd7d281501f114ffeb772da55913c6dfc5c9b3d2827dc44e3ce3e4a6  apps/web/src/r
 ffc0fa053b13c4b063696ee3a3062424e02873fa6845bca69820185b52d2b5e1  apps/web/src/routes/onboarding/+page.svelte
 ffc0fa053b13c4b063696ee3a3062424e02873fa6845bca69820185b52d2b5e1  apps/web/src/routes/account-recovery/+page.svelte
 2e448598c50bfa1ff68658956f21d6b0545363a02fdf3b5c01f02debbdb74f64  apps/web/src/routes/callback/+page.svelte
-b10d31a41bfd7981b15aa7318428fdead78ee5527cea2c251d63c2d61d741c89  apps/mobile/src/offline/native-tracking-store.ts
-8049f540c9eb8761fcbc40bdf1da5831d00a0b91a676a2ce522e363e6143f401  apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts
+c572bf4ed14a23d78cb8a8e4889f65e987a54014f0b10e1a6961e332d3b7eea2  apps/mobile/src/offline/native-tracking-store.ts
+7bb9ef340124b2d4f6726f1c88636a8c97c314a917013ce6ba0fb009cf77fff8  apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts
 d0c955b5120fecedb54465567559806fb09b39ded64c185339080b4a6041e743  apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts
 76208a4fcc90c401922fb762cf47bdbff8304a289d7a355bfbba13cc8db9bdf7  apps/web/src/service-worker.ts
 188ec896c102fbdba0f455153182fb3945047385c3b68575febe9ec0d30ca3a1  apps/web/src/lib/offline-shell/cache.ts
-a9c27b7ddcaeedc83b829ffea03de78e0365c56b0d81be669a6a4abac73122fe  apps/web/src/lib/browser-session-state.ts
+61a669263358e09048e28590873d8362e23d1fcda6c66da946ced6ef102f4f8f  apps/web/src/lib/browser-session-state.ts
+71da24829bd5750768f938afb01c278db7b1c5a07bcf75295eb1bbfe9d4a8188  apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts

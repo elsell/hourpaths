@@ -1,6 +1,6 @@
 import { isValidSessionCredential } from '@hourpaths/client-core';
 import { nativeAccountDeletion } from '../src/offline/native-account-deletion';
-import { captureDeletionNotifications, clearDeletionNotifications } from '../src/account-deletion-notifications';
+import { captureDeletionNotifications, clearDeletionNotifications } from '../src/push-notifications-native';
 import { AccountDeletionView } from '../src/ui/account-deletion-view';
 import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';

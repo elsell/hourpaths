@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { createTranslator, type SupportedLocale } from '@hourpaths/i18n';
+  import { createTranslator, type Translator, type SupportedLocale } from '@hourpaths/i18n';
   import '$lib/studio/presentation/studio.css';
   export let data: { locale: SupportedLocale };
+  let i18n: Translator;
   $: i18n = createTranslator([data.locale]);
 </script>
 

@@ -6,7 +6,10 @@ export type ApplicationDestination = '/' | '/studio' | '/onboarding' | '/account
 export function replaceApplicationLocation(destination: ApplicationDestination): void {
   switch (destination) {
     case '/': window.location.replace('/'); break;
-    case '/studio': window.location.replace(consumeAccountDeletionEntry(window.sessionStorage) ? '/studio/delete-account' : '/studio'); break;
+    case '/studio':
+      if (consumeAccountDeletionEntry(window.sessionStorage)) window.location.replace('/studio/delete-account');
+      else window.location.replace('/studio');
+      break;
     case '/onboarding': window.location.replace('/onboarding'); break;
     case '/account-recovery': window.location.replace('/account-recovery'); break;
   }
