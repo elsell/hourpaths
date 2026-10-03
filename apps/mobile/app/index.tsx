@@ -1,6 +1,6 @@
 import { isValidSessionCredential } from '@hourpaths/client-core';
 import { nativeAccountDeletion } from '../src/offline/native-account-deletion';
-import { captureDeletionNotifications, clearDeletionNotifications } from '../src/push-notifications-native';
+import { captureDeletionNotifications, clearDeletionNotifications, clearRecipientNotifications, installDeletionNotificationCleanup } from '../src/push-notifications-native';
 import { AccountDeletionView } from '../src/ui/account-deletion-view';
 import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';
@@ -2007,6 +2007,7 @@ export function HomeScreen() {
     },
     clearSurfaces: async (owner, identifiers) => {
       await clearDeletionNotifications(identifiers);
+      await clearRecipientNotifications(owner);
       const pending = await loadNativePushDeregistration();
       if (pending?.accountID === owner) await clearNativePushDeregistration();
       if (!notificationLifecycleState.current.session || notificationLifecycleState.current.session?.ownerId === owner) await setNativeNotificationBadge(0);
@@ -2648,6 +2649,11 @@ export function HomeScreen() {
     }, Date.now() + delay);
     return cancelDeadline;
   }, [session?.token, session?.expiresAt, sessionRenewable, accessState, retryAttempt, retryOperation, onboardingHomeRecovery?.status, homeRecovery?.status]);
+
+  useEffect(() => installDeletionNotificationCleanup(
+    async owner => (await openNativeOfflineStorage()).deletion.isFenced(owner),
+    () => setNotificationsErrorKey('notification.error'),
+  ), []);
 
   useEffect(() => {
     if (!session || destination?.kind !== 'home') return;

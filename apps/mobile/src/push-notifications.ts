@@ -220,3 +220,10 @@ export async function ownedNotificationIdentifiers(
   }
   return [...selected];
 }
+
+
+export function pushRecipientID(data: Readonly<Record<string, unknown>>): string | null {
+  if (!pushNotificationID(data)) return null;
+  const owner = data.recipientUserId;
+  return typeof owner === 'string' && owner.length > 0 && owner.length <= 128 && owner.trim() === owner ? owner : null;
+}

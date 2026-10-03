@@ -1,5 +1,5 @@
 c769bf1e38ecde2f073376c8e9c7d5cb4b9ca6b306bb55336b2df1c18625db92  apps/mobile/src/provider-auth.ts
 527346d421cb3c77ca564b5c5aeb8a16c0c29ed7797f35dbfb74380421b7c3a4  apps/mobile/src/provider-auth-state.ts
 761751725bbdcea66eef7bfc1eb4795772c4b33988f3a599b77adc539a179f9d  apps/mobile/src/provider-discovery.ts
-431af3ae85f29d5b6902d194869225c7d7f69621323d69ae6443159c1972797e  apps/mobile/src/push-notifications-native.ts
+0e45f2e66fa352716ad354631e89324f9ebe89ab10a5162f10f728336bf9fff4  apps/mobile/src/push-notifications-native.ts
 27be46b1785f98c4319fa746bf5281c966851a262df2a0e61c8e2f10531dd509  apps/web/src/lib/provider-auth.ts

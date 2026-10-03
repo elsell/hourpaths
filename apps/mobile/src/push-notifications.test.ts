@@ -10,6 +10,7 @@ import {
   nativeForegroundPresentationBeforeDeadline,
   parsePendingPushDeregistration,
   pushNotificationID,
+  pushRecipientID,
   type PushPermission,
 } from './push-notifications';
 
@@ -263,4 +264,13 @@ test('deletion cleanup keeps other accounts notices and fails closed on ownershi
   ];
   assert.deepEqual(await ownedNotificationIdentifiers(requests, async id => id === 'alice-event'), ['alice-notice']);
   await assert.rejects(ownedNotificationIdentifiers(requests, async () => { throw new Error('offline'); }), /offline/);
+});
+
+
+test('delayed notification metadata identifies only a valid opaque recipient', () => {
+  assert.equal(pushRecipientID({version: 1, notificationId: 'notice', recipientUserId: 'deleted-owner'}), 'deleted-owner');
+  for (const recipientUserId of ['', ' wrong ', 3, 'x'.repeat(129)]) {
+    assert.equal(pushRecipientID({version: 1, notificationId: 'notice', recipientUserId}), null);
+  }
+  assert.equal(pushRecipientID({recipientUserId: 'deleted-owner'}), null);
 });

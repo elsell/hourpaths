@@ -135,6 +135,8 @@ test('deletion intent survives restart, isolates owners, and fences late writes 
     assert.deepEqual(await database.deletion.pendingOwners(), []);
     assert.equal(await database.deletion.read('alice'), null);
     assert.equal(await database.deletion.readSurfaces('alice'), null);
+    assert.equal(await database.deletion.isFenced('alice'), true);
+    assert.equal(await database.deletion.isFenced('bob'), false);
     await assert.rejects(database.store.commit('alice', 0, { ...snapshot, revision: 1 }), /account_deletion_pending/);
     await assert.rejects(database.home.saveHome(home), /account_deletion_pending/);
     await assert.rejects(database.appearances.write('alice', 'guitar', { revision: 2, color: 'mint', emoji: '🎸' }), /account_deletion_pending/);

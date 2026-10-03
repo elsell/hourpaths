@@ -8,6 +8,10 @@ export class SQLiteAccountDeletion {
       CREATE TABLE IF NOT EXISTS account_deletion_surfaces_v1 (owner TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS account_deletion_intents_v1 (owner TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL);`);
   }
+  async isFenced(owner: string): Promise<boolean> {
+    await this.ready;
+    return !!await this.database.getFirstAsync<{ owner: string }>('SELECT owner FROM account_deletion_fences_v1 WHERE owner = ?', owner);
+  }
   async read(owner: string): Promise<DeletionIntent | null> {
     await this.ready;
     const row = await this.database.getFirstAsync<{ payload: string }>('SELECT payload FROM account_deletion_intents_v1 WHERE owner = ?', owner);

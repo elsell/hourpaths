@@ -105,3 +105,9 @@ behavior. This document defines its persistence and recovery boundaries.
 - A native deletion snapshot must include only notifications whose recipient
   ownership is established for the deleting account. It must preserve another
   account's notices and fail closed when ownership lookup is unavailable.
+- Push metadata must carry the opaque internal recipient account ID for local
+  deletion cleanup. It must not authorize any server operation. Native clients
+  must suppress foreground delivery and dismiss retained notices for locally
+  fenced recipients on receipt and app activation, even without a signed-in
+  session. Legacy notices without recipient metadata require authenticated
+  recipient resolution before cleanup.
