@@ -127,3 +127,11 @@ responsibilities.
 - Native action labels must remain readable at narrow widths and supported Dynamic Type sizes; SwiftUI content measurement must not collapse a button to an icon or empty pill.
 - Unavailable Path recovery must group the explanation with a prominent, labeled Retry action and a secondary labeled return-to-Home action. Actions must use the shared button component and consistent spacing.
 - The permanent Path deletion confirmation must show its localized destructive action at the available content width, with the existing consequences visible before confirmation.
+
+## Transient feedback
+
+- Mobile transient confirmations must use one shared app-level presentation mechanism, above native navigation and clear of safe areas and the keyboard. They must not render as loose text below screen content.
+- Feedback must wrap for Dynamic Type, expose a localized dismiss action, and announce its message to assistive technology. Automatic dismissal must be disabled while a screen reader is active.
+- Feedback must clear when its owning account or presentation is disposed. Persistent errors and pending synchronization requiring action remain in their existing recovery surfaces.
+
+- Pending synchronization indicators must appear only after one continuous second of pending work and disappear immediately when that work clears. Short successful operations must not flash a waiting banner. Sync status must use neutral styling and polite accessibility semantics; actionable failures must remain immediate.

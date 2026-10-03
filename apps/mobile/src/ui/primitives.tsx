@@ -48,14 +48,14 @@ export function StatusBanner({
   actionLabel?: string;
   onAction?: () => void;
   text: string;
-  tone?: 'loading' | 'offline' | 'error';
+  tone?: 'loading' | 'offline' | 'error' | 'sync' | 'info';
 }) {
   return <View style={[styles.banner, tone === 'offline' ? styles.offlineBanner : null, tone === 'error' ? styles.errorBanner : null]}>
     <View
       accessible
       accessibilityLabel={text}
-      accessibilityLiveRegion={tone === 'loading' ? 'polite' : 'assertive'}
-      accessibilityRole={tone === 'loading' ? 'progressbar' : 'alert'}
+      accessibilityLiveRegion={tone === 'error' ? 'assertive' : 'polite'}
+      accessibilityRole={tone === 'loading' ? 'progressbar' : tone === 'error' ? 'alert' : 'text'}
       style={styles.bannerContent}
     >
       {tone === 'loading' ? <ActivityIndicator
@@ -147,8 +147,8 @@ export function NativeSheet({
 const styles = StyleSheet.create({
   banner: {
     backgroundColor: mobileTheme.colors.surfaceRaised,
-    borderColor: mobileTheme.colors.border,
-    borderRadius: mobileTheme.radii.md,
+    borderColor: mobileTheme.colors.separator,
+    borderRadius: mobileTheme.radii.lg,
     borderWidth: mobileTheme.sizes.border,
     padding: mobileTheme.spacing.sm,
   },
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     ...mobileTheme.typography.body,
   },
   offlineBanner: {
-    backgroundColor: mobileTheme.colors.offlineSurface,
-    borderColor: mobileTheme.colors.accent,
+    backgroundColor: mobileTheme.colors.surfaceRaised,
+    borderColor: mobileTheme.colors.separator,
   },
   surface: {
     backgroundColor: mobileTheme.colors.surface,

@@ -1,3 +1,4 @@
+import { DelayedStatus } from './delayed-status';
 import { Fragment } from 'react';
 import type { Translator } from '@hourpaths/i18n';
 import type { ActivityDetail } from '../activity-history';
@@ -24,7 +25,7 @@ export function RecentPathActivity({ retained = false, incomplete = false, activ
     {retained ? <StatusBanner tone="offline" text={i18n.t(incomplete ? 'offline.historyIncomplete' : 'offline.historyRetained')} /> : null}
     {busy ? <StatusBanner text={i18n.t('common.loading')} /> : null}
     {errorText ? <StatusBanner text={errorText} tone="error" actionLabel={i18n.t('common.retry')} onAction={onRetry} /> : null}
-    {!busy && !errorText && !(retained && incomplete) && activities.length === 0 ? <StatusBanner text={i18n.t('pathDetails.historyEmpty')} /> : null}
+    {!busy && !errorText && !(retained && incomplete) && activities.length === 0 ? <StatusBanner tone="info" text={i18n.t('pathDetails.historyEmpty')} /> : null}
     <SettingsSection>
       {activities.slice(0, 2).map((detail) => {
         const activity = detail.activity;
@@ -39,7 +40,7 @@ export function RecentPathActivity({ retained = false, incomplete = false, activ
             value={duration}
             onPress={() => onOpen(activity.id)}
           />}
-          {detail.pending ? <ThemedText>{i18n.t('offline.pending')}</ThemedText> : null}
+          {detail.pending ? <DelayedStatus><ThemedText>{i18n.t('offline.pending')}</ThemedText></DelayedStatus> : null}
           <SettingsSeparator />
         </Fragment>;
       })}

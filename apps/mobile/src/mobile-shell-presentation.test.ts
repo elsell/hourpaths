@@ -454,7 +454,7 @@ test('signed-out, loading, offline, and error states use explicit accessible pre
   assert.match(primitives, /import \{[\s\S]*ActivityIndicator,/);
   assert.match(primitives, /tone = 'loading'/);
   assert.match(primitives, /tone\?: 'loading' \| 'offline' \| 'error'/);
-  assert.match(primitives, /accessibilityRole=\{tone === 'loading' \? 'progressbar' : 'alert'\}/);
+  assert.match(primitives, /accessibilityRole=\{tone === 'loading' \? 'progressbar' : tone === 'error' \? 'alert' : 'text'\}/);
   assert.match(primitives, /tone === 'loading' \? <ActivityIndicator/);
   assert.match(primitives, /onAction && actionLabel \? <NativeButton/);
   assert.match(page, /<SignedOutScreen[\s\S]*providerBusy=\{providerSignIn\.busy\}/);
