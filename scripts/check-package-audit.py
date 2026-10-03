@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the complete audit with the owner's one expiring advisory exception."""
+"""Run the complete audit with the owner's exact, expiring advisory exceptions."""
 import datetime as dt
 import json
 import subprocess
@@ -7,11 +7,15 @@ import sys
 
 DEADLINE = dt.datetime(2026, 10, 9, tzinfo=dt.timezone.utc)
 ADVISORY = 'GHSA-86w9-cpqp-85rv'
+EXCEPTIONS = {
+    ADVISORY: ('node-forge', '1.4.0'),
+    'GHSA-vfj7-8cjw-p6xm': ('braces', '3.0.3'),
+}
 
 
 def evaluate(report, returncode, now):
     if now >= DEADLINE:
-        raise ValueError('node-forge exception expired; remove it or obtain renewed owner approval')
+        raise ValueError('package exceptions expired; remove them or obtain renewed owner approval')
     if returncode not in (0, 1) or not isinstance(report, dict) or report.get('error'):
         raise ValueError('package audit failed')
     advisories = report.get('advisories')
@@ -30,11 +34,12 @@ def evaluate(report, returncode, now):
         if identity is None:
             identity = advisory.get('url', '').removeprefix('https://github.com/advisories/')
         findings = advisory.get('findings')
-        if (identity != ADVISORY or advisory.get('module_name') != 'node-forge'
+        allowed = EXCEPTIONS.get(identity)
+        if (allowed is None or advisory.get('module_name') != allowed[0]
                 or not isinstance(findings, list) or not findings
-                or any(not isinstance(f, dict) or f.get('version') != '1.4.0' for f in findings)):
+                or any(not isinstance(f, dict) or f.get('version') != allowed[1] for f in findings)):
             raise ValueError('unaccepted vulnerability: ' + str(identity))
-        exceptions.append(ADVISORY)
+        exceptions.append(identity)
     return exceptions
 
 
@@ -45,7 +50,8 @@ def main():
     print(result.stdout, end='')
     exceptions = evaluate(json.loads(result.stdout), result.returncode, dt.datetime.now(dt.timezone.utc))
     for advisory in exceptions:
-        print(f'TEMPORARY OWNER EXCEPTION: {advisory}, node-forge@1.4.0; expires {DEADLINE.isoformat()}')
+        package, version = EXCEPTIONS[advisory]
+        print(f'TEMPORARY OWNER EXCEPTION: {advisory}, {package}@{version}; expires {DEADLINE.isoformat()}')
 
 
 if __name__ == '__main__':
