@@ -100,6 +100,24 @@ func TestPostgresAccountDeletionPreservesUnrelatedSharedActivity(t *testing.T) {
 		if err != nil || found != receipt.want {
 			t.Fatalf("deletion receipt found=%v want=%v error=%v", found, receipt.want, err)
 		}
+		viewed := audit.Event{ID: newTestID(), OwnerUserID: receipt.owner, ActorUserID: receipt.owner, Action: audit.ResourceViewed, TargetType: "account_deletion", TargetID: receipt.owner, Outcome: audit.Succeeded, CorrelationID: newTestID(), OccurredAt: receipt.at}
+		confirmed, err := runtime.ConfirmDeletionReceipt(context.Background(), receipt.owner, receipt.hash, receipt.at, viewed)
+		if err != nil || confirmed != receipt.want {
+			t.Fatalf("atomic receipt confirmed=%v want=%v error=%v", confirmed, receipt.want, err)
+		}
+		var audited int64
+		if err := seed.DB.Model(&auditEventModel{}).Where("id = ?", viewed.ID).Count(&audited).Error; err != nil {
+			t.Fatal(err)
+		}
+		if (audited == 1) != receipt.want {
+			t.Fatalf("receipt audit count=%d want confirmation=%v", audited, receipt.want)
+		}
+		if receipt.want {
+			confirmed, err = runtime.ConfirmDeletionReceipt(context.Background(), receipt.owner, receipt.hash, receipt.at, viewed)
+			if err == nil || confirmed {
+				t.Fatal("receipt succeeded despite duplicate audit rejection")
+			}
+		}
 	}
 	for _, check := range []struct {
 		table, where string

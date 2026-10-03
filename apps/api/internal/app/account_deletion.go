@@ -34,6 +34,7 @@ type AccountDeletionJournal interface {
 type AccountDeletionRepository interface {
 	DeleteAccount(context.Context, AccountDeletionCommand) error
 	DeletionReceipt(context.Context, string, []byte, time.Time) (bool, error)
+	ConfirmDeletionReceipt(context.Context, string, []byte, time.Time, audit.Event) (bool, error)
 }
 
 func (a App) DeleteAccount(ctx context.Context, authorization string, request AccountDeletionRequest) error {
@@ -104,5 +105,12 @@ func (a App) ConfirmAccountDeletion(ctx context.Context, userID, secret string) 
 	if a.AuditRateLimiter == nil || !a.AuditRateLimiter.Allow(userID, now) {
 		return ErrRateLimited
 	}
-	return a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, userID, userID, audit.ResourceViewed, "account_deletion", userID, audit.Succeeded))
+	found, err = a.AccountDeletion.ConfirmDeletionReceipt(ctx, userID, hash, now, a.auditEvent(ctx, userID, userID, audit.ResourceViewed, "account_deletion", userID, audit.Succeeded))
+	if err != nil {
+		return err
+	}
+	if !found {
+		return ErrUnauthenticated
+	}
+	return nil
 }

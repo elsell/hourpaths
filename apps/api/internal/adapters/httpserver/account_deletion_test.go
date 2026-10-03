@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/elsell/hour-paths/apps/api/internal/app"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 )
@@ -86,4 +87,8 @@ func TestAccountDeletionHTTPSeparatesRevokedSessionsFromDeletionReceipts(t *test
 
 func (s *deletionRouteState) Admit(_ context.Context, record app.DeletionRecord) (app.DeletionRecord, error) {
 	return record, nil
+}
+
+func (r *deletionRouteState) ConfirmDeletionReceipt(ctx context.Context, id string, hash []byte, now time.Time, event audit.Event) (bool, error) {
+	return r.DeletionReceipt(ctx, id, hash, now)
 }

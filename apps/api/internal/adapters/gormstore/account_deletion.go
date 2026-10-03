@@ -123,3 +123,26 @@ func (s *Store) DeletionReceipt(ctx context.Context, userID string, hash []byte,
 	err := s.DB.WithContext(ctx).Model(&accountDeletionModel{}).Where("user_id = ? AND receipt_hash = ? AND deleted_at > ? AND deleted_at <= ?", userID, hash, now.Add(-30*24*time.Hour), now).Count(&count).Error
 	return count == 1, err
 }
+
+// ConfirmDeletionReceipt serializes its audit write with marker retirement.
+func (s *Store) ConfirmDeletionReceipt(ctx context.Context, userID string, hash []byte, now time.Time, event audit.Event) (bool, error) {
+	if s == nil || s.DB == nil || userID == "" || len(hash) != 32 || now.IsZero() || event.OwnerUserID != userID || event.ActorUserID != userID || event.Action != audit.ResourceViewed || event.TargetType != "account_deletion" || event.TargetID != userID || event.Outcome != audit.Succeeded {
+		return false, ports.ErrInvalidArgument
+	}
+	found := false
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var locked bool
+		if err := tx.Raw("SELECT public.lock_account_deletion_receipt(?, ?, ?)", userID, hash, now).Scan(&locked).Error; err != nil {
+			return err
+		}
+		if !locked {
+			return nil
+		}
+		if err := appendAuditEvent(tx, event); err != nil {
+			return err
+		}
+		found = true
+		return nil
+	})
+	return found && err == nil, err
+}

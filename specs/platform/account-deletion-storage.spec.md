@@ -16,7 +16,9 @@ behavior. This document defines its persistence and recovery boundaries.
   is a separate, narrow capability and must not bypass ordinary authentication
   on the deletion command or on any other endpoint.
 - Receipt reads must use the principal limiter and append audit evidence after
-  successful capability verification. The secret must never appear in logs,
+  successful capability verification. Final verification and its audit write must
+  commit atomically while locking the deletion record against retention cleanup.
+  The secret must never appear in logs,
   audit data, URL parameters, or deletion records. Receipt lookup must reject
   records older than 30 days.
 - Client cleanup must target the captured deleted account, even if another

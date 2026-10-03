@@ -14,8 +14,10 @@ import (
 )
 
 type controlledAccountDeletion struct {
-	commands []AccountDeletionCommand
-	err      error
+	commands        []AccountDeletionCommand
+	confirmationErr error
+	retired         bool
+	err             error
 }
 
 func (r *controlledAccountDeletion) DeleteAccount(_ context.Context, command AccountDeletionCommand) error {
@@ -104,4 +106,32 @@ func TestDeletionReceiptProvesOnlyTheExactCompletedAccountWithoutAValidSession(t
 
 func (r *controlledAccountDeletion) Admit(_ context.Context, record DeletionRecord) (DeletionRecord, error) {
 	return record, r.err
+}
+
+func (r *controlledAccountDeletion) ConfirmDeletionReceipt(ctx context.Context, id string, hash []byte, now time.Time, event audit.Event) (bool, error) {
+	if r.confirmationErr != nil {
+		return false, r.confirmationErr
+	}
+	if r.retired {
+		return false, nil
+	}
+	return r.DeletionReceipt(ctx, id, hash, now)
+}
+
+func TestDeletionReceiptCannotSucceedWhenFinalAuditFailsOrMarkerRetires(t *testing.T) {
+	secret := strings.Repeat("b", 64)
+	hash, _ := deletionReceiptHash(secret)
+	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
+	for _, retired := range []bool{false, true} {
+		repository := &controlledAccountDeletion{commands: []AccountDeletionCommand{{UserID: "owner", ReceiptHash: hash, DeletedAt: now}}, retired: retired}
+		want := ErrUnauthenticated
+		if !retired {
+			repository.confirmationErr = ports.ErrUnavailable
+			want = ports.ErrUnavailable
+		}
+		application := App{AccountDeletion: repository, Clock: fakeClock{now: now}, AuditRateLimiter: fakeAuditRateLimiter{}, Audits: fakeAudits{}}
+		if err := application.ConfirmAccountDeletion(context.Background(), "owner", secret); !errors.Is(err, want) {
+			t.Fatalf("retired=%v: got %v, want %v", retired, err, want)
+		}
+	}
 }
