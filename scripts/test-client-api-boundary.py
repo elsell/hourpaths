@@ -10,6 +10,8 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/web/src/service-worker.ts",
+    "apps/web/src/lib/offline-shell/cache.ts",
     "apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts",
     "apps/mobile/src/offline/native-tracking-store.ts",
     "apps/mobile/src/offline/sqlite-tracking-store.ts",

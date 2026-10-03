@@ -78,6 +78,8 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/web/src/service-worker.ts',
+  'apps/web/src/lib/offline-shell/cache.ts',
   'apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts',
   'apps/mobile/src/offline/native-tracking-store.ts',
   'apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts',
@@ -660,6 +662,7 @@ function approvedResolvedImport(imported, importerRelative) {
 }
 
 function importAllowed(specifier, relative, file) {
+  if (specifier === '$service-worker') return relative === 'apps/web/src/service-worker.ts';
   // The Studio migration adds rendering/router capabilities, never transport.
   if (specifier === 'react-dom/client') return relative === 'apps/web/src/lib/studio/bootstrap/mount.tsx';
   if (specifier === '@tanstack/react-router' || specifier === '@tanstack/react-query') {
