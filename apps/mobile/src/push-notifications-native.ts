@@ -5,6 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import { AppState, Platform } from 'react-native';
 import type { ForegroundNotificationOutcome } from '@hourpaths/client-core';
 import {
+  ownedNotificationIdentifiers,
   createPushRegistrationCoordinator,
   handleNotificationTap,
   loadOrCreateInstallationID,
@@ -13,6 +14,7 @@ import {
   parsePendingPushDeregistration,
   pendingPushDeregistrationStorageKey,
   pushNotificationID,
+  pushRecipientID,
   type NotificationDestination,
   type PendingPushDeregistration,
   type PushPermission,
@@ -156,6 +158,7 @@ export function installNativeNotificationLifecycle(
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => {
       try {
+        if (await deletionNoticeGuard(notification.request.content.data ?? {})) return nativeForegroundPresentation('quiet');
         const presentation = handleForeground(notification.request.content.data ?? {})
           .then((outcome) => outcome?.presentation ?? 'quiet');
         return await nativeForegroundPresentationBeforeDeadline(
@@ -190,5 +193,67 @@ export function installNativeNotificationLifecycle(
   return () => {
     received.remove();
     responded.remove();
+  };
+}
+
+
+export async function captureDeletionNotifications(owns: (notificationID: string) => Promise<boolean>): Promise<string[]> {
+  const [presented, scheduled] = await Promise.all([
+    Notifications.getPresentedNotificationsAsync(), Notifications.getAllScheduledNotificationsAsync(),
+  ]);
+  return ownedNotificationIdentifiers([...presented.map(item => item.request), ...scheduled], owns);
+}
+
+/** Captured identifiers survive an account switch; never dismiss every account's notifications. */
+export async function clearDeletionNotifications(identifiers: readonly string[]): Promise<void> {
+  for (const id of identifiers) {
+    await Notifications.cancelScheduledNotificationAsync(id);
+    await Notifications.dismissNotificationAsync(id);
+  }
+  const response = Notifications.getLastNotificationResponse();
+  if (response && identifiers.includes(response.notification.request.identifier)) Notifications.clearLastNotificationResponse();
+}
+
+
+let deletionNoticeGuard: (data: Readonly<Record<string, unknown>>) => Promise<boolean> = async () => false;
+
+export async function clearRecipientNotifications(owner: string): Promise<void> {
+  const [presented, scheduled] = await Promise.all([
+    Notifications.getPresentedNotificationsAsync(), Notifications.getAllScheduledNotificationsAsync(),
+  ]);
+  const matching = [...presented.map(item => item.request), ...scheduled]
+    .filter(item => pushRecipientID(item.content.data ?? {}) === owner)
+    .map(item => item.identifier);
+  await clearDeletionNotifications([...new Set(matching)]);
+}
+
+/** Active across sign-out; durable fences also cover notices delivered while closed. */
+export function installDeletionNotificationCleanup(isFenced: (owner: string) => Promise<boolean>, failure: (cause: unknown) => void): () => void {
+  let active = true;
+  const guard = async (data: Readonly<Record<string, unknown>>) => {
+    const owner = pushRecipientID(data);
+    return !!owner && await isFenced(owner);
+  };
+  deletionNoticeGuard = guard;
+  let pending = Promise.resolve();
+  const sweep = () => {
+    pending = pending.then(async () => {
+      if (!active) return;
+      const [presented, scheduled] = await Promise.all([
+        Notifications.getPresentedNotificationsAsync(), Notifications.getAllScheduledNotificationsAsync(),
+      ]);
+      const remove: string[] = [];
+      for (const item of [...presented.map(value => value.request), ...scheduled]) {
+        if (await guard(item.content.data ?? {})) remove.push(item.identifier);
+      }
+      if (active) await clearDeletionNotifications([...new Set(remove)]);
+    }).catch(cause => { if (active) failure(cause); });
+  };
+  const received = Notifications.addNotificationReceivedListener(sweep);
+  const state = AppState.addEventListener('change', next => { if (next === 'active') sweep(); });
+  sweep();
+  return () => {
+    active = false; received.remove(); state.remove();
+    if (deletionNoticeGuard === guard) deletionNoticeGuard = async () => false;
   };
 }

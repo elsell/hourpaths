@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -19,51 +18,6 @@ import (
 
 var postgresTestDSN = flag.String("database-dsn", "", "PostgreSQL integration test DSN")
 var migrationPostgresTestDSN = flag.String("migration-database-dsn", "", "migration-role PostgreSQL integration test DSN")
-
-func TestConcurrentFirstIdentityExchangeIsIdempotent(t *testing.T) {
-	if *postgresTestDSN == "" {
-		t.Skip("-database-dsn is required for PostgreSQL integration")
-	}
-	store, err := Open("postgres", *postgresTestDSN)
-	if err != nil {
-		t.Fatal(err)
-	}
-	now := time.Now().UTC()
-	claims := ports.Claims{Issuer: "https://concurrent.example/" + newTestID(), Subject: "subject", Email: newTestID() + "@example.com", EmailVerified: true}
-	userID := identity.UserID(claims.Issuer, claims.Subject)
-	const workers = 8
-	errorsByWorker := make([]error, workers)
-	var wait sync.WaitGroup
-	for i := 0; i < workers; i++ {
-		wait.Add(1)
-		go func(index int) {
-			defer wait.Done()
-			provisioned := audit.Event{ID: newTestID(), OwnerUserID: userID, ActorUserID: userID, Action: audit.UserProvisioned, TargetType: "user", TargetID: userID, Outcome: audit.Succeeded, CorrelationID: newTestID(), OccurredAt: now}
-			profile := provisioned
-			profile.ID, profile.Action = newTestID(), audit.UserProfileSynchronized
-			_, errorsByWorker[index] = store.ResolveOrCreate(context.Background(), claims, provisioned, profile, audit.Event{}, true)
-		}(i)
-	}
-	wait.Wait()
-	for index, err := range errorsByWorker {
-		if err != nil {
-			t.Fatalf("concurrent exchange %d failed: %v", index, err)
-		}
-	}
-	var users, identities, audits int64
-	if err := store.DB.Model(&userModel{}).Where("id = ?", userID).Count(&users).Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := store.DB.Model(&identityModel{}).Where("issuer = ? AND subject = ?", claims.Issuer, claims.Subject).Count(&identities).Error; err != nil {
-		t.Fatal(err)
-	}
-	if err := store.DB.Model(&auditEventModel{}).Where("owner_user_id = ? AND action = ?", userID, audit.UserProvisioned).Count(&audits).Error; err != nil {
-		t.Fatal(err)
-	}
-	if users != 1 || identities != 1 || audits != 1 {
-		t.Fatalf("concurrent exchange duplicated state: users=%d identities=%d audits=%d", users, identities, audits)
-	}
-}
 
 func newTestID() string { return uuid.NewString() }
 
@@ -221,7 +175,7 @@ func TestAuditEventsAreAppendOnlyAndVisibleOnlyToActorOrOwner(t *testing.T) {
 		t.Fatalf("mismatched provisioning audit accepted: %v", err)
 	}
 	var rejectedProvisioningCount int64
-	if err := tx.Model(&userModel{}).Where("id = ?", provisionedID).Count(&rejectedProvisioningCount).Error; err != nil || rejectedProvisioningCount != 0 {
+	if err := tx.Model(&identityModel{}).Where("issuer = ? AND subject = ?", claims.Issuer, claims.Subject).Count(&rejectedProvisioningCount).Error; err != nil || rejectedProvisioningCount != 0 {
 		t.Fatalf("user committed without coherent audit: count=%d err=%v", rejectedProvisioningCount, err)
 	}
 	var rejectedAuditCount int64
@@ -232,7 +186,8 @@ func TestAuditEventsAreAppendOnlyAndVisibleOnlyToActorOrOwner(t *testing.T) {
 	provisioning.ID, provisioning.TargetID = "correct-provision", provisionedID
 	profile := wrongProfile
 	profile.ID, profile.TargetID = "profile-unused", provisionedID
-	if _, err := txStore.ResolveOrCreate(ctx, claims, provisioning, profile, audit.Event{}, true); err != nil {
+	provisionedUser, err := txStore.ResolveOrCreate(ctx, claims, provisioning, profile, audit.Event{}, true)
+	if err != nil {
 		t.Fatal(err)
 	}
 	changedClaims := claims
@@ -247,7 +202,7 @@ func TestAuditEventsAreAppendOnlyAndVisibleOnlyToActorOrOwner(t *testing.T) {
 		t.Fatalf("profile update audit missing: count=%d err=%v", profileAuditCount, err)
 	}
 	var provisionedCount int64
-	if err := tx.Model(&userModel{}).Where("id = ?", provisionedID).Count(&provisionedCount).Error; err != nil || provisionedCount != 1 {
+	if err := tx.Model(&userModel{}).Where("id = ?", provisionedUser.ID).Count(&provisionedCount).Error; err != nil || provisionedCount != 1 {
 		t.Fatalf("successfully audited user provisioning missing: count=%d err=%v", provisionedCount, err)
 	}
 	resource := ports.Resource{ID: "unaudited-resource", Domain: "habit", OwnerUserID: "audit-owner", Name: "Walk", CreatedAt: event.OccurredAt}

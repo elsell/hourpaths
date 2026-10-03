@@ -8,9 +8,11 @@ import (
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 	"strings"
 	"time"
 )
@@ -82,7 +84,7 @@ func Open(driver, dsn string) (*Store, error) {
 	if driver != "postgres" {
 		return nil, fmt.Errorf("unsupported database driver %q", driver)
 	}
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{TranslateError: true})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{TranslateError: true, Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		return nil, err
 	}
@@ -513,6 +515,7 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		result := tx.Where("issuer = ? AND subject = ?", claims.Issuer, claims.Subject).First(&found)
 		if result.Error == nil {
+			profileEvent = auditForResolvedAccount(profileEvent, found.UserID)
 			var existing userModel
 			if err := tx.Where("id = ?", found.UserID).First(&existing).Error; err != nil {
 				return err
@@ -568,6 +571,12 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 		} else if !allowCreate {
 			return ports.ErrNotFound
 		}
+		// Account identity must not be recoverable from a provider key after
+		// deletion. Existing associations above retain their original IDs.
+		userID = uuid.NewString()
+		event = auditForResolvedAccount(event, userID)
+		profileEvent = auditForResolvedAccount(profileEvent, userID)
+		invitationEvent = auditForResolvedAccount(invitationEvent, userID)
 		providerEmail := trustedProviderEmail(claims)
 		u := userModel{ID: userID, Email: providerEmail, ProviderEmailVerified: providerEmail != "", DisplayName: claims.DisplayName, Status: identity.StatusProvisional, InvitationAdmin: claims.InvitationAdmin}
 		createdUser := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&u)
@@ -575,13 +584,7 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 			return createdUser.Error
 		}
 		if createdUser.RowsAffected != 1 {
-			var existing userModel
-			if err := tx.Where("id = ?", userID).First(&existing).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return ports.ErrNotFound
-				}
-				return err
-			}
+			return ports.ErrConflict
 		}
 		candidate := identityModel{Issuer: claims.Issuer, Subject: claims.Subject, UserID: userID}
 		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
@@ -604,6 +607,12 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 					return err
 				}
 			}
+		} else {
+			// Another exchange won the identity association. Remove our unused
+			// provisional row in this transaction and return the winning account.
+			if err := tx.Where("id = ?", userID).Delete(&userModel{}).Error; err != nil {
+				return err
+			}
 		}
 		return tx.Where("issuer = ? AND subject = ?", claims.Issuer, claims.Subject).First(&found).Error
 	})
@@ -623,6 +632,14 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 	return identityUserFromModel(u), nil
 }
 
+func auditForResolvedAccount(event audit.Event, userID string) audit.Event {
+	event.OwnerUserID, event.ActorUserID = userID, userID
+	if event.TargetType == "user" {
+		event.TargetID = userID
+	}
+	return event
+}
+
 func normalizeEmail(value string) string { return identity.NormalizeEmail(value) }
 
 func trustedProviderEmail(claims ports.Claims) string {
@@ -630,18 +647,6 @@ func trustedProviderEmail(claims ports.Claims) string {
 		return ""
 	}
 	return normalizeEmail(claims.Email)
-}
-
-func identityUserFromModel(user userModel) identity.User {
-	email := ""
-	if user.ProviderEmailVerified {
-		email = user.Email
-	}
-	visibility := identity.ProfileVisibility("")
-	if user.ProfileVisibility != nil {
-		visibility = *user.ProfileVisibility
-	}
-	return identity.User{ID: user.ID, Email: email, DisplayName: user.DisplayName, Status: user.Status, InvitationAdmin: user.InvitationAdmin, ProfileVisibility: visibility, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt}
 }
 
 func (s *Store) GetUser(ctx context.Context, id string) (identity.User, error) {

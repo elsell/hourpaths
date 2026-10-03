@@ -49,13 +49,17 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 		EmailVerified:   true,
 		InvitationAdmin: false,
 	}
-	userID := identity.UserID(claims.Issuer, claims.Subject)
-	provisioned := identityMutationAudit(newTestID(), audit.UserProvisioned, userID, now)
-	initialProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now)
+	hintID := identity.UserID(claims.Issuer, claims.Subject)
+	provisioned := identityMutationAudit(newTestID(), audit.UserProvisioned, hintID, now)
+	initialProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now)
 
 	created, err := txStore.ResolveOrCreate(ctx, claims, provisioned, initialProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
+	}
+	userID := created.ID
+	if userID == hintID || userID == "" {
+		t.Fatal("new account must have independent identity")
 	}
 	if created.Status != identity.StatusProvisional {
 		t.Fatalf("first identity exchange returned status %q, want %q", created.Status, identity.StatusProvisional)
@@ -75,7 +79,7 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 	refreshedClaims := claims
 	refreshedClaims.Email = " refreshed." + newTestID() + "@Example.COM "
 	refreshedClaims.DisplayName = "Refreshed Provider Seed"
-	refreshedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now.Add(time.Second))
+	refreshedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(time.Second))
 	refreshed, err := txStore.ResolveOrCreate(ctx, refreshedClaims, provisioned, refreshedProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +113,7 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 	activeClaims.Email = "provider-overwrite." + newTestID() + "@example.com"
 	activeClaims.DisplayName = "Provider Overwrite"
 	activeClaims.InvitationAdmin = true
-	activeProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now.Add(3*time.Second))
+	activeProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(3*time.Second))
 	returned, err := txStore.ResolveOrCreate(ctx, activeClaims, provisioned, activeProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
@@ -126,7 +130,7 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 	unverifiedActiveClaims := activeClaims
 	unverifiedActiveClaims.Email = "unverified-active-replacement@example.com"
 	unverifiedActiveClaims.EmailVerified = false
-	returned, err = txStore.ResolveOrCreate(ctx, unverifiedActiveClaims, provisioned, identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now.Add(4*time.Second)), audit.Event{}, true)
+	returned, err = txStore.ResolveOrCreate(ctx, unverifiedActiveClaims, provisioned, identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(4*time.Second)), audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,13 +174,17 @@ func TestIdentityExchangeNeverTrustsAnUnverifiedOrEmptyProviderEmail(t *testing.
 		Issuer: "https://broker.example/" + newTestID(), Subject: newTestID(),
 		Email: "unverified@example.com",
 	}
-	userID := identity.UserID(claims.Issuer, claims.Subject)
-	provisioned := identityMutationAudit(newTestID(), audit.UserProvisioned, userID, now)
-	profile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now)
+	hintID := identity.UserID(claims.Issuer, claims.Subject)
+	provisioned := identityMutationAudit(newTestID(), audit.UserProvisioned, hintID, now)
+	profile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now)
 
 	created, err := txStore.ResolveOrCreate(ctx, claims, provisioned, profile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
+	}
+	userID := created.ID
+	if userID == hintID || userID == "" {
+		t.Fatal("new account must have independent identity")
 	}
 	if created.Email != "" || created.DisplayName != claims.DisplayName {
 		t.Fatalf("first unverified claims persisted trusted email data: %+v", created)
@@ -192,7 +200,7 @@ func TestIdentityExchangeNeverTrustsAnUnverifiedOrEmptyProviderEmail(t *testing.
 	verified := claims
 	verified.Email = "opaque@privaterelay.appleid.com"
 	verified.EmailVerified = true
-	verifiedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now.Add(time.Second))
+	verifiedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(time.Second))
 	refreshed, err := txStore.ResolveOrCreate(ctx, verified, provisioned, verifiedProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
@@ -205,7 +213,7 @@ func TestIdentityExchangeNeverTrustsAnUnverifiedOrEmptyProviderEmail(t *testing.
 	unverified.Email = "replacement-unverified@example.com"
 	unverified.EmailVerified = false
 	unverified.DisplayName = "Later provider name"
-	unverifiedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now.Add(2*time.Second))
+	unverifiedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(2*time.Second))
 	refreshed, err = txStore.ResolveOrCreate(ctx, unverified, provisioned, unverifiedProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
@@ -217,7 +225,7 @@ func TestIdentityExchangeNeverTrustsAnUnverifiedOrEmptyProviderEmail(t *testing.
 	verifiedWithoutEmail := verified
 	verifiedWithoutEmail.Email = " \t"
 	verifiedWithoutEmail.DisplayName = "Provider omitted email"
-	missingEmailProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, userID, now.Add(3*time.Second))
+	missingEmailProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(3*time.Second))
 	refreshed, err = txStore.ResolveOrCreate(ctx, verifiedWithoutEmail, provisioned, missingEmailProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)

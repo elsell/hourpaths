@@ -33,7 +33,7 @@ func TestDuplicateEmailRecoveryDeclineIsDurableScopedAtomicAndIdempotent(t *test
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	claims := ports.Claims{Issuer: "https://decline.example/" + uuid.NewString(), Subject: uuid.NewString(), Email: " Person@Example.COM ", EmailVerified: true}
-	provisionalID := identity.UserID(claims.Issuer, claims.Subject)
+	provisionalID := uuid.NewString()
 	activeID := uuid.NewString()
 	for _, user := range []userModel{
 		{ID: activeID, Email: "person@example.com", ProviderEmailVerified: true, Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now},
@@ -42,6 +42,9 @@ func TestDuplicateEmailRecoveryDeclineIsDurableScopedAtomicAndIdempotent(t *test
 		if err := tx.Create(&user).Error; err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := tx.Create(&identityModel{Issuer: claims.Issuer, Subject: claims.Subject, UserID: provisionalID}).Error; err != nil {
+		t.Fatal(err)
 	}
 	event := identityMutationAudit(uuid.NewString(), audit.DuplicateEmailRecoveryDeclined, provisionalID, now)
 	if err := store.DeclineDuplicateEmailRecovery(ctx, provisionalID, event); err != nil {
@@ -244,10 +247,11 @@ func TestVerifiedEmailMatchCreatesDistinctProvisionalRecoveryCandidate(t *testin
 	if err != nil {
 		t.Fatalf("create distinct provisional recovery candidate: %v", err)
 	}
-	if created.ID != provisionalID || created.ID == activeID || created.Status != identity.StatusProvisional {
+	if created.ID == "" || created.ID == provisionalID || created.ID == activeID || created.Status != identity.StatusProvisional {
 		t.Fatalf("recovery candidate = %+v, want distinct provisional %q", created, provisionalID)
 	}
 
+	provisionalID = created.ID
 	var active userModel
 	if err := tx.Where("id = ?", activeID).First(&active).Error; err != nil {
 		t.Fatal(err)

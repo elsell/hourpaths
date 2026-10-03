@@ -10,6 +10,7 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  deleteAccount?: () => void;
   displayName: string;
   email: string;
   sessionKey: string;
@@ -33,6 +34,7 @@ function emitChange() {
 }
 
 export function SettingsPresentationSource({
+  deleteAccount,
   displayName,
   email,
   sessionKey,
@@ -47,6 +49,8 @@ export function SettingsPresentationSource({
   updateNudgeChannelPreference,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const deleteAccountRef = useRef(deleteAccount);
+  deleteAccountRef.current = deleteAccount;
   const getConfiguredTimeZoneRef = useRef(getConfiguredTimeZone);
   const isCurrentRef = useRef(isCurrent);
   const getInteractionSettingsRef = useRef(getInteractionSettings);
@@ -71,6 +75,7 @@ export function SettingsPresentationSource({
       if (!active || !isCurrentRef.current()) throw new Error('settings_presentation_superseded');
     };
     const presentation = {
+      deleteAccount: () => { assertActive(); deleteAccountRef.current?.(); },
       displayName,
       email,
       sessionKey,

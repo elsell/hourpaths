@@ -58,7 +58,7 @@ func (e *Expo) Send(ctx context.Context, message ports.PushMessage) (ports.PushT
 	payload := expoMessage{
 		To: message.DeviceToken, Title: message.Title, Body: message.Body,
 		Priority: priority,
-		Data:     expoData{Version: "1", NotificationID: message.NotificationID},
+		Data:     expoData{Version: "1", NotificationID: message.NotificationID, RecipientUserID: message.RecipientUserID},
 	}
 	var envelope expoEnvelope
 	if err := e.post(ctx, e.sendURL, payload, &envelope); err != nil {
@@ -176,8 +176,9 @@ type expoMessage struct {
 }
 
 type expoData struct {
-	Version        string `json:"version"`
-	NotificationID string `json:"notificationId"`
+	Version         string `json:"version"`
+	NotificationID  string `json:"notificationId"`
+	RecipientUserID string `json:"recipientUserId,omitempty"`
 }
 
 type expoReceiptRequest struct {

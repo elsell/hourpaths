@@ -1,3 +1,5 @@
+import { AccountDeletionSettings } from './account-deletion';
+import type { AccountDeletionService } from '../account/ports/account-deletion';
 import type { OfflineStatus } from '../offline/ports/tracking-status';
 import { OfflineStatusPanel } from './offline-status';
 import { PathVisibilityPage } from './path-visibility';
@@ -41,6 +43,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  deletion?: AccountDeletionService;
   offline?: OfflineStatus;
   nudges: NudgesRepository;
   blocking: BlockingRepository;
@@ -79,8 +82,9 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
+    const accountDeletion = createRoute({ getParentRoute: () => root, path: '/delete-account', component: () => <StudioShell page="settings" i18n={d.i18n}><main className="studio-settings-main"><h1>{d.i18n.t('accountDelete.heading')}</h1>{d.deletion && <AccountDeletionSettings service={d.deletion} i18n={d.i18n} />}</main></StudioShell> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings, accountDeletion]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   useEffect(() => d.offline?.subscribe((change = {}) => {

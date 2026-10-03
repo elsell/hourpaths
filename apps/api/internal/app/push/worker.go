@@ -257,7 +257,7 @@ func localizedPushMessage(
 		return ports.PushMessage{}, false
 	}
 	message := ports.PushMessage{
-		DeviceToken: delivery.Token, NotificationID: delivery.NotificationID,
+		DeviceToken: delivery.Token, NotificationID: delivery.NotificationID, RecipientUserID: delivery.RecipientUserID,
 	}
 	switch {
 	case projection.Kind == pathapp.NotificationPathInvitationReceived &&

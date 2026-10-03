@@ -10,6 +10,13 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/web/src/lib/studio/session/domain/session.ts",
+    "apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts",
+    "apps/web/src/lib/studio/account/ports/account-deletion.ts",
+    "apps/web/src/lib/studio/session/ports/session-store.ts",
+    "apps/web/src/lib/account-deletion-entry.ts",
+    "apps/mobile/src/offline/sqlite-account-deletion.ts",
+    "apps/mobile/src/offline/sqlite-deletion-fence.ts",
     'apps/web/src/lib/browser-session-state.ts',
     'apps/web/src/lib/studio/session/adapters/browser-session-record.ts',
     'apps/web/src/lib/studio/session/application/session-record.ts',

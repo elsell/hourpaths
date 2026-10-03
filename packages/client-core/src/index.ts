@@ -862,3 +862,5 @@ export { TrackingReplaySuspended } from './offline-tracking';
 export * from "./retained-account";
 
 export { apiTrackingHistory } from './adapters/api-tracking-history';
+export { AccountDeletion, validDeletionIntent, type AccountDeletionPorts, type DeletionIntent } from './account-deletion';
+export { apiAccountDeletion } from './adapters/api-account-deletion';

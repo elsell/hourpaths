@@ -86,3 +86,22 @@ test('logout clears a queued rotation of its family but preserves a replacement 
   await Promise.all([signingIn, staleLogout]);
   assert.equal(first.read().value, 'bob');
 });
+
+test('deletion clears a captured owner across rotation but preserves an account switched before the lock', async () => {
+  const tab = origin(), deletion = tab(), other = tab();
+  await other.replace(JSON.stringify({ ownerId: 'alice', token: 'old' }));
+  const rotation = other.commit(other.read().revision, JSON.stringify({ ownerId: 'alice', token: 'rotated' }));
+  const removal = deletion.discardOwner('alice');
+  await rotation;
+  assert.ok(await removal);
+  assert.equal(other.read().value, null);
+  await other.replace(JSON.stringify({ ownerId: 'alice', token: 'old' }));
+  const switchAccount = other.replace(JSON.stringify({ ownerId: 'bob', token: 'replacement' }));
+  const lateRemoval = deletion.discardOwner('alice');
+  await switchAccount;
+  assert.equal(await lateRemoval, null);
+  assert.equal(JSON.parse(other.read().value!).ownerId, 'bob');
+  await other.replace(JSON.stringify({ ownerId: 'alice', kind: 'retained_account' }));
+  assert.ok(await deletion.discardOwner('alice'));
+  assert.equal(other.read().value, null);
+});

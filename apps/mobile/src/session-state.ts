@@ -26,6 +26,7 @@ export type SerializedMobileSessionStorage = {
   persist(session: MobileSession, current: () => boolean): Promise<void>;
   pause(owner: string, expectedToken: string, current: () => boolean): Promise<boolean>;
   discard(): Promise<void>;
+  discardOwner(owner: string): Promise<boolean>;
   ready(): Promise<void>;
 };
 
@@ -64,6 +65,14 @@ export function createSerializedMobileSessionStorage(
       if (!current() || stored?.token !== expectedToken || stored.ownerId !== owner) return false;
       if (!effects.pause) throw unreadableStorageFailure();
       await effects.pause(owner);
+      return true;
+    }),
+    discardOwner: owner => serialize(async () => {
+      if (!owner || owner.trim() !== owner) throw new Error('session_owner_required');
+      const raw = await effects.read();
+      const stored: unknown = raw ? JSON.parse(raw) : null;
+      if (!stored || typeof stored !== 'object' || !('ownerId' in stored) || stored.ownerId !== owner) return false;
+      await effects.discard();
       return true;
     }),
     discard: () => serialize(effects.discard),

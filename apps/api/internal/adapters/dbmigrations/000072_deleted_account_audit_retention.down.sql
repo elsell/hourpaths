@@ -1,0 +1,2 @@
+DROP TABLE public.account_deletion_retention_run_models;
+DROP FUNCTION public.perform_deleted_account_audit_retention();

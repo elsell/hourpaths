@@ -134,5 +134,8 @@ export default function AccountSettings() {
         {i18n.t('settings.account.signingOut')}
       </Text> : null}
     </SettingsSection>
+    {activePresentation.deleteAccount ? <SettingsSection footer={i18n.t('accountDelete.intro')}>
+      <SettingsActionRow disabled={ownedWorking} accessibilityLabel={i18n.t('accountDelete.heading')} label={i18n.t('accountDelete.heading')} onPress={activePresentation.deleteAccount} />
+    </SettingsSection> : null}
   </SettingsShell>;
 }

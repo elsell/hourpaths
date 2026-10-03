@@ -78,6 +78,7 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts',
   'apps/web/src/lib/browser-session-state.ts',
   'apps/web/src/service-worker.ts',
   'apps/web/src/lib/offline-shell/cache.ts',
@@ -93,6 +94,8 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/notification-convergence-browser.ts',
 ]);
 const protectedClientCapabilityConstructors = new Map([
+  // Fixed-size cryptographic receipt bytes; this grants no transport capability.
+  ['apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts', new Set(['Uint8Array'])],
   ['apps/web/src/lib/notification-convergence-browser.ts', new Set(['BroadcastChannel'])],
 ]);
 const protectedClientCapabilityCallRoots = new Map([

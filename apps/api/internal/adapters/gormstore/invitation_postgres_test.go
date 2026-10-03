@@ -51,11 +51,12 @@ func TestInvitationIsConsumedAtomicallyByOneVerifiedIdentity(t *testing.T) {
 	profile.ID, profile.Action = uuid.NewString(), audit.UserProfileSynchronized
 	consumed := provisioned
 	consumed.ID, consumed.Action, consumed.TargetType, consumed.TargetID = uuid.NewString(), audit.InvitationConsumed, "invitation", invitation.Email
-	if _, err := store.ResolveOrCreate(context.Background(), claims, provisioned, profile, consumed, true); err != nil {
+	createdUser, err := store.ResolveOrCreate(context.Background(), claims, provisioned, profile, consumed, true)
+	if err != nil {
 		t.Fatal(err)
 	}
 	var row invitationModel
-	if err := tx.Where("id = ?", invitation.ID).First(&row).Error; err != nil || row.ConsumedAt == nil || row.ConsumedByUserID == nil || *row.ConsumedByUserID != userID {
+	if err := tx.Where("id = ?", invitation.ID).First(&row).Error; err != nil || row.ConsumedAt == nil || row.ConsumedByUserID == nil || *row.ConsumedByUserID != createdUser.ID {
 		t.Fatalf("invitation was not consumed: %+v err=%v", row, err)
 	}
 	second := claims
@@ -93,7 +94,7 @@ func TestOpenProvisioningCreatesVerifiedIdentityWithoutInvitation(t *testing.T) 
 	if err != nil {
 		t.Fatalf("open provisioning required an invitation: %v", err)
 	}
-	if user.ID != userID || user.Email != claims.Email {
+	if user.ID == "" || user.ID == userID || user.Email != claims.Email {
 		t.Fatalf("unexpected provisioned user: %+v", user)
 	}
 }

@@ -2,10 +2,11 @@ import { openDatabaseAsync } from 'expo-sqlite';
 import { SQLiteAppearanceCache } from './sqlite-appearance-cache';
 import { SQLiteMobileHomeCache } from './sqlite-mobile-home-cache';
 import { SQLiteTrackingStore } from './sqlite-tracking-store';
+import { SQLiteAccountDeletion } from './sqlite-account-deletion';
 
 async function createStorage() {
   const database = await openDatabaseAsync('hourpaths-tracking.db');
-  return { tracking: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), appearances: new SQLiteAppearanceCache(database) };
+  return { tracking: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), appearances: new SQLiteAppearanceCache(database), deletion: new SQLiteAccountDeletion(database) };
 }
 let opening: ReturnType<typeof createStorage> | null = null;
 export function openNativeOfflineStorage() {

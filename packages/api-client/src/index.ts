@@ -17,6 +17,8 @@ export {
 export { createTimerOperationOwner, elapsedTimerSeconds, formatTimerDuration, timerMutationPresentation, type TimerMutationResult, type TimerState, type TimerStopResult } from './timer-control';
 
 export type TokenProvider = () => Promise<string | null> | string | null;
+export type AccountDeletionInput = Omit<components['schemas']['AccountDeletionInputBody'], '$schema'>;
+export type AccountDeletionReceiptInput = Omit<components['schemas']['AccountDeletionReceiptInputBody'], '$schema'>;
 export type OnboardingActivationInput = components['schemas']['OnboardingActivationInputBody'];
 export type OnboardingProfile = components['schemas']['OnboardingProfileDTO'];
 export type PathCapabilities = components['schemas']['PathCapabilities'];
@@ -159,6 +161,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     }),
     refresh: () => authenticatedClient.POST('/v1/session/refresh'),
     profile: () => authenticatedClient.GET('/v1/me'),
+    deleteAccount: (body: AccountDeletionInput) => authenticatedClient.POST('/v1/me/deletion', { body }),
+    confirmAccountDeletion: (body: AccountDeletionReceiptInput) => publicClient.POST('/v1/account-deletion/receipt', { body }),
     configuredTimeZone: () => authenticatedClient.GET('/v1/me/time-zone'),
     updateConfiguredTimeZone: (body: ConfiguredTimeZoneUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/time-zone', {
       params: { header: { 'Idempotency-Key': idempotencyKey } },

@@ -5083,5 +5083,17 @@
   "offline.correctHeading": "Revisar horario de la sesión",
   "offline.correctBody": "La hora del dispositivo cambió. Revisa cuándo comenzó la sesión y cuánto duró antes de guardarla.",
   "offline.correctionForPath": "Revisa el horario de tu sesión en {path}.",
-  "offline.review": "Revisar"
+  "offline.review": "Revisar",
+  "accountDelete.heading": "Eliminar cuenta",
+  "accountDelete.intro": "Elimina permanentemente tu cuenta y los datos asociados.",
+  "accountDelete.warning": "La eliminación comienza de inmediato y no se puede cancelar ni deshacer. Tu perfil, preferencias, actividad, progreso, comentarios, reacciones, relaciones y cambios pendientes se eliminarán permanentemente.",
+  "accountDelete.paths": "Se eliminarán todos los Paths de tu propiedad, incluidos los compartidos y la actividad registrada de todos sus participantes. Transfiere la propiedad de los Paths compartidos que quieras conservar antes de continuar.",
+  "accountDelete.timers": "Todos tus temporizadores se detendrán. Se descartarán el tiempo transcurrido y los cambios sin sincronizar. Se eliminará tu actividad en los Paths de otras personas; su actividad se conservará.",
+  "accountDelete.retention": "Las copias de seguridad cifradas caducan en un máximo de 30 días y no pueden restaurar tus datos eliminados para su uso. Se pueden conservar pruebas limitadas para investigaciones activas de moderación o seguridad, o por obligación legal. Estas excepciones no permiten conservar los datos ordinarios de la cuenta.",
+  "accountDelete.confirm": "Eliminar cuenta permanentemente",
+  "accountDelete.progress": "Completando la eliminación de la cuenta…",
+  "accountDelete.failed": "No se pudo confirmar la eliminación. Tu solicitud está guardada. Vuelve a intentarlo para comprobar su estado y terminar de eliminar los datos locales.",
+  "accountDelete.recovery": "Finalizar la eliminación de la cuenta",
+  "accountDelete.recoveryDetail": "Debe completarse una eliminación confirmada anteriormente. La actividad local permanece en pausa mientras se comprueba su estado.",
+  "accountDelete.reviewFailed": "No se pudo verificar tu cuenta. Vuelve a intentarlo antes de confirmar la eliminación."
 }

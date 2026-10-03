@@ -5,9 +5,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/deletionjournal"
+	application "github.com/elsell/hour-paths/apps/api/internal/app"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -222,5 +227,59 @@ func TestRotationReturnsRepositoryCappedFamilyExpiry(t *testing.T) {
 	}
 	if newToken == "" || !actualExpiry.Equal(absoluteExpiry) {
 		t.Fatalf("rotation did not preserve capped expiry: token=%q expiry=%v", newToken, actualExpiry)
+	}
+}
+
+func TestAcceptedDeletionFencesSessionLifecycleBeforeDatabaseRemoval(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now().UTC()
+	directory := filepath.Join(t.TempDir(), "journal")
+	journal, err := deletionjournal.New(directory, make([]byte, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	repository := &fakeRepository{principal: ports.Principal{UserID: "alice", Scopes: []string{"api:user"}}}
+	manager := NewWithAccountAccess(repository, fakeClock{now}, journal.CheckAccountAccess)
+	token, err := manager.CreateSession(ctx, "alice", []string{"api:user"}, nil, now.Add(time.Hour), now.Add(24*time.Hour), audit.Event{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := "Bearer " + token
+	if _, err = manager.Authenticate(ctx, header); err != nil {
+		t.Fatal(err)
+	}
+	// The database still holds a valid session; only durable admission has occurred.
+	_, err = journal.Admit(ctx, application.DeletionRecord{UserID: "alice", DeletedAt: now, AuditEventID: "deletion", ReceiptHash: strings.Repeat("01", 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = manager.Authenticate(ctx, header); !errors.Is(err, ports.ErrInvalidCredential) {
+		t.Fatalf("accepted deletion authenticated: %v", err)
+	}
+	if _, err = manager.CreateSession(ctx, "alice", []string{"api:user"}, nil, now.Add(time.Hour), now.Add(24*time.Hour), audit.Event{}); !errors.Is(err, ports.ErrInvalidCredential) {
+		t.Fatalf("issued session: %v", err)
+	}
+	if _, _, err = manager.RotateSession(ctx, header, "alice", []string{"api:user"}, now.Add(time.Hour), audit.Event{}, audit.Event{}); !errors.Is(err, ports.ErrInvalidCredential) {
+		t.Fatalf("rotated session: %v", err)
+	}
+	if _, _, err = manager.ActivateOnboarding(ctx, header, identity.OnboardingActivation{UserID: "alice"}, now.Add(time.Hour), audit.Event{}, audit.Event{}, audit.Event{}); !errors.Is(err, ports.ErrInvalidCredential) {
+		t.Fatalf("activated account: %v", err)
+	}
+	if len(repository.revoked) != 0 || repository.activation.UserID != "" {
+		t.Fatal("blocked operation reached persistence")
+	}
+	repository.principal.UserID = "bob"
+	token, err = manager.CreateSession(ctx, "bob", []string{"api:user"}, nil, now.Add(time.Hour), now.Add(24*time.Hour), audit.Event{})
+	if err != nil {
+		t.Fatal("unrelated account blocked", err)
+	}
+	if _, err = manager.Authenticate(ctx, "Bearer "+token); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Rename(directory, directory+"-unmounted"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = manager.Authenticate(ctx, "Bearer "+token); !errors.Is(err, ports.ErrUnavailable) {
+		t.Fatalf("lost journal not fail-closed service error: %v", err)
 	}
 }

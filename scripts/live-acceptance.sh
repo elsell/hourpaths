@@ -1545,8 +1545,15 @@ session() {
 expect_status() { expected="$1"; shift; actual="$(curl -sS -o /dev/null -w '%{http_code}' "$@")"; [[ "$actual" == "$expected" ]] || { echo "expected HTTP $expected, got $actual: $*" >&2; return 1; }; }
 
 owner_identity_token="$(token hourpaths-web developer@example.com)"
-owner_fixture_id="$(identity_user_id "$(identity_subject "$owner_identity_token")")"
 provisional_owner_token="$(session_from_identity "$owner_identity_token" provisional-owner)"
+# Provisioned account IDs are deliberately random: a deleted identity must not
+# recreate its former account. Resolve this fixture through its persisted key.
+owner_fixture_id="$(docker compose exec -T postgres psql -Atq -v ON_ERROR_STOP=1 -U app_migrator -d app \
+  -v "issuer=$dex_public_issuer" -v "subject=$(identity_subject "$owner_identity_token")" <<'OWNER_IDENTITY_FIXTURE'
+SELECT user_id FROM identity_models WHERE issuer = :'issuer' AND subject = :'subject';
+OWNER_IDENTITY_FIXTURE
+)"
+[[ -n "$owner_fixture_id" ]] || { echo "provisioned owner identity is missing" >&2; exit 1; }
 expect_status 401 -X POST \
   -H "Authorization: Bearer $provisional_owner_token" \
   -H 'Idempotency-Key: provisional-path-create-key-0001' \
@@ -2167,10 +2174,10 @@ path_03_received_notification="$(curl -fsS -H "Authorization: Bearer $stranger_t
 path_03_received_notification_id="$(printf '%s' "$path_03_received_notification" |
   INVITATION_ID="$path_03_invitation_id" PATH_ID="$path_03_path_id" OWNER_ID="$owner_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);items=[item for item in d["data"] if item.get("invitationId")==os.environ["INVITATION_ID"]];assert type(d["meta"]["unreadCount"]) is int and d["meta"]["unreadCount"]>=1 and len(items)==1;item=items[0];assert item["type"]=="path_invitation_received" and item["presentation"]=="actionable" and item["read"] is False and item["pathId"]==os.environ["PATH_ID"] and item["pathName"]=="Invitation acceptance" and item["offeredRole"]=="participant" and item["actor"]=={"userId":os.environ["OWNER_ID"],"username":"live.acceptance.owner","displayName":"developer"};print(item["id"])')"
 wait_for_push "$path_03_received_notification_id" |
-  NOTIFICATION_ID="$path_03_received_notification_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);assert d=={"to":"ExponentPushToken[path-03-stranger]","title":"Invitación a un camino","body":"developer te invitó a unirte a Invitation acceptance.","priority":"default","data":{"version":"1","notificationId":os.environ["NOTIFICATION_ID"]}}'
+  RECIPIENT_ID="$stranger_id" NOTIFICATION_ID="$path_03_received_notification_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);assert d=={"to":"ExponentPushToken[path-03-stranger]","title":"Invitación a un camino","body":"developer te invitó a unirte a Invitation acceptance.","priority":"default","data":{"version":"1","notificationId":os.environ["NOTIFICATION_ID"],"recipientUserId":os.environ["RECIPIENT_ID"]}}'
 curl -fsS -H "Authorization: Bearer $stranger_second_device_token" \
   'http://localhost:8080/v1/notifications?limit=1' |
-  NOTIFICATION_ID="$path_03_received_notification_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);assert d["meta"]=={"unreadCount":1} and len(d["data"])==1 and d["data"][0]["id"]==os.environ["NOTIFICATION_ID"] and d["data"][0]["read"] is False'
+  RECIPIENT_ID="$stranger_id" NOTIFICATION_ID="$path_03_received_notification_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);assert d["meta"]=={"unreadCount":1} and len(d["data"])==1 and d["data"][0]["id"]==os.environ["NOTIFICATION_ID"] and d["data"][0]["read"] is False'
 WEB_ACCEPTANCE_BASE_URL="$web_base_url" \
   WEB_ACCEPTANCE_API_URL="$api_base_url" \
   WEB_ACCEPTANCE_APPLICATION_TOKEN="$stranger_token" \
@@ -2216,7 +2223,7 @@ path_03_accepted_notification="$(curl -fsS -H "Authorization: Bearer $owner_toke
 path_03_accepted_notification_id="$(printf '%s' "$path_03_accepted_notification" |
   INVITATION_ID="$path_03_invitation_id" PATH_ID="$path_03_path_id" STRANGER_ID="$stranger_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);items=[item for item in d["data"] if item.get("invitationId")==os.environ["INVITATION_ID"]];assert type(d["meta"]["unreadCount"]) is int and d["meta"]["unreadCount"]>=1 and len(items)==1;item=items[0];assert item["type"]=="path_invitation_accepted" and item["presentation"]=="informational" and item["read"] is False and item["pathId"]==os.environ["PATH_ID"] and item["pathName"]=="Invitation acceptance" and item["offeredRole"]=="participant" and item["actor"]=={"userId":os.environ["STRANGER_ID"],"username":"live.acceptance.stranger","displayName":"Stranger"};print(item["id"])')"
 wait_for_push "$path_03_accepted_notification_id" |
-  NOTIFICATION_ID="$path_03_accepted_notification_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);assert d=={"to":"ExponentPushToken[path-03-owner]","title":"Invitation accepted","body":"Stranger accepted your invitation to Invitation acceptance.","priority":"normal","data":{"version":"1","notificationId":os.environ["NOTIFICATION_ID"]}}'
+  RECIPIENT_ID="$owner_id" NOTIFICATION_ID="$path_03_accepted_notification_id" python3 -c 'import json,os,sys;d=json.load(sys.stdin);assert d=={"to":"ExponentPushToken[path-03-owner]","title":"Invitation accepted","body":"Stranger accepted your invitation to Invitation acceptance.","priority":"normal","data":{"version":"1","notificationId":os.environ["NOTIFICATION_ID"],"recipientUserId":os.environ["RECIPIENT_ID"]}}'
 
 path_03_persistence_evidence="$(docker compose exec -T postgres psql -At -F '|' -U app -d app \
   -v "path_id=$path_03_path_id" -v "invitation_id=$path_03_invitation_id" \
@@ -2321,8 +2328,8 @@ soc_07_notification_id="$(curl -fsS -H "Authorization: Bearer $stranger_token" \
   PATH_ID="$path_03_path_id" OWNER_ID="$owner_id" python3 -c \
     'import json,os,sys;d=json.load(sys.stdin);items=[i for i in d["data"] if i["type"]=="nudge_received" and i.get("pathId")==os.environ["PATH_ID"]];assert len(items)==1 and d["meta"]["unreadCount"]>=1;i=items[0];assert i["presentation"]=="informational" and i["read"] is False and i["pathName"]=="Invitation acceptance" and i["actor"]=={"userId":os.environ["OWNER_ID"],"username":"live.acceptance.owner","displayName":"developer"} and i["content"]=={"kind":"preset","preset":"keep_it_going"} and "nudgeId" not in i;print(i["id"])')"
 wait_for_push "$soc_07_notification_id" |
-  NOTIFICATION_ID="$soc_07_notification_id" python3 -c \
-    'import json,os,sys;assert json.load(sys.stdin)=={"to":"ExponentPushToken[path-03-stranger]","title":"Nuevo ánimo","body":"developer te animó en Invitation acceptance: «¡Sigue así!»","priority":"normal","data":{"version":"1","notificationId":os.environ["NOTIFICATION_ID"]}}'
+  RECIPIENT_ID="$stranger_id" NOTIFICATION_ID="$soc_07_notification_id" python3 -c \
+    'import json,os,sys;assert json.load(sys.stdin)=={"to":"ExponentPushToken[path-03-stranger]","title":"Nuevo ánimo","body":"developer te animó en Invitation acceptance: «¡Sigue así!»","priority":"normal","data":{"version":"1","notificationId":os.environ["NOTIFICATION_ID"],"recipientUserId":os.environ["RECIPIENT_ID"]}}'
 
 curl -fsS -H "Authorization: Bearer $owner_token" \
   "http://localhost:8080/v1/paths/$path_03_path_id/members/$stranger_id/nudge-eligibility" |
@@ -3115,8 +3122,8 @@ SOC04D_COMMENT_NOTIFICATION_ID
   exit 1
 }
 wait_for_push "$soc04d_comment_notification_id" |
-  NOTIFICATION_ID="$soc04d_comment_notification_id" SOC04D_PATH_NAME='Goal achievement acceptance' python3 -c \
-    'import json,os,sys;d=json.load(sys.stdin);assert d["to"]=="ExponentPushToken[path-03-owner]" and d["priority"]=="normal" and d["data"]=={"version":"1","notificationId":os.environ["NOTIFICATION_ID"]};body=d["body"];assert os.environ["SOC04D_PATH_NAME"] in body and "practice" not in body.lower()'
+  RECIPIENT_ID="$owner_id" NOTIFICATION_ID="$soc04d_comment_notification_id" SOC04D_PATH_NAME='Goal achievement acceptance' python3 -c \
+    'import json,os,sys;d=json.load(sys.stdin);assert d["to"]=="ExponentPushToken[path-03-owner]" and d["priority"]=="normal" and d["data"]=={"version":"1","notificationId":os.environ["NOTIFICATION_ID"],"recipientUserId":os.environ["RECIPIENT_ID"]};body=d["body"];assert os.environ["SOC04D_PATH_NAME"] in body and "practice" not in body.lower()'
 soc03b_feed | SOC04D_EVENT_ID="$soc04d_event_id" python3 -c \
   'import json,os,sys;items=json.load(sys.stdin)["data"]["items"];item=next(item for item in items if item["id"]==os.environ["SOC04D_EVENT_ID"]);assert item["reactions"]=={"heart":1,"applause":0,"fire":0,"strong":0,"celebrate":0} and item["viewerReaction"]=="heart" and item["commentsEnabled"] is True and item["reactionsEnabled"] is True'
 
