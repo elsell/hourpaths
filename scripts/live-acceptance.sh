@@ -1545,8 +1545,15 @@ session() {
 expect_status() { expected="$1"; shift; actual="$(curl -sS -o /dev/null -w '%{http_code}' "$@")"; [[ "$actual" == "$expected" ]] || { echo "expected HTTP $expected, got $actual: $*" >&2; return 1; }; }
 
 owner_identity_token="$(token hourpaths-web developer@example.com)"
-owner_fixture_id="$(identity_user_id "$(identity_subject "$owner_identity_token")")"
 provisional_owner_token="$(session_from_identity "$owner_identity_token" provisional-owner)"
+# Provisioned account IDs are deliberately random: a deleted identity must not
+# recreate its former account. Resolve this fixture through its persisted key.
+owner_fixture_id="$(docker compose exec -T postgres psql -Atq -v ON_ERROR_STOP=1 -U app_migrator -d app \
+  -v "issuer=$dex_public_issuer" -v "subject=$(identity_subject "$owner_identity_token")" <<'OWNER_IDENTITY_FIXTURE'
+SELECT user_id FROM identity_models WHERE issuer = :'issuer' AND subject = :'subject';
+OWNER_IDENTITY_FIXTURE
+)"
+[[ -n "$owner_fixture_id" ]] || { echo "provisioned owner identity is missing" >&2; exit 1; }
 expect_status 401 -X POST \
   -H "Authorization: Bearer $provisional_owner_token" \
   -H 'Idempotency-Key: provisional-path-create-key-0001' \
