@@ -23,7 +23,6 @@ import (
 	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
 	statsapp "github.com/elsell/hour-paths/apps/api/internal/app/stats"
 	"github.com/elsell/hour-paths/apps/api/internal/config"
-	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/generated"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"github.com/google/uuid"
@@ -31,7 +30,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -117,13 +115,10 @@ func main() {
 		invitedEmails[email] = struct{}{}
 	}
 	invitationAdmins := make(map[string]struct{}, len(cfg.InvitationAdminIdentities))
-	invitationAdminUsers := make(map[string]struct{}, len(cfg.InvitationAdminIdentities))
 	for _, configured := range cfg.InvitationAdminIdentities {
 		invitationAdmins[configured] = struct{}{}
-		separator := strings.LastIndex(configured, "#")
-		invitationAdminUsers[identity.UserID(configured[:separator], configured[separator+1:])] = struct{}{}
 	}
-	application := app.App{Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, InvitationAdminUsers: invitationAdminUsers, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, DeletionJournal: journal, TimeZonePreferences: store, DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
+	application := app.App{Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, DeletionJournal: journal, TimeZonePreferences: store, DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
 	authorizationWorker := uuid.NewString()
 	go reconcile(ctx, application, authorizationWorker)
 	go recoverDeletions(ctx, journal, store)

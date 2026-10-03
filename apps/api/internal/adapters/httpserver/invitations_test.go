@@ -57,18 +57,13 @@ func (invitationAudits) ListAuditEvents(context.Context, string, ports.PageReque
 }
 
 func invitationHandler(auth ports.Authenticator, user identity.User, invitations ports.Invitations) http.Handler {
-	admins := map[string]struct{}{}
-	if user.InvitationAdmin {
-		admins[user.ID] = struct{}{}
-	}
 	handler, _ := New(app.App{
-		Auth:                 auth,
-		Users:                invitationUsers{user: user},
-		Invitations:          invitations,
-		Clock:                docsClock{now: time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)},
-		AuditRateLimiter:     docsLimiter{},
-		Audits:               invitationAudits{},
-		InvitationAdminUsers: admins,
+		Auth:             auth,
+		Users:            invitationUsers{user: user},
+		Invitations:      invitations,
+		Clock:            docsClock{now: time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)},
+		AuditRateLimiter: docsLimiter{},
+		Audits:           invitationAudits{},
 	}, []string{"example"}, Options{})
 	return handler
 }

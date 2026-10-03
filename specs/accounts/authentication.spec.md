@@ -311,3 +311,11 @@ Profile setup after first sign-in is defined in
 - Google sign-in must use the full Google authorization flow with
   `prompt=select_account`. Google One Tap must be disabled so its remembered-
   identity shortcut does not obscure account choice after explicit sign-out.
+
+### Invitation administrator identity
+
+- Invitation administration must use the persisted administrator status derived
+  from configured immutable issuer/subject identities. It must not compare a
+  freshly provisioned account ID with an identity-derived legacy account ID.
+  Recreating a deleted configured administrator must preserve this authorization
+  without reusing the deleted account ID or its data.

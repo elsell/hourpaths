@@ -28,7 +28,6 @@ type App struct {
 	AllowAccountProvisioning         bool
 	InvitedEmails                    map[string]struct{}
 	InvitationAdmins                 map[string]struct{}
-	InvitationAdminUsers             map[string]struct{}
 	Invitations                      ports.Invitations
 	AllowAccountDeactivation         bool
 	Users                            ports.Users
@@ -550,7 +549,7 @@ func (a App) CreateInvitation(ctx context.Context, authorization, email, idempot
 	if err != nil {
 		return identity.Invitation{}, err
 	}
-	if _, authorized := a.InvitationAdminUsers[u.ID]; !authorized {
+	if !u.InvitationAdmin {
 		if auditErr := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "invitation", "create", audit.Denied)); auditErr != nil {
 			return identity.Invitation{}, auditErr
 		}
@@ -577,7 +576,7 @@ func (a App) ListInvitations(ctx context.Context, authorization, cursor string, 
 	if err != nil {
 		return InvitationPage{}, err
 	}
-	if _, authorized := a.InvitationAdminUsers[u.ID]; !authorized {
+	if !u.InvitationAdmin {
 		if auditErr := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "invitation", "list", audit.Denied)); auditErr != nil {
 			return InvitationPage{}, auditErr
 		}
@@ -615,7 +614,7 @@ func (a App) RevokeInvitation(ctx context.Context, authorization, id string) err
 	if err != nil {
 		return err
 	}
-	if _, authorized := a.InvitationAdminUsers[u.ID]; !authorized {
+	if !u.InvitationAdmin {
 		if auditErr := a.Audits.AppendAuditEvent(ctx, a.auditEvent(ctx, u.ID, u.ID, audit.ResourceAccessDenied, "invitation", id, audit.Denied)); auditErr != nil {
 			return auditErr
 		}
