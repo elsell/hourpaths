@@ -309,6 +309,11 @@ a separate origin-wide lock; slow network requests must not delay local logout.
 Storage changes must replace another tab's account presentation and dispose its
 old operations. OIDC provider storage remains tab-scoped.
 
+When a restored account has retained Home data, rate-limited refresh reads must
+return control to the retained-view policy promptly rather than hiding that data
+behind repeated network retries. This must not turn denied access into cached
+access or raise the server's limits.
+
 Expiry must remove the credential while preserving its previously verified
 account reference for local Stop and sign-in recovery, both during foreground
 use and cold entry. This reference must not enable new starts, synchronization,

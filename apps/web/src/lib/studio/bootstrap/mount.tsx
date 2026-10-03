@@ -86,7 +86,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
   const deadline = setInterval(() => { void session.maintain(); }, 1000);
   const durableStore = new IndexedDBTrackingStore();
   offline = browserTrackingRuntime(options.apiURL, session, durableStore, browserConnected);
-  const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
+  const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential), false);
   const paths = durablePathRepository(
     remotePaths,
     durableStore, offline.runtime,

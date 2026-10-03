@@ -77,7 +77,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
         notify();
       },
       refreshTimeZone: async () => {
-        const configured = await api.configuredTimeZone();
+        const configured = await createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value)).configuredTimeZone();
         assertCurrent();
         if (!configured.response.ok || !configured.data) throw new PathRequestError(configured.response.ok ? 502 : configured.response.status);
         new Intl.DateTimeFormat('en', { timeZone: configured.data.data.timeZone });
