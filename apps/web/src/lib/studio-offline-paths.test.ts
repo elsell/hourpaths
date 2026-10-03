@@ -137,3 +137,45 @@ test('cancelled empty Home hydration cannot commit after its timezone read compl
   assert.equal(row, null);
   assert.equal(savedHome, false);
 });
+
+test('large Home hydration does not repeat its HTTP reads when downloaded history is retained concurrently', async context => {
+  const paths = Array.from({ length: 64 }, (_, index) => `path-${index}`);
+  const requests: string[] = [];
+  let row: TrackingSnapshot | null = null;
+  const store: TrackingStore = {
+    read: async () => structuredClone(row),
+    commit: async (owner, revision, next) => {
+      if (owner !== 'alice' || (row?.revision ?? 0) !== revision) return false;
+      row = structuredClone(next); return true;
+    },
+  };
+  const tracking = new OfflineTracking(store, 'alice', () => Date.parse('2026-10-01T12:00:00Z'), () => 'unused');
+  let historyRetained = false;
+  const server = createServer(async (request, response) => {
+    const url = new URL(request.url!, 'http://localhost').pathname;
+    requests.push(url);
+    let body: unknown;
+    if (url === '/v1/paths') body = { data: paths.map(id => ({ id, name: id, visibility: 'private', capabilities: { trackTime: true } })), meta: { homePreferences: { orderMethod: 'manual' } } };
+    else if (url.endsWith('/timer')) {
+      if (!historyRetained) {
+        historyRetained = true;
+        await tracking.retainHistory([], (await tracking.snapshot()).revision);
+      }
+      body = { data: { accumulatedSeconds: 60, running: false } };
+    } else if (url.startsWith('/v1/me/path-appearances/')) body = { data: { revision: 1, color: 'mint', emoji: '🎸' } };
+    else { response.writeHead(404); response.end('{}'); return; }
+    response.writeHead(200, { 'Content-Type': 'application/json' }); response.end(JSON.stringify(body));
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise<void>(resolve => { server.closeAllConnections(); server.close(() => resolve()); }));
+  const address = server.address(); assert.ok(address && typeof address !== 'string');
+  const repository = durablePathRepository(apiPathRepository(`http://127.0.0.1:${address.port}`, () => 'credential', () => undefined, false), {
+    readHome: async () => null, saveHome: async () => {}, savePaths: async () => {}, saveAppearance: async () => {},
+  }, async () => ({ owner: 'alice', timeZone: utcTimeZone, tracking, assertCurrent: () => {}, wake: () => {} }),
+  error => error instanceof PathRequestError && error.status === 503);
+  assert.equal((await repository.list(false)).length, 64);
+  assert.equal(requests.filter(url => url === '/v1/paths').length, 1);
+  assert.equal(requests.length, 129);
+  assert.equal((await tracking.snapshot()).paths.length, 64);
+  assert.ok((await tracking.snapshot()).historyRetainedAt);
+});

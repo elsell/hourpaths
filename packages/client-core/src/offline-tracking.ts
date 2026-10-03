@@ -42,6 +42,8 @@ export interface TrackingNotice { id: string; reason: TrackingRejection | 'subse
 export interface TrackingSnapshot {
   owner: string;
   revision: number;
+  /** Contiguous revisions containing only downloaded history, never commands. */
+  historyRefreshRange?: { after: number; through: number };
   paths: RetainedTrackingPath[];
   unavailablePaths?: string[];
   history: RetainedActivity[];
@@ -56,6 +58,17 @@ export interface TrackingSnapshot {
   deletedActivityIds?: string[];
   corrections: { timer: LocalTimer; endedAt: string; reviewedStartedAt?: string }[];
   notices: TrackingNotice[];
+}
+function historyRefreshRange(state: TrackingSnapshot) {
+  const range = state.historyRefreshRange;
+  return range && Number.isSafeInteger(range.after) && range.after >= 0
+    && Number.isSafeInteger(range.through) && range.after < range.through
+    && range.through === state.revision ? range : undefined;
+}
+function advanceHistoryRevision(state: TrackingSnapshot) {
+  const after = historyRefreshRange(state)?.after ?? state.revision;
+  state.revision++;
+  state.historyRefreshRange = { after, through: state.revision };
 }
 /** Implementations must atomically compare revision and persist the entire change. */
 export interface TrackingStore {
@@ -102,13 +115,14 @@ export class OfflineTracking {
     }
     return { owner: this.owner, revision: 0, paths: [], history: [], historyRetainedAt: null, summaries: {}, unreflected: [], timers: [], operations: [], corrections: [], notices: [] };
   }
-  private async change<T>(apply: (state: TrackingSnapshot) => T): Promise<T> {
+  private async change<T>(apply: (state: TrackingSnapshot) => T, historyOnly = false): Promise<T> {
     for (let attempt = 0; attempt < 8; attempt++) {
       if (this.disposed) throw new Error('tracking_disposed');
       const state = await this.snapshot();
       const revision = state.revision;
       const result = apply(state);
-      state.revision++;
+      if (historyOnly) advanceHistoryRevision(state);
+      else state.revision++;
       if (await this.store.commit(this.owner, revision, state)) return result;
     }
     throw new Error('tracking_concurrent_change');
@@ -228,26 +242,34 @@ export class OfflineTracking {
   }
   /** The complete participating Home snapshot is published atomically. The
    * revision is captured before network reads, so a concurrent local command
-   * cannot be overwritten by summaries containing an uncertain acknowledgement. */
+   * cannot be overwritten by summaries containing an uncertain acknowledgement.
+   * Contiguous downloaded-history writes preserve that fence without refetching Home. */
   async retainHome(paths: RetainedTrackingPath[], entries: { pathId: string; summary: TrackingSummary; timer: LocalTimer | null }[], expectedRevision: number): Promise<boolean> {
+    if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) return false;
     const identifiers = new Set(paths.map(path => path.id));
     if (identifiers.size !== paths.length || entries.length !== paths.length
       || new Set(entries.map(entry => entry.pathId)).size !== entries.length
       || entries.some(entry => !identifiers.has(entry.pathId))) throw new Error('tracking_home_invalid');
     for (const path of paths) this.validatePath(path);
     for (const entry of entries) this.validateTracking(entry.pathId, entry.summary, entry.timer);
-    if (this.disposed) throw new Error('tracking_disposed');
-    const state = await this.snapshot();
-    if (state.revision !== expectedRevision) return false;
-    state.paths = copy(paths);
-    state.unavailablePaths = state.unavailablePaths?.filter(id => !identifiers.has(id));
-    for (const entry of entries) {
-      if (!(state.activityOperations ?? []).some(value => value.activity.pathId === entry.pathId) && !state.corrections.some(value => value.timer.pathId === entry.pathId) && !state.operations.some(operation => operation.pathId === entry.pathId)) this.applyTracking(state, entry.pathId, entry.summary, entry.timer);
+    for (let attempt = 0; attempt < 8; attempt++) {
+      if (this.disposed) throw new Error('tracking_disposed');
+      const state = await this.snapshot();
+      const revision = state.revision;
+      const historyRange = historyRefreshRange(state);
+      if (revision !== expectedRevision && (!historyRange || expectedRevision < historyRange.after || expectedRevision > revision)) return false;
+      state.paths = copy(paths);
+      state.unavailablePaths = state.unavailablePaths?.filter(id => !identifiers.has(id));
+      for (const entry of entries) {
+        if (!(state.activityOperations ?? []).some(value => value.activity.pathId === entry.pathId) && !state.corrections.some(value => value.timer.pathId === entry.pathId) && !state.operations.some(operation => operation.pathId === entry.pathId)) this.applyTracking(state, entry.pathId, entry.summary, entry.timer);
+      }
+      state.revision++;
+      if (this.disposed) throw new Error('tracking_disposed');
+      if (await this.store.commit(this.owner, revision, state)) return true;
     }
-    state.revision++;
-    if (this.disposed) throw new Error('tracking_disposed');
-    return this.store.commit(this.owner, expectedRevision, state);
+    return false;
   }
+
   async tracking(pathId: string): Promise<LocalTrackingView | null> {
     const state = await this.snapshot();
     if (state.unavailablePaths?.includes(pathId)) return null;
@@ -337,7 +359,7 @@ export class OfflineTracking {
     state.history = copy([...entries.filter(entry => !pendingIds.has(entry.id)), ...state.history.filter(entry => pendingIds.has(entry.id))]
       .filter(entry => !state.deletedActivityIds?.includes(entry.id) && Date.parse(entry.endedAt) >= cutoff));
     state.historyRetainedAt = new Date(instant).toISOString();
-    state.revision++;
+    advanceHistoryRevision(state);
     if (this.disposed) throw new Error('tracking_disposed');
     return this.store.commit(this.owner, expectedRevision, state);
   }
@@ -348,7 +370,7 @@ export class OfflineTracking {
       if (state.deletedActivityIds?.includes(entry.id) || state.unavailablePaths?.includes(entry.pathId)
         || state.activityOperations?.some(value => activityIdentity(state, value.activity.id) === entry.id)) return;
       state.history = [...state.history.filter(value => value.id !== entry.id), copy(entry)];
-    });
+    }, true);
   }
   async pendingHistory(): Promise<RetainedActivity[]> {
     const state = await this.snapshot();
