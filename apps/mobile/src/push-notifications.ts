@@ -203,3 +203,20 @@ export async function handleNotificationTap(
   await ports.navigate(destination);
   return true;
 }
+
+
+/** Resolve ownership before persisting identifiers for irreversible local cleanup. */
+export async function ownedNotificationIdentifiers(
+  requests: ReadonlyArray<{ identifier: string; content: { data?: Readonly<Record<string, unknown>> } }>,
+  owns: (notificationID: string) => Promise<boolean>,
+): Promise<string[]> {
+  const selected = new Set<string>();
+  const ownership = new Map<string, boolean>();
+  for (const request of requests) {
+    const id = pushNotificationID(request.content.data ?? {});
+    if (!id) continue;
+    if (!ownership.has(id)) ownership.set(id, await owns(id));
+    if (ownership.get(id)) selected.add(request.identifier);
+  }
+  return [...selected];
+}

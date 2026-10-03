@@ -5,6 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import { AppState, Platform } from 'react-native';
 import type { ForegroundNotificationOutcome } from '@hourpaths/client-core';
 import {
+  ownedNotificationIdentifiers,
   createPushRegistrationCoordinator,
   handleNotificationTap,
   loadOrCreateInstallationID,
@@ -194,11 +195,11 @@ export function installNativeNotificationLifecycle(
 }
 
 
-export async function captureDeletionNotifications(): Promise<string[]> {
+export async function captureDeletionNotifications(owns: (notificationID: string) => Promise<boolean>): Promise<string[]> {
   const [presented, scheduled] = await Promise.all([
     Notifications.getPresentedNotificationsAsync(), Notifications.getAllScheduledNotificationsAsync(),
   ]);
-  return [...new Set([...presented.map(item => item.request.identifier), ...scheduled.map(item => item.identifier)])];
+  return ownedNotificationIdentifiers([...presented.map(item => item.request), ...scheduled], owns);
 }
 
 /** Captured identifiers survive an account switch; never dismiss every account's notifications. */

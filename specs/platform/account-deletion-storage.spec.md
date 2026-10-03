@@ -102,3 +102,6 @@ behavior. This document defines its persistence and recovery boundaries.
 - Starting sign-in directly from the public or canonical deletion entry must
   return to the authenticated deletion review. Starting an unrelated sign-in must
   clear any abandoned deletion-entry redirect; arbitrary return URLs are forbidden.
+- A native deletion snapshot must include only notifications whose recipient
+  ownership is established for the deleting account. It must preserve another
+  account's notices and fail closed when ownership lookup is unavailable.

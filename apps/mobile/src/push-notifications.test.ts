@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  ownedNotificationIdentifiers,
   createPushRegistrationCoordinator,
   handleNotificationTap,
   interactionDisabledDestinationFromAPI,
@@ -251,4 +252,15 @@ test('tap ignores malformed payloads but explains an authoritatively unavailable
     actor: { displayName: 'private-actor-name-must-not-be-used' },
   }, ports), true);
   assert.deepEqual(events, ['resolve:notification-1', 'unavailable']);
+});
+
+
+test('deletion cleanup keeps other accounts notices and fails closed on ownership lookup failure', async () => {
+  const requests = [
+    { identifier: 'alice-notice', content: { data: { version: 1, notificationId: 'alice-event' } } },
+    { identifier: 'bob-notice', content: { data: { version: 1, notificationId: 'bob-event' } } },
+    { identifier: 'unknown-notice', content: { data: {} } },
+  ];
+  assert.deepEqual(await ownedNotificationIdentifiers(requests, async id => id === 'alice-event'), ['alice-notice']);
+  await assert.rejects(ownedNotificationIdentifiers(requests, async () => { throw new Error('offline'); }), /offline/);
 });

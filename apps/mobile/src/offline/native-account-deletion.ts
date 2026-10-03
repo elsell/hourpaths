@@ -24,7 +24,6 @@ export function nativeAccountDeletion(ports: {
       local: local.deletion,
     }),
     async fence(owner) {
-      if (ports.currentSession()?.ownerId === owner) await local.deletion.saveSurfaces(owner, await ports.captureSurfaces(owner));
       ports.stopAccount(owner);
       await local.deletion.fence(owner);
     },

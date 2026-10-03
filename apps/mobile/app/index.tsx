@@ -1982,7 +1982,16 @@ export function HomeScreen() {
     apiURL,
     sessions: serializedSessionStorage,
     currentSession: () => notificationLifecycleState.current.session ?? deletionCredential.current,
-    captureSurfaces: async () => captureDeletionNotifications(),
+    captureSurfaces: async owner => {
+      const credential = notificationLifecycleState.current.session ?? deletionCredential.current;
+      if (!credential || credential.ownerId !== owner) throw new Error('account_changed');
+      return captureDeletionNotifications(async notificationID => {
+        const result = await createSessionApiClient(apiURL, () => credential.token).getNotification(notificationID);
+        if (result.response.status === 404) return false;
+        if (!result.response.ok) throw new Error('deletion_notification_ownership_unavailable');
+        return true;
+      });
+    },
     stopAccount: owner => {
       const active = notificationLifecycleState.current;
       if (active.session?.ownerId === owner) {
