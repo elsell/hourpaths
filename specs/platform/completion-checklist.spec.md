@@ -197,3 +197,10 @@ journal with no database DSN, reapplied its accepted deletion to the old backup,
 preserved the survivor's data, and passed a second replay. This is isolated
 rehearsal evidence; production scheduling, key provisioning, retention completion,
 authorization convergence, and client/release acceptance are still required.
+
+Account-deletion candidate verification: the complete PostgreSQL store suite passed
+on a fresh migrated database after correcting fixture cleanup and assertions for
+random account IDs. Warm deployment exposed a Docker journal-directory mode
+mismatch; runtime rejection was retained and the Compose configuration now uses a private records subdirectory created by the
+non-root application, matching the staged Kubernetes configuration.
+Production secret/storage and client acceptance remain outstanding.

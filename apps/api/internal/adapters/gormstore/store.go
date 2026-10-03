@@ -649,18 +649,6 @@ func trustedProviderEmail(claims ports.Claims) string {
 	return normalizeEmail(claims.Email)
 }
 
-func identityUserFromModel(user userModel) identity.User {
-	email := ""
-	if user.ProviderEmailVerified {
-		email = user.Email
-	}
-	visibility := identity.ProfileVisibility("")
-	if user.ProfileVisibility != nil {
-		visibility = *user.ProfileVisibility
-	}
-	return identity.User{ID: user.ID, Email: email, DisplayName: user.DisplayName, Status: user.Status, InvitationAdmin: user.InvitationAdmin, ProfileVisibility: visibility, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt}
-}
-
 func (s *Store) GetUser(ctx context.Context, id string) (identity.User, error) {
 	var u userModel
 	if err := s.DB.WithContext(ctx).Where("id = ? AND status = ?", id, identity.StatusActive).First(&u).Error; err != nil {

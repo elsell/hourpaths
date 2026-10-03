@@ -26,11 +26,11 @@ func TestPostgresDeletionAuthorizationConvergesAgainstRuntimeProxy(t *testing.T)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	store, err := Open("postgres", *postgresTestDSN)
+	store, err := openAccountDeletionStore(t, *postgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
-	seed, err := Open("postgres", *migrationPostgresTestDSN)
+	seed, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}

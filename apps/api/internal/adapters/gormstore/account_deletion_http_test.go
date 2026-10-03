@@ -27,11 +27,11 @@ func TestPostgresAccountDeletionHTTPWithPersistedSessions(t *testing.T) {
 		t.Skip("isolated database roles required")
 	}
 	ctx := context.Background()
-	store, err := Open("postgres", *postgresTestDSN)
+	store, err := openAccountDeletionStore(t, *postgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
-	seed, err := Open("postgres", *migrationPostgresTestDSN)
+	seed, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,15 +18,16 @@ func TestPostgresAccountDeletionPreservesUnrelatedSharedActivity(t *testing.T) {
 	if *postgresTestDSN == "" || *migrationPostgresTestDSN == "" {
 		t.Skip("runtime and migration PostgreSQL DSNs required")
 	}
-	runtime, err := Open("postgres", *postgresTestDSN)
+	runtime, err := openAccountDeletionStore(t, *postgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
-	seed, err := Open("postgres", *migrationPostgresTestDSN)
+	seed, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
 	owner, survivor := newTestID(), newTestID()
+	cleanupDeletionOutbox(t, seed, owner)
 	owned, joined := newTestID(), newTestID()
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	for _, id := range []string{owner, survivor} {
@@ -147,7 +148,7 @@ func TestPostgresConcurrentFirstSignInDoesNotLeaveUnusedAccounts(t *testing.T) {
 	if *postgresTestDSN == "" {
 		t.Skip("runtime PostgreSQL DSN required")
 	}
-	runtime, err := Open("postgres", *postgresTestDSN)
+	runtime, err := openAccountDeletionStore(t, *postgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,11 +190,11 @@ func TestPostgresDeletedIdentityCreatesAFreshAccountAndKeepsItsAuditOwner(t *tes
 	if *postgresTestDSN == "" || *migrationPostgresTestDSN == "" {
 		t.Skip("runtime and migration PostgreSQL DSNs required")
 	}
-	runtime, err := Open("postgres", *postgresTestDSN)
+	runtime, err := openAccountDeletionStore(t, *postgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
-	seed, err := Open("postgres", *migrationPostgresTestDSN)
+	seed, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +241,7 @@ func TestPostgresDeletionRestoreRemovesProvisionalBackupAndIsIdempotent(t *testi
 	if *migrationPostgresTestDSN == "" {
 		t.Skip("migration PostgreSQL DSN required")
 	}
-	store, err := Open("postgres", *migrationPostgresTestDSN)
+	store, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,11 +279,11 @@ func TestPostgresDeletionRetirementRequiresCompletedRemoval(t *testing.T) {
 	if *postgresTestDSN == "" || *migrationPostgresTestDSN == "" {
 		t.Skip("PostgreSQL required")
 	}
-	runtime, err := Open("postgres", *postgresTestDSN)
+	runtime, err := openAccountDeletionStore(t, *postgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
-	seed, err := Open("postgres", *migrationPostgresTestDSN)
+	seed, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,6 +301,7 @@ func TestPostgresDeletionRetirementRequiresCompletedRemoval(t *testing.T) {
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			owner := newTestID()
+			cleanupDeletionOutbox(t, seed, owner)
 			at := now.Add(-scenario.age)
 			hash := bytes.Repeat([]byte{1}, 32)
 			if err := seed.DB.Create(&accountDeletionModel{UserID: owner, DeletedAt: at, AuditEventID: newTestID(), ReceiptHash: hash}).Error; err != nil {
@@ -339,4 +341,31 @@ func TestPostgresDeletionRetirementRequiresCompletedRemoval(t *testing.T) {
 	if err := runtime.DB.Exec("UPDATE account_deletion_models SET journal_retired_at=clock_timestamp()").Error; err == nil {
 		t.Fatal("runtime gained direct marker update")
 	}
+}
+
+func openAccountDeletionStore(t *testing.T, dsn string) (*Store, error) {
+	t.Helper()
+	store, err := Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+	db, err := store.DB.DB()
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(4)
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return store, nil
+}
+func cleanupDeletionOutbox(t *testing.T, store *Store, owner string) {
+	t.Helper()
+	t.Cleanup(func() {
+		if err := store.DB.Where("owner_user_id = ? OR actor_user_id = ?", owner, owner).Delete(&authorizationOutboxModel{}).Error; err != nil {
+			t.Error(err)
+		}
+	})
 }

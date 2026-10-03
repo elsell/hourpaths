@@ -11,6 +11,31 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Reviewed deletion receipt locking, offline-restore isolation, and controlled retention fixtures.
+    'apps/api/cmd/account-deletion-records/main.go': (
+        '\tif err = db.WithContext(ctx).Raw("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type=\'client backend\'").Scan(&clients).Error; err != nil {',
+    ),
+    'apps/api/internal/adapters/gormstore/account_deletion.go': (
+        '\t\tif err := tx.Raw("SELECT public.lock_account_deletion_receipt(?, ?, ?)", userID, hash, now).Scan(&locked).Error; err != nil {',
+        '\terr = s.DB.WithContext(ctx).Raw("SELECT public.prepare_deletion_journal_retirement(?, ?, ?)", record.UserID, hash, record.DeletedAt).Scan(&ready).Error',
+    ),
+    'apps/api/internal/adapters/gormstore/account_deletion_postgres_test.go': (
+        '\t\t\t\tif err := seed.DB.Exec("INSERT INTO authorization_outbox_models(id,resource_type,resource_id,relation,subject_type,subject_id,owner_user_id,actor_user_id,operation,created_at) VALUES (?,\'resource\',?,\'owner\',\'user\',?,?,?,\'delete\',?)", newTestID(), newTestID(), owner, owner, owner, now).Error; err != nil {',
+        '\tif err := runtime.DB.Exec("UPDATE account_deletion_models SET journal_retired_at=clock_timestamp()").Error; err == nil {',
+    ),
+    'apps/api/internal/adapters/auditretention/account_deletion_postgres_test.go': (
+        '\t\tif err := admin.Exec("INSERT INTO account_deletion_models(user_id,deleted_at,audit_event_id,receipt_hash) VALUES (?,?,?,?)", owner, now.Add(-age), uuid.NewString(), make([]byte, 32)).Error; err != nil {',
+        '\t\tif err := admin.Exec("INSERT INTO audit_event_models(id,owner_user_id,actor_user_id,action,target_type,target_id,outcome,correlation_id,occurred_at) VALUES (?,?,?,?,?,?,?,?,?)", ids[i], owner, owner, "resource.viewed", "account", owner, "succeeded", uuid.NewString(), now).Error; err != nil {',
+        '\tif err := retention.Exec("DELETE FROM audit_event_models WHERE id = ?", ids[2]).Error; err == nil {',
+        '\tif err := retention.Exec("UPDATE account_deletion_retention_run_models SET deleted_count = 99").Error; err == nil {',
+        '\tif err = admin.Exec("INSERT INTO account_deletion_models(user_id,deleted_at,audit_event_id,receipt_hash) VALUES (?,?,?,?)", expired, now.Add(-29*24*time.Hour-time.Hour), uuid.NewString(), make([]byte, 32)).Error; err != nil {',
+        '\t\tif err = admin.Exec("INSERT INTO authorization_outbox_models(id,resource_type,resource_id,relation,subject_type,subject_id,owner_user_id,actor_user_id,operation,completed_at,created_at) VALUES (?,\'resource\',?,\'owner\',\'user\',?,?,?,\'delete\',?,?)", ids[i], uuid.NewString(), owner, owner, owner, completed, now).Error; err != nil {',
+        '\tif err = retention.Exec("DELETE FROM authorization_outbox_models WHERE id = ?", ids[1]).Error; err == nil {',
+        '\t\tif err := admin.Exec("INSERT INTO account_deletion_models(user_id,deleted_at,audit_event_id,receipt_hash,journal_retired_at) VALUES (?,?,?,?,?)", id, now.Add(-30*24*time.Hour), uuid.NewString(), make([]byte, 32), retired).Error; err != nil {',
+        '\t\t\tif err := admin.Exec("INSERT INTO authorization_outbox_models(id,resource_type,resource_id,relation,subject_type,subject_id,owner_user_id,actor_user_id,operation,created_at) VALUES (?,\'resource\',?,\'owner\',\'user\',?,?,?,\'delete\',?)", uuid.NewString(), uuid.NewString(), id, id, id, now).Error; err != nil {',
+        '\tif err := retention.Exec("DELETE FROM account_deletion_models WHERE user_id=?", ids[1]).Error; err == nil {',
+    ),
+
     # Controlled PostgreSQL tests: runtime-role enforcement and transactional migration setup.
     'apps/api/internal/adapters/gormstore/activity/offline_activity_postgres_test.go': (
         '\tif err := db.Raw("SELECT to_regclass(\'public.activity_edit_order_models\') IS NOT NULL").Scan(&present).Error; err != nil {',

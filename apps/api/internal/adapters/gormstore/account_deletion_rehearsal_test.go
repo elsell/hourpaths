@@ -30,7 +30,7 @@ func TestPostgresDeletionBackupRehearsal(t *testing.T) {
 	if *migrationPostgresTestDSN == "" || *rehearsalFile == "" {
 		t.Fatal("rehearsal configuration missing")
 	}
-	store, err := Open("postgres", *migrationPostgresTestDSN)
+	store, err := openAccountDeletionStore(t, *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
