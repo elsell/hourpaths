@@ -55,7 +55,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
     dispose = () => root.unmount();
   };
   const deletion = browserAccountDeletion(options.apiURL, sessions, local, owner => {
-    if (!cancelled && !recovering) { generation++; recovery([owner]); }
+    if (!cancelled && !recovering && sessions.read()?.ownerId === owner) { generation++; recovery([owner]); }
   }, () => { if (!cancelled) { previous = undefined; render(); } });
   const render = () => {
     if (cancelled) return;

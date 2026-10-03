@@ -42,6 +42,12 @@ export function browserAccountDeletion(apiURL: string, sessions: SessionStore, l
       if (sessions.read() && !sessions.read()?.ownerId) await review().catch(() => undefined);
       await deletion.resume(owner); changed();
     },
-    pendingOwners: () => local.deletion.pendingOwners(),
+    async pendingOwners() {
+      const owners = await local.deletion.pendingOwners();
+      if (owners.length && sessions.read() && !sessions.read()?.ownerId) await review().catch(() => undefined);
+      const pending = await deletion.prepareRecovery(owners);
+      const current = sessions.read();
+      return current && current.destination !== 'home' ? [] : pending;
+    },
   };
 }

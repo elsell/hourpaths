@@ -34,7 +34,7 @@ export function validDeletionIntent(value: unknown, owner: string): value is Del
 }
 
 export class AccountDeletion {
-  private readonly running = new Map<string, Promise<void>>();
+  private readonly running = new Map<string, { kind: 'completion' | 'preparation'; promise: Promise<void> }>();
   constructor(private readonly ports: AccountDeletionPorts) {}
 
   confirm(owner: string): Promise<void> {
@@ -57,11 +57,29 @@ export class AccountDeletion {
     });
   }
 
-  private single(owner: string, work: () => Promise<void>): Promise<void> {
+  /** Local erasure is authorized by the durable intent, not by receipt availability.
+   * Keep unresolved intent so a matching account can still retry server removal. */
+  async prepareRecovery(owners: readonly string[], currentOwner = this.ports.currentOwner()): Promise<string[]> {
+    for (const owner of owners) {
+      await this.single(owner, async () => {
+        const intent = await this.ports.journal.read(owner);
+        if (!intent) return;
+        if (!validDeletionIntent(intent, owner)) throw new Error('deletion_intent_invalid');
+        await this.ports.fence(owner);
+        await this.ports.purge(owner);
+      }, 'preparation');
+    }
+    return owners.filter(owner => !currentOwner || owner === currentOwner);
+  }
+
+  private single(owner: string, work: () => Promise<void>, kind: 'completion' | 'preparation' = 'completion'): Promise<void> {
     const pending = this.running.get(owner);
-    if (pending) return pending;
+    if (pending) {
+      if (pending.kind === kind) return pending.promise;
+      return pending.promise.catch(() => undefined).then(() => this.single(owner, work, kind));
+    }
     const result = work().finally(() => { this.running.delete(owner); });
-    this.running.set(owner, result);
+    this.running.set(owner, { kind, promise: result });
     return result;
   }
 

@@ -139,3 +139,9 @@ behavior. This document defines its persistence and recovery boundaries.
   receipt lock. The shared retention batch must remove receipt metadata only
   after its audit and permission-delivery details are gone, recording only a count.
   Runtime credentials must not gain direct deletion-record update or delete rights.
+
+- Recovering an explicitly confirmed local deletion intent must clear that owner's
+  local product data and native surfaces even when the server receipt has expired.
+  It must retain the minimal unresolved intent and write fence without reporting
+  server completion. A different authenticated account must be able to enter the
+  app; only a matching account must remain gated for retrying server deletion.

@@ -42,6 +42,8 @@ export function nativeAccountDeletion(ports: {
   return {
     async confirm(owner: string) { await (await coordinator()).confirm(owner); await ports.completed(); },
     async resume(owner: string) { await (await coordinator()).resume(owner); await ports.completed(); },
-    async pendingOwners() { return (await openNativeOfflineStorage()).deletion.pendingOwners(); },
+    async pendingOwners(owner = ports.currentSession()?.ownerId ?? null) {
+      return (await coordinator()).prepareRecovery(await (await openNativeOfflineStorage()).deletion.pendingOwners(), owner);
+    },
   };
 }

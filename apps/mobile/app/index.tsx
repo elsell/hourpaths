@@ -1670,11 +1670,18 @@ export function HomeScreen() {
         const profile = await validateSessionCredential<{ id: string }>(next, async current => generatedResponse(await createSessionApiClient(apiURL, () => current.token).profile()));
         next = { ...next, ownerId: profile.id };
       }
-      await serializedSessionStorage.persist(next, ticket.current);
+      const unresolved = await deletionService.current!.pendingOwners(next.ownerId ?? null);
+      const matching = next.nextAction === 'home' ? unresolved : [];
       if (!ticket.current()) return;
-      deletionCredential.current = next;
-      setAccountDeletionReview({ owner: pendingDeletion[0], recovery: true });
-      return;
+      if (matching.length) {
+        await serializedSessionStorage.persist(next, ticket.current);
+        if (!ticket.current()) return;
+        deletionCredential.current = next;
+        setAccountDeletionReview({ owner: matching[0], recovery: true });
+        return;
+      }
+      setAccountDeletionReview(null);
+      deletionCredential.current = null;
     }
     retainedHomeRef.current = null; setRetainedHome(null);
     const activeBeforeAdoption = notificationLifecycleState.current;
@@ -2025,7 +2032,7 @@ export function HomeScreen() {
     },
     completed: () => {
       return openNativeOfflineStorage().then(async local => {
-        const remaining = await local.deletion.pendingOwners();
+        const remaining = await deletionService.current!.pendingOwners();
         setAccountDeletionReview(remaining[0] ? { owner: remaining[0], recovery: true } : null);
         if (!remaining.length) await restoreInitialSession();
       });
@@ -2524,8 +2531,14 @@ export function HomeScreen() {
           const raw = await serializedSessionStorage.read();
           const stored: unknown = raw ? JSON.parse(raw) : null;
           if (isValidSessionCredential(stored)) deletionCredential.current = { ...stored, nextAction: stored.nextAction ?? 'home' };
-          setAccountDeletionReview({ owner: pending[0], recovery: true });
-          return;
+          const unresolved = await deletionService.current!.pendingOwners();
+          const matching = deletionCredential.current && deletionCredential.current.nextAction !== 'home' ? [] : unresolved;
+          if (matching.length) {
+            setAccountDeletionReview({ owner: matching[0], recovery: true });
+            return;
+          }
+          setAccountDeletionReview(null);
+          deletionCredential.current = null;
         }
         const ticket = sessionOperations.issue();
         await restoreStoredSession({

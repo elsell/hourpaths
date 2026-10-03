@@ -64,3 +64,49 @@ test('failure to persist intent cannot send deletion or clear retained activity'
   assert.equal(state.removed(), false);
   assert.deepEqual([...state.retained], ['first', 'second']);
 });
+
+
+test('expired receipt recovery erases local data and does not trap a replacement account', async () => {
+ const state = environment();
+ await state.ports.journal.save({owner:'first',receiptSecret:'a'.repeat(64),phase:'pending'});
+ state.switchAccount();
+ state.ports.remote.receipt = async () => false;
+ state.ports.remote.remove = async () => { throw new Error('must_not_delete_replacement'); };
+ const service = new AccountDeletion(state.ports);
+ assert.deepEqual(await service.prepareRecovery(['first']), []);
+ assert.deepEqual([...state.retained], ['second']);
+ assert.equal(state.owner(), 'second');
+ assert.equal(state.intent()?.phase, 'pending');
+ assert.ok(state.fenced.has('first'));
+ await assert.rejects(service.resume('first'), /deletion_sign_in_required/);
+ assert.deepEqual(await service.prepareRecovery(['first'], 'first'), ['first']);
+ assert.equal(state.intent()?.phase, 'pending');
+});
+
+
+test('resume waits for local preparation then still verifies and completes deletion', async () => {
+ const state = environment();
+ await state.ports.journal.save({owner:'first',receiptSecret:'a'.repeat(64),phase:'pending'});
+ let release!: () => void;
+ let entered!: () => void;
+ const started = new Promise<void>(resolve => { entered = resolve; });
+ const waiting = new Promise<void>(resolve => { release = resolve; });
+ const purge = state.ports.purge;
+ let first = true;
+ state.ports.purge = async owner => {
+   if (first) { first = false; entered(); await waiting; }
+   await purge(owner);
+ };
+ let receipts = 0;
+ state.ports.remote.receipt = async () => { receipts++; return true; };
+ const service = new AccountDeletion(state.ports);
+ const preparation = service.prepareRecovery(['first']);
+ await started;
+ const completion = service.resume('first');
+ release();
+ await Promise.all([preparation, completion]);
+ assert.equal(receipts, 1);
+ assert.equal(state.intent(), null);
+ assert.equal(state.owner(), null);
+ assert.deepEqual([...state.retained], ['second']);
+});
