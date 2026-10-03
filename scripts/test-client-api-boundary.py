@@ -124,6 +124,7 @@ class ClientApiBoundaryTest(unittest.TestCase):
 
     def test_android_presentation_imports_do_not_open_package_capabilities(self) -> None:
         for source, package in (
+            ("apps/mobile/src/ui/native-toast.tsx", "react-native-screens"),
             ("apps/mobile/src/ui/platform-symbol.tsx", "expo-symbols"),
             ("apps/mobile/src/ui/native-action-menu.android.tsx", "@expo/ui/jetpack-compose"),
         ):
@@ -137,6 +138,7 @@ class ClientApiBoundaryTest(unittest.TestCase):
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn(source, result.stderr)
         result = self.run_checker({
+            "apps/mobile/src/ui/native-toast.tsx": "import { FullWindowOverlay } from 'react-native-screens';",
             "apps/mobile/src/ui/platform-symbol.tsx": "import { SymbolView, type AndroidSymbol } from 'expo-symbols';",
             "apps/mobile/src/ui/native-action-menu.android.tsx": "import { DropdownMenu, DropdownMenuItem, Host, RNHostView, Text } from '@expo/ui/jetpack-compose';",
         })
