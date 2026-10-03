@@ -111,3 +111,6 @@ behavior. This document defines its persistence and recovery boundaries.
   fenced recipients on receipt and app activation, even without a signed-in
   session. Legacy notices without recipient metadata require authenticated
   recipient resolution before cleanup.
+- The runtime database adapter must not emit raw SQL or interpolated query
+  parameters through ORM logging. Application diagnostics must use the existing
+  typed observability boundary rather than duplicate personal records in logs.
