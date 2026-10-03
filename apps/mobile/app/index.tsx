@@ -1,3 +1,5 @@
+import { DelayedStatus } from '../src/ui/delayed-status';
+import { NativeToast } from '../src/ui/native-toast';
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
 import { retainedHistoryDetails } from '../src/offline/retained-history-presentation';
 import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualActivityInterval, type TrackingSnapshot } from '@hourpaths/client-core';
@@ -672,7 +674,7 @@ export function HomeScreen() {
   const [pathLeaveReview, setPathLeaveReview] = useState<PathLeaveReview | null>(null);
   const [pathLeaveBusy, setPathLeaveBusy] = useState(false);
   const [pathLeaveErrorKey, setPathLeaveErrorKey] = useState<MessageKey | null>(null);
-  const [pathLeaveNotice, setPathLeaveNotice] = useState<string | null>(null);
+  const [pathLeaveNotice, setPathLeaveNotice] = useState<{ ownerID: string; text: string } | null>(null);
   const pathLeaveTarget = useRef<{ ownerID: string; pathID: string; pathName: string; session: Session } | null>(null);
   const [pathMembersOpen, setPathMembersOpen] = useState(false);
   const [pathMembers, setPathMembers, pathMembersRef] = useLatestState<PathMemberSummary[]>([]);
@@ -1384,6 +1386,9 @@ export function HomeScreen() {
   }
 
   function resetTimerPresentation() {
+    setPathLeaveNotice(null);
+    setPathCreated(false);
+    setPathArchiveSavedKey(null);
     signOutTimerResolutions.current.invalidate();
     timerOperations.cancel();
     setTimerBusy({});
@@ -7752,7 +7757,7 @@ export function HomeScreen() {
         },
       };
     });
-    setPathLeaveNotice(i18n.t(review.retainActivity ? 'pathLeave.completedRetained' : 'pathLeave.completedDeleted', { pathName: review.pathName }));
+    setPathLeaveNotice({ ownerID, text: i18n.t(review.retainActivity ? 'pathLeave.completedRetained' : 'pathLeave.completedDeleted', { pathName: review.pathName }) });
     setSelectedPathID(null);
     resetPathDetail();
   }
@@ -8051,10 +8056,10 @@ export function HomeScreen() {
       actionLabel={i18n.t('common.dismiss')}
       onAction={() => { void nativeOffline.current?.dismissNotice(notice.id).catch(() => setErrorKey('errors.temporarilyUnavailable')); }}
     />) : null}
-    {nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.operations.some(operation => !nativeTrackingState.corrections.some(value => value.timer.id === operation.timerId)) ? <StatusBanner
-      text={i18n.t('offline.pending')} tone="offline" actionLabel={i18n.t('common.retry')}
+    {nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.operations.some(operation => !nativeTrackingState.corrections.some(value => value.timer.id === operation.timerId)) ? <DelayedStatus><StatusBanner
+      text={i18n.t('offline.pending')} tone="sync" actionLabel={i18n.t('common.retry')}
       onAction={() => nativeOffline.current?.wake()}
-    /> : null}
+    /></DelayedStatus> : null}
     {accessState === 'authenticated_offline' && !errorKey && !offlineStatusDismissed ? <StatusBanner
       actionLabel={i18n.t('common.dismiss')}
       onAction={() => setOfflineStatusDismissed(true)}
@@ -8804,10 +8809,10 @@ export function HomeScreen() {
         />
         {ownsManualActivityPresentation(manualActivityPresentationOwner, 'activity-details') ? manualActivityPresentation : null}
       </NativeChildRouteSource> : null}
-      {pathCreated ? <Text accessibilityRole="alert">{i18n.t('pathCreate.created')}</Text> : null}
-      {pathArchiveSavedKey ? <Text accessibilityLiveRegion="polite">{i18n.t(pathArchiveSavedKey)}</Text> : null}
-      {timerNoticeKey ? <Text accessibilityLiveRegion="polite">{i18n.t(timerNoticeKey)}</Text> : null}
-      {pathLeaveNotice ? <Text accessibilityLiveRegion="polite">{pathLeaveNotice}</Text> : null}
+      {pathCreated ? <NativeToast message={i18n.t('pathCreate.created')} onDismiss={() => setPathCreated(false)} /> : null}
+      {pathArchiveSavedKey ? <NativeToast message={i18n.t(pathArchiveSavedKey)} onDismiss={() => setPathArchiveSavedKey(null)} /> : null}
+      {timerNoticeKey ? <NativeToast message={i18n.t(timerNoticeKey)} onDismiss={() => setTimerNoticeKey(null)} /> : null}
+      {pathLeaveNotice?.ownerID === ownedHomeDestination.profile.id ? <NativeToast message={pathLeaveNotice.text} onDismiss={() => setPathLeaveNotice(null)} /> : null}
       {creatingPath ? <PathCreateForm
         busy={pathSubmitting}
         errorText={pathErrorKey ? i18n.t(pathErrorKey) : undefined}
@@ -9105,7 +9110,7 @@ export function HomeScreen() {
     /> : null}
     {ready && !destination && accessState !== 'authenticated_offline' ? <SignedOutScreen
       retained={retainedHome ? <>
-        {retainedHome.state.operations.length ? <StatusBanner text={i18n.t('offline.pending')} tone="offline" /> : null}
+        {retainedHome.state.operations.length ? <DelayedStatus><StatusBanner text={i18n.t('offline.pending')} tone="sync" /></DelayedStatus> : null}
         {retainedHome.state.timers.map(timer => <PathCard key={timer.id}
           name={retainedHome.state.paths.find(path => path.id === timer.pathId)?.name ?? i18n.t('offline.retainedPath')}
           headline={formatSessionClock(activeTimerSeconds(timer.startedAt, now), i18n)}

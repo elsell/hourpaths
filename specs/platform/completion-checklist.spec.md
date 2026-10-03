@@ -96,9 +96,7 @@ tester group ([Apple status evidence](https://github.com/elsell/hourpaths/action
 Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
-The active next slice is the public Studio shell for cold offline entry. Durable
-web session restoration, large-account hydration, and complete cross-device/device
-acceptance remain explicit area 2 closure requirements.
+The active slice is the user-reported native action and feedback regression (PR #107): readable Delete/recovery labels, app-wide transient feedback above navigation, and calm pending-sync states delayed by one second. Remembered browser sessions remain implemented and verified on `codex/web-session-restoration`, awaiting delivery after this user-prioritized correction. Large-account hydration and cross-device/device acceptance remain area 2 requirements.
 
 The manual-activity slice now has a durable account queue, immutable replay,
 owner-only causal metadata, retained losing revisions, and Studio/mobile form
@@ -136,3 +134,7 @@ of Path data. Focused cache tests cover explicit server rejection, failed update
 preservation and exclusion of API/provider/non-Studio requests. The shell slice
 is not yet merged or released; it does not close durable web session restoration
 or the remaining area 2 acceptance requirements.
+
+Native feedback audit: Path creation/archive/leave and timer confirmations previously appeared as loose footer text; they now share an app-level overlay. All visual pending-sync indicators defer for one continuous second. Offline status uses polite, neutral presentation; errors and corrections requiring user action remain immediate and persistent. Empty history no longer implies loading. The review also found and fixed prior-account Path names surviving sign-out in confirmation state. Actual native screenshots, large Dynamic Type and device acceptance remain pending release.
+
+The user approved all future PRs within this goal; exact-head protected-path attestations remain recorded and all mandatory merge/security gates remain enforced. PR #106 merged as `a8a6380`, unblocking the temporary bounded dependency exception; it does not fix the upstream advisory.

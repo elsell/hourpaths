@@ -1,3 +1,4 @@
+import { DelayedStatus } from './delayed-status';
 import { PathEmoji } from './path-emoji';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
@@ -37,7 +38,7 @@ export function PathCard({ onLongPress, reorderHint, onFocusTarget, actions, act
       {headline ? <Text adjustsFontSizeToFit minimumFontScale={0.7} numberOfLines={1} style={[styles.headline, { color: tone.foreground }]}>{headline}</Text> : null}
       {intervalSummary ? <Text style={[styles.summary, { color: tone.foreground }]}>{intervalSummary}</Text> : null}
       {progress ? <View style={styles.progressStack}>{progress}</View> : null}
-      {statusText ? <Text style={[styles.summary, { color: tone.foreground }]}>{statusText}</Text> : null}
+      {statusText ? <DelayedStatus><Text style={[styles.summary, { color: tone.foreground }]}>{statusText}</Text></DelayedStatus> : null}
       {accumulatedText ? <Text style={[styles.summary, { color: tone.foreground }]}>{accumulatedText}</Text> : null}
     </View>
     {timer ? <View style={styles.timer}>{timer}</View> : null}

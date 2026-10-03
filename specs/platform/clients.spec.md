@@ -187,3 +187,5 @@ native builds verify this exact existing combination.
 - Acceptance: two feature commits with the same highlight produce one bullet;
   maintenance-only releases receive a short reliability message; an Apple build
   mismatch fails before writing; Play sends notes on the exact uploaded release.
+
+The shared mobile transient-feedback adapter may import only `FullWindowOverlay` from the existing pinned `react-native-screens` package, and React Native accessibility announcements. This permits presentation above native navigation, not broader native or transport capabilities. The client boundary must reject namespace/re-export and unreviewed package imports.

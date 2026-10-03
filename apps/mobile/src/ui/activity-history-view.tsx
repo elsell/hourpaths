@@ -1,3 +1,4 @@
+import { DelayedStatus } from './delayed-status';
 import { getLocales } from 'expo-localization';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
@@ -139,7 +140,7 @@ function ActivityHistoryRow({
     <View style={styles.rowCopy}>
       <View style={styles.rowHeading}>
         <ThemedText style={styles.time}>{time}</ThemedText>
-        {detail.pending ? <ThemedText style={styles.edited}>{i18n.t('offline.pending')}</ThemedText> : null}
+        {detail.pending ? <DelayedStatus><ThemedText style={styles.edited}>{i18n.t('offline.pending')}</ThemedText></DelayedStatus> : null}
         {edited ? <ThemedText style={styles.edited}>{i18n.t('pathDetails.edited')}</ThemedText> : null}
       </View>
       <View style={[styles.metadata, compact ? styles.metadataCompact : null]}>

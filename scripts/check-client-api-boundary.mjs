@@ -143,6 +143,9 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/src/ui/following-header-actions.ios.tsx', new Set(['Stack'])],
 ]);
 const approvedPlatformUIImports = new Map([
+  ['apps/mobile/src/ui/native-toast.tsx', new Map([
+    ['react-native-screens', new Set(['FullWindowOverlay'])],
+  ])],
   ['apps/mobile/src/ui/manual-occurrence-fields.android.tsx', new Map([
     ['@expo/ui/jetpack-compose', new Set(['DatePickerDialog', 'Host', 'TimePickerDialog'])],
   ])],
@@ -243,6 +246,7 @@ const approvedExpoUIImports = new Map([
   ])],
 ]);
 const approvedSafeAreaImports = new Set([
+  'apps/mobile/src/ui/native-toast.tsx',
   'apps/mobile/src/ui/live-activity-viewer.tsx',
   'apps/mobile/app/index.tsx',
   'apps/mobile/src/ui/native-route-presentation.tsx',
@@ -682,7 +686,7 @@ function importAllowed(specifier, relative, file) {
     if (relative.includes('/presentation/') && (specifier === '@hourpaths/api-client' || specifier.includes('/adapters/'))) return false;
   }
   if (specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack') return approvedNavigationImports.get(relative)?.has(specifier) ?? false;
-  if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose') return approvedPlatformUIImports.get(relative)?.has(specifier) ?? false;
+  if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' || specifier === 'react-native-screens') return approvedPlatformUIImports.get(relative)?.has(specifier) ?? false;
   if (specifier === '$env/dynamic/private') return relative === 'apps/web/src/lib/server/config.ts';
   if (specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers') {
     return approvedExpoUIImports.get(relative)?.has(specifier) ?? false;
@@ -1008,7 +1012,7 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings.elements.every((element) => !element.isTypeOnly && !element.propertyName && reviewedImports.has(element.name.text));
         if (!exactNavigationImport) violation = true;
       }
-      if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose') {
+      if (specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' || specifier === 'react-native-screens') {
         const reviewedImports = approvedPlatformUIImports.get(relative)?.get(specifier);
         const exactPlatformImport = reviewedImports && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
@@ -1025,6 +1029,7 @@ function inspectSource(relative, file, source, index) {
         if (relative === 'apps/mobile/src/ui/sortable-path-grid.tsx') {
           for (const name of ['AccessibilityInfo', 'Animated', 'PanResponder']) uiAllowed.add(name);
         }
+        if (relative === 'apps/mobile/src/ui/native-toast.tsx') uiAllowed.add('AccessibilityInfo');
         if (relative === 'apps/mobile/src/ui/home-view.tsx') {
           uiAllowed.add('AccessibilityInfo');
           uiAllowed.add('findNodeHandle');
@@ -1228,7 +1233,7 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings.elements.length === (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx' ? 2 : 1) &&
           clause.namedBindings.elements.every(element => !element.isTypeOnly && !element.propertyName &&
             (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx' ? ['SafeAreaProvider', 'SafeAreaView'].includes(element.name.text) :
-              element.name.text === (relative === 'apps/mobile/src/ui/practice-comments-view.tsx' ? 'useSafeAreaInsets' : 'SafeAreaView')));
+              element.name.text === (['apps/mobile/src/ui/practice-comments-view.tsx', 'apps/mobile/src/ui/native-toast.tsx'].includes(relative) ? 'useSafeAreaInsets' : 'SafeAreaView')));
         if (!exactSafeAreaImport) violation = true;
       }
     }
@@ -1237,7 +1242,7 @@ function inspectSource(relative, file, source, index) {
         const specifier = node.moduleSpecifier.text;
         if (specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers' ||
           specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack' ||
-          specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' ||
+          specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' || specifier === 'react-native-screens' ||
           (relative === 'apps/mobile/src/ui/onboarding-form.tsx' && specifier === 'react-native') ||
           (relative === 'apps/mobile/src/ui/signed-out-screen.tsx' && specifier === 'react-native') ||
           allProviderImports.has(specifier) || !importAllowed(specifier, relative, file)) violation = true;
@@ -1248,7 +1253,7 @@ function inspectSource(relative, file, source, index) {
       const specifier = expression && ts.isStringLiteral(expression) ? expression.text : undefined;
       if (!specifier || specifier === '@expo/ui/swift-ui' || specifier === '@expo/ui/swift-ui/modifiers' ||
         specifier === '@react-navigation/native' || specifier === '@react-navigation/native-stack' ||
-          specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' ||
+          specifier === 'expo-symbols' || specifier === '@expo/ui/jetpack-compose' || specifier === 'react-native-screens' ||
         (relative === 'apps/mobile/src/ui/onboarding-form.tsx' && specifier === 'react-native') ||
         (relative === 'apps/mobile/src/ui/signed-out-screen.tsx' && specifier === 'react-native') ||
         !importAllowed(specifier, relative, file)) violation = true;
