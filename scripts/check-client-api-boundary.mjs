@@ -246,6 +246,7 @@ const approvedExpoUIImports = new Map([
   ])],
 ]);
 const approvedSafeAreaImports = new Set([
+  'apps/mobile/src/ui/native-toast.tsx',
   'apps/mobile/src/ui/live-activity-viewer.tsx',
   'apps/mobile/app/index.tsx',
   'apps/mobile/src/ui/native-route-presentation.tsx',
@@ -1232,7 +1233,7 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings.elements.length === (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx' ? 2 : 1) &&
           clause.namedBindings.elements.every(element => !element.isTypeOnly && !element.propertyName &&
             (relative === 'apps/mobile/src/ui/live-activity-viewer.tsx' ? ['SafeAreaProvider', 'SafeAreaView'].includes(element.name.text) :
-              element.name.text === (relative === 'apps/mobile/src/ui/practice-comments-view.tsx' ? 'useSafeAreaInsets' : 'SafeAreaView')));
+              element.name.text === (['apps/mobile/src/ui/practice-comments-view.tsx', 'apps/mobile/src/ui/native-toast.tsx'].includes(relative) ? 'useSafeAreaInsets' : 'SafeAreaView')));
         if (!exactSafeAreaImport) violation = true;
       }
     }

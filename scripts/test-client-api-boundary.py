@@ -138,7 +138,7 @@ class ClientApiBoundaryTest(unittest.TestCase):
                     self.assertNotEqual(result.returncode, 0)
                     self.assertIn(source, result.stderr)
         result = self.run_checker({
-            "apps/mobile/src/ui/native-toast.tsx": "import { FullWindowOverlay } from 'react-native-screens';",
+            "apps/mobile/src/ui/native-toast.tsx": "import { FullWindowOverlay } from 'react-native-screens'; import { useSafeAreaInsets } from 'react-native-safe-area-context'; import { AccessibilityInfo, Platform, Pressable, StyleSheet, Text, View } from 'react-native';",
             "apps/mobile/src/ui/platform-symbol.tsx": "import { SymbolView, type AndroidSymbol } from 'expo-symbols';",
             "apps/mobile/src/ui/native-action-menu.android.tsx": "import { DropdownMenu, DropdownMenuItem, Host, RNHostView, Text } from '@expo/ui/jetpack-compose';",
         })
