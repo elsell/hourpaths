@@ -29,5 +29,20 @@ class AuditPolicyTest(unittest.TestCase):
         clean = {'metadata': {'vulnerabilities': {'high': 0}}, 'advisories': {}}
         self.assertEqual(audit.evaluate(clean, 0, now), [])
 
+    def test_braces_exception_is_exact_and_does_not_extend_the_existing_deadline(self):
+        now = dt.datetime(2026, 10, 3, tzinfo=dt.timezone.utc)
+        report = {'metadata': {'vulnerabilities': {'high': 1}}, 'advisories': {'1': {
+            'github_advisory_id': 'GHSA-vfj7-8cjw-p6xm', 'module_name': 'braces',
+            'findings': [{'version': '3.0.3'}]}}}
+        self.assertEqual(audit.evaluate(report, 1, now), ['GHSA-vfj7-8cjw-p6xm'])
+        for field, value in [('github_advisory_id', 'GHSA-other'), ('module_name', 'brace-expansion'),
+                             ('findings', [{'version': '3.0.2'}]), ('findings', [{'version': '3.0.3'}, {'version': '3.0.2'}])]:
+            changed = copy.deepcopy(report)
+            changed['advisories']['1'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                audit.evaluate(changed, 1, now)
+        with self.assertRaises(ValueError):
+            audit.evaluate(report, 1, dt.datetime(2026, 10, 9, tzinfo=dt.timezone.utc))
+
 if __name__ == '__main__':
     unittest.main()

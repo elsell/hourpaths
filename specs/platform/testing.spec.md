@@ -495,3 +495,23 @@ The checked merge gate must validate complete paginated file metadata even when
 patch text exceeds operating-system argument or environment limits. Transporting
 that metadata must not weaken exact-head approval, rename coverage, file-count
 validation, trusted-main policy comparison, or the five required checks.
+
+## October 3 braces release blocker
+
+Main CI on `52e1ec1` reports GHSA-vfj7-8cjw-p6xm for exactly `braces` 3.0.3.
+The audit suggests 3.0.4, but that version is absent from npm and the upstream
+advisory lists no patched release. No version change or broad audit suppression
+may be used to conceal this finding.
+
+Subject to explicit owner approval before merge, the package-audit policy may
+accept this exact advisory/package/version until 2026-10-09T00:00:00Z, alongside
+the existing node-forge exception without extending its deadline. Every other
+advisory/version and audit transport/format failure must remain blocking. The
+complete audit must still run and print both active exception identities and
+deadlines. This is temporary risk acceptance, not a vulnerability fix.
+
+The affected graph is glob/build tooling; HourPaths application source does not
+import braces or micromatch directly. This observation is not a proof of complete
+transitive unreachability. Do not add processing of user-supplied glob patterns
+under this exception. Replace the exception with a reviewed patched dependency
+when one is available. Preserve all other merge, image and native gates.
