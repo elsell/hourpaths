@@ -60,6 +60,12 @@ behavior. This document defines its persistence and recovery boundaries.
 - Restore replay must consume an operator-controlled deletion manifest exported
   from the authoritative deletion records outside the backup being restored.
   It must validate the complete manifest before changing the restored database.
+- A deletion manifest must declare its minimum supported backup creation time.
+  Replay must reject backups older than that boundary, even if they are otherwise
+  within 30 days. Before retiring external records, cleanup must durably advance
+  that boundary so a backup that could contain a retired account cannot be used.
+  A missing boundary must fail closed; an empty record list is not proof that an
+  arbitrary older backup is safe.
 - Replay must preserve the original deletion time and receipt digest, remove the
   same personal data as ordinary deletion, and queue authorization cleanup.
   Replaying the same manifest must be idempotent. A backup containing an older

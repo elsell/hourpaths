@@ -22,9 +22,10 @@ import (
 )
 
 type manifest struct {
-	Version    int                          `json:"version"`
-	ExportedAt time.Time                    `json:"exportedAt"`
-	Records    []application.DeletionRecord `json:"records"`
+	MinimumBackupTime time.Time                    `json:"minimumBackupTime"`
+	Version           int                          `json:"version"`
+	ExportedAt        time.Time                    `json:"exportedAt"`
+	Records           []application.DeletionRecord `json:"records"`
 }
 
 func readManifest(path string, backup, now time.Time) (manifest, error) {
@@ -50,7 +51,7 @@ func readManifest(path string, backup, now time.Time) (manifest, error) {
 	if err := decoder.Decode(&extra); err != io.EOF {
 		return value, errors.New("manifest must contain exactly one object")
 	}
-	if value.Version != 1 || value.Records == nil || value.ExportedAt.IsZero() || value.ExportedAt.Before(backup) || value.ExportedAt.After(now) || backup.IsZero() || backup.After(now) || backup.Before(now.Add(-30*24*time.Hour)) {
+	if value.Version != 2 || value.MinimumBackupTime.IsZero() || value.MinimumBackupTime.After(value.ExportedAt) || backup.Before(value.MinimumBackupTime) || value.Records == nil || value.ExportedAt.IsZero() || value.ExportedAt.Before(backup) || value.ExportedAt.After(now) || backup.IsZero() || backup.After(now) || backup.Before(now.Add(-30*24*time.Hour)) {
 		return value, errors.New("manifest or backup time invalid")
 	}
 	for _, record := range value.Records {
@@ -119,7 +120,8 @@ func run(ctx context.Context, exportPath, replayPath, backupTime string, offline
 		if err != nil {
 			return 0, err
 		}
-		return len(records), writeManifest(exportPath, manifest{Version: 1, ExportedAt: time.Now().UTC(), Records: records})
+		now := time.Now().UTC()
+		return len(records), writeManifest(exportPath, manifest{Version: 2, ExportedAt: now, MinimumBackupTime: now.Add(-30 * 24 * time.Hour), Records: records})
 	}
 	dsn := os.Getenv("HOURPATHS_DATABASE_DSN")
 	if dsn == "" {

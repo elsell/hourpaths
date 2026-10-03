@@ -19,7 +19,7 @@ var fixtureManifest = flag.String("restore-manifest", "", "isolated database fix
 func TestManifestRejectsStaleOrAmbiguousRecoveryInput(t *testing.T) {
 	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
 	path := filepath.Join(t.TempDir(), "records.json")
-	value := manifest{Version: 1, ExportedAt: now.Add(-time.Hour), Records: []application.DeletionRecord{}}
+	value := manifest{Version: 2, MinimumBackupTime: now.Add(-30 * 24 * time.Hour), ExportedAt: now.Add(-time.Hour), Records: []application.DeletionRecord{}}
 	if err := writeManifest(path, value); err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestManifestRejectsStaleOrAmbiguousRecoveryInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, invalid := range []string{string(raw) + " {}", strings.Replace(string(raw), `"version":1`, `"version":1,"unexpected":true`, 1)} {
+	for _, invalid := range []string{string(raw) + " {}", strings.Replace(string(raw), `"version":2`, `"version":2,"unexpected":true`, 1)} {
 		if err := os.WriteFile(path, []byte(invalid), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -105,5 +105,34 @@ func TestExportSurvivesPrimaryDatabaseLoss(t *testing.T) {
 	}
 	if len(restored.Records) != 1 || restored.Records[0].UserID != record.UserID || restored.Records[0].ReceiptHash != record.ReceiptHash {
 		t.Fatal("deletion evidence changed")
+	}
+}
+
+func TestManifestRejectsBackupWhoseDeletionEvidenceHasRetired(t *testing.T) {
+	now := time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)
+	floor := now.Add(-time.Hour)
+	for _, scenario := range []struct {
+		name          string
+		version       int
+		floor, backup time.Time
+		allowed       bool
+	}{
+		{"older backup", 2, floor, floor.Add(-time.Nanosecond), false},
+		{"boundary backup", 2, floor, floor, true},
+		{"newer backup", 2, floor, floor.Add(time.Minute), true},
+		{"missing boundary", 2, time.Time{}, floor, false},
+		{"future boundary", 2, now.Add(time.Second), floor, false},
+		{"legacy manifest", 1, floor, floor, false},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "records.json")
+			if err := writeManifest(path, manifest{Version: scenario.version, ExportedAt: now, MinimumBackupTime: scenario.floor, Records: []application.DeletionRecord{}}); err != nil {
+				t.Fatal(err)
+			}
+			_, err := readManifest(path, scenario.backup, now)
+			if (err == nil) != scenario.allowed {
+				t.Fatalf("allowed=%v error=%v", scenario.allowed, err)
+			}
+		})
 	}
 }
