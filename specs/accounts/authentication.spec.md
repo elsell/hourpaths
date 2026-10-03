@@ -110,6 +110,9 @@ passwords.
 - Social authentication must use OIDC.
 - Every application account must have a stable internal user identity that is
   independent of any external identity provider.
+- A newly provisioned account must receive a fresh internal identity. Existing
+  provider mappings must retain their account identity; deleting and later
+  recreating an account must never reuse the deleted identity or its local data.
 - Paths, memberships, follows, profile data, recorded activity, notifications,
   and other product data must belong to the internal application user rather
   than directly to a Google, Apple, or other provider identity.

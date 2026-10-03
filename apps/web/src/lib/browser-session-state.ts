@@ -49,6 +49,11 @@ function createState() {
       }
       return record.value;
     },
+    async discardOwner(owner: string): Promise<void> {
+      // Do not invalidate operations belonging to a replacement account.
+      // The shared revision change invalidates tickets for the removed account.
+      await records.coordinator.discardOwner(owner);
+    },
     async discard(value: string | null, expectedToken?: string): Promise<void> {
       operations.invalidate();
       clearing = true;

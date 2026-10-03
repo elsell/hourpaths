@@ -1,3 +1,7 @@
+import { isValidSessionCredential } from '@hourpaths/client-core';
+import { nativeAccountDeletion } from '../src/offline/native-account-deletion';
+import { captureDeletionNotifications, clearDeletionNotifications } from '../src/account-deletion-notifications';
+import { AccountDeletionView } from '../src/ui/account-deletion-view';
 import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
@@ -640,6 +644,8 @@ export function HomeScreen() {
     setOnboardingHomeRecovery(null);
   }
   const [ready, setReady] = useState(false);
+  const [accountDeletionReview, setAccountDeletionReview] = useState<{ owner: string; name?: string; recovery: boolean } | null>(null);
+  const deletionCredential = useRef<Session | null>(null);
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
   const [offlineStatusDismissed, setOfflineStatusDismissed] = useState(false);
   const [creatingPath, setCreatingPath] = useState(false);
@@ -1657,6 +1663,19 @@ export function HomeScreen() {
     ticket: SessionOperationTicket,
     sourceSessionToken?: string,
   ) {
+    const pendingDeletion = await (await openNativeOfflineStorage()).deletion.pendingOwners();
+    if (pendingDeletion.length) {
+      if (!ticket.current()) return;
+      if (!next.ownerId && next.nextAction === 'home') {
+        const profile = await validateSessionCredential<{ id: string }>(next, async current => generatedResponse(await createSessionApiClient(apiURL, () => current.token).profile()));
+        next = { ...next, ownerId: profile.id };
+      }
+      await serializedSessionStorage.persist(next, ticket.current);
+      if (!ticket.current()) return;
+      deletionCredential.current = next;
+      setAccountDeletionReview({ owner: pendingDeletion[0], recovery: true });
+      return;
+    }
     retainedHomeRef.current = null; setRetainedHome(null);
     const activeBeforeAdoption = notificationLifecycleState.current;
     if (nativeOffline.current && (!next.ownerId || next.ownerId !== activeBeforeAdoption.session?.ownerId)) disposeNativeTracking();
@@ -1957,6 +1976,51 @@ export function HomeScreen() {
     nativeOfflineOpening.current = null;
     setNativeTrackingState(null);
   }
+
+  const deletionService = useRef<ReturnType<typeof nativeAccountDeletion> | null>(null);
+  if (!deletionService.current) deletionService.current = nativeAccountDeletion({
+    apiURL,
+    sessions: serializedSessionStorage,
+    currentSession: () => notificationLifecycleState.current.session ?? deletionCredential.current,
+    captureSurfaces: async () => captureDeletionNotifications(),
+    stopAccount: owner => {
+      const active = notificationLifecycleState.current;
+      if (active.session?.ownerId === owner) {
+        deletionCredential.current = active.session;
+        sessionOperations.invalidate();
+        disposeNativeTracking();
+        resetNotifications();
+        resetSettingsOperations();
+        notificationLifecycleState.current = { destination: null, session: null };
+        setSession(null); setDestination(null);
+      }
+      setAccountDeletionReview(current => current?.owner === owner ? { ...current, recovery: true } : current);
+    },
+    clearSurfaces: async (owner, identifiers) => {
+      await clearDeletionNotifications(identifiers);
+      const pending = await loadNativePushDeregistration();
+      if (pending?.accountID === owner) await clearNativePushDeregistration();
+      if (!notificationLifecycleState.current.session || notificationLifecycleState.current.session?.ownerId === owner) await setNativeNotificationBadge(0);
+    },
+    clearMemory: owner => {
+      if (deletionCredential.current?.ownerId === owner) deletionCredential.current = null;
+      const active = notificationLifecycleState.current;
+      if (active.session && active.session.ownerId !== owner) return;
+      disposeNativeTracking();
+      cancelPathCreation(); resetTimerPresentation(); resetGoalManagement(); resetManualActivity(); resetPathDetail();
+      resetInvitations(); resetOwnershipTransfer(); resetNotifications(); resetSettingsOperations(); resetSocialProfileDiscovery();
+      notificationLifecycleState.current = { destination: null, session: null };
+      homeProjectionSessionToken.current = null;
+      setSession(null); setDestination(null); setAccessState('authentication_required'); setErrorKey(null);
+    },
+    completed: () => {
+      return openNativeOfflineStorage().then(async local => {
+        const remaining = await local.deletion.pendingOwners();
+        setAccountDeletionReview(remaining[0] ? { owner: remaining[0], recovery: true } : null);
+        if (!remaining.length) await restoreInitialSession();
+      });
+    },
+  });
 
   async function durableMobileHome() {
     if (nativeOffline.current) return nativeOffline.current;
@@ -2442,9 +2506,17 @@ export function HomeScreen() {
     if (accessState !== 'authenticated_offline') setOfflineStatusDismissed(false);
   }, [accessState]);
 
-  useEffect(() => {
-    (async () => {
+  async function restoreInitialSession() {
       try {
+        const local = await openNativeOfflineStorage();
+        const pending = await local.deletion.pendingOwners();
+        if (pending.length) {
+          const raw = await serializedSessionStorage.read();
+          const stored: unknown = raw ? JSON.parse(raw) : null;
+          if (isValidSessionCredential(stored)) deletionCredential.current = { ...stored, nextAction: stored.nextAction ?? 'home' };
+          setAccountDeletionReview({ owner: pending[0], recovery: true });
+          return;
+        }
         const ticket = sessionOperations.issue();
         await restoreStoredSession({
           read: () => serializedSessionStorage.read(),
@@ -2467,9 +2539,12 @@ export function HomeScreen() {
             await clearSession('errors.localSessionUnreadable', 'local_session_unreadable');
           },
         });
+      } catch {
+        setErrorKey('errors.localSessionUnreadable');
+        setAccessState('local_session_unreadable');
       } finally { setReady(true); }
-    })();
-  }, []);
+  }
+  useEffect(() => { void restoreInitialSession(); }, []);
 
   useEffect(() => {
     const review = pendingInvitationAcceptanceReview;
@@ -8154,6 +8229,12 @@ export function HomeScreen() {
         void loadSocialDeepEvent(currentSocialRouteIntent.eventID);
     }
   };
+  if (accountDeletionReview) return <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.screen}>
+    <AccountDeletionView key={accountDeletionReview.owner} i18n={i18n} name={accountDeletionReview.name} recovery={accountDeletionReview.recovery}
+      cancel={accountDeletionReview.recovery ? undefined : () => setAccountDeletionReview(null)}
+      signIn={accountDeletionReview.recovery ? beginSignIn : undefined}
+      confirm={() => accountDeletionReview.recovery ? deletionService.current!.resume(accountDeletionReview.owner) : deletionService.current!.confirm(accountDeletionReview.owner)} />
+  </SafeAreaView>;
   return <SafeAreaView
     edges={destination ? ['left', 'right'] : ['top', 'left', 'right', 'bottom']}
     style={[styles.screen, ownedHomeDestination ? { paddingTop: 0 } : null]}
@@ -8239,6 +8320,12 @@ export function HomeScreen() {
       runningTimerCount={Object.values(ownedHomeDestination.profile.timers).filter((state) => state.running).length}
       synchronizePushPermission={synchronizePushPermission}
       signOut={resolveTimerSignOut}
+      deleteAccount={() => {
+        const active = notificationLifecycleState.current;
+        if (!active.session || active.destination?.kind !== 'home') return;
+        setAccountDeletionReview({ owner: active.destination.profile.id, name: active.destination.profile.displayName, recovery: false });
+        router.dismissAll(); router.replace('/(tabs)/home');
+      }}
       updateInteractionSettings={updateInteractionSettings}
       updateNudgeChannelPreference={updateNudgeChannelPreference}
       updateConfiguredTimeZone={updateConfiguredTimeZone}

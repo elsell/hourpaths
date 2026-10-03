@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/v1/account-deletion/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm completed deletion with its single-purpose receipt secret */
+        post: operations["confirm-account-deletion-receipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audit-events": {
         parameters: {
             query?: never;
@@ -185,6 +202,23 @@ export interface paths {
         post?: never;
         /** Deactivate the current account and revoke its sessions */
         delete: operations["deactivate-me"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm permanent deletion of the reviewed account */
+        post: operations["delete-account"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1383,6 +1417,27 @@ export interface components {
              * @default about:blank
              */
             type: string;
+        };
+        AccountDeletionInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountDeletionInputBody.json
+             */
+            readonly $schema?: string;
+            confirmed: boolean;
+            receiptSecret: string;
+            reviewedUserId: string;
+        };
+        AccountDeletionReceiptInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountDeletionReceiptInputBody.json
+             */
+            readonly $schema?: string;
+            receiptSecret: string;
+            userId: string;
         };
         ActiveFollowingData: {
             items: components["schemas"]["ActiveFollowingItem"][];
@@ -3216,6 +3271,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "confirm-account-deletion-receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountDeletionReceiptInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "list-audit-events": {
         parameters: {
             query?: {
@@ -3627,6 +3713,39 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "delete-account": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountDeletionInputBody"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {

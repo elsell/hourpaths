@@ -5083,5 +5083,17 @@
   "offline.correctHeading": "Review session timing",
   "offline.correctBody": "Your device time changed. Review when this session started and how long it lasted before saving.",
   "offline.correctionForPath": "Review the timing of your session on {path}.",
-  "offline.review": "Review"
+  "offline.review": "Review",
+  "accountDelete.heading": "Delete account",
+  "accountDelete.intro": "Permanently delete your account and associated data.",
+  "accountDelete.warning": "Deletion starts immediately and cannot be canceled or undone. Your profile, preferences, activity, progress, comments, reactions, relationships, and pending changes will be permanently removed.",
+  "accountDelete.paths": "Every Path you own will be deleted, including shared Paths and every participant’s recorded activity in them. Transfer ownership of any shared Path you want to preserve before continuing.",
+  "accountDelete.timers": "All your timers will stop. Their elapsed time and unsynchronized changes will be discarded. Your activity on Paths owned by others will be removed; their activity will remain.",
+  "accountDelete.retention": "Encrypted backups expire within 30 days and cannot restore your deleted data into use. Limited evidence may be retained for active moderation or security investigations, or as required by law. Ordinary account data is not retained under those exceptions.",
+  "accountDelete.confirm": "Permanently delete account",
+  "accountDelete.progress": "Completing account deletion…",
+  "accountDelete.failed": "Deletion could not be confirmed. Your deletion request is saved. Retry to check its status and finish removing local data.",
+  "accountDelete.recovery": "Finish account deletion",
+  "accountDelete.recoveryDetail": "A previously confirmed deletion needs to finish. Local activity stays paused while its status is checked.",
+  "accountDelete.reviewFailed": "Your account could not be verified. Try again before confirming deletion."
 }

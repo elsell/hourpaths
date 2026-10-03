@@ -1,3 +1,4 @@
+import { SQLiteAccountDeletion } from './offline/sqlite-account-deletion';
 import { SQLiteAppearanceCache } from './offline/sqlite-appearance-cache';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -30,7 +31,7 @@ function open(path: string) {
       }
     },
   };
-  return { appearances: new SQLiteAppearanceCache(database), store: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), close: () => db.close() };
+  return { connection, deletion: new SQLiteAccountDeletion(database), appearances: new SQLiteAppearanceCache(database), store: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), close: () => db.close() };
 }
 
 test('real SQLite reopen preserves pending timers and rejects stale account revisions', async () => {
@@ -88,5 +89,55 @@ test('personal appearance cache survives SQLite reopen and rejects stale revisio
     assert.equal(await database.appearances.read('bob', 'guitar'), null);
     await database.appearances.write('bob', 'guitar', { revision: 1, color: 'pink', emoji: '💯' });
     assert.equal((await database.appearances.read('alice', 'guitar'))?.color, 'mint');
+  } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
+});
+
+
+test('deletion intent survives restart, isolates owners, and fences late writes after cleanup', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'hourpaths-deletion-'));
+  let database = open(join(folder, 'tracking.db'));
+  try {
+    const profile: MobileHomeProfile = {
+      id: 'alice', email: 'alice@example.test', displayName: 'Alice', profileVisibility: 'private',
+      paths: [], archivedPaths: [], timers: {}, pendingInvitations: { items: [], nextCursor: '' },
+      homePreferences: { revision: 0, orderMethod: 'manual', manualPathIds: [], pinnedPathIds: [] },
+    };
+    const home = { owner: 'alice', timeZone: 'utc', profile };
+    const core = new OfflineTracking(database.store, 'alice', () => 1000, () => 'operation');
+    await core.retainPaths([{ id: 'guitar', name: 'guitar', timeZone: 'utc' }]);
+    const snapshot = await core.snapshot();
+    await database.home.saveHome(home);
+    await database.appearances.write('alice', 'guitar', { revision: 1, color: 'mint', emoji: '🎸' });
+    await database.appearances.write('bob', 'guitar', { revision: 1, color: 'gold', emoji: '✨' });
+    const intent = { owner: 'alice', receiptSecret: 'a'.repeat(64), phase: 'pending' as const };
+    await database.deletion.save(intent);
+    await database.deletion.saveSurfaces('alice', ['notice-a']);
+    await database.deletion.saveSurfaces('alice', ['notice-a', 'notice-b']);
+    assert.equal(await database.store.read('alice'), null);
+    assert.equal(await database.home.readHome('alice'), null);
+    assert.equal(await database.appearances.read('alice', 'guitar'), null);
+    await assert.rejects(database.home.saveHome(home), /account_deletion_pending/);
+    database.close(); database = open(join(folder, 'tracking.db'));
+    assert.deepEqual(await database.deletion.read('alice'), intent);
+    assert.deepEqual(await database.deletion.readSurfaces('alice'), ['notice-a', 'notice-b']);
+    assert.deepEqual(await database.deletion.pendingOwners(), ['alice']);
+    assert.deepEqual(await database.deletion.save({ ...intent, receiptSecret: 'b'.repeat(64) }), intent);
+    const confirmed = { ...intent, phase: 'confirmed' as const };
+    await database.deletion.save(confirmed);
+    assert.deepEqual(await database.deletion.save(intent), confirmed);
+    await database.deletion.purge('alice');
+    assert.deepEqual(await database.deletion.readSurfaces('alice'), ['notice-a', 'notice-b']);
+    await database.deletion.forget('alice');
+    for (const table of ['tracking_accounts_v1', 'tracking_home_v1', 'tracking_appearances_v1']) {
+      assert.equal((await database.connection.getFirstAsync<{ count: number }>(`SELECT COUNT(*) AS count FROM ${table} WHERE owner = ?`, 'alice'))?.count, 0);
+    }
+    database.close(); database = open(join(folder, 'tracking.db'));
+    assert.deepEqual(await database.deletion.pendingOwners(), []);
+    assert.equal(await database.deletion.read('alice'), null);
+    assert.equal(await database.deletion.readSurfaces('alice'), null);
+    await assert.rejects(database.store.commit('alice', 0, { ...snapshot, revision: 1 }), /account_deletion_pending/);
+    await assert.rejects(database.home.saveHome(home), /account_deletion_pending/);
+    await assert.rejects(database.appearances.write('alice', 'guitar', { revision: 2, color: 'mint', emoji: '🎸' }), /account_deletion_pending/);
+    assert.equal((await database.appearances.read('bob', 'guitar'))?.color, 'gold');
   } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
 });

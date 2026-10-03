@@ -32,6 +32,8 @@ type App struct {
 	Invitations                      ports.Invitations
 	AllowAccountDeactivation         bool
 	Users                            ports.Users
+	AccountDeletion                  AccountDeletionRepository
+	DeletionJournal                  AccountDeletionJournal
 	TimeZonePreferences              TimeZonePreferenceRepository
 	DuplicateAccountHints            ports.DuplicateAccountHints
 	DuplicateAccountRecoveryDeclines ports.DuplicateAccountRecoveryDeclines

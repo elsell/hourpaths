@@ -1,3 +1,6 @@
+import { browserAccountDeletion } from '../account/adapters/browser-account-deletion';
+import type { AccountDeletionService } from '../account/ports/account-deletion';
+import { AccountDeletionRecovery } from '../presentation/account-deletion';
 import { browserSessionState } from '../../browser-session-state';
 import { durableActivityRepository } from '../offline/adapters/durable-activity-repository';
 import { ActivityFailure } from '../history/domain/detail';
@@ -34,28 +37,57 @@ import { StudioApp } from '../presentation/app';
 
 export function mountStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale; config: ClientRuntimeConfig }) {
   let cancelled = false;
+  let generation = 0;
+  let recovering = false;
   let dispose: (() => void) | undefined;
   let unsubscribe: (() => void) | undefined;
   let previous: string | null | undefined;
+  const sessions = browserSessionStore();
+  const local = new IndexedDBTrackingStore();
+  const i18n = createTranslator([options.locale]);
+  const recovery = (owners: string[]) => {
+    recovering = true;
+    dispose?.();
+    const root = createRoot(element);
+    root.render(<AccountDeletionRecovery service={deletion} owners={owners} i18n={i18n} signIn={() => {
+      return browserEntryService(options.config).begin();
+    }} />);
+    dispose = () => root.unmount();
+  };
+  const deletion = browserAccountDeletion(options.apiURL, sessions, local, owner => {
+    if (!cancelled && !recovering) { generation++; recovery([owner]); }
+  }, () => { if (!cancelled) { previous = undefined; render(); } });
   const render = () => {
     if (cancelled) return;
     let current: string | null;
     try { current = browserSessionState().read(); } catch { current = null; }
     if (dispose && previous === current) return;
     previous = current;
-    dispose?.();
-    dispose = mountReadyStudio(element, options);
+    recovering = false;
+    const own = ++generation;
+    dispose?.(); dispose = undefined;
+    // No API reads or offline replay are started before durable intent discovery.
+    void deletion.pendingOwners().then(owners => {
+      if (cancelled || own !== generation) return;
+      if (owners.length) recovery(owners);
+      else dispose = mountReadyStudio(element, options, deletion);
+    }).catch(() => {
+      if (cancelled || own !== generation) return;
+      const root = createRoot(element);
+      root.render(<main className="studio studio-entry"><section className="studio-entry-card"><p role="alert">{i18n.t('errors.localSessionUnreadable')}</p><button onClick={() => { previous = undefined; render(); }}>{i18n.t('common.retry')}</button></section></main>);
+      dispose = () => root.unmount();
+    });
   };
-  void browserSessionStore().initialize!().catch(() => undefined).then(() => {
+  void sessions.initialize!().catch(() => undefined).then(() => {
     if (cancelled) return;
     render();
     try { unsubscribe = browserSessionState().subscribe(render); }
     catch { /* Account entry presents unavailable browser storage. */ }
   });
-  return () => { cancelled = true; unsubscribe?.(); dispose?.(); };
+  return () => { cancelled = true; generation++; unsubscribe?.(); dispose?.(); void local.close(); };
 }
 
-function mountReadyStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale; config: ClientRuntimeConfig }) {
+function mountReadyStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale; config: ClientRuntimeConfig }, deletion: AccountDeletionService) {
   const root = createRoot(element);
   const i18n = createTranslator([options.locale]);
   const store = browserSessionStore();
@@ -109,6 +141,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
   if (browserConnected()) void historyRefresh.wake();
   const stopConnectivity = subscribeTrackingConnectivity(wakeTracking);
   root.render(<StudioApp dependencies={{
+    deletion,
     offline,
     paths,
     blocking: apiBlockingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),

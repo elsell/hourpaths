@@ -30,10 +30,10 @@ func (s *Store) HasActiveEmailMatch(ctx context.Context, claims ports.Claims) (b
 	if email == "" {
 		return false, nil
 	}
-	provisionalUserID := identity.UserID(claims.Issuer, claims.Subject)
 	var suppressed int64
 	if err := s.DB.WithContext(ctx).Model(&duplicateEmailRecoveryDeclineModel{}).
-		Where("provisional_user_id = ? AND normalized_email = ?", provisionalUserID, email).
+		Joins("JOIN identity_models ON identity_models.user_id = duplicate_email_recovery_declines.provisional_user_id").
+		Where("identity_models.issuer = ? AND identity_models.subject = ? AND normalized_email = ?", claims.Issuer, claims.Subject, email).
 		Limit(1).Count(&suppressed).Error; err != nil {
 		return false, err
 	}

@@ -144,3 +144,26 @@ test('retained-account storage replaces only the rejected credential, never a ne
   assert.equal(await storage.pause('alice', 'refreshed', () => true), false);
   assert.equal(JSON.parse(stored).ownerId, 'bob');
 });
+
+test('account deletion clears rotated or paused owner credentials but preserves a queued replacement account', async () => {
+  let stored = JSON.stringify({ ...current, ownerId: 'alice' });
+  const storage = createSerializedMobileSessionStorage({
+    read: async () => stored,
+    write: async value => { stored = JSON.stringify(value); },
+    pause: async owner => { stored = JSON.stringify({ state: 'sign_in_required', ownerId: owner }); },
+    discard: async () => { stored = ''; },
+  });
+  const rotated = storage.persist({ ...current, ownerId: 'alice', token: 'rotated' }, () => true);
+  const removed = storage.discardOwner('alice');
+  await rotated;
+  assert.equal(await removed, true);
+  assert.equal(stored, '');
+  const replacement = storage.persist({ ...current, ownerId: 'bob' }, () => true);
+  const stale = storage.discardOwner('alice');
+  await replacement;
+  assert.equal(await stale, false);
+  assert.equal(JSON.parse(stored).ownerId, 'bob');
+  await storage.pause('bob', current.token, () => true);
+  assert.equal(await storage.discardOwner('bob'), true);
+  assert.equal(stored, '');
+});

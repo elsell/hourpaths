@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/deletionjournal"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore"
 	pathstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/path"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver"
@@ -55,6 +57,12 @@ func main() {
 		slog.Error("configuration invalid", "error", err)
 		os.Exit(1)
 	}
+	journalKey, _ := hex.DecodeString(cfg.DeletionJournalKey)
+	journal, err := deletionjournal.New(cfg.DeletionJournalDirectory, journalKey)
+	if err != nil {
+		slog.Error("deletion journal storage unavailable")
+		os.Exit(1)
+	}
 	store, err := gormstore.Open("postgres", cfg.DatabaseDSN)
 	if err != nil {
 		panic(err)
@@ -88,7 +96,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	sessions := sessionauth.New(store, clock)
+	sessions := sessionauth.NewWithAccountAccess(store, clock, journal.CheckAccountAccess)
 	metrics := observability.NewMetrics(cfg.MetricsBearerToken)
 	probe := observability.Fanout{observability.StructuredLog{Logger: slog.New(slog.NewJSONHandler(os.Stdout, nil))}, metrics}
 	if cfg.OTLPHTTPEndpoint != "" {
@@ -114,9 +122,10 @@ func main() {
 		separator := strings.LastIndex(configured, "#")
 		invitationAdminUsers[identity.UserID(configured[:separator], configured[separator+1:])] = struct{}{}
 	}
-	application := app.App{Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, InvitationAdminUsers: invitationAdminUsers, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, TimeZonePreferences: store, DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
+	application := app.App{Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, InvitationAdminUsers: invitationAdminUsers, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, DeletionJournal: journal, TimeZonePreferences: store, DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
 	authorizationWorker := uuid.NewString()
 	go reconcile(ctx, application, authorizationWorker)
+	go recoverDeletions(ctx, journal, store)
 	go reconcilePush(ctx, pushWorker)
 	registrations := generated.Registrations(generated.Dependencies{DB: store.DB, Auth: sessions, Profiles: store, Authorizer: authorizer, AuthorizationOutbox: store, AuthorizationSerializer: store, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock, Probe: probe, NewID: uuid.NewString, AuthorizationWorker: uuid.NewString(), AuthorizationLease: 30 * time.Second, CursorSigningKey: []byte(cfg.CursorSigningKey)})
 	registrations = append(registrations, func(api huma.API) {
@@ -164,6 +173,28 @@ func reconcile(ctx context.Context, application app.App, worker string) {
 	for {
 		if err := application.ReconcileAuthorization(ctx, worker, 25); err != nil {
 			slog.Error("authorization reconciliation failed", "error", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+// A bounded pass runs immediately on startup and retries without client activity.
+func recoverDeletions(ctx context.Context, journal *deletionjournal.Files, store *gormstore.Store) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		pass, cancel := context.WithTimeout(ctx, 45*time.Second)
+		records, err := journal.Records(pass)
+		if err == nil {
+			err = app.RecoverAcceptedDeletions(pass, records, store, uuid.NewString)
+		}
+		cancel()
+		if err != nil && ctx.Err() == nil {
+			slog.Error("accepted account deletion recovery failed")
 		}
 		select {
 		case <-ctx.Done():

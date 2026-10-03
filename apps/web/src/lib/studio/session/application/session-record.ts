@@ -27,6 +27,18 @@ export class SessionRecordCoordinator {
     });
   }
 
+  /** Compare the account inside the same lock as deletion, including paused sessions. */
+  discardOwner(owner: string): Promise<SessionRecord | null> {
+    if (!owner || owner.trim() !== owner) return Promise.reject(new Error('session_owner_required'));
+    return this.port.exclusive(() => {
+      const raw = this.read().value;
+      if (!raw) return null;
+      const value: unknown = JSON.parse(raw);
+      if (!value || typeof value !== 'object' || !('ownerId' in value) || value.ownerId !== owner) return null;
+      return this.write(null);
+    });
+  }
+
   private write(value: string | null, family?: string): SessionRecord {
     const revision = this.revision();
     const record = { revision, family: family || revision, value };

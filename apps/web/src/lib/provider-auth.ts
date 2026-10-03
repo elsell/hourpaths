@@ -1,3 +1,4 @@
+import { consumeAccountDeletionEntry, prepareAccountDeletionSignIn } from './account-deletion-entry';
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 
 export type ApplicationDestination = '/' | '/studio' | '/onboarding' | '/account-recovery';
@@ -5,7 +6,7 @@ export type ApplicationDestination = '/' | '/studio' | '/onboarding' | '/account
 export function replaceApplicationLocation(destination: ApplicationDestination): void {
   switch (destination) {
     case '/': window.location.replace('/'); break;
-    case '/studio': window.location.replace('/studio'); break;
+    case '/studio': window.location.replace(consumeAccountDeletionEntry(window.sessionStorage) ? '/studio/delete-account' : '/studio'); break;
     case '/onboarding': window.location.replace('/onboarding'); break;
     case '/account-recovery': window.location.replace('/account-recovery'); break;
   }
@@ -27,6 +28,7 @@ function manager(issuer: string, clientId: string): UserManager {
 }
 
 export async function beginProviderSignIn(issuer: string, clientId: string): Promise<void> {
+  prepareAccountDeletionSignIn(window.sessionStorage, window.location.pathname);
   await manager(issuer, clientId).signinRedirect({ prompt: 'login' });
 }
 

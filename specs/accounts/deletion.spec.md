@@ -108,3 +108,34 @@ personal data and path relationships.
   want to preserve before deleting the account.
 - The application must not transfer ownership automatically.
 - The user must explicitly confirm deletion after seeing the warning.
+
+## Acceptance scenarios
+
+- Canceling the complete warning must leave the account, sessions, timers, and
+  queued local activity unchanged. An unconfirmed API request must not mutate
+  account data.
+- If the signed-in account changes after the warning is reviewed, confirmation
+  must fail without deleting either account; the current account must be reviewed
+  again before a new confirmation.
+- With two signed-in clients, confirming deletion on one client must prevent
+  either credential from reading or mutating the deleted account. A delayed
+  offline replay must not recreate the account, its Paths, or its activity.
+- Deleting a participant with one owned shared Path and one joined Path must
+  delete the owned Path and all its activity, while preserving the joined Path
+  and every other participant's activity there.
+- Deletion must remove identity associations and device registrations, and must
+  clear local account storage before the initiating client presents completion.
+  A later sign-in with the former provider identity must not restore deleted data.
+- A newly created account after deletion must receive a different account ID so
+  retained data on another device cannot be adopted as the new account's data.
+- A failed database transaction must leave the account and its data unchanged;
+  a successful transaction must include its deletion evidence atomically.
+- A lost response must not lead the client to report that deleted data still
+  exists or to restore its pending work. It must resolve the outcome through the
+  authenticated account lifecycle and clear local data when deletion is proven.
+  A narrowly scoped deletion receipt may prove this outcome after ordinary
+  sessions have been revoked; it must not authorize any other account operation.
+- A restore rehearsal must use a backup predating a confirmed deletion and prove
+  that the deletion is reapplied before API or background workers can serve it.
+  The release evidence must also verify the 24-hour removal and 30-day retention
+  bounds; configuration intent alone does not establish these guarantees.

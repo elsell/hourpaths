@@ -289,6 +289,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 		return &NoContentOutput{Status: http.StatusNoContent}, nil
 	})
 	registerAuditRoutes(api, application)
+	registerAccountDeletionRoutes(api, application)
 	registerAuthorizationRecoveryRoutes(api, application)
 	registerInvitationRoutes(api, application)
 	registerOnboardingRoutes(api, application)

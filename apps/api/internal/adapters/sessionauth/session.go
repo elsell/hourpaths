@@ -16,8 +16,9 @@ import (
 const tokenBytes = 32
 
 type Manager struct {
-	repository repository
-	clock      ports.Clock
+	repository    repository
+	clock         ports.Clock
+	accountAccess func(context.Context, string) error
 }
 
 type repository interface {
@@ -29,9 +30,26 @@ func New(repository repository, clock ports.Clock) *Manager {
 	return &Manager{repository: repository, clock: clock}
 }
 
+// NewWithAccountAccess fences irreversible lifecycle requests across all sessions.
+func NewWithAccountAccess(repository repository, clock ports.Clock, access func(context.Context, string) error) *Manager {
+	if access == nil {
+		access = func(context.Context, string) error { return ports.ErrUnavailable }
+	}
+	return &Manager{repository: repository, clock: clock, accountAccess: access}
+}
+func (m *Manager) allowAccount(ctx context.Context, userID string) error {
+	if m.accountAccess != nil {
+		return m.accountAccess(ctx, userID)
+	}
+	return nil
+}
+
 func (m *Manager) CreateSession(ctx context.Context, userID string, scopes []string, identityTokenHash []byte, expiresAt, absoluteExpiresAt time.Time, event audit.Event) (string, error) {
 	if userID == "" || len(scopes) != 1 || !accountLifecycleScope(scopes[0]) || !expiresAt.After(m.clock.Now()) || absoluteExpiresAt.Before(expiresAt) {
 		return "", ports.ErrInvalidArgument
+	}
+	if err := m.allowAccount(ctx, userID); err != nil {
+		return "", err
 	}
 	random := make([]byte, tokenBytes)
 	if _, err := rand.Read(random); err != nil {
@@ -56,6 +74,9 @@ func (m *Manager) RotateSession(ctx context.Context, authorization, userID strin
 	}
 	if userID == "" || len(scopes) != 1 || scopes[0] != "api:user" || !expiresAt.After(m.clock.Now()) {
 		return "", time.Time{}, ports.ErrInvalidArgument
+	}
+	if err := m.allowAccount(ctx, userID); err != nil {
+		return "", time.Time{}, err
 	}
 	random := make([]byte, tokenBytes)
 	if _, err := rand.Read(random); err != nil {
@@ -83,6 +104,9 @@ func (m *Manager) ActivateOnboarding(ctx context.Context, authorization string, 
 	now := m.clock.Now().UTC()
 	if activation.UserID == "" || !expiresAt.After(now) {
 		return "", time.Time{}, ports.ErrInvalidArgument
+	}
+	if err := m.allowAccount(ctx, activation.UserID); err != nil {
+		return "", time.Time{}, err
 	}
 	random := make([]byte, tokenBytes)
 	if _, err := rand.Read(random); err != nil {
@@ -112,7 +136,13 @@ func (m *Manager) Authenticate(ctx context.Context, authorization string) (ports
 	if errors.Is(err, ports.ErrNotFound) {
 		return ports.Principal{}, ports.ErrInvalidCredential
 	}
-	return principal, err
+	if err != nil {
+		return ports.Principal{}, err
+	}
+	if err := m.allowAccount(ctx, principal.UserID); err != nil {
+		return ports.Principal{}, err
+	}
+	return principal, nil
 }
 
 func (m *Manager) RevokeSession(ctx context.Context, authorization string, event audit.Event) error {
