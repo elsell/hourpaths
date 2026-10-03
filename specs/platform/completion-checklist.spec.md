@@ -96,9 +96,7 @@ tester group ([Apple status evidence](https://github.com/elsell/hourpaths/action
 Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
-The active slice is remembered web sessions, including browser restart, expiry
-recovery and cross-tab account fences. Large-account hydration and complete
-cross-device/device acceptance remain subsequent area 2 closure requirements.
+The active slice is large-account Home hydration: avoid refetching all Paths when downloaded history alone advances the local ledger, while preserving command/replay fences. Remembered sessions merged in PR #108 as `347cd27` after all five gates. Complete cross-device/device acceptance remains an area 2 closure requirement.
 
 The manual-activity slice now has a durable account queue, immutable replay,
 owner-only causal metadata, retained losing revisions, and Studio/mobile form
@@ -148,8 +146,8 @@ account replaced the shared session without showing the previous private Paths.
 Malformed durable session storage failed closed while preserving account ledgers.
 Focused tests cover queued rotation versus logout and replacement-account fences;
 the two confirmed review blockers were fixed. Web tests, type checking, i18n and
-the client capability boundary passed. Merge/release remain pending; this does
-not close area 2. Prompt retained-Home fallback now avoids hiding cached Paths
+the client capability boundary passed. PR #108 merged and its API/web release is
+verified below; this does not close area 2. Prompt retained-Home fallback now avoids hiding cached Paths
 behind 429 retries, but reducing large-account hydration traffic remains open.
 
 Native feedback audit: Path creation/archive/leave and timer confirmations previously appeared as loose footer text; they now share an app-level overlay. All visual pending-sync indicators defer for one continuous second. Offline status uses polite, neutral presentation; errors and corrections requiring user action remain immediate and persistent. Empty history no longer implies loading. The review also found and fixed prior-account Path names surviving sign-out in confirmation state. PR #107 merged as `67ac627` after all five gates and exact-head owner attestation. Actual native screenshots, large Dynamic Type and device acceptance remain pending release.
@@ -157,3 +155,5 @@ Native feedback audit: Path creation/archive/leave and timer confirmations previ
 The user approved all future PRs within this goal; exact-head protected-path attestations remain recorded and all mandatory merge/security gates remain enforced. PR #106 merged as `a8a6380`, unblocking the temporary bounded dependency exception; it does not fix the upstream advisory.
 
 Release v0.30.0 published `a8a6380` and deployed via GitOps `d2e55dfe00faefaf895d8cad907d9801e01359b8`. Flux Ready/Healthy, completed API/web rollouts, exact running source/image verification, and public Studio HTTP 200 passed. [Release evidence](https://github.com/elsell/hourpaths/actions/runs/37097322708). Web digest `sha256:6a089d5f1c4c67a06396cd1199bd71d0099584a2e4ef9fb852106054574cb81b`; API digest `sha256:141c83ee22ba83ccc99f5643e478608b7e96bd36dbf886bcf1e7da5c3798654f`. TestFlight 0.30.0 (286) is VALID, IN_BETA_TESTING, and assigned to the internal group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37098278968)); this does not claim device acceptance.
+
+PR #107 publication was superseded by #108 at the exact-current-main guard before publishing. The combined [release](https://github.com/elsell/hourpaths/actions/runs/37099999117) published source `347cd27f871bc568a5ef264df0461d12068edc1d`; GitOps `669ab5fde8deb6fa77108c637e0ebdd4c2325fa6` deployed it. Flux Ready/Healthy, completed API/web rollouts, exact running source/image checks, and public Studio HTTP 200 passed. Web digest `sha256:348f2b3a0560b92b0b70523dea565ec7905e8ae9d1967fe0a4eb6fc6225748f9`; API digest `sha256:d98b16444c688c4ad6cb147daa6953960417659f6361801484ddfd992dce0c2f`. iOS archive/upload remains in progress; native availability and visual acceptance are not yet proven. Android emulator acceptance on Paul remains unverified: the refreshed development build passed the initial JDK mismatch after using cached JDK 17, then failed downloading NDK dependencies because the root disk lacked space. Newly downloaded NDKs were removed; hosted native CI remains passing. This is not visual/device acceptance.

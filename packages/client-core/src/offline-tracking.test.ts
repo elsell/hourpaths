@@ -334,3 +334,62 @@ test('a positive subsecond stop retains a quiet notice across restart without dr
   assert.equal(state.notices[0]?.reason, 'subsecond');
   assert.equal(state.notices[0]?.pathId, path.id);
 });
+
+
+test('Home retains a fetched snapshot through history-only writes without dropping newer history', async () => {
+  const store = new DurableFake();
+  const tracking = client(store, 'alice', '2026-10-01T12:00:00Z', 'home');
+  await tracking.retainPaths([path]);
+  const fetchedAt = (await tracking.snapshot()).revision;
+  const entry = { id: 'history', owner: 'alice', pathId: path.id, startedAt: '2026-10-01T10:00:00Z', endedAt: '2026-10-01T10:01:00Z', timeZone: path.timeZone };
+  assert.equal(await tracking.retainHistory([entry], fetchedAt), true);
+  await tracking.retainActivity({ ...entry, id: 'detail', note: 'Retained detail' });
+  assert.equal(await tracking.retainHome([path], [{ pathId: path.id, summary: { savedTotalSeconds: 120, period: null }, timer: null }], fetchedAt), true);
+  const state = await tracking.snapshot();
+  assert.deepEqual(state.history.map(value => value.id), ['history', 'detail']);
+  assert.equal((await tracking.tracking(path.id))?.savedTotalSeconds, 120);
+});
+
+test('history refreshes cannot hide a command or an older-client write from the Home fence', async () => {
+  for (const legacy of [false, true]) {
+    const store = new DurableFake();
+    const tracking = client(store, 'alice', '2026-10-01T12:00:00Z', 'home');
+    await tracking.retainPaths([path]);
+    const fetchedAt = (await tracking.snapshot()).revision;
+    await tracking.retainHistory([], fetchedAt);
+    if (legacy) {
+      const state = await tracking.snapshot();
+      const revision = state.revision++;
+      state.timers.push({ id: 'older-client-timer', pathId: path.id, startedAt: '2026-10-01T12:00:00Z', timeZone: path.timeZone });
+      assert.equal(await store.commit('alice', revision, state), true);
+    } else await tracking.start(path.id);
+    await tracking.retainHistory([], (await tracking.snapshot()).revision);
+    const before = await tracking.snapshot();
+    assert.equal(await tracking.retainHome([path], [{ pathId: path.id, summary: { savedTotalSeconds: 0, period: null }, timer: null }], fetchedAt), false);
+    assert.deepEqual(await tracking.snapshot(), before);
+  }
+});
+
+
+test('Home retries a competing history commit locally and retains its result', async () => {
+  class CompetingHistoryStore extends DurableFake {
+    beforeCommit?: () => Promise<void>;
+    override async commit(owner: string, revision: number, state: TrackingSnapshot) {
+      const compete = this.beforeCommit;
+      this.beforeCommit = undefined;
+      if (compete) await compete();
+      return super.commit(owner, revision, state);
+    }
+  }
+  const store = new CompetingHistoryStore();
+  const home = client(store, 'alice', '2026-10-01T12:00:00Z', 'home');
+  const history = client(store, 'alice', '2026-10-01T12:00:00Z', 'history');
+  await home.retainPaths([path]);
+  const fetchedAt = (await home.snapshot()).revision;
+  const entry = { id: 'racing-detail', owner: 'alice', pathId: path.id, startedAt: '2026-10-01T10:00:00Z', endedAt: '2026-10-01T10:01:00Z', timeZone: path.timeZone };
+  store.beforeCommit = () => history.retainActivity(entry);
+  assert.equal(await home.retainHome([path], [{ pathId: path.id, summary: { savedTotalSeconds: 60, period: null }, timer: null }], fetchedAt), true);
+  assert.deepEqual((await home.snapshot()).history, [entry]);
+  assert.equal((await home.tracking(path.id))?.savedTotalSeconds, 60);
+  assert.equal(await home.retainHome([path], [{ pathId: path.id, summary: { savedTotalSeconds: 0, period: null }, timer: null }], Number.NaN), false);
+});

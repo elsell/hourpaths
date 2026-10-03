@@ -330,3 +330,9 @@ logout and account replacement, concurrent rotation and delayed completion,
 foreground and cold expiry with a running timer, retained local stop followed by
 same-account synchronization, and unreadable browser storage. Existing provider
 state and server authentication rules remain authoritative.
+
+## Concurrent cache hydration
+
+A completed Home read must not repeat its network traversal solely because another client saved downloaded history or an activity detail in the same account ledger. Home retention must preserve those newer history rows and remain atomic across its Paths and timer summaries. Any intervening local timer/activity command, synchronization result, membership change, or unclassified write must continue to reject the stale Home read. This fence must remain conservative with older clients that do not identify history-only writes. A competing history-only store commit may be retried locally with the already fetched payload; retries must remain bounded.
+
+Acceptance: saving full history and then an activity detail while Home is in flight preserves both and needs one Home fetch. A timer command between history reads still rejects stale Home, including when the writer uses the older snapshot format.
