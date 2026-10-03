@@ -305,6 +305,7 @@ export function PathGoalManagementForm({
       </View>
       {deleteErrorText ? <InlineStatus text={deleteErrorText} tone="error" /> : null}
       <ActionButton
+        fullWidth
         disabled={deleteBusy}
         label={i18n.t(deleteBusy ? 'pathDelete.deleting' : 'pathDelete.confirm')}
         onPress={onDeleteConfirm}

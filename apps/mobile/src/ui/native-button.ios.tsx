@@ -21,7 +21,7 @@ export function NativeButton({ accessibilityLabel, busy = false, disabled = fals
     style={[styles.container, tone ? { backgroundColor: tone.background, borderRadius: mobileTheme.radii.md } : null, fullWidth && styles.fullWidth]}
   >
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={fullWidth ? styles.fullWidth : undefined}>
-    <Host colorScheme="dark" matchContents={fullWidth ? { vertical: true } : true} style={fullWidth ? styles.fullWidth : undefined}>
+    <Host useViewportSizeMeasurement colorScheme="dark" matchContents={fullWidth ? { vertical: true } : true} style={fullWidth ? styles.fullWidth : undefined}>
       <Button
         label={fullWidth ? undefined : label}
         modifiers={[

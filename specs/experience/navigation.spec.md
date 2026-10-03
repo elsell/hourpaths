@@ -121,3 +121,9 @@ responsibilities.
 - This state must remain independent per primary surface for the duration of
   the current application session.
 - A fresh application launch may reset each surface to its default root state.
+
+## Native recovery action layout
+
+- Native action labels must remain readable at narrow widths and supported Dynamic Type sizes; SwiftUI content measurement must not collapse a button to an icon or empty pill.
+- Unavailable Path recovery must group the explanation with a prominent, labeled Retry action and a secondary labeled return-to-Home action. Actions must use the shared button component and consistent spacing.
+- The permanent Path deletion confirmation must show its localized destructive action at the available content width, with the existing consequences visible before confirmation.

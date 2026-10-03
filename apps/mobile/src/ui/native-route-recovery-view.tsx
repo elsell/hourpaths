@@ -21,6 +21,7 @@ export function NativeRouteRecoveryView({
     return <View style={styles.stack}>
       <StatusBanner text={i18n.t('common.loading')} tone="loading" />
       {onGoHome ? <NativePrimaryButton
+        fullWidth
         label={i18n.t('pathDetails.back')}
         onPress={onGoHome}
         systemImage="house"
@@ -37,12 +38,13 @@ export function NativeRouteRecoveryView({
       title={i18n.t('pathDetails.unavailableTitle')}
     />
     {onRetry ? <NativePrimaryButton
+      fullWidth
       label={i18n.t('common.retry')}
       onPress={onRetry}
       systemImage="arrow.clockwise"
-      variant="plain"
     /> : null}
     {onGoHome ? <NativePrimaryButton
+      fullWidth
       label={i18n.t('pathDetails.back')}
       onPress={onGoHome}
       systemImage="house"
@@ -54,5 +56,6 @@ export function NativeRouteRecoveryView({
 const styles = StyleSheet.create({
   stack: {
     gap: mobileTheme.spacing.sm,
+    width: '100%',
   },
 });
