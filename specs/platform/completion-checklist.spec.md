@@ -96,7 +96,9 @@ tester group ([Apple status evidence](https://github.com/elsell/hourpaths/action
 Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
-The active slice is the user-reported native action and feedback regression (PR #107): readable Delete/recovery labels, app-wide transient feedback above navigation, and calm pending-sync states delayed by one second. Remembered browser sessions remain implemented and verified on `codex/web-session-restoration`, awaiting delivery after this user-prioritized correction. Large-account hydration and cross-device/device acceptance remain area 2 requirements.
+The active slice is remembered web sessions, including browser restart, expiry
+recovery and cross-tab account fences. Large-account hydration and complete
+cross-device/device acceptance remain subsequent area 2 closure requirements.
 
 The manual-activity slice now has a durable account queue, immutable replay,
 owner-only causal metadata, retained losing revisions, and Studio/mobile form
@@ -132,8 +134,26 @@ Actual CacheStorage held only 19 public shell/build requests. A fresh signed-out
 tab exposed no retained account, and an expired tab showed account entry instead
 of Path data. Focused cache tests cover explicit server rejection, failed update
 preservation and exclusion of API/provider/non-Studio requests. The shell slice
-is not yet merged or released; it does not close durable web session restoration
-or the remaining area 2 acceptance requirements.
+merged in PR #105 as `52e1ec1`, but is not yet released: main CI found a new
+braces advisory with no published patched version. PR #106 proposes a bounded
+exception through October 9 and has passed all five checks; explicit risk
+approval remains pending. The shell does not close durable web session
+restoration or the remaining area 2 acceptance requirements.
+
+The remembered-session implementation is review-ready on
+`codex/web-session-restoration`. Production-built warm web `2049627` with API
+`0308245` passed a real browser process restart offline, preserved absolute
+expiry, restored a second tab, retained local Stop through competing expiry,
+and synchronized both offline stops exactly once after same-account sign-in.
+A rate-limited sign-in preserved the queue; an explicit later retry completed
+recovery. Logout cleared an online legacy tab and an offline Studio tab. A new
+account replaced the shared session without showing the previous private Paths.
+Malformed durable session storage failed closed while preserving account ledgers.
+Focused tests cover queued rotation versus logout and replacement-account fences;
+the two confirmed review blockers were fixed. Web tests, type checking, i18n and
+the client capability boundary passed. Merge/release remain pending; this does
+not close area 2. Prompt retained-Home fallback now avoids hiding cached Paths
+behind 429 retries, but reducing large-account hydration traffic remains open.
 
 Native feedback audit: Path creation/archive/leave and timer confirmations previously appeared as loose footer text; they now share an app-level overlay. All visual pending-sync indicators defer for one continuous second. Offline status uses polite, neutral presentation; errors and corrections requiring user action remain immediate and persistent. Empty history no longer implies loading. The review also found and fixed prior-account Path names surviving sign-out in confirmation state. Actual native screenshots, large Dynamic Type and device acceptance remain pending release.
 
