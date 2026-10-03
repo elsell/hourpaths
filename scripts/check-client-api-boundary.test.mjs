@@ -7,6 +7,11 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+  'apps/web/src/lib/browser-session-state.ts',
+  'apps/web/src/lib/studio/session/adapters/browser-session-record.ts',
+  'apps/web/src/lib/studio/session/application/session-record.ts',
+  'apps/web/src/lib/studio/session/application/session-operations.ts',
+  'apps/web/src/lib/studio/session/ports/session-record.ts',
   'apps/web/src/service-worker.ts',
   'apps/web/src/lib/offline-shell/cache.ts',
   'apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts',
@@ -797,7 +802,7 @@ for (const route of ['onboarding', 'account-recovery', 'callback']) {
   assert.match(result.stderr, new RegExp(regexEscape(host)));
 }
 
-for (const adapter of ['apps/web/src/service-worker.ts', 'apps/web/src/lib/offline-shell/cache.ts']) {
+for (const adapter of ['apps/web/src/lib/browser-session-state.ts', 'apps/web/src/service-worker.ts', 'apps/web/src/lib/offline-shell/cache.ts']) {
   result = check({ [adapter]: protectedBaseline[adapter] + '\n// unreviewed shell-cache drift\n' });
   assert.notEqual(result.status, 0, adapter);
 }

@@ -1,6 +1,6 @@
 import { createSessionApiClient, generatedResponse, type OnboardingProfile } from '@hourpaths/api-client';
 import { isSessionFailure, validateSessionCredential, validateSessionMutation, type ClientRuntimeConfig, type SessionOperationTicket } from '@hourpaths/client-core';
-import { activateApplicationSession, applicationSession, applicationSessionExpired, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, declineApplicationRecovery, exchangeApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '../../../auth';
+import { pauseApplicationSession, initializeApplicationSession, activateApplicationSession, applicationSession, applicationSessionExpired, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, declineApplicationRecovery, exchangeApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '../../../auth';
 import { completeProviderSignIn, replaceApplicationLocation } from '../../../provider-auth';
 import { deviceOnboardingDefaults } from '../../../onboarding';
 import { openWebPolicyLink } from '../../../external-policy-link';
@@ -23,13 +23,18 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
   let issued: SessionOperationTicket | null = null;
   function same() { try { return !disposed && !!current && applicationSession()?.token === current.token; } catch { return false; } }
   function cancelTicket() { if (issued?.current()) applicationSessionOperations.invalidate(); issued = null; }
-  function ticket(): SessionOperationTicket { const own = applicationSessionOperations.issue(); issued = own; return { ...own, current: () => !disposed && own.current() }; }
+  function ticket(signIn = false): SessionOperationTicket { const own = signIn ? applicationSessionOperations.signIn() : applicationSessionOperations.issue(); issued = own; return { ...own, current: () => !disposed && own.current() }; }
   function context(): EntryContext {
     if (!current) return { kind: 'entry' };
     return { kind: current.nextAction === 'onboarding' ? 'onboarding' : current.nextAction === 'duplicate_email_recovery' ? 'recovery' : 'home', expiresAt: Date.parse(current.expiresAt) };
   }
   function expire() {
-    if (same()) { cancelTicket(); clearApplicationSession(); }
+    if (same()) {
+      cancelTicket();
+      if (current?.ownerId && (current.nextAction ?? 'home') === 'home') {
+        void pauseApplicationSession(current.ownerId, undefined, current.token).catch(() => undefined);
+      } else void clearApplicationSession(undefined, current?.token);
+    }
     current = null;
   }
   function authorized(destination?: ApplicationSession['nextAction']) {
@@ -55,11 +60,12 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
   return {
     async restore() {
       if (disposed) throw new EntryFailure('superseded');
-      try { current = applicationSession(); if (current && applicationSessionExpired(current, now())) { expire(); throw new EntryFailure('expired'); } return context(); }
+      try { await initializeApplicationSession(); current = applicationSession(); if (current && applicationSessionExpired(current, now())) { expire(); throw new EntryFailure('expired'); } return context(); }
       catch (cause) { return failure(cause); }
     },
     async callback() {
-      const own = ticket();
+      await initializeApplicationSession();
+      const own = ticket(true);
       try {
         const identity = await completeProviderSignIn(config.oidcIssuer, config.oidcClientId);
         if (!own.current()) throw new EntryFailure('superseded');
@@ -100,7 +106,7 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
       try {
         await validateSessionMutation(async () => generatedResponse(await createSessionApiClient(config.apiURL, () => session.token).declineDuplicateEmailRecovery()));
         authorized('duplicate_email_recovery');
-        const replacement = declineApplicationRecovery(session, own);
+        const replacement = await declineApplicationRecovery(session, own);
         if (!replacement || !own.current()) throw new EntryFailure('superseded');
         current = replacement; return context();
       } catch (cause) { if (!own.current()) throw new EntryFailure('superseded'); return failure(cause); }

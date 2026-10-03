@@ -3,6 +3,7 @@ import { once } from 'node:events';
 import { createServer } from 'node:http';
 import test from 'node:test';
 import { browserEntryService } from './studio/entry/adapters/browser-entry-service';
+import { applicationSession, applicationSessionOperations, retainedApplicationAccount } from './auth';
 import { EntryFailure } from './studio/entry/domain/entry';
 
 // Controlled browser storage and a real HTTP boundary exercise the extracted entry flow.
@@ -14,7 +15,7 @@ test('entry maps policy review, preserves transient credentials, and never adopt
   const key = 'hourpaths_application_session';
   const store = { getItem: (name: string) => records.get(name) ?? null, setItem: (name: string, value: string) => { records.set(name, value); }, removeItem: (name: string) => { records.delete(name); } };
   const before = Object.getOwnPropertyDescriptor(globalThis, 'window');
-  Object.defineProperty(globalThis, 'window', { configurable: true, value: { sessionStorage: store } });
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { sessionStorage: store, localStorage: store, navigator: { locks: { request: async (_name: string, operation: () => unknown) => operation() } } } });
   let failure = 0, code = '', deferred = false, finish!: () => void, started!: () => void, revoked!: () => void;
   const pending = new Promise<void>(resolve => { started = resolve; });
   const revocation = new Promise<void>(resolve => { revoked = resolve; });
@@ -43,26 +44,31 @@ test('entry maps policy review, preserves transient credentials, and never adopt
     const service = browserEntryService(config, () => now); await service.restore();
     const review = await service.review(); assert.equal(review.token, 'policy-1'); assert.equal(review.displayName, ''); assert.equal(review.policies.privacy.version, 'v1');
     assert.throws(() => service.openPolicy(review.policies.privacy.url), (error: unknown) => error instanceof EntryFailure && error.kind === 'unavailable');
-    failure = 503; code = 'unavailable'; await assert.rejects(service.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'unavailable'); assert.ok(store.getItem(key));
-    failure = 403; code = 'forbidden'; await assert.rejects(service.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'forbidden'); assert.ok(store.getItem(key));
+    failure = 503; code = 'unavailable'; await assert.rejects(service.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'unavailable'); assert.ok(applicationSession());
+    failure = 403; code = 'forbidden'; await assert.rejects(service.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'forbidden'); assert.ok(applicationSession());
     failure = 409; code = 'username_unavailable'; await assert.rejects(service.activate(input), (error: unknown) => error instanceof EntryFailure && error.kind === 'username');
     code = 'policy_set_changed'; await assert.rejects(service.activate(input), (error: unknown) => error instanceof EntryFailure && error.kind === 'policy');
     failure = 0; deferred = true;
     const late = service.activate(input); await pending; service.dispose(); finish();
     await assert.rejects(late, (error: unknown) => error instanceof EntryFailure && error.kind === 'superseded'); await revocation;
-    assert.deepEqual(JSON.parse(store.getItem(key)!), original);
+    assert.deepEqual(applicationSession(), original);
     assert.deepEqual(body, { username: 'person', displayName: 'person', profileVisibility: 'private', 
     timeZone: 'UTC',
     firstDayOfWeek: 1, policyReviewToken: 'policy-1', atLeast16: true, termsAccepted: true, privacyAcknowledged: true, communityGuidelinesAccepted: true });
-    store.setItem(key, JSON.stringify({ ...original, nextAction: 'duplicate_email_recovery' }));
+    await applicationSessionOperations.issue().persist(JSON.stringify({ ...original, nextAction: 'duplicate_email_recovery' }));
     const recovery = browserEntryService(config, () => now);
     assert.equal((await recovery.restore()).kind, 'recovery');
     assert.equal((await recovery.decline()).kind, 'onboarding');
-    assert.deepEqual(JSON.parse(store.getItem(key)!), original);
+    assert.deepEqual(applicationSession(), original);
     recovery.dispose();
     const rejected = browserEntryService(config, () => now); await rejected.restore(); failure = 401; code = 'invalid_credential';
-    await assert.rejects(rejected.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(store.getItem(key), null);
-    store.setItem(key, JSON.stringify(original)); const expired = browserEntryService(config, () => now + 60_000);
-    await assert.rejects(expired.restore(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(store.getItem(key), null);
+    await assert.rejects(rejected.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(applicationSession(), null);
+    await applicationSessionOperations.issue().persist(JSON.stringify(original)); const expired = browserEntryService(config, () => now + 60_000);
+    await assert.rejects(expired.restore(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(applicationSession(), null);
+    await applicationSessionOperations.issue().persist(JSON.stringify({ ...original, nextAction: 'home', ownerId: 'alice' }));
+    const expiredHome = browserEntryService(config, () => now + 60_000);
+    await assert.rejects(expiredHome.restore(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired');
+    assert.equal(applicationSession(), null);
+    assert.equal(retainedApplicationAccount(), 'alice');
   } finally { server.close(); server.closeAllConnections(); if (before) Object.defineProperty(globalThis, 'window', before); else Reflect.deleteProperty(globalThis, 'window'); }
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browserSessionState } from '$lib/browser-session-state';
   import StatsView from '$lib/StatsView.svelte';
   import { createPathAppearancePort, type StatsSummary } from '@hourpaths/api-client';
   import { createPathAppearanceStore, defaultPathAppearance, initialStatsSelection, type StatsState, type StatsSelection } from '@hourpaths/client-core';
@@ -8,7 +9,7 @@
   import { scheduleSessionDeadline, liveTimerProgress, createTimerPeriodRefresher, activeTimerSeconds, applyGoalMutationResult, applyNotificationMutation, applyPathArchiveResult, applyPathDeletionResult, applyPathLeaveResult, applyPathMemberRemovalResult, applyPathMemberRoleChangeResult, applyPathRenameResult, applyPathVisibilityResult, authenticatedProfileFromAPI, compareGoalConfigurations, createAsyncMutationBarrier, createManualActivityFormState, createNotificationRefreshLatch, createPathArchiveOperationOwner, createPathDeletionOperationOwner, createPathInvitationAcceptOwner, createPathInvitationCancelOwner, createPathInvitationRecipientReviewOwner, createPathInvitationSendOwner, createPathLeaveOperationOwner, createPathMemberRemovalOperationOwner, createPathMemberRoleChangeOperationOwner, createPathRenameOperationOwner, createPathVisibilityOperationOwner, createProfileSearchOwner, createSessionOperationOwner, createSignOutTimerResolutionCoordinator, effectivePathCapabilities, followRequestPageFromAPI, followRequestReviewResultFromAPI, intervalProgress, isSessionFailure, manualActivityParticipantNow, mergeFollowRequestPage, mergeManagedPendingInvitationPage, mergeNotificationHistoryPage, mergePendingInvitationPage, notificationPresentationMessageKey, overallProgress, overrideManualActivityOccurrence, pathInvitationFailureFromProblem, pathInvitationFailureMessageKey, pathInvitationOutputData, pathsRequiringTimerRestore, pathVisibilityFromAPI, pathVisibilityOptions, profileSearchPageFromAPI, profileSearchQuery, publicProfileFromAPI, relationshipMutationResultFromAPI, removeResolvedFollowRequest, retainedSessionExpiry, reviewPathArchiveChange, reviewPathDeletion, reviewPathLeave, reviewPathMemberRemoval, reviewPathMemberRoleChange, reviewPathRename, reviewPathVisibilityChange, reviewPendingPathInvitationAcceptance, serializeManualActivityForm, sessionFailureFromResponse, sessionRetryDelay, updateManualActivityDuration, validateSessionCredential, type AuthenticatedProfile, type ClientRuntimeConfig, type FollowRequestState, type GoalConfiguration, type GoalConfigurationComparison, type IntervalProgress, type ManagedPendingPathInvitation, type ManagedPendingPathInvitationState, type ManualActivityFormState, type ManualActivityLocalDateTime, type ManualActivityParticipantNow, type NotificationHistoryState, type NotificationMutation, type OverallProgress, type PathArchiveReview, type PathDeletionReview, type PathInvitation, type PathInvitationAcceptanceReview, type PathInvitationFailure, type PathInvitationNotification, type PathInvitationRecipientReview, type PathInvitationRole, type PathLeaveReceipt, type PathLeaveReview, type PathMemberAccessRole, type PathMemberRemovalReview, type PathMemberRoleChangeReceipt, type PathVisibility, type PathVisibilityChangeReview, type PendingPathInvitation, type PendingPathInvitationState, type ProfileSearchState, type PublicProfile, type RunningTimerSnapshot, type SessionAccessState, type SessionFailure, type SessionOperationTicket, type SignOutTimerResolution } from '@hourpaths/client-core';
   import { blockedAccountPageFromAPI, blockReviewFromAPI, blockResultFromAPI, mergeBlockedAccountPage, unblockResultFromAPI, type BlockedAccount, type BlockedAccountPage, type BlockReview } from '@hourpaths/client-core';
   import { createTranslator, type MessageKey, type SupportedLocale, type Translator } from '@hourpaths/i18n';
-  import { applicationDestination, applicationSession, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, refreshApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
+  import { initializeApplicationSession, applicationDestination, applicationSession, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, refreshApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '$lib/auth';
   import { replaceApplicationLocation } from '$lib/provider-auth';
   import { buildGoalDraft, goalFormState, type GoalFormState } from '$lib/path-goals';
   import { activityEditForm, activityValidationNow, groupActivitiesNewestFirst, mergeActivityHistory, mergeRevisionHistory, removeActivity, type ActivityDay } from '$lib/path-activity-history';
@@ -613,7 +614,7 @@
     cancelSessionDeadline?.();
     cancelSessionDeadline = scheduleSessionDeadline(() => {
       applicationSessionOperations.invalidate();
-      clearApplicationSession();
+      void clearApplicationSession(undefined, session?.token);
       session = null;
       profile = null;
       paths = null;
@@ -699,7 +700,7 @@
     const presentation = webSessionFailure(failure);
     if (presentation.discardCredential) {
       applicationSessionOperations.invalidate();
-      clearApplicationSession(); session = null; profile = null; paths = null; archivedPaths = []; creatingPath = false;
+      void clearApplicationSession(undefined, session?.token); session = null; profile = null; paths = null; archivedPaths = []; creatingPath = false;
       pathCreation.cancel();
       timerOperations.cancel();
       timerStates = {};
@@ -795,6 +796,7 @@
 
   onMount(async () => {
     try {
+      await initializeApplicationSession();
       session = applicationSession();
       if (session) {
         if (session.nextAction && session.nextAction !== 'home') {
@@ -812,7 +814,7 @@
       const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
       const presentation = webSessionFailure(failure);
       accessState = presentation.accessState;
-      if (presentation.discardCredential) { applicationSessionOperations.invalidate(); timerOperations.cancel(); resetManualActivity(); resetPathDetails(); resetInvitations(); clearApplicationSession(); session = null; timerStates = {}; }
+      if (presentation.discardCredential) { applicationSessionOperations.invalidate(); timerOperations.cancel(); resetManualActivity(); resetPathDetails(); resetInvitations(); void clearApplicationSession(undefined, session?.token); session = null; timerStates = {}; }
       else {
         if (session) presentation.retryable ? scheduleRetry(session.expiresAt, 'profile') : scheduleExpiration(session.expiresAt);
       }
@@ -864,6 +866,24 @@
       notificationConvergenceBrowser = null;
       notificationRefreshLatch.dispose();
     };
+  });
+
+  onMount(() => {
+    try {
+      return browserSessionState().subscribe(() => {
+        let replacement: ApplicationSession | null = null;
+        try { replacement = applicationSession(); } catch { /* Fail closed. */ }
+        if (replacement?.token === session?.token) return;
+        cancelSessionDeadline?.();
+        applicationSessionOperations.invalidate();
+        pathCreation.cancel();
+        timerOperations.cancel();
+        resetManualActivity(); resetPathDetails(); resetInvitations();
+        session = null; profile = null; paths = null; archivedPaths = []; timerStates = {};
+        accessState = 'authentication_required';
+        replaceApplicationLocation('/');
+      });
+    } catch { return; }
   });
 
   async function signIn() {
@@ -1122,7 +1142,7 @@
         pathCreation.cancel();
         timerOperations.cancel();
         applicationSessionOperations.invalidate();
-        resetManualActivity(); resetPathDetails(); clearApplicationSession(); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
+        resetManualActivity(); resetPathDetails(); void clearApplicationSession(undefined, session?.token); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
       }
       return;
     }
@@ -1218,7 +1238,7 @@
       if (presentation.discardCredential) {
         timerOperations.cancel();
         applicationSessionOperations.invalidate();
-        resetManualActivity(); resetPathDetails(); clearApplicationSession(); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
+        resetManualActivity(); resetPathDetails(); void clearApplicationSession(undefined, session?.token); session = null; profile = null; paths = null; archivedPaths = []; timerStates = {}; creatingPath = false;
       }
       return;
     }
@@ -1248,7 +1268,7 @@
     resetManualActivity();
     resetPathDetails();
     resetInvitations();
-    clearApplicationSession();
+    void clearApplicationSession(undefined, session?.token);
     session = null;
     profile = null;
     paths = null;
@@ -1273,7 +1293,7 @@
     resetManualActivity();
     resetPathDetails();
     resetInvitations();
-    clearApplicationSession();
+    void clearApplicationSession(undefined, session?.token);
     session = null;
     profile = null;
     paths = null;

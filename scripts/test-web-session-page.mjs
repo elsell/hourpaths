@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('the page reads browser session storage once into owned state', () => {
+test('legacy sign-out awaits locally owned revocation', () => {
   const page = readFileSync(new URL('../apps/web/src/routes/+page.svelte', import.meta.url), 'utf8');
-  assert.equal(page.match(/applicationSession\(\)/g)?.length, 1);
   assert.match(page, /const revocation = revokeApplicationSession\(data\.config, session\);[\s\S]*await revocation;/);
 });
 

@@ -157,7 +157,7 @@ test('late refresh and exchange persistence cannot survive browser sign-out', as
     const pending = new Promise<void>((resolve) => { finish = resolve; });
     const completion = (async () => {
       await pending;
-      persistOwnedApplicationSession(
+      await persistOwnedApplicationSession(
         { token: `${operation}-replacement`, expiresAt: '2026-07-21T13:00:00Z' },
         ticket,
         { setItem: (_key, value) => { stored = JSON.parse(value).token; } },
@@ -197,10 +197,10 @@ test('late browser profile response cannot overwrite a replacement owner', async
   assert.equal(profile, 'replacement');
 });
 
-test('declining recovery persists the onboarding transition for the current browser owner', () => {
+test('declining recovery persists the onboarding transition for the current browser owner', async () => {
   const owner = createSessionOperationOwner();
   const writes: Array<[string, string]> = [];
-  const result = declineApplicationRecovery(
+  const result = await declineApplicationRecovery(
     { token: 'recovery-token', expiresAt: '2026-07-21T13:00:00Z', nextAction: 'duplicate_email_recovery' },
     owner.issue(),
     { setItem: (key, value) => { writes.push([key, value]); } },
@@ -213,12 +213,12 @@ test('declining recovery persists the onboarding transition for the current brow
   assert.deepEqual(JSON.parse(writes[0][1]), result);
 });
 
-test('declining recovery cannot persist for a superseded browser owner', () => {
+test('declining recovery cannot persist for a superseded browser owner', async () => {
   const owner = createSessionOperationOwner();
   const stale = owner.issue();
   let writes = 0;
   owner.invalidate();
-  assert.equal(declineApplicationRecovery(
+  assert.equal(await declineApplicationRecovery(
     { token: 'recovery-token', expiresAt: '2026-07-21T13:00:00Z', nextAction: 'duplicate_email_recovery' },
     stale,
     { setItem: () => { writes += 1; } },
@@ -226,11 +226,11 @@ test('declining recovery cannot persist for a superseded browser owner', () => {
   assert.equal(writes, 0);
 });
 
-test('declining recovery types browser persistence failures as unreadable local storage', () => {
+test('declining recovery types browser persistence failures as unreadable local storage', async () => {
   const owner = createSessionOperationOwner();
   const storageError = new Error();
   storageError.name = 'SecurityError';
-  assert.throws(
+  await assert.rejects(
     () => declineApplicationRecovery(
       { token: 'recovery-token', expiresAt: '2026-07-21T13:00:00Z', nextAction: 'duplicate_email_recovery' },
       owner.issue(),

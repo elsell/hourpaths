@@ -7,6 +7,22 @@ import { apiPathRepository, PathRequestError } from './studio/paths/adapters/api
 import { durablePathRepository } from './studio/offline/adapters/durable-path-repository';
 import type { Path } from './studio/paths/domain/path';
 
+test('retained Home readers expose rate limiting immediately instead of waiting through network retries', async context => {
+  let reads = 0;
+  const server = createServer((_request, response) => {
+    reads++;
+    response.writeHead(429, { 'Content-Type': 'application/problem+json', 'Retry-After': '30' });
+    response.end(JSON.stringify({ code: 'rate_limited' }));
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  context.after(() => new Promise<void>(resolve => { server.closeAllConnections(); server.close(() => resolve()); }));
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  const reader = apiPathRepository(`http://127.0.0.1:${address.port}`, () => 'credential', () => undefined, false);
+  await assert.rejects(reader.list(false, AbortSignal.timeout(1000)), error => error instanceof PathRequestError && error.status === 429);
+  assert.equal(reads, 1);
+});
+
 test('Studio offline cache cannot expose tracking for a confirmed inaccessible Path', async context => {
   const server = createServer((_request, response) => {
     response.writeHead(503, { 'Content-Type': 'application/problem+json' });

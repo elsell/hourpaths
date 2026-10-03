@@ -1,3 +1,4 @@
+import { browserSessionState } from '../../browser-session-state';
 import { durableActivityRepository } from '../offline/adapters/durable-activity-repository';
 import { ActivityFailure } from '../history/domain/detail';
 import { retainedTimers } from '../offline/adapters/retained-timers';
@@ -32,6 +33,29 @@ import { apiActivityRepository } from '../history/adapters/api-activity-reposito
 import { StudioApp } from '../presentation/app';
 
 export function mountStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale; config: ClientRuntimeConfig }) {
+  let cancelled = false;
+  let dispose: (() => void) | undefined;
+  let unsubscribe: (() => void) | undefined;
+  let previous: string | null | undefined;
+  const render = () => {
+    if (cancelled) return;
+    let current: string | null;
+    try { current = browserSessionState().read(); } catch { current = null; }
+    if (dispose && previous === current) return;
+    previous = current;
+    dispose?.();
+    dispose = mountReadyStudio(element, options);
+  };
+  void browserSessionStore().initialize!().catch(() => undefined).then(() => {
+    if (cancelled) return;
+    render();
+    try { unsubscribe = browserSessionState().subscribe(render); }
+    catch { /* Account entry presents unavailable browser storage. */ }
+  });
+  return () => { cancelled = true; unsubscribe?.(); dispose?.(); };
+}
+
+function mountReadyStudio(element: HTMLElement, options: { apiURL: string; locale: SupportedLocale; config: ClientRuntimeConfig }) {
   const root = createRoot(element);
   const i18n = createTranslator([options.locale]);
   const store = browserSessionStore();
@@ -62,7 +86,7 @@ export function mountStudio(element: HTMLElement, options: { apiURL: string; loc
   const deadline = setInterval(() => { void session.maintain(); }, 1000);
   const durableStore = new IndexedDBTrackingStore();
   offline = browserTrackingRuntime(options.apiURL, session, durableStore, browserConnected);
-  const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential));
+  const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential), false);
   const paths = durablePathRepository(
     remotePaths,
     durableStore, offline.runtime,
