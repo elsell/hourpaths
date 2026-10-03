@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/deletionjournal"
@@ -191,6 +192,8 @@ func recoverDeletions(ctx context.Context, journal *deletionjournal.Files, store
 		records, err := journal.Records(pass)
 		if err == nil {
 			err = app.RecoverAcceptedDeletions(pass, records, store, uuid.NewString)
+			_, retirementErr := journal.Retire(pass, time.Now().UTC(), 100, store.PrepareDeletionRetirement)
+			err = errors.Join(err, retirementErr)
 		}
 		cancel()
 		if err != nil && ctx.Err() == nil {

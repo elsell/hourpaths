@@ -273,3 +273,70 @@ func TestPostgresDeletionRestoreRemovesProvisionalBackupAndIsIdempotent(t *testi
 		t.Fatalf("receipt lost during restore: %v %v", confirmed, err)
 	}
 }
+
+func TestPostgresDeletionRetirementRequiresCompletedRemoval(t *testing.T) {
+	if *postgresTestDSN == "" || *migrationPostgresTestDSN == "" {
+		t.Skip("PostgreSQL required")
+	}
+	runtime, err := Open("postgres", *postgresTestDSN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed, err := Open("postgres", *migrationPostgresTestDSN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	for _, scenario := range []struct {
+		name          string
+		age           time.Duration
+		user, pending bool
+		want          bool
+	}{
+		{"complete", 29*24*time.Hour + time.Hour, false, false, true},
+		{"recent", time.Hour, false, false, false},
+		{"account remains", 30 * 24 * time.Hour, true, false, false},
+		{"revocation pending", 30 * 24 * time.Hour, false, true, false},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			owner := newTestID()
+			at := now.Add(-scenario.age)
+			hash := bytes.Repeat([]byte{1}, 32)
+			if err := seed.DB.Create(&accountDeletionModel{UserID: owner, DeletedAt: at, AuditEventID: newTestID(), ReceiptHash: hash}).Error; err != nil {
+				t.Fatal(err)
+			}
+			if scenario.user {
+				if err := seed.DB.Create(&userModel{ID: owner, Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+					t.Fatal(err)
+				}
+			}
+			if scenario.pending {
+				if err := seed.DB.Exec("INSERT INTO authorization_outbox_models(id,resource_type,resource_id,relation,subject_type,subject_id,owner_user_id,actor_user_id,operation,created_at) VALUES (?,'resource',?,'owner','user',?,?,?,'delete',?)", newTestID(), newTestID(), owner, owner, owner, now).Error; err != nil {
+					t.Fatal(err)
+				}
+			}
+			record := application.DeletionRecord{UserID: owner, DeletedAt: at, ReceiptHash: strings.Repeat("01", 32)}
+			wrong := record
+			wrong.ReceiptHash = strings.Repeat("02", 32)
+			if ready, err := runtime.PrepareDeletionRetirement(context.Background(), wrong); err != nil || ready {
+				t.Fatal("wrong capability accepted", ready, err)
+			}
+			ready, err := runtime.PrepareDeletionRetirement(context.Background(), record)
+			if err != nil || ready != scenario.want {
+				t.Fatalf("ready=%v want=%v error=%v", ready, scenario.want, err)
+			}
+			if scenario.want {
+				if found, err := runtime.DeletionReceipt(context.Background(), owner, hash, now); err != nil || found {
+					t.Fatal("retired receipt remained usable", found, err)
+				}
+				event := audit.Event{ID: newTestID(), OwnerUserID: owner, ActorUserID: owner, Action: audit.ResourceViewed, TargetType: "account_deletion", TargetID: owner, Outcome: audit.Succeeded, CorrelationID: newTestID(), OccurredAt: now}
+				if found, err := runtime.ConfirmDeletionReceipt(context.Background(), owner, hash, now, event); err != nil || found {
+					t.Fatal("retired receipt audited", found, err)
+				}
+			}
+		})
+	}
+	if err := runtime.DB.Exec("UPDATE account_deletion_models SET journal_retired_at=clock_timestamp()").Error; err == nil {
+		t.Fatal("runtime gained direct marker update")
+	}
+}

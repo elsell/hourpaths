@@ -176,7 +176,7 @@ func (f *Files) Retire(ctx context.Context, now time.Time, limit int, completed 
 		}
 		var candidates []application.DeletionRecord
 		for _, record := range records {
-			if record.DeletedAt.After(now.Add(-30 * 24 * time.Hour)) {
+			if record.DeletedAt.After(now.Add(-29 * 24 * time.Hour)) {
 				continue
 			}
 			done, failure := completed(ctx, record)

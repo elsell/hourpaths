@@ -132,3 +132,10 @@ behavior. This document defines its persistence and recovery boundaries.
   records containing the deleted account as actor, owner, user subject, or user
   resource. Cleanup must share the bounded retention batch and immutable summary.
   It must preserve unfinished revocations and unrelated accounts' delivery records.
+
+- External-record retirement must begin after 29 days, leaving retry time before
+  the 30-day retention limit. The database must first verify account removal and
+  completed permission revocations and disable further receipt reads under the
+  receipt lock. The shared retention batch must remove receipt metadata only
+  after its audit and permission-delivery details are gone, recording only a count.
+  Runtime credentials must not gain direct deletion-record update or delete rights.

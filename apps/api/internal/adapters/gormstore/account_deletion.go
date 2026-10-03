@@ -3,6 +3,7 @@ package gormstore
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
@@ -120,7 +121,7 @@ func (s *Store) DeletionReceipt(ctx context.Context, userID string, hash []byte,
 		return false, ports.ErrInvalidArgument
 	}
 	var count int64
-	err := s.DB.WithContext(ctx).Model(&accountDeletionModel{}).Where("user_id = ? AND receipt_hash = ? AND deleted_at > ? AND deleted_at <= ?", userID, hash, now.Add(-30*24*time.Hour), now).Count(&count).Error
+	err := s.DB.WithContext(ctx).Model(&accountDeletionModel{}).Where("user_id = ? AND receipt_hash = ? AND journal_retired_at IS NULL AND deleted_at > ? AND deleted_at <= ?", userID, hash, now.Add(-30*24*time.Hour), now).Count(&count).Error
 	return count == 1, err
 }
 
@@ -145,4 +146,16 @@ func (s *Store) ConfirmDeletionReceipt(ctx context.Context, userID string, hash 
 		return nil
 	})
 	return found && err == nil, err
+}
+
+// PrepareDeletionRetirement disables further receipts under the marker lock.
+// The restricted retention worker remains the only remover of receipt metadata.
+func (s *Store) PrepareDeletionRetirement(ctx context.Context, record application.DeletionRecord) (bool, error) {
+	hash, err := hex.DecodeString(record.ReceiptHash)
+	if s == nil || s.DB == nil || err != nil || len(hash) != 32 || record.UserID == "" || record.DeletedAt.IsZero() {
+		return false, ports.ErrInvalidArgument
+	}
+	var ready bool
+	err = s.DB.WithContext(ctx).Raw("SELECT public.prepare_deletion_journal_retirement(?, ?, ?)", record.UserID, hash, record.DeletedAt).Scan(&ready).Error
+	return ready, err
 }

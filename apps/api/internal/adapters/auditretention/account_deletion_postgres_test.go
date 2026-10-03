@@ -140,3 +140,61 @@ func TestDeletedAccountRetentionRemovesOnlyCompletedPermissionDeliveries(t *test
 		t.Fatal("retention credential gained direct outbox deletion")
 	}
 }
+
+func TestDeletedReceiptRetentionRequiresRetirementAndPreservesPendingEvidence(t *testing.T) {
+	if *databaseDSN == "" || *retentionDSN == "" {
+		t.Skip("PostgreSQL required")
+	}
+	admin, err := gorm.Open(postgres.Open(*databaseDSN), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	retention, err := gorm.Open(postgres.Open(*retentionDSN), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	ids := []string{uuid.NewString(), uuid.NewString(), uuid.NewString()}
+	for i, id := range ids {
+		var retired any = now
+		if i == 1 {
+			retired = nil
+		}
+		if err := admin.Exec("INSERT INTO account_deletion_models(user_id,deleted_at,audit_event_id,receipt_hash,journal_retired_at) VALUES (?,?,?,?,?)", id, now.Add(-30*24*time.Hour), uuid.NewString(), make([]byte, 32), retired).Error; err != nil {
+			t.Fatal(err)
+		}
+		if i == 2 {
+			if err := admin.Exec("INSERT INTO authorization_outbox_models(id,resource_type,resource_id,relation,subject_type,subject_id,owner_user_id,actor_user_id,operation,created_at) VALUES (?,'resource',?,'owner','user',?,?,?,'delete',?)", uuid.NewString(), uuid.NewString(), id, id, id, now).Error; err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	for i := 0; i < 100; i++ {
+		n, err := (Runner{DB: retention}).DeletedAccountBatch(context.Background(), 1)
+		if err != nil || n > 1 {
+			t.Fatal(n, err)
+		}
+		if n == 0 {
+			break
+		}
+		if i == 99 {
+			t.Fatal("did not converge")
+		}
+	}
+	for i, id := range ids {
+		var n int64
+		if err := admin.Table("account_deletion_models").Where("user_id=?", id).Count(&n).Error; err != nil {
+			t.Fatal(err)
+		}
+		want := int64(1)
+		if i == 0 {
+			want = 0
+		}
+		if n != want {
+			t.Fatalf("fixture %d: count %d want %d", i, n, want)
+		}
+	}
+	if err := retention.Exec("DELETE FROM account_deletion_models WHERE user_id=?", ids[1]).Error; err == nil {
+		t.Fatal("retention gained direct marker deletion")
+	}
+}

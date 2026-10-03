@@ -8,11 +8,12 @@ import (
 )
 
 type accountDeletionRun struct {
-	ID                 string `gorm:"primaryKey"`
-	BatchLimit         int
-	DeletedCount       int
-	OutboxDeletedCount int
-	CompletedAt        time.Time
+	ID                  string `gorm:"primaryKey"`
+	BatchLimit          int
+	DeletedCount        int
+	OutboxDeletedCount  int
+	ReceiptDeletedCount int
+	CompletedAt         time.Time
 }
 
 func (accountDeletionRun) TableName() string { return "account_deletion_retention_run_models" }
@@ -24,11 +25,11 @@ func (r Runner) DeletedAccountBatch(ctx context.Context, limit int) (int, error)
 		return 0, errors.New("invalid deleted account retention batch")
 	}
 	run := accountDeletionRun{ID: uuid.NewString(), BatchLimit: limit}
-	if err := r.DB.WithContext(ctx).Omit("CompletedAt", "DeletedCount", "OutboxDeletedCount").Create(&run).Error; err != nil {
+	if err := r.DB.WithContext(ctx).Omit("CompletedAt", "DeletedCount", "OutboxDeletedCount", "ReceiptDeletedCount").Create(&run).Error; err != nil {
 		return 0, err
 	}
 	if err := r.DB.WithContext(ctx).First(&run, "id = ?", run.ID).Error; err != nil {
 		return 0, err
 	}
-	return run.DeletedCount + run.OutboxDeletedCount, nil
+	return run.DeletedCount + run.OutboxDeletedCount + run.ReceiptDeletedCount, nil
 }

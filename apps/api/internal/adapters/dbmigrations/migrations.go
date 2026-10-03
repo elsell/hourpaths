@@ -8,4 +8,4 @@ import "embed"
 var Files embed.FS
 
 // LatestVersion is the migration version required by API readiness.
-const LatestVersion uint = 74
+const LatestVersion uint = 75
