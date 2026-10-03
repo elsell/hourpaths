@@ -98,7 +98,13 @@ weakening approval or check requirements.
 
 Home hydration merged in PR #109 as `3c7a173` after all five gates. Real Chromium verified 11 rendered Paths, nine retained history entries, and one timer read per Path without API or page errors. Two independent browser ledgers converged on the newer online edit and retained the losing offline revision, including recovery from rate limiting. Remembered sessions merged in PR #108 as `347cd27`. Native device acceptance remains an area 2 closure requirement.
 
-The active slice is permanent account deletion (area 3): authenticated confirmation, atomic server removal, local cleanup, and retention/restore verification. Its approved product spec is being implemented; no account-deletion endpoint or client flow is shipped yet.
+The active slice is permanent account deletion (area 3), draft [PR #110](https://github.com/elsell/hourpaths/pull/110). Code covers mobile/Studio confirmation, atomic removal, account-scoped local cleanup, recovery, and bounded retention. Migration 75 passed real PostgreSQL eligibility/privilege checks; encrypted backup replay and journal restart/concurrency checks passed. The required critic identified administrator-ID authorization and expired-receipt recovery blockers; fixes and focused regressions are implemented. Nothing in this slice is shipped yet.
+
+Remaining area 3 release checklist, in order:
+1. Pass the final candidate gates and complete client acceptance, including deletion/restart/account switching in the warm environment.
+2. Provision the missing Infisical journal key; verify journal volume locking and key reconciliation. The current identity can read but cannot create the key; owner action is pending.
+3. Verify deployed retention scheduling and operational identifier expiry; inventory any retained backups and confirm encryption/expiry and restore acceptance. A new automated backup service is not an additional requirement: the product spec permits encrypted rolling backups.
+4. Merge through the checked merge script, release with store notes, update GitOps, and verify deployed revisions and native availability. Physical acceptance remains explicit, never inferred from an upload.
 
 The manual-activity slice now has a durable account queue, immutable replay,
 owner-only causal metadata, retained losing revisions, and Studio/mobile form
