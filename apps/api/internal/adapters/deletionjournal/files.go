@@ -44,7 +44,11 @@ func New(directory string, key []byte) (*Files, error) {
 	if !info.IsDir() || info.Mode().Perm()&0007 != 0 {
 		return nil, ports.ErrInvalidArgument
 	}
-	return &Files{directory: directory, cipher: sealed}, nil
+	journal := &Files{directory: directory, cipher: sealed}
+	if err := journal.initializeBoundary(context.Background()); err != nil {
+		return nil, err
+	}
+	return journal, nil
 }
 func valid(record application.DeletionRecord) bool {
 	digest, err := hex.DecodeString(record.ReceiptHash)
@@ -89,7 +93,7 @@ func (f *Files) read(path, owner string) (application.DeletionRecord, error) {
 	return record, nil
 }
 
-func (f *Files) Records(ctx context.Context) ([]application.DeletionRecord, error) {
+func (f *Files) records(ctx context.Context) ([]application.DeletionRecord, error) {
 	entries, err := os.ReadDir(f.directory)
 	if err != nil {
 		return nil, err
@@ -102,7 +106,7 @@ func (f *Files) Records(ctx context.Context) ([]application.DeletionRecord, erro
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if strings.HasPrefix(entry.Name(), ".pending-") {
+		if entry.Name() == initializedFile || entry.Name() == boundaryFile || entry.Name() == lockFile || strings.HasPrefix(entry.Name(), ".pending-") {
 			continue
 		}
 		if !strings.HasSuffix(entry.Name(), ".sealed") || entry.IsDir() {
@@ -116,7 +120,7 @@ func (f *Files) Records(ctx context.Context) ([]application.DeletionRecord, erro
 	}
 	return records, nil
 }
-func (f *Files) Admit(ctx context.Context, record application.DeletionRecord) (application.DeletionRecord, error) {
+func (f *Files) admit(ctx context.Context, record application.DeletionRecord) (application.DeletionRecord, error) {
 	if err := ctx.Err(); err != nil {
 		return application.DeletionRecord{}, err
 	}
@@ -182,6 +186,9 @@ func (f *Files) CheckAccountAccess(ctx context.Context, userID string) error {
 	}
 	if userID == "" {
 		return ports.ErrInvalidCredential
+	}
+	if _, err := f.boundary(); err != nil {
+		return ports.ErrUnavailable
 	}
 	info, err := os.Lstat(f.directory)
 	if err != nil || !info.IsDir() || info.Mode().Perm()&0007 != 0 {

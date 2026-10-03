@@ -116,12 +116,15 @@ func run(ctx context.Context, exportPath, replayPath, backupTime string, offline
 		if err != nil {
 			return 0, err
 		}
-		records, err := journal.Records(ctx)
+		records, boundary, err := journal.Snapshot(ctx)
 		if err != nil {
 			return 0, err
 		}
 		now := time.Now().UTC()
-		return len(records), writeManifest(exportPath, manifest{Version: 2, ExportedAt: now, MinimumBackupTime: now.Add(-30 * 24 * time.Hour), Records: records})
+		if floor := now.Add(-30 * 24 * time.Hour); boundary.Before(floor) {
+			boundary = floor
+		}
+		return len(records), writeManifest(exportPath, manifest{Version: 2, ExportedAt: now, MinimumBackupTime: boundary, Records: records})
 	}
 	dsn := os.Getenv("HOURPATHS_DATABASE_DSN")
 	if dsn == "" {

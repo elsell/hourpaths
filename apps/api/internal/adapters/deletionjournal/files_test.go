@@ -42,10 +42,15 @@ func TestEncryptedAdmissionSurvivesReopenAndRejectsTamperingOrReplacement(t *tes
 		t.Fatal("competing capability replaced intent")
 	}
 	files, err := os.ReadDir(directory)
-	if err != nil || len(files) != 1 {
+	if err != nil || len(files) != 4 {
 		t.Fatal("unexpected journal files", err)
 	}
-	path := filepath.Join(directory, files[0].Name())
+	var path string
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".sealed") {
+			path = filepath.Join(directory, file.Name())
+		}
+	}
 	sealed, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

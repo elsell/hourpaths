@@ -66,6 +66,12 @@ behavior. This document defines its persistence and recovery boundaries.
   that boundary so a backup that could contain a retired account cannot be used.
   A missing boundary must fail closed; an empty record list is not proof that an
   arbitrary older backup is safe.
+- Journal export and retirement must serialize across processes sharing the
+  recovery volume. The authenticated restore boundary must survive restart,
+  advance monotonically, and be flushed before records are unlinked. Missing
+  boundary metadata on an established journal must fail closed. Eligibility
+  failures must retain the evidence; pending deletions must not expire merely
+  because their acceptance time is old.
 - Replay must preserve the original deletion time and receipt digest, remove the
   same personal data as ordinary deletion, and queue authorization cleanup.
   Replaying the same manifest must be idempotent. A backup containing an older
