@@ -1,6 +1,7 @@
+import { browserSessionState } from '../../../browser-session-state';
 import { createSessionApiClient, generatedResponse } from '@hourpaths/api-client';
 import { classifySessionFailure, isSessionFailure, refreshSessionCredential, type SessionCredential } from '@hourpaths/client-core';
-import { pauseApplicationSession, retainedApplicationAccount, applicationSession, applicationSessionOperations, clearApplicationSession, persistOwnedApplicationSession } from '../../../auth';
+import { initializeApplicationSession, pauseApplicationSession, retainedApplicationAccount, applicationSession, applicationSessionOperations, clearApplicationSession, persistOwnedApplicationSession } from '../../../auth';
 import { SessionUnavailable, type Session } from '../domain/session';
 import type { SessionService, SessionStore } from '../ports/session-store';
 
@@ -10,17 +11,27 @@ function fromCredential(value: SessionCredential): Session {
 function toCredential(value: Session): SessionCredential {
   return { token: value.token, expiresAt: new Date(value.expiresAt).toISOString(), nextAction: value.destination, ...(value.ownerId ? { ownerId: value.ownerId } : {}) };
 }
-export function browserSessionStore(): SessionStore {
+export function browserSessionStore(now: () => number = () => Date.now()): SessionStore {
   return {
+    refreshExclusive: operation => browserSessionState().refreshExclusive(operation),
+    async initialize() {
+      await initializeApplicationSession();
+      const value = applicationSession();
+      if (value && Date.parse(value.expiresAt) <= now()) {
+        if (value.ownerId && (value.nextAction ?? 'home') === 'home') await pauseApplicationSession(value.ownerId);
+        else await clearApplicationSession();
+      }
+    },
     read() {
       try { const value = applicationSession(); return value ? fromCredential(value) : null; }
       catch { return null; }
     },
-    write(value) {
+    async write(value, expectedToken) {
       const ticket = applicationSessionOperations.issue();
-      persistOwnedApplicationSession(toCredential(value), ticket);
+      if (applicationSession()?.token !== expectedToken) throw new SessionUnavailable(false);
+      if (!await persistOwnedApplicationSession(toCredential(value), ticket)) throw new SessionUnavailable(false);
     },
-    clear() { applicationSessionOperations.invalidate(); clearApplicationSession(); },
+    clear() { applicationSessionOperations.invalidate(); return clearApplicationSession(); },
     pause: owner => pauseApplicationSession(owner),
     retainedOwner: () => retainedApplicationAccount(),
   };

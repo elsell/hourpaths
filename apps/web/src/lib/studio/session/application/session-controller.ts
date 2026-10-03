@@ -20,7 +20,7 @@ export class SessionController {
       return null;
     }
     if (this.current.expiresAt <= this.now()) {
-      this.invalidate(true);
+      this.invalidate(true, true);
       return null;
     }
     return this.current.token;
@@ -30,15 +30,17 @@ export class SessionController {
 
   /** Called only with the owner returned by a successful authenticated profile
    * read. An old response cannot relabel a replacement session. */
-  bindOwner(expectedToken: string, ownerId: string): boolean {
+  async bindOwner(expectedToken: string, ownerId: string): Promise<boolean> {
     if (!ownerId || ownerId.trim() !== ownerId || ownerId.length > 128) throw new SessionUnavailable(false);
     if (this.token() !== expectedToken || !this.current) return false;
     if (this.current.ownerId && this.current.ownerId !== ownerId) {
       this.invalidate(true);
       return false;
     }
+    if (this.current.ownerId === ownerId) return true;
     const replacement = { ...this.current, ownerId };
-    this.store.write(replacement);
+    await this.store.write(replacement, expectedToken);
+    if (!this.current || this.current.token !== expectedToken) return false;
     this.current = replacement;
     return true;
   }
@@ -57,7 +59,9 @@ export class SessionController {
     if (!this.token() || !this.current) return Promise.reject(new SessionUnavailable(false));
     const previous = this.current;
     const generation = this.generation;
-    const operation = this.service.refresh(previous).then(async next => {
+    const refresh = async () => {
+      if (generation !== this.generation || this.store.read()?.token !== previous.token) throw new SessionUnavailable(false);
+      let next = await this.service.refresh(previous);
       if (generation !== this.generation || this.store.read()?.token !== previous.token) {
         await this.revoke(next);
         throw new SessionUnavailable(false);
@@ -67,13 +71,15 @@ export class SessionController {
         throw new SessionUnavailable(false);
       }
       if (this.current?.ownerId) next = { ...next, ownerId: this.current.ownerId };
-      this.store.write(next);
+      await this.store.write(next, previous.token);
+      if (generation !== this.generation) throw new SessionUnavailable(false);
       this.current = next;
       return next;
-    }).catch(error => {
+    };
+    const operation = (this.store.refreshExclusive ? this.store.refreshExclusive(refresh) : refresh()).catch(error => {
       if (generation === this.generation &&
         (!(error instanceof SessionUnavailable) || !error.retryable || previous.expiresAt <= this.now())) {
-        this.invalidate(this.store.read()?.token === previous.token, error instanceof SessionUnavailable && error.reason === 'rejected');
+        this.invalidate(this.store.read()?.token === previous.token, previous.expiresAt <= this.now() || error instanceof SessionUnavailable && error.reason === 'rejected');
       }
       throw error;
     }).finally(() => { if (this.pending === operation) this.pending = null; });
@@ -102,10 +108,10 @@ export class SessionController {
     const owner = this.current.ownerId;
     this.current = null;
     this.generation++;
-    try {
-      if (clear && retain && owner && this.store.pause) this.store.pause(owner);
-      else if (clear) this.store.clear();
-    } finally { this.lost(); }
+    if (!clear) { this.lost(); return; }
+    const removal = retain && owner && this.store.pause ? this.store.pause(owner) : this.store.clear();
+    if (removal) void removal.then(() => this.lost(), () => this.lost());
+    else this.lost();
   }
 
   private async revoke(session: Session): Promise<void> {

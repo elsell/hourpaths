@@ -78,6 +78,7 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/web/src/lib/browser-session-state.ts',
   'apps/web/src/service-worker.ts',
   'apps/web/src/lib/offline-shell/cache.ts',
   'apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts',

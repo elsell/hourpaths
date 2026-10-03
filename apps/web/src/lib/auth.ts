@@ -1,6 +1,7 @@
 import { createSessionApiClient, generatedResponse } from '@hourpaths/api-client';
-import { retainedAccount, readRetainedAccount, classifySessionFailure, createSessionOperationOwner, declineDuplicateEmailRecovery, exchangeSessionCredential, isSessionFailure, isValidSessionCredential, refreshSessionCredential, sessionFailureFromResponse, type ClientRuntimeConfig, type SessionCredential, type SessionFailure, type SessionNextAction, type SessionOperationTicket, type SessionRefreshResponse } from '@hourpaths/client-core';
+import { retainedAccount, readRetainedAccount, classifySessionFailure, declineDuplicateEmailRecovery, exchangeSessionCredential, isSessionFailure, isValidSessionCredential, refreshSessionCredential, sessionFailureFromResponse, type ClientRuntimeConfig, type SessionCredential, type SessionFailure, type SessionNextAction, type SessionOperationTicket, type SessionRefreshResponse } from '@hourpaths/client-core';
 import { problemMessageKey, type MessageKey } from '@hourpaths/i18n';
+import { browserSessionState, invalidateBrowserSessionOperations } from './browser-session-state';
 import { beginProviderSignIn, completeProviderSignIn, type ApplicationDestination } from './provider-auth';
 
 const sessionKey = 'hourpaths_application_session';
@@ -31,37 +32,57 @@ export function readApplicationSession(storage: SessionStorageReader): Applicati
   discardLocalSession(storage);
   throw unreadableLocalSession();
 }
-export function retainedApplicationAccount(storage: Pick<Storage, 'getItem'> = window.sessionStorage): string | null {
+export function retainedApplicationAccount(storage: Pick<Storage, 'getItem'> = durableReader): string | null {
   try { return readRetainedAccount(JSON.parse(storage.getItem(sessionKey) ?? 'null'))?.ownerId ?? null; }
   catch { return null; }
 }
-export function pauseApplicationSession(owner: string, storage: SessionStorageWriter = window.sessionStorage): void {
-  applicationSessionOperations.invalidate();
-  storage.setItem(sessionKey, JSON.stringify(retainedAccount(owner)));
+const durableReader = {
+  getItem: (_key: string) => browserSessionState().read(),
+  removeItem: (_key: string) => { void clearApplicationSession(); },
+};
+export async function initializeApplicationSession(): Promise<void> {
+  try { await browserSessionState().initialize(); }
+  catch { throw unreadableLocalSession(); }
 }
-export function applicationSession(): ApplicationSession | null { return readApplicationSession(window.sessionStorage); }
+export async function pauseApplicationSession(owner: string, storage?: SessionStorageWriter): Promise<void> {
+  applicationSessionOperations.invalidate();
+  const value = JSON.stringify(retainedAccount(owner));
+  if (storage) storage.setItem(sessionKey, value);
+  else await browserSessionState().discard(value);
+}
+export function applicationSession(): ApplicationSession | null { return readApplicationSession(durableReader); }
 export function applicationSessionExpired(session: ApplicationSession, now = Date.now()): boolean {
   return Date.parse(session.expiresAt) <= now;
 }
-export function clearApplicationSession(storage: SessionStorageRemover = window.sessionStorage): void {
-  discardLocalSession(storage);
+export async function clearApplicationSession(storage?: SessionStorageRemover): Promise<void> {
+  if (storage) discardLocalSession(storage);
+  else {
+    try { await browserSessionState().discard(null); }
+    catch { /* Unreadable storage cannot grant access. */ }
+  }
 }
-export const applicationSessionOperations = createSessionOperationOwner();
-export function persistOwnedApplicationSession(
+export const applicationSessionOperations = {
+  issue: () => browserSessionState().operations.issue(),
+  signIn: () => browserSessionState().signInTicket(),
+  invalidate: invalidateBrowserSessionOperations,
+};
+export async function persistOwnedApplicationSession(
   session: ApplicationSession,
   ticket: SessionOperationTicket,
-  storage: SessionStorageWriter = window.sessionStorage,
-): boolean {
+  storage?: SessionStorageWriter,
+): Promise<boolean> {
   if (!ticket.current()) return false;
-  storage.setItem(sessionKey, JSON.stringify(session));
-  return true;
+  const value = JSON.stringify(session);
+  if (storage) { storage.setItem(sessionKey, value); return true; }
+  if (!('persist' in ticket) || typeof ticket.persist !== 'function') return false;
+  return ticket.persist(value);
 }
 
 export async function activateApplicationSession(
   current: ApplicationSession,
   request: (current: ApplicationSession) => Promise<SessionRefreshResponse>,
   ticket: SessionOperationTicket,
-  storage: SessionStorageWriter = window.sessionStorage,
+  storage?: SessionStorageWriter,
 ): Promise<{ session: ApplicationSession & { nextAction: 'home' }; adopted: boolean }> {
   let response: SessionRefreshResponse;
   try { response = await request(current); }
@@ -86,20 +107,20 @@ export async function activateApplicationSession(
   const homeSession = replacement as ApplicationSession & { nextAction: 'home' };
   if (!ticket.current()) return { session: homeSession, adopted: false };
   try {
-    return { session: homeSession, adopted: persistOwnedApplicationSession(homeSession, ticket, storage) };
+    return { session: homeSession, adopted: await persistOwnedApplicationSession(homeSession, ticket, storage) };
   } catch {
     throw unreadableLocalSession();
   }
 }
 
-export function declineApplicationRecovery(
+export async function declineApplicationRecovery(
   session: ApplicationSession,
   ticket: SessionOperationTicket,
-  storage: SessionStorageWriter = window.sessionStorage,
-): ApplicationSession | null {
+  storage?: SessionStorageWriter,
+): Promise<ApplicationSession | null> {
   const replacement = declineDuplicateEmailRecovery(session);
   try {
-    return persistOwnedApplicationSession(replacement, ticket, storage) ? replacement : null;
+    return await persistOwnedApplicationSession(replacement, ticket, storage) ? replacement : null;
   } catch {
     throw unreadableLocalSession();
   }
@@ -137,7 +158,7 @@ export async function exchangeApplicationSession(
 ): Promise<SessionNextAction | null> {
   const credential = await exchangeSessionCredential(
     async () => generatedResponse(await createSessionApiClient(config.apiURL, () => null).exchange(identityToken)),
-    async (replacement) => { persistOwnedApplicationSession(replacement, ticket); },
+    async (replacement) => { await persistOwnedApplicationSession(replacement, ticket); },
   );
   if (ticket.current()) return credential.nextAction;
   revokeSupersededApplicationSession(config, credential);
@@ -148,11 +169,14 @@ export async function refreshApplicationSession(
   current: ApplicationSession,
   ticket: SessionOperationTicket,
 ): Promise<ApplicationSession> {
-  return refreshSessionCredential(
+  return browserSessionState().refreshExclusive(async () => {
+    if (!ticket.current() || applicationSession()?.token !== current.token) throw { kind: 'network' } satisfies SessionFailure;
+    return refreshSessionCredential(
     current,
     async (credential) => generatedResponse(await createSessionApiClient(config.apiURL, () => credential.token).refresh()),
-    async (replacement) => { persistOwnedApplicationSession(replacement, ticket); },
-  );
+    async (replacement) => { await persistOwnedApplicationSession(replacement, ticket); },
+    );
+  });
 }
 async function revokeRemoteApplicationSession(config: ClientRuntimeConfig, token: string): Promise<void> {
   await createSessionApiClient(config.apiURL, () => token).revoke();
@@ -168,11 +192,11 @@ export function revokeSupersededApplicationSession(
 export async function revokeApplicationSession(
   config: ClientRuntimeConfig,
   session: ApplicationSession | null,
-  storage: SessionStorageRemover = window.sessionStorage,
+  storage?: SessionStorageRemover,
   revoke: RemoteSessionRevoker = revokeRemoteApplicationSession,
 ): Promise<void> {
 	applicationSessionOperations.invalidate();
-	clearApplicationSession(storage);
+	await clearApplicationSession(storage);
 	if (session) {
 		try { void revoke(config, session.token).catch(() => {}); }
     catch { /* Local credential disposal must not depend on network availability. */ }
@@ -180,11 +204,15 @@ export async function revokeApplicationSession(
 }
 
 export async function beginApplicationSignIn(config: ClientRuntimeConfig): Promise<void> {
+  await initializeApplicationSession();
+  browserSessionState().beginSignIn();
   await beginProviderSignIn(config.oidcIssuer, config.oidcClientId);
 }
 
 export async function completeApplicationSignIn(config: ClientRuntimeConfig): Promise<SessionNextAction | null> {
+  await initializeApplicationSession();
+  const ticket = applicationSessionOperations.signIn();
   const identityToken = await completeProviderSignIn(config.oidcIssuer, config.oidcClientId);
-  const ticket = applicationSessionOperations.issue();
+  if (!ticket.current()) return null;
   return exchangeApplicationSession(identityToken, config, ticket);
 }

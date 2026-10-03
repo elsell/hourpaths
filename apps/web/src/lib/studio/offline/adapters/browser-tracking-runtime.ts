@@ -25,7 +25,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     const api = createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value), { retryRateLimitedReads: true });
     if (!owner) {
       const profile = await api.profile();
-      if (!profile.response.ok || !profile.data || !session.bindOwner(credential, profile.data.data.id)) throw new Error('tracking_session_unavailable');
+      if (!profile.response.ok || !profile.data || !await session.bindOwner(credential, profile.data.data.id)) throw new Error('tracking_session_unavailable');
       owner = session.owner();
     }
     if (!owner) throw new Error('tracking_session_unavailable');

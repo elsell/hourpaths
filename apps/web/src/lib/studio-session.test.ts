@@ -60,16 +60,16 @@ test('maintenance retries temporary failure without losing the session and stops
   now = initial.expiresAt; await controller.maintain(); assert.equal(stored, null);
 });
 
-test('offline owner binding is retained with the session and a late profile cannot bind a replacement account', () => {
+test('offline owner binding is retained with the session and a late profile cannot bind a replacement account', async () => {
   let stored: Session | null = initial;
   const controller = new SessionController(initial, { read: () => stored, write: value => { stored = value; }, clear: () => { stored = null; } }, {
     refresh: async value => value, revoke: async () => undefined,
   }, () => 0, () => undefined);
-  assert.equal(controller.bindOwner('original', 'alice'), true);
+  assert.equal(await controller.bindOwner('original', 'alice'), true);
   assert.equal(controller.owner(), 'alice');
   assert.equal(stored?.ownerId, 'alice');
   stored = { ...initial, token: 'replacement-account', ownerId: 'bob' };
-  assert.equal(controller.bindOwner('original', 'alice'), false);
+  assert.equal(await controller.bindOwner('original', 'alice'), false);
   assert.equal(controller.owner(), null);
   assert.equal(stored.ownerId, 'bob');
 });
@@ -85,4 +85,58 @@ test('rejection atomically replaces a verified credential with a retained accoun
   assert.equal(controller.token(), null);
   assert.equal(stored, null);
   assert.equal(retained, 'alice');
+});
+
+test('foreground expiry retains only the verified owner for local Stop and never refreshes', async () => {
+  let stored: Session | null = { ...initial, ownerId: 'alice' };
+  let retained: string | null = null;
+  let now = 0;
+  const controller = new SessionController(stored, {
+    read: () => stored, write: value => { stored = value; },
+    clear: () => { stored = null; retained = null; },
+    pause: owner => { stored = null; retained = owner; }, retainedOwner: () => retained,
+  }, { refresh: async () => {
+      assert.fail('expired session must not refresh');
+    }, revoke: async () => undefined }, () => now, () => undefined);
+  now = initial.expiresAt;
+  await controller.maintain();
+  assert.equal(controller.token(), null);
+  assert.equal(controller.owner(), null);
+  assert.equal(stored, null);
+  assert.equal(retained, 'alice');
+});
+
+test('two tabs serialize token rotation and the losing controller never revokes the replacement', async () => {
+  let stored: Session | null = initial;
+  let tail: Promise<unknown> = Promise.resolve();
+  let finish!: (value: Session) => void;
+  let calls = 0, remounts = 0;
+  const revoked: string[] = [];
+  const store = {
+    read: () => stored,
+    write: (value: Session) => { stored = value; },
+    clear: () => { stored = null; },
+    refreshExclusive<T>(operation: () => Promise<T>): Promise<T> {
+      const result = tail.then(operation);
+      tail = result.catch(() => undefined);
+      return result;
+    },
+  };
+  const service = {
+    refresh: async () => { calls++; return new Promise<Session>(resolve => { finish = resolve; }); },
+    revoke: async (value: Session) => { revoked.push(value.token); },
+  };
+  const first = new SessionController(initial, store, service, () => 0, () => { remounts++; });
+  const second = new SessionController(initial, store, service, () => 0, () => { remounts++; });
+  const pending = [first.refresh(), second.refresh()];
+  await Promise.resolve();
+  finish({ ...initial, token: 'rotated' });
+  const result = await Promise.allSettled(pending);
+  assert.deepEqual(result.map(value => value.status), ['fulfilled', 'rejected']);
+  assert.equal(calls, 1);
+  assert.equal(stored?.token, 'rotated');
+  assert.equal(first.token(), 'rotated');
+  assert.equal(second.token(), null);
+  assert.equal(remounts, 1);
+  assert.deepEqual(revoked, []);
 });

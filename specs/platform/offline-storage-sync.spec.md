@@ -280,8 +280,44 @@ duplicating activity. It must also cover expired/sign-out entry, denied response
 non-Studio/provider/API cache exclusion, and a failed shell update preserving the
 previous usable installation. All existing account isolation rules still apply.
 
-This shell slice preserves the existing tab-scoped web credential boundary. An
-independent tab without a credential must show account entry, even when a prior
-account has retained data. Durable web account/session restoration across closed
-tabs or browser restart remains a separate offline closure requirement; serving
-a cached document alone does not satisfy it.
+Public shell caching must not itself grant account access. A browser without a
+valid remembered credential must show account entry even when retained activity
+exists. The remembered-session requirements below govern restoration across
+tabs and browser restart; serving a cached document alone does not satisfy them.
+
+## Remembered browser sessions
+
+Studio must restore the established application session after a tab or browser
+restart, including when the network is unavailable. Only the opaque application
+credential and its verified account binding may be remembered; provider tokens
+and interactive OIDC state must not enter this durable store. The server-issued
+absolute expiry must remain unchanged by restoration or rotation.
+
+The browser must retain one current account session per application origin.
+Logout, account replacement, expiry and revocation must fence old operations
+across tabs. A late sign-in, refresh or profile response must not restore a
+signed-out session, overwrite a replacement account, or expose its predecessor's
+personal data. Simultaneous refresh attempts must converge on the same current
+credential instead of revoking each other's replacements. Unreadable storage
+must fail closed without deleting the separate pending-activity ledger.
+
+Application-session storage must use a reviewed browser capability adapter.
+Origin-wide mutations must compare an immutable revision under a short exclusive
+lock. Logout must leave a fresh empty revision so older tab-scoped credentials
+cannot be migrated back into an authenticated session. Token rotation must use
+a separate origin-wide lock; slow network requests must not delay local logout.
+Storage changes must replace another tab's account presentation and dispose its
+old operations. OIDC provider storage remains tab-scoped.
+
+Expiry must remove the credential while preserving its previously verified
+account reference for local Stop and sign-in recovery, both during foreground
+use and cold entry. This reference must not enable new starts, synchronization,
+server reads or administrative actions. Explicit logout must clear the reference
+in every tab. An unverified credential must never create a retained-account
+reference.
+
+Acceptance must cover a real browser process restart while offline, two-tab
+logout and account replacement, concurrent rotation and delayed completion,
+foreground and cold expiry with a running timer, retained local stop followed by
+same-account synchronization, and unreadable browser storage. Existing provider
+state and server authentication rules remain authoritative.
