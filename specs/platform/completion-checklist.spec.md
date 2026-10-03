@@ -134,10 +134,7 @@ Actual CacheStorage held only 19 public shell/build requests. A fresh signed-out
 tab exposed no retained account, and an expired tab showed account entry instead
 of Path data. Focused cache tests cover explicit server rejection, failed update
 preservation and exclusion of API/provider/non-Studio requests. The shell slice
-merged in PR #105 as `52e1ec1`, but is not yet released: main CI found a new
-braces advisory with no published patched version. PR #106 proposes a bounded
-exception through October 9 and has passed all five checks; explicit risk
-approval remains pending. The shell does not close durable web session
+merged in PR #105 as `52e1ec1`. Main CI then found a new braces advisory with no published patched version. PR #106 merged as `a8a6380` after standing owner approval and all five checks, with the exact exception bounded through October 9; this is temporary risk acceptance, not a vulnerability fix. The shell does not close durable web session
 restoration or the remaining area 2 acceptance requirements.
 
 The remembered-session implementation is review-ready on
@@ -155,6 +152,8 @@ the client capability boundary passed. Merge/release remain pending; this does
 not close area 2. Prompt retained-Home fallback now avoids hiding cached Paths
 behind 429 retries, but reducing large-account hydration traffic remains open.
 
-Native feedback audit: Path creation/archive/leave and timer confirmations previously appeared as loose footer text; they now share an app-level overlay. All visual pending-sync indicators defer for one continuous second. Offline status uses polite, neutral presentation; errors and corrections requiring user action remain immediate and persistent. Empty history no longer implies loading. The review also found and fixed prior-account Path names surviving sign-out in confirmation state. Actual native screenshots, large Dynamic Type and device acceptance remain pending release.
+Native feedback audit: Path creation/archive/leave and timer confirmations previously appeared as loose footer text; they now share an app-level overlay. All visual pending-sync indicators defer for one continuous second. Offline status uses polite, neutral presentation; errors and corrections requiring user action remain immediate and persistent. Empty history no longer implies loading. The review also found and fixed prior-account Path names surviving sign-out in confirmation state. PR #107 merged as `67ac627` after all five gates and exact-head owner attestation. Actual native screenshots, large Dynamic Type and device acceptance remain pending release.
 
 The user approved all future PRs within this goal; exact-head protected-path attestations remain recorded and all mandatory merge/security gates remain enforced. PR #106 merged as `a8a6380`, unblocking the temporary bounded dependency exception; it does not fix the upstream advisory.
+
+Release v0.30.0 published `a8a6380` and deployed via GitOps `d2e55dfe00faefaf895d8cad907d9801e01359b8`. Flux Ready/Healthy, completed API/web rollouts, exact running source/image verification, and public Studio HTTP 200 passed. [Release evidence](https://github.com/elsell/hourpaths/actions/runs/37097322708). Web digest `sha256:6a089d5f1c4c67a06396cd1199bd71d0099584a2e4ef9fb852106054574cb81b`; API digest `sha256:141c83ee22ba83ccc99f5643e478608b7e96bd36dbf886bcf1e7da5c3798654f`. TestFlight 0.30.0 (286) is VALID, IN_BETA_TESTING, and assigned to the internal group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37098278968)); this does not claim device acceptance.
