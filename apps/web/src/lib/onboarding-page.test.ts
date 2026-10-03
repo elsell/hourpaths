@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import { createServer } from 'node:http';
 import test from 'node:test';
 import { browserEntryService } from './studio/entry/adapters/browser-entry-service';
-import { applicationSession, applicationSessionOperations } from './auth';
+import { applicationSession, applicationSessionOperations, retainedApplicationAccount } from './auth';
 import { EntryFailure } from './studio/entry/domain/entry';
 
 // Controlled browser storage and a real HTTP boundary exercise the extracted entry flow.
@@ -65,5 +65,10 @@ test('entry maps policy review, preserves transient credentials, and never adopt
     await assert.rejects(rejected.review(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(applicationSession(), null);
     await applicationSessionOperations.issue().persist(JSON.stringify(original)); const expired = browserEntryService(config, () => now + 60_000);
     await assert.rejects(expired.restore(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired'); assert.equal(applicationSession(), null);
+    await applicationSessionOperations.issue().persist(JSON.stringify({ ...original, nextAction: 'home', ownerId: 'alice' }));
+    const expiredHome = browserEntryService(config, () => now + 60_000);
+    await assert.rejects(expiredHome.restore(), (error: unknown) => error instanceof EntryFailure && error.kind === 'expired');
+    assert.equal(applicationSession(), null);
+    assert.equal(retainedApplicationAccount(), 'alice');
   } finally { server.close(); server.closeAllConnections(); if (before) Object.defineProperty(globalThis, 'window', before); else Reflect.deleteProperty(globalThis, 'window'); }
 });

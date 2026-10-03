@@ -1,6 +1,6 @@
 import { createSessionApiClient, generatedResponse, type OnboardingProfile } from '@hourpaths/api-client';
 import { isSessionFailure, validateSessionCredential, validateSessionMutation, type ClientRuntimeConfig, type SessionOperationTicket } from '@hourpaths/client-core';
-import { initializeApplicationSession, activateApplicationSession, applicationSession, applicationSessionExpired, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, declineApplicationRecovery, exchangeApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '../../../auth';
+import { pauseApplicationSession, initializeApplicationSession, activateApplicationSession, applicationSession, applicationSessionExpired, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, declineApplicationRecovery, exchangeApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '../../../auth';
 import { completeProviderSignIn, replaceApplicationLocation } from '../../../provider-auth';
 import { deviceOnboardingDefaults } from '../../../onboarding';
 import { openWebPolicyLink } from '../../../external-policy-link';
@@ -29,7 +29,12 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
     return { kind: current.nextAction === 'onboarding' ? 'onboarding' : current.nextAction === 'duplicate_email_recovery' ? 'recovery' : 'home', expiresAt: Date.parse(current.expiresAt) };
   }
   function expire() {
-    if (same()) { cancelTicket(); void clearApplicationSession(undefined, current?.token); }
+    if (same()) {
+      cancelTicket();
+      if (current?.ownerId && (current.nextAction ?? 'home') === 'home') {
+        void pauseApplicationSession(current.ownerId, undefined, current.token).catch(() => undefined);
+      } else void clearApplicationSession(undefined, current?.token);
+    }
     current = null;
   }
   function authorized(destination?: ApplicationSession['nextAction']) {
