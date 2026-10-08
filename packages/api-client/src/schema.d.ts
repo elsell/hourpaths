@@ -412,6 +412,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/timer-subscriptions/{scope}/{subjectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the viewer's timer-start subscription */
+        get: operations["get-timer-subscription"];
+        /** Update the viewer's timer-start subscription */
+        put: operations["update-timer-subscription"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications": {
         parameters: {
             query?: never;
@@ -2868,7 +2886,7 @@ export interface components {
             read: boolean;
             socialFeedEventId?: string;
             /** @enum {string} */
-            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received";
+            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started";
         };
         PathInvitationOutputBody: {
             /**
@@ -3477,6 +3495,31 @@ export interface components {
             intervalProgress?: components["schemas"]["IntervalProgress"];
             running: boolean;
             timer?: components["schemas"]["Timer"];
+        };
+        TimerSubscriptionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TimerSubscriptionOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["TimerSubscriptionPreference"];
+        };
+        TimerSubscriptionPreference: {
+            enabled: boolean;
+            /** Format: int64 */
+            revision: number;
+        };
+        TimerSubscriptionUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/TimerSubscriptionUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** Format: int64 */
+            expectedRevision: number;
         };
         UnlinkIdentityInputBody: {
             /**
@@ -4508,10 +4551,84 @@ export interface operations {
             };
         };
     };
+    "get-timer-subscription": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                scope: "person" | "path";
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerSubscriptionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-timer-subscription": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                scope: "person" | "path";
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimerSubscriptionUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerSubscriptionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "list-notifications": {
         parameters: {
             query?: {
                 emojiReactions?: boolean;
+                timerStarts?: boolean;
                 cursor?: string;
                 limit?: number;
             };
@@ -4547,6 +4664,7 @@ export interface operations {
         parameters: {
             query?: {
                 emojiReactions?: boolean;
+                timerStarts?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -4580,6 +4698,7 @@ export interface operations {
         parameters: {
             query?: {
                 emojiReactions?: boolean;
+                timerStarts?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -4615,6 +4734,7 @@ export interface operations {
         parameters: {
             query?: {
                 emojiReactions?: boolean;
+                timerStarts?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -4650,6 +4770,7 @@ export interface operations {
         parameters: {
             query?: {
                 emojiReactions?: boolean;
+                timerStarts?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -6112,6 +6233,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
+                "X-HourPaths-Timer-Running"?: boolean;
                 Authorization?: string;
                 "Idempotency-Key": string;
             };

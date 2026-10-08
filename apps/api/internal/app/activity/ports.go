@@ -19,10 +19,11 @@ const (
 )
 
 type StartTimerCommand struct {
-	Timer            domain.RunningTimer
-	Idempotency      ports.Idempotency
-	Audit            audit.Event
-	IntervalProgress *IntervalProgressRequest
+	NotificationRecipients []string
+	Timer                  domain.RunningTimer
+	Idempotency            ports.Idempotency
+	Audit                  audit.Event
+	IntervalProgress       *IntervalProgressRequest
 }
 
 type StartTimerResult struct {
@@ -168,6 +169,7 @@ type ProfileReader interface {
 }
 
 type Repository interface {
+	TimerNotificationCandidates(context.Context, string, string) ([]string, error)
 	OfflineActivityRepository
 	OfflineRepository
 	IntervalGoal(context.Context, string, string) (pathdomain.IntervalGoal, error)

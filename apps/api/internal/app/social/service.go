@@ -50,6 +50,7 @@ type Dependencies struct {
 	Nudges                    NudgeRepository
 	NudgeNotificationChannels NudgeNotificationChannelRepository
 	NotificationChannels      NotificationChannelRepository
+	TimerSubscriptions        TimerSubscriptionRepository
 	NudgeRateLimiter          RelationshipRateLimiter
 	Clock                     ports.Clock
 	NewID                     func() string

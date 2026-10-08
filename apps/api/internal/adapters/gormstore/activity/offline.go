@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/progresslock"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/activity"
@@ -57,6 +58,10 @@ func (r *Repository) SynchronizeTimer(ctx context.Context, command application.O
 	}
 	var result application.OfflineTimerResult
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := timerstore.Lock(tx, command.Timer.PathID); err != nil {
+			return err
+		}
+
 		// Serialize this account's offline identities across Paths before the normal
 		// progress/Path locks. Reusing a client identity on another Path cannot race.
 		if err := progresslock.LockKey(tx, "offline-timers:"+command.Timer.ParticipantID); err != nil {
@@ -112,6 +117,17 @@ func (r *Repository) SynchronizeTimer(ctx context.Context, command application.O
 		outcome, discarded, err := applyOfflineTimer(tx, &state, command, archived)
 		if err != nil {
 			return err
+		}
+		// Only a newly admitted, still-running occurrence creates a start notice.
+		// Previously synchronized identities never notify again on replay/stop.
+		if command.Kind == "start" && command.NotifyStart && !exists && state.Outcome == "active" {
+			var active timerModel
+			if err := tx.Where("participant_id = ? AND path_id = ? AND id = ?", state.ParticipantID, state.PathID, state.CanonicalTimerID).Take(&active).Error; err != nil {
+				return err
+			}
+			if err := timerstore.Create(tx, toTimer(active), command.NotificationRecipients, command.RecordedAt); err != nil {
+				return err
+			}
 		}
 		if err := tx.Model(&offlineTimerState{}).Where("participant_id = ? AND client_timer_id = ?", state.ParticipantID, state.ClientTimerID).Updates(map[string]any{"outcome": state.Outcome, "activity_id": state.ActivityID, "terminal_at": state.TerminalAt, "saved_seconds": state.SavedSeconds}).Error; err != nil {
 			return err

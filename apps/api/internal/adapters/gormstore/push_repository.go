@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"gorm.io/gorm"
@@ -314,9 +315,9 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 	var ticket ports.PushTicket
 	handedOff := false
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var notice struct{ RecipientUserID, ActorUserID string }
+		var notice struct{ RecipientUserID, ActorUserID, PathID, Kind string }
 		err := tx.Table("notification_push_delivery_models AS delivery").
-			Select("notice.recipient_user_id, notice.actor_user_id").
+			Select("notice.recipient_user_id, notice.actor_user_id, notice.path_id, notice.kind").
 			Joins("JOIN notification_models notice ON notice.id = delivery.notification_id").
 			Where("delivery.notification_id = ? AND delivery.installation_id = ? AND delivery.locked_by = ? AND delivery.locked_until > CURRENT_TIMESTAMP", notificationID, installationID, worker).
 			Where("delivery.delivered_at IS NULL AND delivery.suppressed_at IS NULL AND delivery.permanently_failed_at IS NULL").
@@ -326,6 +327,11 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 		}
 		if err != nil {
 			return err
+		}
+		if notice.Kind == "timer_started" {
+			if err := timerstore.Lock(tx, notice.PathID); err != nil {
+				return err
+			}
 		}
 		if notice.ActorUserID != notice.RecipientUserID {
 			if err := lockSocialPair(tx, notice.ActorUserID, notice.RecipientUserID); err != nil {
@@ -364,7 +370,20 @@ WHERE preference.user_id = notice.recipient_user_id AND preference.channel = not
 WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_block.blocked_user_id = notice.actor_user_id)
    OR (delivery_block.blocker_user_id = notice.actor_user_id AND delivery_block.blocked_user_id = notice.recipient_user_id))`).
 		Count(&count).Error
-	return count == 1, err
+	if err != nil || count != 1 {
+		return false, err
+	}
+	var notice struct{ Kind, ActorUserID, RecipientUserID, PathID, ProviderTicket string }
+	if err := tx.Table("notification_models notice").Select("notice.kind, notice.actor_user_id, notice.recipient_user_id, notice.path_id, delivery.provider_ticket").
+		Joins("JOIN notification_push_delivery_models delivery ON delivery.notification_id = notice.id").
+		Where("notice.id = ? AND delivery.installation_id = ?", notificationID, installationID).Take(&notice).Error; err != nil {
+		return false, err
+	}
+	// Already handed-off messages still need their receipt reconciled.
+	if notice.Kind == "timer_started" && notice.ProviderTicket == "" {
+		return timerstore.Eligible(tx, notice.ActorUserID, notice.PathID, notice.RecipientUserID)
+	}
+	return true, nil
 }
 
 func (r *PushRepository) TransitionPushDelivery(ctx context.Context, worker string, transition ports.PushDeliveryTransition, event audit.Event) error {

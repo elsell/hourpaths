@@ -10,3 +10,6 @@ export class PreferenceFailure extends Error {
 
 export type NotificationChannel = 'following' | 'path_access' | 'tracking_activity' | 'achievements' | 'comments' | 'reactions' | 'comment_hearts' | 'nudges' | 'goal_reminders' | 'timer_health';
 export interface NotificationChannelPreference { readonly channel: NotificationChannel; readonly enabled: boolean; readonly revision: number }
+
+export interface TimerSubscriptionSubject { scope: 'person' | 'path'; id: string }
+export interface TimerSubscriptionPreference { enabled: boolean; revision: number }

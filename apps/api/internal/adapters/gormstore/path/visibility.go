@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"strings"
 	"time"
 
@@ -95,6 +96,10 @@ func (r *Repository) SetVisibility(ctx context.Context, command application.SetV
 				return err
 			}
 		}
+		if err := timerstore.Retire(tx, "", string(command.Path.ID), command.ChangedAt); err != nil {
+			return err
+		}
+
 		if visibilityRank(command.Path.Visibility) > visibilityRank(current.Visibility) {
 			if err := createVisibilityNotifications(tx, command); err != nil {
 				return err

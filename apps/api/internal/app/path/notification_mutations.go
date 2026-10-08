@@ -72,6 +72,7 @@ func (service *InvitationService) mutateNotification(
 	event.OccurredAt = now
 	result, err := mutate(NotificationMutationCommand{
 		EmojiReactions:  notificationEmojiRepresentation(ctx),
+		TimerStarts:     notificationTimerRepresentation(ctx),
 		RecipientUserID: principal.UserID,
 		NotificationID:  targetID,
 		ChangedAt:       now,

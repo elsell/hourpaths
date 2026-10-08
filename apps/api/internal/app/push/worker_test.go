@@ -141,7 +141,7 @@ func TestPushDeliveryWorkerRevalidatesLeasedDeliveryImmediatelyBeforeSend(t *tes
 	provider := &pushWorkerProvider{ticket: ports.PushTicket{State: ports.PushDelivered}}
 	worker := testPushWorker(now, repository, provider, &pushWorkerNotifications{item: pushWorkerProjection(pathapp.NotificationPathInvitationReceived, pathapp.NotificationActionable)})
 	processed, err := worker.RunOnce(context.Background())
-	if err != nil || processed != 1 || repository.handoffs != 1 || len(provider.messages) != 0 || len(repository.transitions) != 0 {
+	if err != nil || processed != 1 || repository.handoffs != 1 || len(provider.messages) != 0 || len(repository.transitions) != 1 || repository.transitions[0].Outcome != ports.PushDeliverySuppressed {
 		t.Fatalf("processed=%d err=%v handoffs=%d messages=%+v transitions=%+v", processed, err, repository.handoffs, provider.messages, repository.transitions)
 	}
 }

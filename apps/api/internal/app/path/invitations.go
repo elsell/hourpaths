@@ -427,6 +427,7 @@ func validNotificationPage(page NotificationPage, limit int, snapshot time.Time)
 			item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) &&
 			item.NudgeContent.Valid() && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" &&
 			item.FollowRequestID == "" && noInteractionSubject && item.InteractionDisabled == ""
+		timerSubject := item.Kind == NotificationTimerStarted && item.Presentation == NotificationInformational && item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" && item.FollowRequestID == "" && noInteractionSubject && item.InteractionDisabled == ""
 		noNudgeSubject := item.NudgeContent == (socialdomain.NudgeContent{})
 		disabledInteractionSubject := item.Presentation == NotificationInformational &&
 			((item.InteractionDisabled == InteractionDisabledComments &&
@@ -449,7 +450,7 @@ func validNotificationPage(page NotificationPage, limit int, snapshot time.Time)
 			strings.TrimSpace(item.Actor.DisplayName) == "" ||
 			item.Actor.DisplayName != strings.TrimSpace(item.Actor.DisplayName) ||
 			!visibilityPayloadValid ||
-			(!nudgeSubject && (!noNudgeSubject || (!pathSubject && !socialSubject && !deletionSubject && !reactionSubject && !commentSubject && !heartSubject && !disabledInteractionSubject))) {
+			(!nudgeSubject && (!noNudgeSubject || (!pathSubject && !socialSubject && !deletionSubject && !reactionSubject && !commentSubject && !heartSubject && !timerSubject && !disabledInteractionSubject))) {
 			return false
 		}
 		if index > 0 && (item.CreatedAt.After(previous.CreatedAt) ||

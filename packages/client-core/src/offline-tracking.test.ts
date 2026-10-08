@@ -393,3 +393,26 @@ test('Home retries a competing history commit locally and retains its result', a
   assert.equal((await home.tracking(path.id))?.savedTotalSeconds, 60);
   assert.equal(await home.retainHome([path], [{ pathId: path.id, summary: { savedTotalSeconds: 0, period: null }, timer: null }], Number.NaN), false);
 });
+
+
+test('replay distinguishes a live start from a completed offline session without changing causal operations', async () => {
+  const store = new DurableFake();
+  const first = client(store, 'alice', '2026-10-01T12:00:00Z', 'a');
+  await first.retainPaths([path]);
+  const ended = await first.start(path.id);
+  await client(store, 'alice', '2026-10-01T12:05:00Z', 'b').stop(ended.id);
+  const original = structuredClone((await first.snapshot()).operations);
+  const sent: { operation: unknown; running: boolean | undefined }[] = [];
+  await first.replay({ async send(_owner, operation, running) {
+    sent.push({ operation: structuredClone(operation), running });
+    return { kind: 'accepted', terminal: operation.kind !== 'start' };
+  } });
+  assert.deepEqual(sent.map(value => value.operation), original);
+  assert.deepEqual(sent.map(value => value.running), [false, false]);
+  const live = await first.start(path.id);
+  await first.replay({ async send(_owner, operation, running) {
+    assert.equal(operation.timerId, live.id);
+    assert.equal(running, true);
+    return { kind: 'accepted' };
+  } });
+});

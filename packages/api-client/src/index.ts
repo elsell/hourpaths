@@ -17,6 +17,8 @@ export {
 export { createTimerOperationOwner, elapsedTimerSeconds, formatTimerDuration, timerMutationPresentation, type TimerMutationResult, type TimerState, type TimerStopResult } from './timer-control';
 
 export type TokenProvider = () => Promise<string | null> | string | null;
+export type TimerSubscriptionScope = 'person' | 'path';
+export type TimerSubscriptionUpdate = Omit<components['schemas']['TimerSubscriptionUpdateInputBody'], '$schema'>;
 export type AccountDeletionInput = Omit<components['schemas']['AccountDeletionInputBody'], '$schema'>;
 export type AccountDeletionReceiptInput = Omit<components['schemas']['AccountDeletionReceiptInputBody'], '$schema'>;
 export type OnboardingActivationInput = components['schemas']['OnboardingActivationInputBody'];
@@ -218,9 +220,11 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { query: { cursor, limit: 25 } },
     }),
     notifications: (cursor?: string) => authenticatedClient.GET('/v1/notifications', {
-      params: { query: { cursor, limit: 25, emojiReactions: true } },
+      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true } },
     }),
     notificationChannels: () => authenticatedClient.GET('/v1/me/notification-channels'),
+    timerSubscription: (scope: TimerSubscriptionScope, subjectId: string) => authenticatedClient.GET('/v1/me/timer-subscriptions/{scope}/{subjectId}', { params: { path: { scope, subjectId } } }),
+    updateTimerSubscription: (scope: TimerSubscriptionScope, subjectId: string, body: TimerSubscriptionUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/timer-subscriptions/{scope}/{subjectId}', { params: { path: { scope, subjectId }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
     updateNotificationChannel: (channel: NotificationChannel, body: NotificationChannelUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/notification-channels/{channel}', { params: { path: { channel }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
     getNudgeNotificationChannel: () => authenticatedClient.GET('/v1/me/notification-channels/nudges'),
     updateNudgeNotificationChannel: (body: NudgeNotificationChannelPreferenceInput, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/notification-channels/nudges', {
@@ -338,15 +342,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { requestId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     getNotification: (notificationId: string) => authenticatedClient.GET('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true } },
     }),
     markNotificationRead: (notificationId: string) => authenticatedClient.PATCH('/v1/notifications/{notificationId}/read', {
-      params: { path: { notificationId }, query: { emojiReactions: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true } },
     }),
     deleteNotification: (notificationId: string) => authenticatedClient.DELETE('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true } },
     }),
-    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true } } }),
+    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true } } }),
     ownershipTransferCandidates: (pathId: string, cursor?: string) => authenticatedClient.GET('/v1/paths/{pathId}/ownership-transfer-candidates', {
       params: { path: { pathId }, query: { cursor, limit: 25 } },
     }),
@@ -423,8 +427,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     synchronizeOfflineActivity: (pathId: string, body: components['schemas']['OfflineActivityInput'], idempotencyKey: string) => authenticatedClient.POST('/v1/paths/{pathId}/offline-activity', {
       params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } }, body,
     }),
-    synchronizeOfflineTimer: (pathId: string, body: components['schemas']['OfflineTimerInput'], idempotencyKey: string) => authenticatedClient.POST('/v1/paths/{pathId}/offline-timer', {
-      params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } }, body,
+    synchronizeOfflineTimer: (pathId: string, body: components['schemas']['OfflineTimerInput'], idempotencyKey: string, stillRunning = false) => authenticatedClient.POST('/v1/paths/{pathId}/offline-timer', {
+      params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey, 'X-HourPaths-Timer-Running': stillRunning } }, body,
     }),
     currentTimer: (pathId: string) => authenticatedClient.GET('/v1/paths/{pathId}/timer', {
       params: { path: { pathId } },

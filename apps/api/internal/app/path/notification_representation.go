@@ -13,3 +13,14 @@ func notificationEmojiRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(notificationEmojiRepresentationKey{}).(bool)
 	return enabled
 }
+
+// Timer-start vocabulary is opt-in so older clients retain readable history.
+type notificationTimerRepresentationKey struct{}
+
+func WithNotificationTimerRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, notificationTimerRepresentationKey{}, enabled)
+}
+func notificationTimerRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(notificationTimerRepresentationKey{}).(bool)
+	return enabled
+}

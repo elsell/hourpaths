@@ -52,3 +52,12 @@ func (service *controlledService) UpdateNotificationChannel(_ context.Context, a
 	service.authorization = authorization
 	return application.NotificationChannelPreference{Channel: notification.Channel(channel), NudgeNotificationChannelPreference: application.NudgeNotificationChannelPreference{Enabled: enabled, Revision: revision + 1}}, service.err
 }
+
+func (service *controlledService) GetTimerSubscription(_ context.Context, authorization, scope, subject string) (application.TimerSubscription, error) {
+	service.authorization = authorization
+	return application.TimerSubscription{Enabled: scope == "path"}, service.err
+}
+func (service *controlledService) UpdateTimerSubscription(_ context.Context, authorization, scope, subject, key string, revision int64, enabled bool) (application.TimerSubscription, error) {
+	service.authorization = authorization
+	return application.TimerSubscription{Enabled: enabled, Revision: revision + 1}, service.err
+}

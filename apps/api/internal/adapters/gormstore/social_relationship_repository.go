@@ -280,6 +280,9 @@ func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context,
 			if deleted.RowsAffected != 1 {
 				return errSocialRelationshipUnavailable
 			}
+			if err := suppressUnsubscribedTimerDeliveries(tx, command.ActorUserID, command.OccurredAt); err != nil {
+				return err
+			}
 			changeID := repository.nextID()
 			if changeID == "" {
 				return errInvalidSocialRelationshipRepository

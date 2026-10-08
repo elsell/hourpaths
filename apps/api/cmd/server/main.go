@@ -91,7 +91,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	pushInstallations, pushWorker, err := newPushRuntime(store.DB, cfg, clock)
+	pushInstallations, pushWorker, err := newPushRuntime(store.DB, cfg, clock, authorizer)
 	if err != nil {
 		panic(err)
 	}
@@ -138,6 +138,7 @@ func main() {
 		Nudges:              socialFeed, NudgeRateLimiter: socialRelationshipLimiter{limiter: auditLimiter},
 		NudgeNotificationChannels: gormstore.NewNudgeNotificationChannelRepository(store.DB),
 		NotificationChannels:      gormstore.NewNudgeNotificationChannelRepository(store.DB),
+		TimerSubscriptions:        gormstore.NewTimerSubscriptionRepository(store.DB),
 		Authorizer:                authorizer, AuthorizationOutbox: store, AuthorizationStatus: socialRelationships,
 		AuthorizationSerializer: store, AuthorizationWorker: authorizationWorker, AuthorizationLease: 30 * time.Second,
 		Audits: store, AuditRateLimiter: auditLimiter, RelationshipRateLimiter: socialRelationshipLimiter{limiter: auditLimiter},

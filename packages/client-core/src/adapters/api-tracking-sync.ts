@@ -43,7 +43,7 @@ export function apiTrackingSync(clientForOwner: (owner: string) => SessionAPI | 
         note: saved.note ?? '', createdAt: saved.createdAt, updatedAt: saved.updatedAt,
         editStamp: { authoredAt: order.authoredAt, counter: order.counter } } };
     },
-    async send(owner, operation) {
+    async send(owner, operation, stillRunning = false) {
       const client = clientForOwner(owner);
       if (!client) throw new TrackingReplaySuspended();
       const response = await client.synchronizeOfflineTimer(operation.pathId, {
@@ -53,7 +53,7 @@ export function apiTrackingSync(clientForOwner: (owner: string) => SessionAPI | 
         ...(operation.correctedStartedAt ? { correctedStartedAt: operation.correctedStartedAt } : {}),
         ...(operation.endedAt ? { endedAt: operation.endedAt } : {}),
         occurrenceTimeZone: operation.timeZone,
-      }, operation.operationId);
+      }, operation.operationId, operation.kind === 'start' && stillRunning);
       if (!clientForOwner(owner)) throw new TrackingReplaySuspended();
       const status = response.response.status;
       if (status === 401) throw new TrackingReplaySuspended();

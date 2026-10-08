@@ -88,6 +88,13 @@ connection and the limits of other offline surfaces.
   original start instant rather than restarting from the reconnection time.
 - Automatic synchronization must not require the user to initiate a manual
   sync action.
+- Timer-start notification eligibility must reflect whether the local session
+  is still running when its queued start is sent, as defined by
+  [Timer-start notifications](../notifications/notifications.spec.md#timer-start-notifications).
+  A queued stop or correction must suppress a late start alert without rewriting
+  the original timer mutation or weakening causal replay and conflict handling.
+  Replaying an acknowledged start with different current device state must not
+  create another notification.
 - A user must not need to recreate an offline time entry merely because it was
   recorded without connectivity.
 - Synchronization must preserve the participant and path attribution of each

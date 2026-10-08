@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"sort"
 	"strings"
 	"time"
@@ -45,6 +46,10 @@ func (r *Repository) LeavePath(ctx context.Context, command application.LeavePat
 	}
 	var result application.LeavePathResult
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := timerstore.Lock(tx, string(command.PathID)); err != nil {
+			return err
+		}
+
 		reservation := idempotencyModel{PrincipalID: command.ActorUserID, Operation: command.Idempotency.Operation, Key: command.Idempotency.Key, RequestHash: append([]byte(nil), command.Idempotency.RequestHash...), ResourceID: string(command.PathID), CreatedAt: command.LeftAt}
 		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&reservation)
 		if created.Error != nil {
@@ -81,6 +86,9 @@ func (r *Repository) LeavePath(ctx context.Context, command application.LeavePat
 		}
 		if membership.OwnerUserID == "" || membership.OwnerUserID == command.ActorUserID || (membership.Role != "administrator" && membership.Role != "participant" && membership.Role != "supporter") {
 			return ports.ErrNotFound
+		}
+		if err := timerstore.Retire(tx, "", string(command.PathID), command.LeftAt); err != nil {
+			return err
 		}
 		if err := retireInaccessiblePathTargetNotifications(tx, string(command.PathID), command.ActorUserID, command.LeftAt); err != nil {
 			return err

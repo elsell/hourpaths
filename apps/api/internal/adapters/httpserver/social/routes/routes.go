@@ -12,6 +12,8 @@ import (
 )
 
 type Service interface {
+	GetTimerSubscription(context.Context, string, string, string) (application.TimerSubscription, error)
+	UpdateTimerSubscription(context.Context, string, string, string, string, int64, bool) (application.TimerSubscription, error)
 	ListNotificationChannels(context.Context, string) ([]application.NotificationChannelPreference, error)
 	UpdateNotificationChannel(context.Context, string, string, string, int64, bool) (application.NotificationChannelPreference, error)
 	GetNudgeNotificationChannel(context.Context, string) (application.NudgeNotificationChannelPreference, error)
@@ -350,6 +352,7 @@ func Register(api huma.API, service Service) {
 	security := []map[string][]string{{"oidc": {}}}
 	registerNudgeRoutes(api, service, security)
 	registerNotificationChannelRoutes(api, service, security)
+	registerTimerSubscriptionRoutes(api, service, security)
 	registerProfilePaths(api, service, security)
 	huma.Register(api, huma.Operation{OperationID: "get-interaction-settings", Method: http.MethodGet, Path: "/v1/me/interaction-settings", Summary: "Get the viewer's interaction settings", Security: security}, func(ctx context.Context, input *interactionSettingsInput) (*interactionSettingsOutput, error) {
 		settings, err := service.GetInteractionSettings(ctx, input.Authorization)
