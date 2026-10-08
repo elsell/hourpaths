@@ -20,10 +20,12 @@ func TestAccountRecoveryAdmissionPreservesAccountsAndRejectsIneligibleEnrollment
 	if err != nil {
 		t.Fatal(err)
 	}
+	recoveryCloseStore(t, store)
 	admin, err := Open("postgres", *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
+	recoveryCloseStore(t, admin)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	source := userModel{ID: newTestID(), Email: newTestID() + "@example.test", ProviderEmailVerified: true, Status: identity.StatusProvisional, CreatedAt: now, UpdatedAt: now}
 	target := source
@@ -116,4 +118,13 @@ func TestAccountRecoveryAdmissionPreservesAccountsAndRejectsIneligibleEnrollment
 	if _, err := store.AdmitAccountRecovery(ctx, admission()); err == nil {
 		t.Fatal("revoked onboarding credential admitted a new challenge")
 	}
+}
+
+func recoveryCloseStore(t *testing.T, store *Store) {
+	t.Helper()
+	connection, err := store.DB.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = connection.Close() })
 }

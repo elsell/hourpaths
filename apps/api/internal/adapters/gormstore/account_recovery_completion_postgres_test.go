@@ -28,10 +28,12 @@ func TestAccountRecoveryCompletionIsAtomicAndKeepsTheExistingAccount(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
+	recoveryCloseStore(t, store)
 	admin, err := Open("postgres", *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
+	recoveryCloseStore(t, admin)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	source := userModel{ID: newTestID(), Email: newTestID() + "@example.test", ProviderEmailVerified: true, Status: identity.StatusProvisional, CreatedAt: now, UpdatedAt: now}
 	target := source

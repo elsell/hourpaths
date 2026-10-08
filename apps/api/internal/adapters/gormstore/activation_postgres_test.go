@@ -433,7 +433,12 @@ func seedActivationPolicyAuthority(t *testing.T, ctx context.Context) {
 	}).Create(&policy).Error; err != nil {
 		t.Fatal(err)
 	}
+	connection, err := migrationStore.DB.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
+		defer connection.Close()
 		_ = migrationStore.DB.Where("singleton = ? AND revision = ?", true, policy.Revision).Delete(&currentPolicySetModel{}).Error
 	})
 }
