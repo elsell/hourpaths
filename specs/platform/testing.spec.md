@@ -515,3 +515,38 @@ import braces or micromatch directly. This observation is not a proof of complet
 transitive unreachability. Do not add processing of user-supplied glob patterns
 under this exception. Replace the exception with a reviewed patched dependency
 when one is available. Preserve all other merge, image and native gates.
+
+## October 8 account-deletion release blocker
+
+Main release verification reports seven npm advisories. Published compatible fixes
+must replace the affected resolved versions: `source-map-js` 1.2.2,
+`joi` 17.13.8, `compression` 1.8.2 and `shell-quote` 1.11.0. The latter removes
+GHSA-pqg4-j6r4-53mv; the other updates remove GHSA-68fv-2mgg-jv7q,
+GHSA-wr44-6hxh-3jwq and GHSA-vc2v-76pw-4v95 respectively.
+
+The source-map-js and shell-quote security fixes require exact fourteen-day-age
+exceptions with registry integrity, frozen installation, package audit,
+consumer checks/builds and required native gates as compensating verification.
+The change must preserve the existing audit exceptions and deadlines until any
+additional risk acceptance has explicit owner approval. The registry currently
+has no published node-forge 1.4.1, braces 3.0.4 or sprintf-js 1.1.4; suggested
+versions in audit output are not evidence of available fixes.
+
+### Proposed bounded renewal (requires owner approval before merge)
+
+To release while upstream fixes remain unavailable, renew only
+GHSA-86w9-cpqp-85rv (`node-forge` 1.4.0) and GHSA-vfj7-8cjw-p6xm
+(`braces` 3.0.3), and add only GHSA-hp3w-g68c-fv3c (`sprintf-js` 1.0.3),
+until 2026-10-15T00:00:00Z. This is risk acceptance, not remediation.
+The full audit must still reject any other advisory or installed version,
+malformed/failed audit responses and any use after that deadline. It must print
+the exact exceptions and expiry. Do not merge this renewal without renewed
+explicit owner approval.
+
+The new sprintf-js finding permits attacker-controlled precision in a format
+string to throw an uncaught RangeError. Its resolved consumer is legacy argparse
+through build/test CLI dependencies; application source does not directly import
+it. That observation does not prove complete transitive unreachability. Do not
+introduce user-supplied formatting under the exception. Keep all image, native,
+authorization and other dependency gates, and remove each exception when a
+reviewed fix becomes available.
