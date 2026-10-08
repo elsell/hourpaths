@@ -1204,6 +1204,10 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 1 &&
           !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
           clause.namedBindings.elements[0].name.text === 'Linking';
+        const exactTimerPlatformImport = relative === 'apps/mobile/src/timers/timer-surface.ios.tsx' && clause && !clause.name &&
+          clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 1 &&
+          !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
+          clause.namedBindings.elements[0].name.text === 'Platform';
         const exactPushAdapterImport = relative === 'apps/mobile/src/push-notifications-native.ts' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
           clause.namedBindings.elements.length === 2 &&
@@ -1226,7 +1230,7 @@ function inspectSource(relative, file, source, index) {
           !exactSignedOutPresentationImport &&
           !exactTrackingPresentationImport &&
           !exactTrackingFallbackImport &&
-          !exactUIPresentationImport && !exactPolicyLinkImport && !exactPushAdapterImport) violation = true;
+          !exactUIPresentationImport && !exactPolicyLinkImport && !exactPushAdapterImport && !exactTimerPlatformImport) violation = true;
       }
       if (specifier === 'expo-router') {
         const reviewedImports = approvedExpoRouterImports.get(relative);
