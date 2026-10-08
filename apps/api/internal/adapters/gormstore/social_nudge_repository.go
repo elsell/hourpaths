@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"time"
 
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/progresslock"
@@ -398,10 +399,7 @@ func eligibilityFromNudgeState(state nudgeState, pathID, recipient string) socia
 }
 
 func createNudgeNotification(tx *gorm.DB, nudge socialdomain.Nudge) (bool, error) {
-	var enabled bool
-	err := tx.Table("user_models AS recipient").Select("COALESCE(preference.enabled, true)").
-		Joins("LEFT JOIN notification_channel_preference_models preference ON preference.user_id = recipient.id AND preference.channel = 'nudges'").
-		Where("recipient.id = ? AND recipient.status = 'active'", nudge.RecipientID).Take(&enabled).Error
+	enabled, err := channelstore.Allowed(tx, nudge.RecipientID, "nudges")
 	if err != nil || !enabled {
 		return false, err
 	}

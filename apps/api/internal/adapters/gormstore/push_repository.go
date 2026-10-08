@@ -335,6 +335,9 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 				return err
 			}
 		}
+		if err := lockSocialInteractionOwner(tx, socialLockKey("notification-channel", notice.RecipientUserID)); err != nil {
+			return err
+		}
 		eligible, err := pushDeliveryEligible(tx, worker, notificationID, installationID)
 		if err != nil || !eligible {
 			return err
@@ -355,6 +358,8 @@ func pushDeliveryEligible(tx *gorm.DB, worker, notificationID, installationID st
 		Joins("JOIN notification_models notice ON notice.id = delivery.notification_id").
 		Where("delivery.notification_id = ? AND delivery.installation_id = ? AND delivery.locked_by = ? AND delivery.locked_until > CURRENT_TIMESTAMP", notificationID, installationID, worker).
 		Where("delivery.delivered_at IS NULL AND delivery.suppressed_at IS NULL AND delivery.permanently_failed_at IS NULL").
+		Where(`NOT EXISTS (SELECT 1 FROM notification_channel_preference_models preference
+WHERE preference.user_id = notice.recipient_user_id AND preference.channel = notice.channel AND NOT preference.enabled)`).
 		Where(`NOT EXISTS (SELECT 1 FROM block_models delivery_block
 WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_block.blocked_user_id = notice.actor_user_id)
    OR (delivery_block.blocker_user_id = notice.actor_user_id AND delivery_block.blocked_user_id = notice.recipient_user_id))`).

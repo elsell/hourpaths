@@ -2,6 +2,7 @@ package pathstore
 
 import (
 	"errors"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"strings"
 	"time"
 
@@ -17,6 +18,10 @@ func createInvitationNotification(
 	notification application.InvitationNotification,
 	kind, presentationClass string,
 ) error {
+	enabled, err := channelstore.Allowed(tx, notification.RecipientUserID, "path_access")
+	if err != nil || !enabled {
+		return err
+	}
 	if err := tx.Table("notification_models").Create(invitationNotificationPersistence(notification, kind, presentationClass)).Error; err != nil {
 		return err
 	}
@@ -49,6 +54,10 @@ func createOwnershipTransferNotification(
 		"kind": string(notification.Kind), "presentation_class": string(notification.Presentation),
 		"channel": invitationNotificationChannel, "offered_role": nil,
 		"created_at": notification.CreatedAt,
+	}
+	enabled, err := channelstore.Allowed(tx, notification.RecipientUserID, "path_access")
+	if err != nil || !enabled {
+		return err
 	}
 	if err := tx.Table("notification_models").Create(row).Error; err != nil {
 		return err
@@ -102,6 +111,10 @@ func createMemberAccessNotification(tx *gorm.DB, notification application.Member
 		"kind": string(notification.Kind), "presentation_class": string(application.NotificationInformational),
 		"channel": invitationNotificationChannel, "offered_role": string(notification.Role),
 		"created_at": notification.CreatedAt,
+	}
+	enabled, err := channelstore.Allowed(tx, notification.RecipientUserID, "path_access")
+	if err != nil || !enabled {
+		return err
 	}
 	if err := tx.Table("notification_models").Create(row).Error; err != nil {
 		return err

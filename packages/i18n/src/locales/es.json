@@ -5114,5 +5114,21 @@
   "identity.failed": "No se pudieron actualizar tus métodos de inicio de sesión. Inténtalo de nuevo. Si este proveedor pertenece a otra cuenta completada, elige qué cuenta conservar. Para conectarlo aquí, elimina primero la cuenta que no quieras solo si aceptas perder sus datos permanentemente; después vuelve aquí para conectar el proveedor. Las cuentas y los historiales no se pueden combinar.",
   "identity.success": "Método de inicio de sesión conectado.",
   "identity.linkProvider": "Conectar {{provider}}",
-  "identity.unlinkProvider": "Desconectar {{provider}}"
+  "identity.unlinkProvider": "Desconectar {{provider}}",
+  "notification.channel.following": "Seguimiento",
+  "notification.channel.path_access": "Acceso a rutas",
+  "notification.channel.tracking_activity": "Actividad de seguimiento",
+  "notification.channel.achievements": "Logros",
+  "notification.channel.comments": "Comentarios en eventos",
+  "notification.channel.reactions": "Reacciones a eventos",
+  "notification.channel.comment_hearts": "Corazones en comentarios",
+  "notification.channel.nudges": "Ánimos",
+  "notification.channel.goal_reminders": "Recordatorios de objetivos",
+  "notification.channel.timer_health": "Estado de los temporizadores",
+  "notification.channels.footer": "Elige qué notificaciones recibes en la app y mediante avisos push. Los ajustes del dispositivo también controlan los avisos push.",
+  "notification.channels.heading": "Categorías de notificaciones",
+  "notification.channels.loading": "Cargando ajustes de notificaciones…",
+  "notification.channels.loadError": "No se pudieron cargar los ajustes de notificaciones. Inténtalo de nuevo.",
+  "notification.channels.saving": "Guardando ajuste de notificaciones…",
+  "notification.channels.saveError": "No se pudo actualizar este ajuste de notificaciones. Se sigue mostrando el ajuste anterior; inténtalo de nuevo."
 }

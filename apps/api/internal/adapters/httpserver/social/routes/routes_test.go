@@ -15,6 +15,7 @@ import (
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/social/dto"
 	platformapp "github.com/elsell/hour-paths/apps/api/internal/app"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/social"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/notification"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/social"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 )
@@ -794,4 +795,17 @@ func TestPracticeCommentCreateEditAndDeleteUseIdempotencyAndCAS(t *testing.T) {
 func (service *controlledService) ListProfileActivity(ctx context.Context, authorization, username, cursor string, limit int) ([]application.PracticeFeedItem, string, error) {
 	service.username = username
 	return service.ListPracticeFeed(ctx, authorization, cursor, limit)
+}
+
+func (service *controlledService) ListNotificationChannels(_ context.Context, authorization string) ([]application.NotificationChannelPreference, error) {
+	service.authorization = authorization
+	var result []application.NotificationChannelPreference
+	for _, channel := range notification.Channels() {
+		result = append(result, application.NotificationChannelPreference{Channel: channel, NudgeNotificationChannelPreference: application.NudgeNotificationChannelPreference{Enabled: true}})
+	}
+	return result, service.err
+}
+func (service *controlledService) UpdateNotificationChannel(_ context.Context, authorization, channel, key string, revision int64, enabled bool) (application.NotificationChannelPreference, error) {
+	service.authorization = authorization
+	return application.NotificationChannelPreference{Channel: notification.Channel(channel), NudgeNotificationChannelPreference: application.NudgeNotificationChannelPreference{Enabled: enabled, Revision: revision + 1}}, service.err
 }

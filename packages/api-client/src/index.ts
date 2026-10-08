@@ -53,6 +53,8 @@ export type NudgeAudiencePreference = components['schemas']['NudgeAudiencePrefer
 export type NudgeAudiencePreferenceInput = Omit<components['schemas']['NudgeAudiencePreferenceInput'], '$schema'>;
 export type NudgeEligibility = components['schemas']['NudgeEligibility'];
 export type NudgeInput = Omit<components['schemas']['NudgeInput'], '$schema'>;
+export type NotificationChannel = components['schemas']['NotificationChannelPreference']['channel'];
+export type NotificationChannelUpdate = Omit<components['schemas']['NotificationChannelUpdateInputBody'], '$schema'>;
 export type NudgeNotificationChannelPreference = components['schemas']['NudgeNotificationChannelPreference'];
 export type NudgeNotificationChannelPreferenceInput = Omit<components['schemas']['NudgeNotificationChannelPreferenceInput'], '$schema'>;
 export type BlockReviewAcknowledgement = components['schemas']['BlockReviewAcknowledgement'];
@@ -218,6 +220,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     notifications: (cursor?: string) => authenticatedClient.GET('/v1/notifications', {
       params: { query: { cursor, limit: 25, emojiReactions: true } },
     }),
+    notificationChannels: () => authenticatedClient.GET('/v1/me/notification-channels'),
+    updateNotificationChannel: (channel: NotificationChannel, body: NotificationChannelUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/notification-channels/{channel}', { params: { path: { channel }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
     getNudgeNotificationChannel: () => authenticatedClient.GET('/v1/me/notification-channels/nudges'),
     updateNudgeNotificationChannel: (body: NudgeNotificationChannelPreferenceInput, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/notification-channels/nudges', {
       params: { header: { 'Idempotency-Key': idempotencyKey } },

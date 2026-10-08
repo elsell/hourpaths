@@ -326,6 +326,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/notification-channels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the viewer's notification channels */
+        get: operations["list-notification-channels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/notification-channels/nudges": {
         parameters: {
             query?: never;
@@ -337,6 +354,23 @@ export interface paths {
         get: operations["get-nudge-notification-channel"];
         /** Update the viewer's nudge notification channel */
         put: operations["update-nudge-notification-channel"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notification-channels/{channel}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update one of the viewer's notification channels */
+        put: operations["update-notification-channel"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2247,6 +2281,42 @@ export interface components {
         };
         MetaStruct: {
             nextCursor?: string;
+        };
+        NotificationChannelOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/NotificationChannelOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["NotificationChannelPreference"];
+        };
+        NotificationChannelPreference: {
+            /** @enum {string} */
+            channel: "following" | "path_access" | "tracking_activity" | "achievements" | "comments" | "reactions" | "comment_hearts" | "nudges" | "goal_reminders" | "timer_health";
+            enabled: boolean;
+            /** Format: int64 */
+            revision: number;
+        };
+        NotificationChannelUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/NotificationChannelUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** Format: int64 */
+            expectedRevision: number;
+        };
+        NotificationChannelsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/NotificationChannelsOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["NotificationChannelPreference"][] | null;
         };
         NotificationListMeta: {
             nextCursor?: string;
@@ -4164,6 +4234,37 @@ export interface operations {
             };
         };
     };
+    "list-notification-channels": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationChannelsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "get-nudge-notification-channel": {
         parameters: {
             query?: never;
@@ -4218,6 +4319,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NudgeNotificationChannelOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-notification-channel": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                channel: "following" | "path_access" | "tracking_activity" | "achievements" | "comments" | "reactions" | "comment_hearts" | "nudges" | "goal_reminders" | "timer_health";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationChannelUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationChannelOutputBody"];
                 };
             };
             /** @description Error */

@@ -12,6 +12,8 @@ import (
 )
 
 type Service interface {
+	ListNotificationChannels(context.Context, string) ([]application.NotificationChannelPreference, error)
+	UpdateNotificationChannel(context.Context, string, string, string, int64, bool) (application.NotificationChannelPreference, error)
 	GetNudgeNotificationChannel(context.Context, string) (application.NudgeNotificationChannelPreference, error)
 	UpdateNudgeNotificationChannel(context.Context, string, string, int64, bool) (application.NudgeNotificationChannelPreference, error)
 	GetNudgeAudience(context.Context, string, string) (application.NudgeAudiencePreference, error)
@@ -347,6 +349,7 @@ type practiceCommentHeartRosterOutput struct {
 func Register(api huma.API, service Service) {
 	security := []map[string][]string{{"oidc": {}}}
 	registerNudgeRoutes(api, service, security)
+	registerNotificationChannelRoutes(api, service, security)
 	registerProfilePaths(api, service, security)
 	huma.Register(api, huma.Operation{OperationID: "get-interaction-settings", Method: http.MethodGet, Path: "/v1/me/interaction-settings", Summary: "Get the viewer's interaction settings", Security: security}, func(ctx context.Context, input *interactionSettingsInput) (*interactionSettingsOutput, error) {
 		settings, err := service.GetInteractionSettings(ctx, input.Authorization)

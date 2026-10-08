@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"sort"
 	"strings"
 	"time"
@@ -733,6 +734,10 @@ func (repository *SocialRelationshipRepository) AuthorizationChangeState(ctx con
 }
 
 func (repository *SocialRelationshipRepository) createSocialNotification(tx *gorm.DB, kind, recipient, actor, subject, requestID string, createdAt time.Time, push bool) error {
+	enabled, err := channelstore.Allowed(tx, recipient, "following")
+	if err != nil || !enabled {
+		return err
+	}
 	notificationID := repository.nextID()
 	if notificationID == "" {
 		return errInvalidSocialRelationshipRepository

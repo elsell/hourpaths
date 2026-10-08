@@ -45,14 +45,14 @@ import {
   createNudgeAudienceOperationOwner,
   createNudgeSendOperationOwner,
   nudgeAudiencePreferenceFromAPI,
-  nudgeChannelPreferenceFromAPI,
+  notificationChannelPreferenceFromAPI,
+  notificationChannelPreferencesFromAPI,
   nudgeEligibilityFromAPI,
   reviewNudgeAudienceChange,
   reviewNudgeSend,
   type NudgeAudience,
   type NudgeAudiencePreference,
-  type NudgeChannelPreference,
-  type NudgeChannelUpdateBody,
+  type NotificationChannelPreference,
   type NudgePreset,
 } from '@hourpaths/client-core';
 import { problemMessageKey, type MessageKey } from '@hourpaths/i18n';
@@ -4387,11 +4387,11 @@ export function HomeScreen() {
     }
   }
 
-  async function getNudgeChannelPreference(): Promise<NudgeChannelPreference> {
+  async function getNotificationChannels(): Promise<NotificationChannelPreference[]> {
     if (!session || destination?.kind !== 'home') throw new Error('nudge_channel_unavailable');
     const currentSession = session;
     const ownerID = destination.profile.id;
-    const intentKey = 'notification-settings:nudge:load';
+    const intentKey = 'notification-settings:channels:load';
     const ticket = notificationSettingsOperations.issue();
     notificationSettingsTarget.current = createNotificationSessionTarget(ownerID, currentSession, intentKey);
     const currentTarget = () => ticket.current() && ownsCurrentNotificationOperation(
@@ -4402,11 +4402,11 @@ export function HomeScreen() {
     );
     try {
       const response = generatedResponse(await createSessionApiClient(apiURL, () => currentSession.token)
-        .getNudgeNotificationChannel());
+        .notificationChannels());
       if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
       const envelope = await response.json();
       if (!envelope || !currentTarget()) throw new Error('nudge_channel_superseded');
-      return nudgeChannelPreferenceFromAPI(envelope.data);
+      return notificationChannelPreferencesFromAPI(envelope.data);
     } catch (cause) {
       await handleNotificationOperationFailure(cause, currentSession, currentTarget);
       throw cause;
@@ -4415,16 +4415,16 @@ export function HomeScreen() {
     }
   }
 
-  async function updateNudgeChannelPreference(
-    body: NudgeChannelUpdateBody,
+  async function updateNotificationChannel(
+    value: NotificationChannelPreference,
     idempotencyKey: string,
-  ): Promise<NudgeChannelPreference> {
+  ): Promise<NotificationChannelPreference> {
     if (!session || destination?.kind !== 'home' || notificationSettingsAdmission.current) {
       throw new Error('nudge_channel_unavailable');
     }
     const currentSession = session;
     const ownerID = destination.profile.id;
-    const intentKey = `notification-settings:nudge:update:${idempotencyKey}`;
+    const intentKey = `notification-settings:channels:update:${idempotencyKey}`;
     const admission = Symbol('notification-settings');
     notificationSettingsAdmission.current = admission;
     const ticket = notificationSettingsOperations.issue();
@@ -4437,11 +4437,11 @@ export function HomeScreen() {
     );
     try {
       const response = generatedResponse(await createSessionApiClient(apiURL, () => currentSession.token)
-        .updateNudgeNotificationChannel(body, idempotencyKey));
+        .updateNotificationChannel(value.channel, { enabled: value.enabled, expectedRevision: value.revision }, idempotencyKey));
       if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
       const envelope = await response.json();
       if (!envelope || !currentTarget()) throw new Error('nudge_channel_superseded');
-      return nudgeChannelPreferenceFromAPI(envelope.data);
+      return notificationChannelPreferenceFromAPI(envelope.data);
     } catch (cause) {
       await handleNotificationOperationFailure(cause, currentSession, currentTarget);
       throw cause;
@@ -8390,7 +8390,7 @@ export function HomeScreen() {
         ? notificationLifecycleState.current.destination.profile.id
         : 'unavailable'}:${socialPresentationGeneration.current}`}
       getInteractionSettings={getInteractionSettings}
-      getNudgeChannelPreference={getNudgeChannelPreference}
+      getNotificationChannels={getNotificationChannels}
       getConfiguredTimeZone={getConfiguredTimeZone}
       runningTimerCount={Object.values(ownedHomeDestination.profile.timers).filter((state) => state.running).length}
       synchronizePushPermission={synchronizePushPermission}
@@ -8402,7 +8402,7 @@ export function HomeScreen() {
         router.dismissAll(); router.replace('/(tabs)/home');
       }}
       updateInteractionSettings={updateInteractionSettings}
-      updateNudgeChannelPreference={updateNudgeChannelPreference}
+      updateNotificationChannel={updateNotificationChannel}
       updateConfiguredTimeZone={updateConfiguredTimeZone}
     /> : null}
     {ownedHomeDestination ? <UserBlockingRouteSource

@@ -7,3 +7,6 @@ export interface BlockedPerson { readonly id: string; readonly name: string; rea
 export class PreferenceFailure extends Error {
   constructor(readonly kind: 'unavailable' | 'conflict' | 'rejected' = 'unavailable') { super('preference_failure'); }
 }
+
+export type NotificationChannel = 'following' | 'path_access' | 'tracking_activity' | 'achievements' | 'comments' | 'reactions' | 'comment_hearts' | 'nudges' | 'goal_reminders' | 'timer_health';
+export interface NotificationChannelPreference { readonly channel: NotificationChannel; readonly enabled: boolean; readonly revision: number }

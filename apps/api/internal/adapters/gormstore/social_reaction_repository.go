@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"strings"
 	"time"
 
@@ -248,6 +249,10 @@ WHERE (reaction_block.blocker_user_id = ? AND reaction_block.blocked_user_id = s
 }
 
 func upsertReactionNotification(tx *gorm.DB, command socialapp.ReactionCommand) error {
+	enabled, err := channelstore.Allowed(tx, command.Target.OwnerUserID, "reactions")
+	if err != nil || !enabled {
+		return err
+	}
 	result := tx.Table("notification_models").Where("kind = 'practice_reaction' AND social_feed_event_id = ? AND actor_user_id = ? AND recipient_user_id = ?", command.Target.EventID, command.ActorUserID, command.Target.OwnerUserID).Update("reaction_type", string(command.Reaction))
 	if result.Error != nil || result.RowsAffected != 0 {
 		return result.Error
