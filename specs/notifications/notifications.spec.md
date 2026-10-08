@@ -620,3 +620,5 @@ Status: Approved for implementation
 - Operating-system grouping must not merge, delete, or change the read state of
   the underlying in-application records.
 - The initial product must not add another semantic notification-bundling rule.
+
+- Activity-deletion responses must negotiate achievement unread counts using the same opt-in as notification history. Older callers must exclude achievement notices; opted-in callers must count only currently visible achievement notices. The opt-in must participate in idempotency identity so a replay cannot return a count from another representation.

@@ -5538,7 +5538,9 @@ export interface operations {
     };
     "delete-activity": {
         parameters: {
-            query?: never;
+            query?: {
+                achievements?: boolean;
+            };
             header: {
                 Authorization?: string;
                 "Idempotency-Key": string;

@@ -43,6 +43,14 @@ func TestPostgresAchievementNotifiesOnlyParticipantAndHonorsChannel(t *testing.T
 			if len(notices) != want {
 				t.Fatalf("achievement notices=%+v, want %d", notices, want)
 			}
+			legacyCount, err := activityDeletionVisibleUnreadNotificationCount(db, participant, now)
+			if err != nil || legacyCount != 0 {
+				t.Fatalf("legacy deletion count=%d err=%v, want 0", legacyCount, err)
+			}
+			currentCount, err := activityDeletionVisibleUnreadNotificationCount(db, participant, now, true)
+			if err != nil || currentCount != int64(want) {
+				t.Fatalf("negotiated deletion count=%d err=%v, want %d", currentCount, err, want)
+			}
 			kinds := map[string]bool{}
 			for _, notice := range notices {
 				if notice.RecipientUserID != participant || notice.ActorUserID != participant || notice.SocialFeedEventID == "" || notice.Channel != "achievements" || notice.PresentationClass != "informational" {

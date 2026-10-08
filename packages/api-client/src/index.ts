@@ -454,7 +454,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       body,
     }),
     deleteActivity: (pathId: string, activityId: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/paths/{pathId}/activities/{activityId}', {
-      params: { path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
+      params: { query: { achievements: true }, path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     activity: (pathId: string, activityId: string) => authenticatedClient.GET('/v1/paths/{pathId}/activities/{activityId}', {
       params: { path: { pathId, activityId } },

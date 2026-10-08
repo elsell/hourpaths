@@ -71,6 +71,7 @@ type activityInput struct {
 	ActivityID    string `path:"activityId"`
 }
 type activityDeletionInput struct {
+	Achievements   bool   `query:"achievements" default:"false"`
 	Authorization  string `header:"Authorization"`
 	IdempotencyKey string `header:"Idempotency-Key" required:"true" minLength:"16" maxLength:"128"`
 	PathID         string `path:"pathId"`
@@ -199,7 +200,7 @@ func Register(api huma.API, service Service) {
 		return out, nil
 	})
 	huma.Register(api, huma.Operation{OperationID: "delete-activity", Method: http.MethodDelete, Path: activityPath, Security: security}, func(ctx context.Context, input *activityDeletionInput) (*activityDeletionOutput, error) {
-		result, err := service.DeleteActivity(ctx, input.Authorization, input.PathID, input.ActivityID, input.IdempotencyKey)
+		result, err := service.DeleteActivity(application.WithAchievementNotificationRepresentation(ctx, input.Achievements), input.Authorization, input.PathID, input.ActivityID, input.IdempotencyKey)
 		if err != nil {
 			return nil, shared.MapError(err, true)
 		}

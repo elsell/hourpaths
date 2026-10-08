@@ -251,5 +251,6 @@ test('activity deletion uses the generated route with current credentials and ca
   assert.equal(new URL(captured.url).pathname, '/v1/paths/path-1/activities/activity-1');
   assert.equal(captured.headers.get('authorization'), 'Bearer current-token');
   assert.equal(captured.headers.get('idempotency-key'), 'activity-delete-key');
+  assert.equal(new URL(captured.url).searchParams.get('achievements'), 'true');
   assert.deepEqual(await generatedResponse(result).json(), { data: { accumulatedSeconds: 42, sessionCount: 3, unreadNotificationCount: 4, removedFeedEventIds: ['achievement:a', 'practice:activity-1'] } });
 });

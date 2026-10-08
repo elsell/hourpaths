@@ -369,11 +369,16 @@ func (s *Service) DeleteActivity(ctx context.Context, authorization, pathID, act
 	}
 	event := s.auditEvent(ctx, principal.UserID, audit.ResourceDeleted, activityID)
 	event.TargetType = "activity"
+	achievements := achievementNotificationRepresentation(ctx)
+	hash := requestHash(DeleteActivityOperation, pathID, activityID)
+	if achievements {
+		hash = requestHash(DeleteActivityOperation, pathID, activityID, "achievements")
+	}
 	result, err := s.Repository.DeleteActivity(ctx, DeleteActivityCommand{
-		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID,
+		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements,
 		Idempotency: ports.Idempotency{
 			PrincipalID: principal.UserID, Operation: DeleteActivityOperation, Key: idempotencyKey,
-			RequestHash: requestHash(DeleteActivityOperation, pathID, activityID),
+			RequestHash: hash,
 		},
 		Audit:            event,
 		IntervalProgress: intervalProgress,
