@@ -174,6 +174,28 @@ sign-in callbacks must still require their own pre-redirect sign-in intent.
   private data.
 - Completing the offered link must require successful authentication of both
   the existing account and the provider identity being added.
+- This recovery operation must be separate from ordinary identity linking. It
+  may resolve only an unfinished provisional enrollment into the authenticated
+  existing account. It must recheck that the enrollment is still provisional
+  when committing; concurrent completion of onboarding must make recovery fail
+  without changing either account.
+- Successful recovery must preserve the existing account's ID, profile, Paths,
+  activity, preferences, and relationships. It must associate the proven new
+  identity with that account, invalidate every credential for the unfinished
+  enrollment, and enter the existing account. It must not transfer product data
+  from another account.
+- Retiring the enrollment must preserve replay protection for every previously
+  exchanged provider token. No old enrollment credential may authenticate the
+  retained account after recovery.
+- Before successful server completion, a canceled, expired, rejected, or failed
+  recovery attempt must not remove the unfinished enrollment or alter either
+  identity association. The person must
+  remain able to retry or choose ordinary onboarding while its application
+  session remains valid.
+- If the server completes recovery but the client loses the response or cannot
+  save the returned session, signing in through either linked identity must
+  recover access to the existing account. The client must not claim that the
+  original enrollment is still usable or silently create a new account.
 - Declining or canceling the offer must allow ordinary new-account onboarding to
   continue without linking the accounts.
 - On mobile, this recovery state must present returning to sign-in for the
@@ -198,6 +220,21 @@ sign-in callbacks must still require their own pre-redirect sign-in intent.
 - A provider identity from an ordinarily deleted account must become available
   for linking after active deletion completes, subject to any applicable
   security or enforcement restriction.
+
+The [broker recovery contract](../../docs/oidc.md#duplicate-account-recovery-contract)
+defines the challenge, atomic credential transition, and callback boundaries.
+
+Acceptance examples:
+- A person who already uses Google starts Apple sign-in with a corresponding
+  verified email. After choosing recovery and authenticating the Google account,
+  both identities reach the original account and its activity is unchanged.
+- Canceling Google authentication retains the Apple enrollment and permits
+  creating a separate account; it does not link either identity.
+- If another client completes the Apple enrollment before recovery commits,
+  recovery refuses to combine the two completed accounts and shows the existing
+  choose/delete/link guidance.
+- A callback received after sign-out or account replacement cannot change the
+  replacement account or restore the old enrollment's session.
 
 ## Offline access for an established session
 

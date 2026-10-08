@@ -5,6 +5,7 @@ export interface EntryService {
   review(): Promise<EntryReview>;
   defaults(): { timeZone: string; firstDayOfWeek: number };
   activate(input: EntryActivation): Promise<EntryContext>;
+  recover(): Promise<void>;
   decline(): Promise<EntryContext>;
   begin(): Promise<void>;
   signOut(): Promise<void>;

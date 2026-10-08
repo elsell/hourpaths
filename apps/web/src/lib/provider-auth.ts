@@ -1,5 +1,5 @@
 import { consumeAccountDeletionEntry, prepareAccountDeletionSignIn } from './account-deletion-entry';
-import { providerSignInScopes, validIdentityLinkIntent, type ProviderIdentityPorts, type IdentityLinkIntent } from '@hourpaths/client-core';
+import { providerSignInScopes, validIdentityLinkIntent, validAccountRecoveryIntent, type AccountRecoveryPorts, type AccountRecoveryIntent, type ProviderIdentityPorts, type IdentityLinkIntent } from '@hourpaths/client-core';
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 
 export type ApplicationDestination = '/' | '/studio' | '/onboarding' | '/account-recovery';
@@ -33,6 +33,7 @@ function manager(issuer: string, clientId: string): UserManager {
 
 export async function beginProviderSignIn(issuer: string, clientId: string): Promise<void> {
   forgetProviderLinkIntent();
+  window.sessionStorage.removeItem(providerRecoveryIntentKey);
   prepareAccountDeletionSignIn(window.sessionStorage, window.location.pathname);
   const provider = manager(issuer, clientId);
   const metadata = await provider.metadataService.getMetadata();
@@ -60,7 +61,7 @@ export async function completeProviderAuthentication(issuer: string, clientId: s
 
 export async function completeProviderSignIn(issuer: string, clientId: string): Promise<string> {
   const result = await completeProviderAuthentication(issuer, clientId);
-  if (result.state && typeof result.state === 'object' && 'purpose' in result.state && result.state.purpose === 'identity-link') throw new Error('identity_link_callback_requires_account_context');
+  if (result.state && typeof result.state === 'object' && 'purpose' in result.state && (result.state.purpose === 'identity-link' || result.state.purpose === 'account-recovery')) throw new Error('identity_link_callback_requires_account_context');
   return result.identityToken;
 }
 
@@ -94,4 +95,36 @@ export function providerLinkIntentStorage(): ProviderIdentityPorts['pending'] {
 export function replaceProviderSettingsLocation(result: 'success' | 'failed'): void {
   if (result === 'success') window.location.replace('/studio/settings/account?identityLink=success');
   else window.location.replace('/studio/settings/account?identityLink=failed');
+}
+
+const providerRecoveryIntentKey = 'hourpaths.account-recovery';
+export async function beginProviderRecovery(issuer: string, clientId: string, intent: AccountRecoveryIntent): Promise<void> {
+  await manager(issuer, clientId).signinRedirect({
+    prompt: 'login', scope: 'openid profile email identities', nonce: intent.nonce,
+    state: { purpose: 'account-recovery', lifecycle: intent.lifecycle, challengeId: intent.id },
+  });
+}
+export function providerRecoveryIntentStorage(): AccountRecoveryPorts['pending'] {
+  const read = (): AccountRecoveryIntent | null => {
+    const raw = window.sessionStorage.getItem(providerRecoveryIntentKey);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!validAccountRecoveryIntent(parsed)) throw new Error('recovery_invalid');
+    return parsed;
+  };
+  return {
+    read: async () => read(),
+    save: async intent => { window.sessionStorage.setItem(providerRecoveryIntentKey, JSON.stringify(intent)); },
+    remove: async (lifecycle, id) => { const value = read(); if (value?.lifecycle === lifecycle && value.id === id) window.sessionStorage.removeItem(providerRecoveryIntentKey); },
+  };
+}
+
+export function forgetProviderRecoveryIntent(lifecycle: string): void {
+  try {
+    const raw = window.sessionStorage.getItem(providerRecoveryIntentKey);
+    if (!raw) return;
+    let value: unknown;
+    try { value = JSON.parse(raw); } catch { value = null; }
+    if (!validAccountRecoveryIntent(value) || value.lifecycle === lifecycle) window.sessionStorage.removeItem(providerRecoveryIntentKey);
+  } catch { /* A later callback still requires the durable lifecycle revision. */ }
 }

@@ -106,6 +106,46 @@ Migration 76 rollback must refuse while any user has multiple identities. Do not
 unlink identities automatically to force a schema downgrade. Duplicate-account
 recovery is a separate flow and is not established by the ordinary linking UI.
 
+## Duplicate-account recovery contract
+
+Recovery must use a dedicated ten-minute, single-use challenge, bound to the
+current provisional enrollment, exact opaque onboarding credential, and its
+authenticated provider identity. A
+verified email match may admit the offer, but must not select or authorize the
+account receiving the identity. Only successful authentication of an already
+active account may identify that destination. Both providers must satisfy the
+signed provider-claim contract above; unavailable metadata must fail safely.
+
+The authorization request must use PKCE and a purpose-specific random nonce.
+The API must reject recovery-purpose tokens at ordinary session exchange and
+ordinary linking. Challenge completion must compare the verified token's nonce,
+issuer, subject, and provider with the pending recovery operation. No provider
+token may be saved for later reuse. Clients must retain only the account-bound
+pending intent needed to validate the callback, and discard it on cancellation,
+sign-out, expiry, or account replacement.
+
+Completion must serialize against onboarding activation, identity changes, and
+account deletion. Under the account locks it must recheck the source enrollment,
+both identity associations, the active destination, the challenge, and the
+presented unexpired onboarding credential. A completed source account, duplicate
+provider at the destination, changed association, replay, or stale challenge
+must refuse the operation without partial changes or private-account disclosure.
+
+Associating the new identity, retiring the unfinished enrollment, invalidating
+its credentials, creating the destination's application credential, and writing
+their audit evidence must commit atomically. The credential transition must not
+extend the original application-session family's absolute expiry. Persistence
+or audit failure must roll back the whole transition. Product data must never
+be migrated between accounts by this operation.
+
+The client may enter the existing account only after securely persisting the
+completed session under the same pending account lifecycle. An old callback must
+not overwrite a newer session. Both mobile and Studio must expose recovery and
+cancel/new-account choices with localized, text-labeled controls and retain
+actionable feedback after failure. Ordinary linking must continue to reject an
+identity associated with another user, including a provisional user; only this
+explicit recovery flow can resolve an unfinished enrollment.
+
 ## Secrets and lifecycle
 
 Keep Google connector credentials and Apple team, service, key identifiers and
@@ -135,3 +175,9 @@ and cover missing Apple name, private-relay email, wrong issuer, wrong audience,
 invalid authorized party, unverified email, routing tampering, key rotation, and
 broker unavailability. A vendor-specific production broker manifest is
 deployment-owned and intentionally absent from this repository.
+
+Recovery retirement preserves the consumed provider-token hashes used to prevent
+session-exchange replay. Source session rows carrying those hashes are retained
+under the surviving account with their opaque credentials revoked; their expiry
+is unchanged. Other enrollment sessions are removed with the provisional user.
+This retention must never grant a source credential access to the surviving user.

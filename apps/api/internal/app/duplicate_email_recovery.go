@@ -9,6 +9,8 @@ import (
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 )
 
+const identityRecoveryNoncePrefix = "hourpaths-recovery:"
+
 func (a App) DeclineDuplicateEmailRecovery(ctx context.Context, authorization string) error {
 	principal, err := a.Auth.Authenticate(ctx, authorization)
 	if err != nil {
