@@ -36,7 +36,7 @@ class HourPathsTimersModule : Module() {
       val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         ?: throw IllegalStateException("timer_launch_unavailable")
       intent.action = Intent.ACTION_VIEW
-      intent.data = Uri.parse("hourpaths:///")
+      intent.data = Uri.parse("hourpaths:///home")
       intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
       val open = PendingIntent.getActivity(context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
       val expanded = Notification.InboxStyle()

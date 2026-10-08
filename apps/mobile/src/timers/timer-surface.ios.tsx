@@ -58,6 +58,6 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     const [current, ...duplicates] = factory().getInstances();
     for (const duplicate of duplicates) await duplicate.end('immediate');
     if (current) await current.update(props);
-    else factory().start(props, 'hourpaths:///');
+    else factory().start(props, 'hourpaths:///home');
   },
 });
