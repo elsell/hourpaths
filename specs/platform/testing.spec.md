@@ -24,7 +24,7 @@ rejects every old session and later OIDC exchange.
 
 Pre-commit and CI run Go formatting and tests, structural checks, OpenAPI/client
 drift checks, TypeScript checks, and production builds. Dependencies, CI actions,
-toolchains, and images are pinned. The Go toolchain is pinned to 1.26.6 because
+toolchains, and images are pinned. The Go toolchain is pinned to 1.26.9 because
 the earlier 1.25.13 standard library was affected by CVE-2026-46600. Generated
 projects must pass checks immediately after bootstrap without manual source edits.
 Git hooks must clear hook-owned Git directory, worktree, index, and prefix
@@ -549,3 +549,21 @@ it. That observation does not prove complete transitive unreachability. Do not
 introduce user-supplied formatting under the exception. Keep all image, native,
 authorization and other dependency gates, and remove each exception when a
 reviewed fix becomes available.
+
+### October 2026 Go security release blocker
+
+The API and Go tooling must use Go 1.26.9 or a later explicitly reviewed patch
+within that release series. The API must pin `golang.org/x/net` v0.60.0 to
+remove the reachable October 8 HTTP/2 advisories. The container builder must
+use the same reviewed Go patch with an immutable multi-platform digest.
+
+Main CI run 37857240666 identified GO-2026-6617, GO-2026-6613,
+GO-2026-6612, GO-2026-6611, GO-2026-6610, GO-2026-6608,
+GO-2026-6607, GO-2026-6605, GO-2026-6603, GO-2026-6600, and
+GO-2026-6599. This change must replace affected versions, not suppress their
+scanner results. The exact `x/net` security patch may bypass the fourteen-day
+observation period only with checksum verification, module tidying, Go tests,
+and clean symbol/package vulnerability scans. Required image and acceptance
+gates remain in force. The required minimum module graph includes `x/text` v0.42.0, `x/sync`
+v0.23.0, and `x/sys` v0.48.0; their exact age exceptions use the same checks.
+No unrelated dependency upgrades belong in this fix.
