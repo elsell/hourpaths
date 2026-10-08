@@ -1,3 +1,4 @@
+import type { ProviderSettingsService } from '@hourpaths/client-core';
 import { AccountDeletionSettings } from './account-deletion';
 import type { AccountDeletionService } from '../account/ports/account-deletion';
 import type { OfflineStatus } from '../offline/ports/tracking-status';
@@ -43,6 +44,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  providers?: ProviderSettingsService;
   deletion?: AccountDeletionService;
   offline?: OfflineStatus;
   nudges: NudgesRepository;

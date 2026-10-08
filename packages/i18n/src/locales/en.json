@@ -5095,5 +5095,20 @@
   "accountDelete.failed": "Deletion could not be confirmed. Your deletion request is saved. Retry to check its status and finish removing local data.",
   "accountDelete.recovery": "Finish account deletion",
   "accountDelete.recoveryDetail": "A previously confirmed deletion needs to finish. Local activity stays paused while its status is checked.",
-  "accountDelete.reviewFailed": "Your account could not be verified. Try again before confirming deletion."
+  "accountDelete.reviewFailed": "Your account could not be verified. Try again before confirming deletion.",
+  "identity.heading": "Sign-in methods",
+  "identity.description": "Link Google and Apple to use either with this account.",
+  "identity.google": "Google",
+  "identity.apple": "Apple",
+  "identity.connected": "Connected",
+  "identity.notConnected": "Not connected",
+  "identity.link": "Connect",
+  "identity.unlink": "Disconnect",
+  "identity.keepOne": "Keep at least one sign-in method connected.",
+  "identity.unlinkConfirm": "Disconnect {{provider}}? You can still sign in with your other connected method.",
+  "identity.working": "Updating sign-in methods…",
+  "identity.failed": "Couldn’t update your sign-in methods. Try again. If that provider belongs to another account, it can’t be connected here.",
+  "identity.success": "Sign-in method connected.",
+  "identity.linkProvider": "Connect {{provider}}",
+  "identity.unlinkProvider": "Disconnect {{provider}}"
 }

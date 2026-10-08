@@ -13,5 +13,5 @@ c572bf4ed14a23d78cb8a8e4889f65e987a54014f0b10e1a6961e332d3b7eea2  apps/mobile/sr
 d0c955b5120fecedb54465567559806fb09b39ded64c185339080b4a6041e743  apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts
 76208a4fcc90c401922fb762cf47bdbff8304a289d7a355bfbba13cc8db9bdf7  apps/web/src/service-worker.ts
 188ec896c102fbdba0f455153182fb3945047385c3b68575febe9ec0d30ca3a1  apps/web/src/lib/offline-shell/cache.ts
-61a669263358e09048e28590873d8362e23d1fcda6c66da946ced6ef102f4f8f  apps/web/src/lib/browser-session-state.ts
+b8d2d54c6b77fe5ee15a05c5ee0b4f5d0a14017c1ca4bce381cbe2f8a2711398  apps/web/src/lib/browser-session-state.ts
 ad260f663593fd1f60388164938563e8e74d42c82caf438eaa4fa67582a0ec9b  apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts

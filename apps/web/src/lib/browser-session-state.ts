@@ -1,3 +1,4 @@
+import { forgetProviderLinkIntent } from './provider-auth';
 import { browserSessionRecords, sessionRecordKey } from './studio/session/adapters/browser-session-record';
 import { DurableSessionOperations } from './studio/session/application/session-operations';
 
@@ -52,6 +53,7 @@ function createState() {
     async discardOwner(owner: string): Promise<void> {
       // Do not invalidate operations belonging to a replacement account.
       // The shared revision change invalidates tickets for the removed account.
+      forgetProviderLinkIntent(owner);
       await records.coordinator.discardOwner(owner);
     },
     async discard(value: string | null, expectedToken?: string): Promise<void> {
@@ -62,7 +64,14 @@ function createState() {
         try { previous = records.coordinator.read(); }
         catch { await records.discardUnreadable(); return; }
         const family = expectedToken ? observedFamilies.get(expectedToken) : previous.family;
-        if (family !== undefined) await records.coordinator.discardFamily(family, value);
+        if (family !== undefined && family === previous.family) {
+          if (previous.value) {
+            let prior: unknown;
+            try { prior = JSON.parse(previous.value); } catch { prior = null; }
+            if (prior && typeof prior === 'object' && 'ownerId' in prior && typeof prior.ownerId === 'string') forgetProviderLinkIntent(prior.ownerId);
+          }
+          await records.coordinator.discardFamily(family, value);
+        }
       }
       finally { clearing = false; }
     },

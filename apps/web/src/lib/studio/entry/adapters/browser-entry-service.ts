@@ -1,7 +1,8 @@
 import { createSessionApiClient, generatedResponse, type OnboardingProfile } from '@hourpaths/api-client';
 import { isSessionFailure, validateSessionCredential, validateSessionMutation, type ClientRuntimeConfig, type SessionOperationTicket } from '@hourpaths/client-core';
 import { pauseApplicationSession, initializeApplicationSession, activateApplicationSession, applicationSession, applicationSessionExpired, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, declineApplicationRecovery, exchangeApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '../../../auth';
-import { completeProviderSignIn, replaceApplicationLocation } from '../../../provider-auth';
+import { browserProviderIdentities } from '../../account/adapters/browser-provider-identities';
+import { completeProviderAuthentication, replaceApplicationLocation, replaceProviderSettingsLocation } from '../../../provider-auth';
 import { deviceOnboardingDefaults } from '../../../onboarding';
 import { openWebPolicyLink } from '../../../external-policy-link';
 import { EntryFailure, type EntryContext, type EntryReview, type PolicyLink } from '../domain/entry';
@@ -18,9 +19,17 @@ export function entryReview(value: OnboardingProfile): EntryReview {
     terms: policy(value.policies?.termsOfService), privacy: policy(value.policies?.privacyPolicy), guidelines: policy(value.policies?.communityGuidelines), support: link(value.policies?.supportUrl),
   } };
 }
-export function browserEntryService(config: ClientRuntimeConfig, now: () => number = () => Date.now()): EntryService {
+export interface ProviderCallbackPort {
+  authenticate(): Promise<{ identityToken: string; state: unknown }>;
+  link(identityToken: string, state: unknown): Promise<void>;
+}
+export function browserEntryService(config: ClientRuntimeConfig, now: () => number = () => Date.now(), providerCallbacks: ProviderCallbackPort = {
+  authenticate: () => completeProviderAuthentication(config.oidcIssuer, config.oidcClientId),
+  link: (token, state) => browserProviderIdentities(config).complete(token, state),
+}): EntryService {
   let current: ApplicationSession | null = null, disposed = false;
   let issued: SessionOperationTicket | null = null;
+  let linkResult: 'success' | 'failed' | null = null;
   function same() { try { return !disposed && !!current && applicationSession()?.token === current.token; } catch { return false; } }
   function cancelTicket() { if (issued?.current()) applicationSessionOperations.invalidate(); issued = null; }
   function ticket(signIn = false): SessionOperationTicket { const own = signIn ? applicationSessionOperations.signIn() : applicationSessionOperations.issue(); issued = own; return { ...own, current: () => !disposed && own.current() }; }
@@ -65,9 +74,22 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
     },
     async callback() {
       await initializeApplicationSession();
-      const own = ticket(true);
+      let own = ticket();
       try {
-        const identity = await completeProviderSignIn(config.oidcIssuer, config.oidcClientId);
+        const provider = await providerCallbacks.authenticate();
+        if (provider.state && typeof provider.state === 'object' && 'purpose' in provider.state && provider.state.purpose === 'identity-link') {
+          if (!own.current()) throw new EntryFailure('superseded');
+          try { await providerCallbacks.link(provider.identityToken, provider.state); linkResult = 'success'; }
+          catch { linkResult = 'failed'; }
+          current = applicationSession();
+          if (!current || (current.nextAction ?? 'home') !== 'home') throw new EntryFailure('expired');
+          return context();
+        }
+        const identity = provider.identityToken;
+        if (!own.current()) throw new EntryFailure('superseded');
+        // Ordinary sign-in still requires its pre-redirect revision. Linking
+        // retains the current account and must never consume that intent.
+        own = ticket(true);
         if (!own.current()) throw new EntryFailure('superseded');
         const next = await exchangeApplicationSession(identity, config, own);
         if (!own.current() || !next) throw new EntryFailure('superseded');
@@ -117,6 +139,7 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
     navigate(destination) {
       if (disposed) return;
       if (destination !== 'entry') authorized();
+      if (linkResult && destination === 'home') { replaceProviderSettingsLocation(linkResult); return; }
       replaceApplicationLocation(destination === 'home' || destination === 'entry' ? '/studio' : destination === 'onboarding' ? '/onboarding' : '/account-recovery');
     },
     openPolicy(url) { if (!disposed) openWebPolicyLink(url, () => { throw new EntryFailure('unavailable'); }); },

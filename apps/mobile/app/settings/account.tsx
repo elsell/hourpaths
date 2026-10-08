@@ -1,3 +1,4 @@
+import { ProviderSettings } from '../../src/ui/provider-settings';
 import { getLocales } from 'expo-localization';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -123,6 +124,10 @@ export default function AccountSettings() {
       <SettingsSeparator />
       <SettingsValueRow label={i18n.t('settings.account.email')} value={activePresentation.email} />
     </SettingsSection>
+    {activePresentation.providers ? <ProviderSettings key={activePresentation.sessionKey} service={activePresentation.providers} i18n={i18n} confirmUnlink={(provider, confirmed) => Alert.alert(i18n.t('identity.unlink'), i18n.t('identity.unlinkConfirm', { provider: i18n.t(provider === 'google' ? 'identity.google' : 'identity.apple') }), [
+      { text: i18n.t('common.cancel'), style: 'cancel' },
+      { text: i18n.t('identity.unlink'), style: 'destructive', onPress: confirmed },
+    ])} /> : null}
     <SettingsSection footer={ownedFailureKey ? i18n.t(ownedFailureKey) : undefined}>
       <SettingsActionRow
         accessibilityLabel={i18n.t('settings.account.signOutLabel', { name })}

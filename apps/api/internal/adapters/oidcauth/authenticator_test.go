@@ -162,6 +162,8 @@ type normalizedBrokerProfile struct {
 	Email, Name     string
 	EmailVerified   *bool
 	AuthorizedParty string
+	Identities      any
+	Nonce           string
 }
 
 func boolPointer(value bool) *bool { return &value }
@@ -178,7 +180,9 @@ func signToken(t *testing.T, key *rsa.PrivateKey, claims jwt.Claims, profile nor
 		Name            string `json:"name,omitempty"`
 		EmailVerified   *bool  `json:"email_verified,omitempty"`
 		AuthorizedParty string `json:"azp,omitempty"`
-	}{Claims: claims, Email: profile.Email, Name: profile.Name, EmailVerified: profile.EmailVerified, AuthorizedParty: profile.AuthorizedParty}
+		Identities      any    `json:"identities,omitempty"`
+		Nonce           string `json:"nonce,omitempty"`
+	}{Claims: claims, Email: profile.Email, Name: profile.Name, EmailVerified: profile.EmailVerified, AuthorizedParty: profile.AuthorizedParty, Identities: profile.Identities, Nonce: profile.Nonce}
 	serialized, err := jwt.Signed(signer).Claims(payload).Serialize()
 	if err != nil {
 		t.Fatal(err)
@@ -193,4 +197,52 @@ func mustRSAKey(t *testing.T) *rsa.PrivateKey {
 		t.Fatal(err)
 	}
 	return key
+}
+
+// Provider linking must use signed broker metadata, never email or UI hints.
+func TestVerifiedProviderClaimsForLinking(t *testing.T) {
+	key := mustRSAKey(t)
+	var issuer string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/.well-known/openid-configuration":
+			_ = json.NewEncoder(w).Encode(map[string]any{"issuer": issuer, "jwks_uri": issuer + "/keys", "authorization_endpoint": issuer + "/auth", "token_endpoint": issuer + "/token"})
+		case "/keys":
+			_ = json.NewEncoder(w).Encode(jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: &key.PublicKey, KeyID: "test-key", Algorithm: "RS256", Use: "sig"}}})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	issuer = server.URL
+	verifier, err := New(context.Background(), issuer, "", []string{"web"}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name       string
+		identities any
+		provider   string
+	}{
+		{"Google", map[string]any{"google": map[string]any{"userId": "upstream-google"}}, "google"},
+		{"Apple", map[string]any{"apple": map[string]any{"userId": "upstream-apple"}}, "apple"},
+		{"legacy missing claim", nil, ""},
+		{"no identity", map[string]any{}, ""},
+		{"unsupported", map[string]any{"github": map[string]any{"userId": "upstream"}}, ""},
+		{"two providers", map[string]any{"google": map[string]any{"userId": "one"}, "apple": map[string]any{"userId": "two"}}, ""},
+		{"missing upstream proof", map[string]any{"google": map[string]any{}}, ""},
+		{"wrong type", map[string]any{"google": "upstream"}, ""},
+		{"malformed list", []string{"google"}, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			token := signToken(t, key, jwt.Claims{Issuer: issuer, Subject: "stable-broker-subject", Audience: jwt.Audience{"web"}, Expiry: jwt.NewNumericDate(time.Now().Add(time.Minute))}, normalizedBrokerProfile{Email: "person@gmail.com", EmailVerified: boolPointer(true), Identities: tc.identities, Nonce: "challenge-nonce"})
+			got, err := verifier.Verify(context.Background(), token)
+			if err != nil {
+				t.Fatalf("existing sign-in must remain compatible: %v", err)
+			}
+			if string(got.Provider) != tc.provider || got.Nonce != "challenge-nonce" || got.Subject != "stable-broker-subject" {
+				t.Fatalf("incorrect trusted identity claims: provider=%q nonce=%q", got.Provider, got.Nonce)
+			}
+		})
+	}
 }

@@ -1,3 +1,4 @@
+import type { ProviderSettingsService } from '@hourpaths/client-core';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { PushPermission } from '../push-notifications';
 import type { InteractionSettings } from '../interaction-settings';
@@ -10,6 +11,7 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  providers?: ProviderSettingsService;
   deleteAccount?: () => void;
   displayName: string;
   email: string;
@@ -34,6 +36,7 @@ function emitChange() {
 }
 
 export function SettingsPresentationSource({
+  providers,
   deleteAccount,
   displayName,
   email,
@@ -49,6 +52,8 @@ export function SettingsPresentationSource({
   updateNudgeChannelPreference,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const providersRef = useRef(providers);
+  providersRef.current = providers;
   const deleteAccountRef = useRef(deleteAccount);
   deleteAccountRef.current = deleteAccount;
   const getConfiguredTimeZoneRef = useRef(getConfiguredTimeZone);
@@ -75,6 +80,12 @@ export function SettingsPresentationSource({
       if (!active || !isCurrentRef.current()) throw new Error('settings_presentation_superseded');
     };
     const presentation = {
+      providers: providers ? {
+        owner: () => { assertActive(); return providersRef.current!.owner(); },
+        list: () => { assertActive(); return providersRef.current!.list(); },
+        link: (provider: 'google' | 'apple') => { assertActive(); return providersRef.current!.link(provider); },
+        unlink: (provider: 'google' | 'apple', owner: string) => { assertActive(); return providersRef.current!.unlink(provider, owner); },
+      } : undefined,
       deleteAccount: () => { assertActive(); deleteAccountRef.current?.(); },
       displayName,
       email,

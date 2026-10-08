@@ -154,6 +154,15 @@ passwords.
 - Linking and unlinking must not change Paths, memberships, activity, social
   relationships, or profile visibility.
 
+The nonce, trusted-provider, atomic audit, and concurrent-unlink requirements in
+[the broker integration contract](../../docs/oidc.md#provider-identity-management-contract)
+apply to every linking client. Link authorization expires after ten minutes;
+starting again replaces an earlier pending link for the same provider.
+Clients must discard local link intent when its account signs out, expires, or is
+deleted. Cleanup for an old account must not remove a replacement account's
+intent. A link callback must retain the current application session; ordinary
+sign-in callbacks must still require their own pre-redirect sign-in intent.
+
 ## Duplicate-account prevention and recovery
 
 - Before creating a new application account, if a new provider's verified email

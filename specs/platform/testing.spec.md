@@ -532,16 +532,15 @@ additional risk acceptance has explicit owner approval. The registry currently
 has no published node-forge 1.4.1, braces 3.0.4 or sprintf-js 1.1.4; suggested
 versions in audit output are not evidence of available fixes.
 
-### Proposed bounded renewal (requires owner approval before merge)
+### October 8 owner-approved bounded renewal
 
-To release while upstream fixes remain unavailable, renew only
+The owner explicitly approved the renewal on October 8, 2026. While upstream fixes remain unavailable, the policy accepts only
 GHSA-86w9-cpqp-85rv (`node-forge` 1.4.0) and GHSA-vfj7-8cjw-p6xm
-(`braces` 3.0.3), and add only GHSA-hp3w-g68c-fv3c (`sprintf-js` 1.0.3),
+(`braces` 3.0.3), and GHSA-hp3w-g68c-fv3c (`sprintf-js` 1.0.3),
 until 2026-10-15T00:00:00Z. This is risk acceptance, not remediation.
 The full audit must still reject any other advisory or installed version,
 malformed/failed audit responses and any use after that deadline. It must print
-the exact exceptions and expiry. Do not merge this renewal without renewed
-explicit owner approval.
+the exact exceptions and expiry. Any extension beyond this approved window requires renewed explicit owner approval.
 
 The new sprintf-js finding permits attacker-controlled precision in a format
 string to throw an uncaught RangeError. Its resolved consumer is legacy argparse

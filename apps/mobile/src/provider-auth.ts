@@ -1,3 +1,4 @@
+import { providerSignInScopes } from '@hourpaths/client-core';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
@@ -26,7 +27,7 @@ export function useProviderSignIn(issuer: string, clientId: string, scheme: stri
   const [request, response, prompt] = AuthSession.useAuthRequest({
     clientId,
     redirectUri,
-    scopes: ['openid', 'profile', 'email'],
+    scopes: providerSignInScopes(discovery?.discoveryDocument?.scopes_supported),
     usePKCE: true,
     prompt: AuthSession.Prompt.Login,
   }, discovery);

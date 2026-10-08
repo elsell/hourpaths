@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"net/mail"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,7 @@ func newID() string { return uuid.NewString() }
 type App struct {
 	Auth                             ports.Authenticator
 	IdentityVerifier                 ports.IdentityTokenVerifier
+	ProviderIdentities               ProviderIdentityRepository
 	Sessions                         ports.Sessions
 	OnboardingActivator              ports.OnboardingActivator
 	PolicyAuthority                  ports.PolicyAuthority
@@ -159,7 +161,7 @@ func (a App) ExchangeIdentityToken(ctx context.Context, token string) (IdentityE
 		return nil, errors.New("session dependencies are invalid")
 	}
 	claims, err := a.IdentityVerifier.Verify(ctx, token)
-	if err != nil {
+	if err != nil || strings.HasPrefix(claims.Nonce, identityLinkNoncePrefix) {
 		return nil, ErrUnauthenticated
 	}
 	_, claims.InvitationAdmin = a.InvitationAdmins[claims.Issuer+"#"+claims.Subject]

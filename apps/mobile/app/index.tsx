@@ -78,6 +78,7 @@ import { interactionSettingsFromAPI, type InteractionSettings } from '../src/int
 import { timeZonePreferenceFromAPI, type FrozenTimeZoneChangeIntent, type TimeZonePreference } from '../src/time-zone-settings';
 import { restoreStoredSession } from '../src/session-restoration';
 import { applyMobileSessionFailure, createSerializedMobileSessionStorage, disposeMobileSession, shouldTransitionMobileSessionForFeatureFailure } from '../src/session-state';
+import { nativeProviderSettings } from '../src/provider-identity-settings';
 import { useProviderSignIn } from '../src/provider-auth';
 import { buildPathCreateDraft, buildPathGoalUpdateDraft, initialPathGoalForm, pathGoalFormFromPath, type PathGoalForm, type PathGoalUpdateDraft } from '../src/path-goals';
 import { defaultPathCreationVisibility, ownsPathCreationTarget, rotatePathCreationTarget, type PathCreationTarget } from '../src/path-creation-target';
@@ -953,6 +954,14 @@ export function HomeScreen() {
   const pathVisibilityConfirmationTarget = useRef<PathAdministrationTarget<Session> | null>(null);
   const ownershipTransferIdempotencyKeys = useRef(new Map<string, string>());
   const providerSignIn = useProviderSignIn(issuer, clientId, 'hourpaths');
+  const providerSettings = useMemo(() => nativeProviderSettings({
+    apiURL, issuer, clientId,
+    current: () => {
+      const current = notificationLifecycleState.current;
+      if (!current.session || current.destination?.kind !== 'home' || Date.parse(current.session.expiresAt) <= Date.now()) return null;
+      return { owner: current.destination.profile.id, token: current.session.token };
+    },
+  }), []);
   useEffect(() => {
     const shellDestination = accountShellDestination({
       destinationKind: destination?.kind ?? null,
@@ -8336,6 +8345,7 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      providers={providerSettings}
       displayName={ownedHomeDestination.profile.displayName}
       email={ownedHomeDestination.profile.email}
       sessionKey={socialPresentationKey}
