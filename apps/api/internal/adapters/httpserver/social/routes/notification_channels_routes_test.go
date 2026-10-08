@@ -1,7 +1,10 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
+	application "github.com/elsell/hour-paths/apps/api/internal/app/social"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/notification"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,4 +38,17 @@ func TestNotificationChannelCatalogRouteExposesTenIndependentSettings(t *testing
 	if len(expected) != 0 {
 		t.Fatalf("missing channels: %v", expected)
 	}
+}
+
+func (service *controlledService) ListNotificationChannels(_ context.Context, authorization string) ([]application.NotificationChannelPreference, error) {
+	service.authorization = authorization
+	var result []application.NotificationChannelPreference
+	for _, channel := range notification.Channels() {
+		result = append(result, application.NotificationChannelPreference{Channel: channel, NudgeNotificationChannelPreference: application.NudgeNotificationChannelPreference{Enabled: true}})
+	}
+	return result, service.err
+}
+func (service *controlledService) UpdateNotificationChannel(_ context.Context, authorization, channel, key string, revision int64, enabled bool) (application.NotificationChannelPreference, error) {
+	service.authorization = authorization
+	return application.NotificationChannelPreference{Channel: notification.Channel(channel), NudgeNotificationChannelPreference: application.NudgeNotificationChannelPreference{Enabled: enabled, Revision: revision + 1}}, service.err
 }
