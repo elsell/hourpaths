@@ -1,3 +1,4 @@
+import { browserProviderIdentities } from '../account/adapters/browser-provider-identities';
 import { browserAccountDeletion } from '../account/adapters/browser-account-deletion';
 import type { AccountDeletionService } from '../account/ports/account-deletion';
 import { AccountDeletionRecovery } from '../presentation/account-deletion';
@@ -141,6 +142,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
   if (browserConnected()) void historyRefresh.wake();
   const stopConnectivity = subscribeTrackingConnectivity(wakeTracking);
   root.render(<StudioApp dependencies={{
+    providers: browserProviderIdentities(options.config),
     deletion,
     offline,
     paths,

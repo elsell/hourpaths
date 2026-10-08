@@ -10,8 +10,9 @@ Create three public authorization-code clients with the display names
 `hourpaths-web`, `hourpaths-mobile`, and `hourpaths-docs`. Configure each
 HourPaths deployment with the broker-assigned application identifier, not its
 display name. None receives a client secret. Enable authorization code with
-S256 PKCE and only the `openid`, `profile`, and `email` scopes required by
-HourPaths. The deployed Logto mobile application currently has App ID
+S256 PKCE and the `openid`, `profile`, `email`, and `identities` scopes required by
+HourPaths. The production broker must enable `identities` as an extended ID-token
+claim before clients request this scope. The deployed Logto mobile application currently has App ID
 `ctdb003l6t7f3d5hidfm7`; local Dex continues to use `hourpaths-mobile` as its
 development-only client identifier.
 
@@ -50,6 +51,60 @@ data: Apple may omit `name`, and an Apple private-relay email is an ordinary
 email value rather than proof of a separate or matching person.
 `email_verified` may support invitation and duplicate-account hints, but neither
 email nor provider display data is an identity key.
+
+## Provider identity management contract
+
+The API must derive provider names only from the verified broker ID token's
+`identities` claim. Exactly one supported key (`google` or `apple`) with a
+nonempty upstream `userId` identifies its provider. Unsupported, malformed, or
+multiple identities must not authorize linking. The upstream user identifier
+must not replace the broker issuer/subject, enter audit metadata, or be retained
+as an application identity key.
+
+Existing sign-in tokens without this extended claim remain valid for ordinary
+session exchange. They must not authorize provider linking. Existing identity
+rows require trusted broker metadata reconciliation before their provider labels
+are presented; email domains, user input, and the selected sign-in button must
+never supply that metadata. Existing broker subjects and application user IDs
+must remain unchanged.
+
+Linking must use an expiring, single-use server challenge bound to the signed-in
+application account and requested provider. Its random nonce must be sent in the
+PKCE authorization request and compared with the verified ID token's `nonce`.
+A token from a different challenge, account, or provider must fail before any
+identity association changes. Consuming the challenge, adding the association,
+and recording its audit event must be atomic. A token used for linking must not
+also be reusable for ordinary session exchange. Cancellation must preserve the
+current application session and all existing identity associations.
+
+Unlinking must serialize changes against the owning account and recheck the
+remaining identity count in the mutation transaction. Concurrent requests must
+never remove its final identity. Account deletion must fence identity changes
+and remove pending challenges along with the account. API responses must not
+expose raw issuer/subject keys or another account's email.
+
+### Provider-management rollout
+
+1. Verify discovery advertises `identities` and broker automatic account linking
+   is disabled. Keep the existing issuer and subjects unchanged.
+2. Enable `identities` in the broker's extended ID-token claims before releasing
+   clients that request its scope. Verify signed Google and Apple claims against
+   the contract above; discovery support alone is not evidence that tokens carry
+   the claim. Do not print tokens or upstream identities in release logs.
+3. After migration 76, reconcile blank provider labels using a private, bounded
+   export of broker subject and its single supported provider. Match the exact
+   configured issuer and subject; reject ambiguous, missing, conflicting, or
+   multiple-provider records. Commit each label change with its audit event.
+   Report counts only and discard the private export after verification. Never
+   overwrite a nonblank provider label or use email to supply a match.
+4. Verify Settings on both clients: link the other provider, retain the current
+   session, sign in through either provider to the same account, unlink one,
+   and reject removal of the final provider. Verify cancel and account-switch
+   callbacks cannot adopt or link a different account.
+
+Migration 76 rollback must refuse while any user has multiple identities. Do not
+unlink identities automatically to force a schema downgrade. Duplicate-account
+recovery is a separate flow and is not established by the ordinary linking UI.
 
 ## Secrets and lifecycle
 

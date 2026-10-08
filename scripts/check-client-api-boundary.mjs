@@ -47,6 +47,7 @@ const approvedExternalImports = new Set([
 const providerImports = new Map([
   ['apps/mobile/src/offline/native-tracking-store.ts', new Set(['expo-sqlite'])],
   ['apps/mobile/src/provider-auth.ts', new Set(['expo-auth-session', 'expo-web-browser'])],
+  ['apps/mobile/src/provider-identity-settings.ts', new Set(['expo-auth-session'])],
   ['apps/mobile/src/push-notifications-native.ts', new Set(['expo-linking', 'expo-notifications'])],
   ['apps/web/src/lib/provider-auth.ts', new Set(['oidc-client-ts'])],
 ]);
@@ -62,6 +63,7 @@ const browserGlobalReferences = new Set([
 ]);
 const windowProxyMembers = new Set(['contentWindow', 'defaultView', 'view']);
 const protectedProviderAdapters = new Set([
+  'apps/mobile/src/provider-identity-settings.ts',
   'apps/mobile/src/provider-auth.ts',
   'apps/mobile/src/provider-auth-state.ts',
   'apps/mobile/src/provider-discovery.ts',

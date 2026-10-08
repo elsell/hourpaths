@@ -290,6 +290,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	})
 	registerAuditRoutes(api, application)
 	registerAccountDeletionRoutes(api, application)
+	registerProviderIdentityRoutes(api, application)
 	registerAuthorizationRecoveryRoutes(api, application)
 	registerInvitationRoutes(api, application)
 	registerOnboardingRoutes(api, application)
@@ -663,6 +664,9 @@ func docsExchangeError(err error) (int, string, string) {
 	}
 }
 func mapError(err error, concealForbidden bool) error {
+	if errors.Is(err, app.ErrIdentityLinkProofInvalid) {
+		return newCodedAPIError(http.StatusBadRequest, "identity_link_proof_invalid", "provider authentication could not complete this link")
+	}
 	if errors.Is(err, app.ErrUnauthenticated) {
 		return newCodedAPIError(http.StatusUnauthorized, "unauthenticated", "authentication required")
 	}

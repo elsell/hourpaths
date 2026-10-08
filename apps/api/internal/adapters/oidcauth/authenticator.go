@@ -2,8 +2,10 @@ package oidcauth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"net/http"
 	"net/url"
@@ -104,8 +106,10 @@ func (a *Verifier) Verify(ctx context.Context, serialized string) (ports.Claims,
 	}
 	var raw struct {
 		Email, Name     string
-		EmailVerified   bool   `json:"email_verified"`
-		AuthorizedParty string `json:"azp"`
+		EmailVerified   bool            `json:"email_verified"`
+		AuthorizedParty string          `json:"azp"`
+		Identities      json.RawMessage `json:"identities"`
+		Nonce           string          `json:"nonce"`
 	}
 	if err := token.Claims(&raw); err != nil {
 		return ports.Claims{}, errors.New("invalid claims")
@@ -121,7 +125,7 @@ func (a *Verifier) Verify(ctx context.Context, serialized string) (ports.Claims,
 	if token.Subject == "" {
 		return ports.Claims{}, errors.New("missing subject")
 	}
-	return ports.Claims{Issuer: token.Issuer, Subject: token.Subject, Email: raw.Email, DisplayName: raw.Name, EmailVerified: raw.EmailVerified}, nil
+	return ports.Claims{Issuer: token.Issuer, Subject: token.Subject, Email: raw.Email, DisplayName: raw.Name, EmailVerified: raw.EmailVerified, Provider: verifiedProvider(raw.Identities), Nonce: raw.Nonce}, nil
 }
 func contains(values []string, target string) bool {
 	for _, value := range values {
@@ -141,4 +145,27 @@ func validateEndpoint(raw string, insecure bool) error {
 		return errors.New("endpoint must use HTTPS unless insecure mode is enabled")
 	}
 	return nil
+}
+
+// Missing or ambiguous provider metadata preserves ordinary legacy sign-in,
+// but leaves Provider empty so it cannot establish a linking proof.
+func verifiedProvider(raw json.RawMessage) identity.Provider {
+	var identities map[string]json.RawMessage
+	if json.Unmarshal(raw, &identities) != nil || len(identities) != 1 {
+		return ""
+	}
+	for name, value := range identities {
+		provider := identity.Provider(name)
+		if !provider.Supported() {
+			return ""
+		}
+		var upstream struct {
+			UserID string `json:"userId"`
+		}
+		if json.Unmarshal(value, &upstream) != nil || strings.TrimSpace(upstream.UserID) == "" {
+			return ""
+		}
+		return provider
+	}
+	return ""
 }

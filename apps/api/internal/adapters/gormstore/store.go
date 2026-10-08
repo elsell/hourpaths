@@ -31,9 +31,10 @@ type userModel struct {
 	CreatedAt, UpdatedAt  time.Time
 }
 type identityModel struct {
-	Issuer  string `gorm:"primaryKey"`
-	Subject string `gorm:"primaryKey"`
-	UserID  string `gorm:"uniqueIndex"`
+	Issuer   string `gorm:"primaryKey"`
+	Subject  string `gorm:"primaryKey"`
+	UserID   string `gorm:"index"`
+	Provider identity.Provider
 }
 type sessionModel struct {
 	TokenHash         []byte `gorm:"primaryKey"`
@@ -507,6 +508,9 @@ func (s *Store) WithinResource(ctx context.Context, resourceType, resourceID str
 }
 
 func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event, profileEvent, invitationEvent audit.Event, allowCreate bool) (identity.User, error) {
+	if claims.Provider != "" && !claims.Provider.Supported() {
+		return identity.User{}, ports.ErrInvalidArgument
+	}
 	userID := identity.UserID(claims.Issuer, claims.Subject)
 	if !validMutationAudit(event, audit.UserProvisioned, "user", userID, userID) || event.ActorUserID != userID || !validMutationAudit(profileEvent, audit.UserProfileSynchronized, "user", userID, userID) || profileEvent.ActorUserID != userID {
 		return identity.User{}, ports.ErrInvalidArgument
@@ -517,8 +521,24 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 		if result.Error == nil {
 			profileEvent = auditForResolvedAccount(profileEvent, found.UserID)
 			var existing userModel
-			if err := tx.Where("id = ?", found.UserID).First(&existing).Error; err != nil {
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", found.UserID).First(&existing).Error; err != nil {
 				return err
+			}
+			// Recheck the association after acquiring the same account lock used
+			// by unlink/deletion. A stale lookup must not authenticate an identity
+			// that was removed while this exchange waited for the lock.
+			var current identityModel
+			if err := tx.Where("issuer = ? AND subject = ? AND user_id = ?", claims.Issuer, claims.Subject, found.UserID).Take(&current).Error; err != nil {
+				return err
+			}
+			if claims.Provider.Supported() && current.Provider.Supported() && claims.Provider != current.Provider {
+				return ports.ErrInvalidCredential
+			}
+			providerChanged := claims.Provider.Supported() && current.Provider == ""
+			if providerChanged {
+				if err := tx.Model(&identityModel{}).Where("issuer = ? AND subject = ? AND user_id = ? AND provider = ''", claims.Issuer, claims.Subject, found.UserID).Update("provider", claims.Provider).Error; err != nil {
+					return err
+				}
 			}
 			normalizedEmail := existing.Email
 			providerEmailVerified := existing.ProviderEmailVerified
@@ -528,7 +548,7 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 			}
 			switch existing.Status {
 			case identity.StatusProvisional:
-				if existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.DisplayName == claims.DisplayName && existing.InvitationAdmin == claims.InvitationAdmin {
+				if !providerChanged && existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.DisplayName == claims.DisplayName && existing.InvitationAdmin == claims.InvitationAdmin {
 					return nil
 				}
 				updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", found.UserID, identity.StatusProvisional).Updates(map[string]any{"email": normalizedEmail, "provider_email_verified": providerEmailVerified, "display_name": claims.DisplayName, "invitation_admin": claims.InvitationAdmin})
@@ -540,7 +560,7 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 				}
 				return appendAuditEvent(tx, profileEvent)
 			case identity.StatusActive:
-				if existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.InvitationAdmin == claims.InvitationAdmin {
+				if !providerChanged && existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.InvitationAdmin == claims.InvitationAdmin {
 					return nil
 				}
 				updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", found.UserID, identity.StatusActive).Updates(map[string]any{"email": normalizedEmail, "provider_email_verified": providerEmailVerified, "invitation_admin": claims.InvitationAdmin})
@@ -586,7 +606,7 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 		if createdUser.RowsAffected != 1 {
 			return ports.ErrConflict
 		}
-		candidate := identityModel{Issuer: claims.Issuer, Subject: claims.Subject, UserID: userID}
+		candidate := identityModel{Issuer: claims.Issuer, Subject: claims.Subject, UserID: userID, Provider: claims.Provider}
 		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&candidate)
 		if created.Error != nil {
 			return created.Error

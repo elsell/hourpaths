@@ -864,3 +864,5 @@ export * from "./retained-account";
 export { apiTrackingHistory } from './adapters/api-tracking-history';
 export { AccountDeletion, validDeletionIntent, type AccountDeletionPorts, type DeletionIntent } from './account-deletion';
 export { apiAccountDeletion } from './adapters/api-account-deletion';
+export { ProviderIdentities, validIdentityLinkIntent, providerSignInScopes, type ProviderIdentityPorts, type IdentityProvider, type LinkedProvider, type IdentityLinkChallenge, type IdentityLinkIntent, type ProviderSettingsService } from './provider-identities';
+export { apiProviderIdentities, ProviderIdentityFailure, type ProviderIdentityFailureKind } from './adapters/api-provider-identities';

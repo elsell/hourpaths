@@ -240,6 +240,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List own linked sign-in providers */
+        get: operations["list-linked-providers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/identities/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin account-bound provider authentication */
+        post: operations["begin-identity-link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/identities/link/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link the verified provider without replacing the current session */
+        post: operations["finish-identity-link"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/identities/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink a provider while retaining another sign-in method */
+        delete: operations["unlink-provider"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/interaction-settings": {
         parameters: {
             query?: never;
@@ -1676,6 +1744,25 @@ export interface components {
             data: components["schemas"]["AuthorizationDeadLetterDTO"][];
             meta: components["schemas"]["PaginationMeta"];
         };
+        BeginIdentityLinkInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BeginIdentityLinkInputBody.json
+             */
+            readonly $schema?: string;
+            /** @enum {string} */
+            provider: "google" | "apple";
+        };
+        BeginIdentityLinkOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/BeginIdentityLinkOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["IdentityLinkChallengeDTO"];
+        };
         BlockMutationData: {
             blocked: boolean;
             target: components["schemas"]["BlockTarget"];
@@ -1791,6 +1878,16 @@ export interface components {
             /** @description The value at the given location */
             value?: unknown;
         };
+        FinishIdentityLinkInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/FinishIdentityLinkInputBody.json
+             */
+            readonly $schema?: string;
+            challengeId: string;
+            identityToken: string;
+        };
         FollowRequest: {
             /** Format: date-time */
             createdAt: string;
@@ -1866,6 +1963,14 @@ export interface components {
             /** @enum {string} */
             orderMethod: "recent" | "alphabetical" | "manual";
             pinnedPathIds: string[];
+        };
+        IdentityLinkChallengeDTO: {
+            /** Format: date-time */
+            expiresAt: string;
+            id: string;
+            nonce: string;
+            /** @enum {string} */
+            provider: "google" | "apple";
         };
         InteractionSettings: {
             /**
@@ -1970,6 +2075,11 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["InvitationDTO"];
+        };
+        LinkedProviderDTO: {
+            canUnlink: boolean;
+            /** @enum {string} */
+            provider: "google" | "apple";
         };
         ManagedPathInvitation: {
             invitation: components["schemas"]["PathInvitation"];
@@ -3038,6 +3148,15 @@ export interface components {
             readonly $schema?: string;
             data: components["schemas"]["ProfilePathsData"];
         };
+        ProviderIdentityOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProviderIdentityOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["LinkedProviderDTO"][] | null;
+        };
         PublicProfile: {
             description?: string;
             displayName: string;
@@ -3254,6 +3373,15 @@ export interface components {
             intervalProgress?: components["schemas"]["IntervalProgress"];
             running: boolean;
             timer?: components["schemas"]["Timer"];
+        };
+        UnlinkIdentityInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnlinkIdentityInputBody.json
+             */
+            readonly $schema?: string;
+            reviewedUserId: string;
         };
         UserDTO: {
             displayName: string;
@@ -3789,6 +3917,140 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HomePreferencesOutputBody"];
                 };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-linked-providers": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderIdentityOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "begin-identity-link": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BeginIdentityLinkInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeginIdentityLinkOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "finish-identity-link": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinishIdentityLinkInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "unlink-provider": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                provider: "google" | "apple";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlinkIdentityInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error */
             default: {

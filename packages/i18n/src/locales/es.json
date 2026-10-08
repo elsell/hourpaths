@@ -5095,5 +5095,20 @@
   "accountDelete.failed": "No se pudo confirmar la eliminación. Tu solicitud está guardada. Vuelve a intentarlo para comprobar su estado y terminar de eliminar los datos locales.",
   "accountDelete.recovery": "Finalizar la eliminación de la cuenta",
   "accountDelete.recoveryDetail": "Debe completarse una eliminación confirmada anteriormente. La actividad local permanece en pausa mientras se comprueba su estado.",
-  "accountDelete.reviewFailed": "No se pudo verificar tu cuenta. Vuelve a intentarlo antes de confirmar la eliminación."
+  "accountDelete.reviewFailed": "No se pudo verificar tu cuenta. Vuelve a intentarlo antes de confirmar la eliminación.",
+  "identity.heading": "Métodos de inicio de sesión",
+  "identity.description": "Vincula Google y Apple para usar cualquiera con esta cuenta.",
+  "identity.google": "Google",
+  "identity.apple": "Apple",
+  "identity.connected": "Conectado",
+  "identity.notConnected": "Sin conectar",
+  "identity.link": "Conectar",
+  "identity.unlink": "Desconectar",
+  "identity.keepOne": "Mantén conectado al menos un método de inicio de sesión.",
+  "identity.unlinkConfirm": "¿Desconectar {{provider}}? Podrás seguir iniciando sesión con el otro método conectado.",
+  "identity.working": "Actualizando métodos de inicio de sesión…",
+  "identity.failed": "No se pudieron actualizar los métodos de inicio de sesión. Inténtalo de nuevo. Si ese proveedor pertenece a otra cuenta, no se puede conectar aquí.",
+  "identity.success": "Método de inicio de sesión conectado.",
+  "identity.linkProvider": "Conectar {{provider}}",
+  "identity.unlinkProvider": "Desconectar {{provider}}"
 }
