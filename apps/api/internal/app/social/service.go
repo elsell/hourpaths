@@ -49,6 +49,7 @@ type Dependencies struct {
 	InteractionSettings       InteractionSettingsRepository
 	Nudges                    NudgeRepository
 	NudgeNotificationChannels NudgeNotificationChannelRepository
+	NotificationChannels      NotificationChannelRepository
 	NudgeRateLimiter          RelationshipRateLimiter
 	Clock                     ports.Clock
 	NewID                     func() string

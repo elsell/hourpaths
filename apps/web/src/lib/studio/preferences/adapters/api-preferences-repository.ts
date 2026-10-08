@@ -1,3 +1,4 @@
+import { apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
 import { createSessionApiClient, type GeneratedOperationResult } from '@hourpaths/api-client';
 import { PreferenceFailure } from '../domain/preferences';
 import type { PreferencesRepository } from '../ports/preferences-repository';
@@ -27,7 +28,13 @@ export function apiPreferencesRepository(baseURL: string, token: () => string | 
       throw new PreferenceFailure();
     }
   }
+  async function channels<T>(work: () => Promise<T>): Promise<T> {
+    try { return await work(); }
+    catch (error) { if (error instanceof NotificationChannelFailure) throw new PreferenceFailure(error.kind); throw error; }
+  }
   return {
+    notificationChannels: signal => channels(() => apiNotificationChannels(baseURL, token(), rejected, signal).list()),
+    saveNotificationChannel: (value, key, signal) => channels(() => apiNotificationChannels(baseURL, token(), rejected, signal).update(value, key)),
     async identity(signal) {
       const { data } = await read(client(signal).profile());
       if (!data.id || typeof data.email !== 'string' || typeof data.displayName !== 'string' || !['public', 'private'].includes(data.profileVisibility)) throw new PreferenceFailure();

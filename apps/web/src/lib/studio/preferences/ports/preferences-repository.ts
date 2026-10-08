@@ -1,5 +1,7 @@
-import type { AccountIdentity, TimeZonePreference, TimeZoneChange, Interactions, NudgePreference, BlockedPerson } from '../domain/preferences';
+import type { NotificationChannelPreference, AccountIdentity, TimeZonePreference, TimeZoneChange, Interactions, NudgePreference, BlockedPerson } from '../domain/preferences';
 export interface PreferencesRepository {
+  notificationChannels(signal?: AbortSignal): Promise<NotificationChannelPreference[]>;
+  saveNotificationChannel(value: NotificationChannelPreference, operationId: string, signal?: AbortSignal): Promise<NotificationChannelPreference>;
   identity(signal?: AbortSignal): Promise<AccountIdentity>;
   timeZone(signal?: AbortSignal): Promise<TimeZonePreference>;
   changeTimeZone(change: TimeZoneChange, operationId: string, signal?: AbortSignal): Promise<TimeZonePreference>;

@@ -3,7 +3,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { PushPermission } from '../push-notifications';
 import type { InteractionSettings } from '../interaction-settings';
 import type { FrozenTimeZoneChangeIntent, TimeZonePreference } from '../time-zone-settings';
-import type { NudgeChannelPreference, NudgeChannelUpdateBody } from '@hourpaths/client-core';
+import type { NotificationChannelPreference } from '@hourpaths/client-core';
 
 export type SignOutTimerChoice = 'confirmed_no_timers' | 'keep_running' | 'stop_and_save';
 export type SignOutPresentationResult =
@@ -18,13 +18,13 @@ export type SettingsPresentation = {
   sessionKey: string;
   isCurrent: () => boolean;
   getInteractionSettings: () => Promise<InteractionSettings>;
-  getNudgeChannelPreference: () => Promise<NudgeChannelPreference>;
+  getNotificationChannels: () => Promise<NotificationChannelPreference[]>;
   getConfiguredTimeZone: () => Promise<TimeZonePreference>;
   runningTimerCount: number;
   synchronizePushPermission: (requestPermission: boolean) => Promise<PushPermission>;
   signOut: (resolution: SignOutTimerChoice) => Promise<SignOutPresentationResult>;
   updateInteractionSettings: (settings: InteractionSettings, idempotencyKey: string) => Promise<InteractionSettings>;
-  updateNudgeChannelPreference: (body: NudgeChannelUpdateBody, idempotencyKey: string) => Promise<NudgeChannelPreference>;
+  updateNotificationChannel: (body: NotificationChannelPreference, idempotencyKey: string) => Promise<NotificationChannelPreference>;
   updateConfiguredTimeZone: (intent: FrozenTimeZoneChangeIntent) => Promise<TimeZonePreference>;
 };
 
@@ -43,13 +43,13 @@ export function SettingsPresentationSource({
   sessionKey,
   isCurrent,
   getInteractionSettings,
-  getNudgeChannelPreference,
+  getNotificationChannels,
   getConfiguredTimeZone,
   runningTimerCount,
   synchronizePushPermission,
   signOut,
   updateInteractionSettings,
-  updateNudgeChannelPreference,
+  updateNotificationChannel,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
   const providersRef = useRef(providers);
@@ -59,20 +59,20 @@ export function SettingsPresentationSource({
   const getConfiguredTimeZoneRef = useRef(getConfiguredTimeZone);
   const isCurrentRef = useRef(isCurrent);
   const getInteractionSettingsRef = useRef(getInteractionSettings);
-  const getNudgeChannelPreferenceRef = useRef(getNudgeChannelPreference);
+  const getNotificationChannelsRef = useRef(getNotificationChannels);
   const signOutRef = useRef(signOut);
   const synchronizePushPermissionRef = useRef(synchronizePushPermission);
   const updateInteractionSettingsRef = useRef(updateInteractionSettings);
-  const updateNudgeChannelPreferenceRef = useRef(updateNudgeChannelPreference);
+  const updateNotificationChannelRef = useRef(updateNotificationChannel);
   const updateConfiguredTimeZoneRef = useRef(updateConfiguredTimeZone);
   getConfiguredTimeZoneRef.current = getConfiguredTimeZone;
   isCurrentRef.current = isCurrent;
   getInteractionSettingsRef.current = getInteractionSettings;
-  getNudgeChannelPreferenceRef.current = getNudgeChannelPreference;
+  getNotificationChannelsRef.current = getNotificationChannels;
   signOutRef.current = signOut;
   synchronizePushPermissionRef.current = synchronizePushPermission;
   updateInteractionSettingsRef.current = updateInteractionSettings;
-  updateNudgeChannelPreferenceRef.current = updateNudgeChannelPreference;
+  updateNotificationChannelRef.current = updateNotificationChannel;
   updateConfiguredTimeZoneRef.current = updateConfiguredTimeZone;
   useEffect(() => {
     let active = true;
@@ -92,7 +92,7 @@ export function SettingsPresentationSource({
       sessionKey,
       isCurrent: () => active && isCurrentRef.current(),
       getInteractionSettings: () => { assertActive(); return getInteractionSettingsRef.current(); },
-      getNudgeChannelPreference: () => { assertActive(); return getNudgeChannelPreferenceRef.current(); },
+      getNotificationChannels: () => { assertActive(); return getNotificationChannelsRef.current(); },
       getConfiguredTimeZone: () => { assertActive(); return getConfiguredTimeZoneRef.current(); },
       runningTimerCount,
       signOut: (resolution: SignOutTimerChoice) => {
@@ -107,9 +107,9 @@ export function SettingsPresentationSource({
         assertActive();
         return updateInteractionSettingsRef.current(settings, idempotencyKey);
       },
-      updateNudgeChannelPreference: (body: NudgeChannelUpdateBody, idempotencyKey: string) => {
+      updateNotificationChannel: (body: NotificationChannelPreference, idempotencyKey: string) => {
         assertActive();
-        return updateNudgeChannelPreferenceRef.current(body, idempotencyKey);
+        return updateNotificationChannelRef.current(body, idempotencyKey);
       },
       updateConfiguredTimeZone: (intent: FrozenTimeZoneChangeIntent) => {
         assertActive();

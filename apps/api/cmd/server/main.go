@@ -137,6 +137,7 @@ func main() {
 		InteractionSettings: socialFeed,
 		Nudges:              socialFeed, NudgeRateLimiter: socialRelationshipLimiter{limiter: auditLimiter},
 		NudgeNotificationChannels: gormstore.NewNudgeNotificationChannelRepository(store.DB),
+		NotificationChannels:      gormstore.NewNudgeNotificationChannelRepository(store.DB),
 		Authorizer:                authorizer, AuthorizationOutbox: store, AuthorizationStatus: socialRelationships,
 		AuthorizationSerializer: store, AuthorizationWorker: authorizationWorker, AuthorizationLease: 30 * time.Second,
 		Audits: store, AuditRateLimiter: auditLimiter, RelationshipRateLimiter: socialRelationshipLimiter{limiter: auditLimiter},

@@ -5114,5 +5114,21 @@
   "identity.failed": "Couldn’t update your sign-in methods. Try again. If this provider belongs to another completed account, choose which account to keep. To connect its provider here, first delete the unwanted account only if you accept losing its data permanently, then return here to connect the provider. Accounts and history cannot be merged.",
   "identity.success": "Sign-in method connected.",
   "identity.linkProvider": "Connect {{provider}}",
-  "identity.unlinkProvider": "Disconnect {{provider}}"
+  "identity.unlinkProvider": "Disconnect {{provider}}",
+  "notification.channel.following": "Following",
+  "notification.channel.path_access": "Path access",
+  "notification.channel.tracking_activity": "Tracking activity",
+  "notification.channel.achievements": "Achievements",
+  "notification.channel.comments": "Event comments",
+  "notification.channel.reactions": "Event reactions",
+  "notification.channel.comment_hearts": "Comment hearts",
+  "notification.channel.nudges": "Nudges",
+  "notification.channel.goal_reminders": "Goal reminders",
+  "notification.channel.timer_health": "Timer health",
+  "notification.channels.footer": "Choose which notifications you receive in the app and by push. Your device settings also control push delivery.",
+  "notification.channels.heading": "Notification categories",
+  "notification.channels.loading": "Loading notification settings…",
+  "notification.channels.loadError": "Notification settings couldn’t be loaded. Try again.",
+  "notification.channels.saving": "Saving notification setting…",
+  "notification.channels.saveError": "This notification setting couldn’t be updated. Your previous setting is still shown; try again."
 }

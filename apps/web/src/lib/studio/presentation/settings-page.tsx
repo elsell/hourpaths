@@ -1,3 +1,4 @@
+import { createNotificationChannelOperationOwner } from '@hourpaths/client-core';
 import { ProviderSettings } from './provider-settings';
 import { AccountDeletionSettings } from './account-deletion';
 import { useOwnedOperation } from './use-owned-operation';
@@ -8,7 +9,7 @@ import { Link, useParams } from '@tanstack/react-router';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
 import { StudioShell } from './studio-shell';
-import { PreferenceFailure, type Interactions, type NudgePreference, type TimeZonePreference } from '../preferences/domain/preferences';
+import { PreferenceFailure, type NotificationChannelPreference, type Interactions, type TimeZonePreference } from '../preferences/domain/preferences';
 import { PathAppearanceEditor } from './path-appearance';
 
 const sections = ['account', 'appearance', 'notifications', 'privacy', 'blocked'] as const;
@@ -89,8 +90,35 @@ function InteractionSettings({ dependencies: d }: { dependencies: StudioDependen
   return <section className="studio-settings-card"><p>{d.i18n.t('settings.interactions.footer')}</p><Status pending={query.isPending} error={query.isError} retry={() => void query.refetch()} dependencies={d} />{query.data && <PreferenceForm<Interactions> initial={query.data} dependencies={d} cacheKey="interactions" save={(value, key, signal) => d.preferences.saveInteractions(value, key, signal)}>{(value, change) => <>{(['comments', 'reactions'] as const).map(field => <label className="studio-settings-toggle" key={field}><span>{d.i18n.t(`settings.interactions.${field}`)}</span><input type="checkbox" checked={value[field]} onChange={event => change({ ...value, [field]: event.target.checked })} /></label>)}</>}</PreferenceForm>}</section>;
 }
 function NotificationSettings({ dependencies: d }: { dependencies: StudioDependencies }) {
-  const query = useQuery({ queryKey: [d.accountScope, 'preferences', 'nudges'], queryFn: ({ signal }) => d.preferences.nudges(signal) });
-  return <section className="studio-settings-card"><p>{d.i18n.t('studio.settings.nudgeDetail')}</p><Status pending={query.isPending} error={query.isError} retry={() => void query.refetch()} dependencies={d} />{query.data && <PreferenceForm<NudgePreference> initial={query.data} dependencies={d} cacheKey="nudges" save={(value, key, signal) => d.preferences.saveNudges(value, key, signal)}>{(value, change) => <label className="studio-settings-toggle"><span>{d.i18n.t('notification.settings.nudges')}</span><input type="checkbox" checked={value.enabled} onChange={event => change({ ...value, enabled: event.target.checked })} /></label>}</PreferenceForm>}</section>;
+  const operation = useOwnedOperation(d), client = useQueryClient();
+  const [owner] = useState(() => createNotificationChannelOperationOwner(d.operationId));
+  useEffect(() => () => owner.cancel(), [owner, d.accountScope]);
+  const queryKey = [d.accountScope, 'preferences', 'notification-channels'];
+  const query = useQuery({ queryKey, queryFn: ({ signal }) => d.preferences.notificationChannels(signal) });
+  const mutation = useMutation({
+    mutationFn: (value: NotificationChannelPreference) => operation.run(async signal => {
+      const result = await owner.submit(value, (next, key) => d.preferences.saveNotificationChannel(next, key, signal));
+      if (result.kind === 'failed') throw result.cause;
+      if (result.kind !== 'applied') throw new PreferenceFailure();
+      return result.preference;
+    }),
+    onSuccess: saved => {
+      if (!operation.active()) return;
+      client.setQueryData<NotificationChannelPreference[]>(queryKey, rows => rows?.map(row => row.channel === saved.channel ? saved : row));
+    },
+  });
+  return <section className="studio-settings-card">
+    <p>{d.i18n.t('notification.channels.footer')}</p>
+    <Status pending={query.isPending} error={query.isError} retry={() => void query.refetch()} dependencies={d} />
+    <div className="studio-settings-form"><fieldset>
+    {query.data?.map(row => <label className="studio-settings-toggle" key={row.channel}>
+      <span>{d.i18n.t(`notification.channel.${row.channel}`)}</span>
+      <input type="checkbox" checked={row.enabled} disabled={mutation.isPending || mutation.error instanceof PreferenceFailure && mutation.error.kind === 'conflict'} onChange={event => { mutation.reset(); mutation.mutate({ ...row, enabled: event.target.checked }); }} />
+    </label>)}
+    </fieldset></div>
+    <SaveState pending={mutation.isPending} error={mutation.error} success={mutation.isSuccess} dependencies={d} />
+    {mutation.isError && <button disabled={mutation.isPending} onClick={() => { owner.cancel(); mutation.reset(); void query.refetch(); }}>{d.i18n.t('common.retry')}</button>}
+  </section>;
 }
 function BlockedSettings({ dependencies: d }: { dependencies: StudioDependencies }) {
   const operation = useOwnedOperation(d), client = useQueryClient();

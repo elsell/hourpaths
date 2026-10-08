@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"strings"
 	"time"
 
@@ -199,6 +200,10 @@ WHERE (heart_count_block.blocker_user_id = ? AND heart_count_block.blocked_user_
 }
 
 func createCommentHeartNotification(tx *gorm.DB, command socialapp.CommentHeartCommand) error {
+	enabled, err := channelstore.Allowed(tx, command.Comment.AuthorID, "comment_hearts")
+	if err != nil || !enabled {
+		return err
+	}
 	digest := sha256.Sum256([]byte(command.Comment.ID + "\x00" + command.ActorUserID))
 	notificationID := "comment-heart:" + hex.EncodeToString(digest[:16])
 	row := map[string]any{"id": notificationID, "recipient_user_id": command.Comment.AuthorID, "actor_user_id": command.ActorUserID, "path_id": command.Target.PathID, "social_feed_event_id": command.Target.EventID, "comment_id": command.Comment.ID, "kind": "comment_heart", "presentation_class": "informational", "channel": "comment_hearts", "created_at": command.NotificationEligibleAt}

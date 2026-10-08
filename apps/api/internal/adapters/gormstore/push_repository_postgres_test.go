@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
 	"testing"
 	"time"
 
@@ -108,6 +109,12 @@ func TestPostgresPushClaimSuppressesBlockedActorRecipientDeliveryPermanently(t *
 }
 
 func TestPostgresPushHandoffWaitsForPairLockAndSkipsProviderWhenBlockCommitsFirst(t *testing.T) {
+	testPostgresPushHandoffWaitsForNotificationGate(t, false)
+}
+func TestPostgresPushHandoffSkipsProviderWhenChannelDisableCommitsFirst(t *testing.T) {
+	testPostgresPushHandoffWaitsForNotificationGate(t, true)
+}
+func testPostgresPushHandoffWaitsForNotificationGate(t *testing.T, channelDisabled bool) {
 	if *postgresTestDSN == "" || *migrationPostgresTestDSN == "" {
 		t.Skip("PostgreSQL DSNs required")
 	}
@@ -173,11 +180,19 @@ func TestPostgresPushHandoffWaitsForPairLockAndSkipsProviderWhenBlockCommitsFirs
 		t.Fatal(blockTx.Error)
 	}
 	defer blockTx.Rollback()
-	if err := lockSocialPair(blockTx, actor.ID, recipient.ID); err != nil {
-		t.Fatal(err)
-	}
-	if err := blockTx.Create(&socialBlockModel{BlockerUserID: actor.ID, BlockedUserID: recipient.ID, CreatedAt: now.Add(time.Second)}).Error; err != nil {
-		t.Fatal(err)
+	if channelDisabled {
+		command := socialapp.NotificationChannelCommand{Channel: "following", NudgeNotificationChannelCommand: nudgeNotificationChannelTestCommand(recipient.ID, "push-channel-disable", 0, false, now.Add(time.Second))}
+		command.Audit.TargetID = "following"
+		if _, err := NewNudgeNotificationChannelRepository(blockTx).UpdateNotificationChannel(context.Background(), command); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		if err := lockSocialPair(blockTx, actor.ID, recipient.ID); err != nil {
+			t.Fatal(err)
+		}
+		if err := blockTx.Create(&socialBlockModel{BlockerUserID: actor.ID, BlockedUserID: recipient.ID, CreatedAt: now.Add(time.Second)}).Error; err != nil {
+			t.Fatal(err)
+		}
 	}
 	type handoffResult struct {
 		ticket    ports.PushTicket
@@ -236,6 +251,24 @@ func TestPostgresPushHandoffWaitsForPairLockAndSkipsProviderWhenBlockCommitsFirs
 	if result.err != nil || result.handedOff || result.ticket != (ports.PushTicket{}) || len(providerCalled) != 0 {
 		t.Fatalf("handoff after block commit=%+v provider_called=%v", result, len(providerCalled) != 0)
 	}
+	if channelDisabled {
+		command := socialapp.NotificationChannelCommand{Channel: "following", NudgeNotificationChannelCommand: nudgeNotificationChannelTestCommand(recipient.ID, "push-channel-enable", 1, true, now.Add(2*time.Second))}
+		command.Audit.TargetID = "following"
+		if _, err := NewNudgeNotificationChannelRepository(runtimeStore.DB).UpdateNotificationChannel(context.Background(), command); err != nil {
+			t.Fatal(err)
+		}
+		var pending, history int64
+		if err := runtimeStore.DB.Table("notification_push_delivery_models").Where("notification_id = ? AND suppressed_at IS NULL", notificationID).Count(&pending).Error; err != nil {
+			t.Fatal(err)
+		}
+		if err := runtimeStore.DB.Table("notification_models").Where("id = ?", notificationID).Count(&history).Error; err != nil {
+			t.Fatal(err)
+		}
+		if pending != 0 || history != 1 {
+			t.Fatalf("reenabling revived backlog or removed history: pending=%d history=%d", pending, history)
+		}
+	}
+
 }
 
 func TestPushRepositoryPersistsEncryptedSnapshotClaimsAndSuppressesOnDelete(t *testing.T) {

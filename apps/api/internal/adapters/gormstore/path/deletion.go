@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"sort"
 	"strings"
 
@@ -92,6 +93,13 @@ func (r *Repository) DeletePath(ctx context.Context, command application.DeleteP
 				"kind": string(application.NotificationPathDeleted), "presentation_class": string(application.NotificationInformational),
 				"channel": invitationNotificationChannel, "offered_role": nil, "created_at": command.DeletedAt,
 				"path_name_snapshot": creator.Name, "actor_username_snapshot": creator.Username, "actor_display_name_snapshot": creator.DisplayName,
+			}
+			enabled, err := channelstore.Allowed(tx, member.UserID, "path_access")
+			if err != nil {
+				return err
+			}
+			if !enabled {
+				continue
 			}
 			if err := tx.Table("notification_models").Create(row).Error; err != nil {
 				return err

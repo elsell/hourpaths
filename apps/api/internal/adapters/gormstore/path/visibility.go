@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"strings"
 	"time"
 
@@ -199,6 +200,13 @@ func createVisibilityNotifications(tx *gorm.DB, command application.SetVisibilit
 	for _, recipient := range recipients {
 		id := command.NewID()
 		row := map[string]any{"id": id, "recipient_user_id": recipient, "actor_user_id": command.ActorUserID, "path_id": string(command.Path.ID), "kind": string(application.NotificationPathVisibilityChanged), "presentation_class": string(application.NotificationInformational), "channel": invitationNotificationChannel, "path_visibility": command.Path.Visibility, "created_at": command.ChangedAt}
+		enabled, err := channelstore.Allowed(tx, recipient, "path_access")
+		if err != nil {
+			return err
+		}
+		if !enabled {
+			continue
+		}
 		if err := tx.Table("notification_models").Create(row).Error; err != nil {
 			return err
 		}

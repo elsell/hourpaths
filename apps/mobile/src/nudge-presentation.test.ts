@@ -103,16 +103,16 @@ test('each tracking participant has a dedicated per-Path native audience screen'
   assert.match(pathAncestry, /path\/\[pathID\]\/nudge-settings/);
 });
 
-test('Notifications settings owns an independent revisioned Nudges channel switch', () => {
-  assert.match(settingsPresentation, /getNudgeChannelPreference/);
-  assert.match(settingsPresentation, /updateNudgeChannelPreference/);
-  assert.match(app, /getNudgeNotificationChannel\(\)/);
-  assert.match(app, /updateNudgeNotificationChannel\(body, idempotencyKey\)/);
+test('Notifications settings owns independent revisioned channel switches', () => {
+  assert.match(settingsPresentation, /getNotificationChannels/);
+  assert.match(settingsPresentation, /updateNotificationChannel/);
+  assert.match(app, /notificationChannels\(\)/);
+  assert.match(app, /updateNotificationChannel\(value.channel/);
   assert.match(notificationSettings, /SettingsSwitchRow/);
-  assert.match(notificationSettings, /notification\.settings\.nudges/);
-  assert.match(notificationSettings, /nudgeChannelPreference/);
+  assert.match(notificationSettings, /notification\.channel\./);
+  assert.match(notificationSettings, /notificationChannelPreference/);
   assert.match(notificationSettings, /accessibilityLiveRegion="polite"/);
-  assert.match(notificationSettings, /nudge\.channel\.saveError/);
+  assert.match(notificationSettings, /notification\.channels\.saveError/);
 });
 
 test('received nudge notifications use ordinary Path context and stale targets stay opaque', () => {

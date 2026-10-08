@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"sort"
 	"strings"
 	"time"
@@ -438,6 +439,10 @@ func lockSocialCommentTarget(tx *gorm.DB, target string) error {
 }
 
 func createCommentNotification(tx *gorm.DB, command socialapp.CommentCommand, commentID string) error {
+	enabled, err := channelstore.Allowed(tx, command.Target.OwnerUserID, "comments")
+	if err != nil || !enabled {
+		return err
+	}
 	digest := sha256.Sum256([]byte(commentID + "\x00" + command.ActorUserID + "\x00" + command.Idempotency.Key))
 	notificationID := "comment:" + hex.EncodeToString(digest[:16])
 	row := map[string]any{

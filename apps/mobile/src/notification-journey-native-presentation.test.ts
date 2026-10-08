@@ -123,11 +123,11 @@ test('notification settings fail closed across account-owner replacement', () =>
   assert.equal(ownsNotificationSettingsState('account-a:1', 'account-b:2'), false);
   assert.match(notificationSettingsRoute, /setStateOwnerKey\(ownedSessionKey\)/);
   assert.match(notificationSettingsRoute, /setPermission\(null\)/);
-  assert.match(notificationSettingsRoute, /setNudgeChannelPreference\(null\)/);
-  assert.match(notificationSettingsRoute, /setNudgeChannelLoading\(true\)/);
+  assert.match(notificationSettingsRoute, /setNotificationChannelPreference\(null\)/);
+  assert.match(notificationSettingsRoute, /setNotificationChannelLoading\(true\)/);
   assert.match(notificationSettingsRoute, /ownsNotificationSettingsState\(stateOwnerKey, activePresentation\.sessionKey\)/);
   assert.match(notificationSettingsRoute, /activeOwnerKey\.current === ownedSessionKey/);
-  assert.match(notificationSettingsRoute, /ownedNudgeChannelLoading = !ownsState \|\| nudgeChannelLoading/);
+  assert.match(notificationSettingsRoute, /ownedNotificationChannelLoading = !ownsState \|\| notificationChannelLoading/);
 });
 
 test('notification toolbar action remains stable while busy and announces progress separately', () => {

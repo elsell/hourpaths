@@ -434,6 +434,34 @@ Status: Approved for implementation
 - Disabling a channel must not disable or remove the underlying product feature
   or prevent the user from reaching the corresponding information in the app.
 
+### Cross-client channel settings acceptance
+
+- Mobile and Studio must expose the same ten account-level channel controls,
+  using the shared locale catalog and the client's existing settings components.
+- Each saved choice must remain independent of other channels, survive reload,
+  and be returned to the same account on another client. An absent preference
+  must resolve to enabled.
+- Reads and changes must use the authenticated account rather than a client-sent
+  owner identifier. They must preserve the existing audit, request-rate,
+  idempotency, and optimistic-revision guarantees used by the Nudges control.
+- A stale write must preserve the newer server value and offer localized retry.
+  A failed read or write must preserve already-visible useful settings.
+- A disabled channel must suppress newly eligible notifications from existing
+  producers without preventing the underlying social or Path operation. Tests
+  must exercise real producer persistence, not only the settings endpoint.
+- Enabling a channel is not evidence that a missing producer is implemented;
+  timer-start, achievement, reminder, and timer-health delivery retain their
+  own acceptance criteria elsewhere in this specification and related specs.
+
+- Disabling a channel must retain notifications already in the user's history.
+- The preference change must atomically suppress unsent push deliveries in that
+  channel, including leased work awaiting provider handoff. A provider handoff
+  that has already completed cannot be recalled.
+- Re-enabling must allow future eligible notifications only; suppressed work
+  must not be replayed as a backlog.
+- Preference changes and notification production must serialize for the
+  receiving account so a concurrent producer cannot escape the saved choice.
+
 ## Timer-start notifications
 
 - Starting a timer must create an eligible social notification event for other

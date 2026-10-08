@@ -1,11 +1,10 @@
 import * as Crypto from 'expo-crypto';
 import { getLocales } from 'expo-localization';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
-  createNudgeChannelOperationOwner,
-  reviewNudgeChannelChange,
-  type NudgeChannelPreference,
+  createNotificationChannelOperationOwner,
+  type NotificationChannelPreference,
 } from '@hourpaths/client-core';
 import {
   getNativePushPermission,
@@ -45,33 +44,34 @@ export default function NotificationSettings() {
   const [stateOwnerKey, setStateOwnerKey] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState(false);
-  const [nudgeChannelPreference, setNudgeChannelPreference] = useState<NudgeChannelPreference | null>(null);
-  const [nudgeChannelLoading, setNudgeChannelLoading] = useState(true);
-  const [nudgeChannelSaving, setNudgeChannelSaving] = useState(false);
-  const [nudgeChannelError, setNudgeChannelError] = useState(false);
-  const [nudgeChannelOwner] = useState(() => createNudgeChannelOperationOwner(() => Crypto.randomUUID()));
-  const nudgeChannelLoadRevision = useRef(0);
+  const [notificationChannelPreference, setNotificationChannelPreference] = useState<NotificationChannelPreference[] | null>(null);
+  const [notificationChannelLoading, setNotificationChannelLoading] = useState(true);
+  const [notificationChannelSaving, setNotificationChannelSaving] = useState(false);
+  const [savingChannel, setSavingChannel] = useState<string | null>(null);
+  const [notificationChannelError, setNotificationChannelError] = useState(false);
+  const [notificationChannelOwner] = useState(() => createNotificationChannelOperationOwner(() => Crypto.randomUUID()));
+  const notificationChannelLoadRevision = useRef(0);
   const activeOwnerKey = useRef<string | null>(null);
   activeOwnerKey.current = presentation?.sessionKey ?? null;
 
-  async function loadNudgeChannel() {
+  async function loadNotificationChannel() {
     if (!presentation) return;
     const ownedSessionKey = presentation.sessionKey;
-    const revision = ++nudgeChannelLoadRevision.current;
-    setNudgeChannelLoading(true);
-    setNudgeChannelError(false);
+    const revision = ++notificationChannelLoadRevision.current;
+    setNotificationChannelLoading(true);
+    setNotificationChannelError(false);
     try {
-      const preference = await presentation.getNudgeChannelPreference();
-      if (revision === nudgeChannelLoadRevision.current && activeOwnerKey.current === ownedSessionKey) {
-        setNudgeChannelPreference(preference);
+      const preference = await presentation.getNotificationChannels();
+      if (revision === notificationChannelLoadRevision.current && activeOwnerKey.current === ownedSessionKey) {
+        setNotificationChannelPreference(preference);
       }
     } catch {
-      if (revision === nudgeChannelLoadRevision.current && activeOwnerKey.current === ownedSessionKey) {
-        setNudgeChannelError(true);
+      if (revision === notificationChannelLoadRevision.current && activeOwnerKey.current === ownedSessionKey) {
+        setNotificationChannelError(true);
       }
     } finally {
-      if (revision === nudgeChannelLoadRevision.current && activeOwnerKey.current === ownedSessionKey) {
-        setNudgeChannelLoading(false);
+      if (revision === notificationChannelLoadRevision.current && activeOwnerKey.current === ownedSessionKey) {
+        setNotificationChannelLoading(false);
       }
     }
   }
@@ -83,10 +83,11 @@ export default function NotificationSettings() {
     setPermission(null);
     setWorking(false);
     setError(false);
-    setNudgeChannelPreference(null);
-    setNudgeChannelLoading(true);
-    setNudgeChannelSaving(false);
-    setNudgeChannelError(false);
+    setNotificationChannelPreference(null);
+    setNotificationChannelLoading(true);
+    setNotificationChannelSaving(false);
+    setSavingChannel(null);
+    setNotificationChannelError(false);
     let current = true;
     void presentation.synchronizePushPermission(false)
       .then((next) => {
@@ -97,11 +98,11 @@ export default function NotificationSettings() {
           setPermission({ granted: false, canAskAgain: false });
         }
       });
-    void loadNudgeChannel();
+    void loadNotificationChannel();
     return () => {
       current = false;
-      nudgeChannelLoadRevision.current += 1;
-      nudgeChannelOwner.cancel();
+      notificationChannelLoadRevision.current += 1;
+      notificationChannelOwner.cancel();
     };
   }, [presentation]);
 
@@ -137,12 +138,12 @@ export default function NotificationSettings() {
   const activePresentation = presentation;
   const ownsState = ownsNotificationSettingsState(stateOwnerKey, activePresentation.sessionKey);
   const ownedPermission = ownsState ? permission : null;
-  const ownedNudgeChannelPreference = ownsState ? nudgeChannelPreference : null;
+  const ownedNotificationChannelPreference = ownsState ? notificationChannelPreference : null;
   const ownedError = ownsState && error;
   const ownedWorking = ownsState && working;
-  const ownedNudgeChannelError = ownsState && nudgeChannelError;
-  const ownedNudgeChannelLoading = !ownsState || nudgeChannelLoading;
-  const ownedNudgeChannelSaving = ownsState && nudgeChannelSaving;
+  const ownedNotificationChannelError = ownsState && notificationChannelError;
+  const ownedNotificationChannelLoading = !ownsState || notificationChannelLoading;
+  const ownedNotificationChannelSaving = ownsState && notificationChannelSaving;
 
   async function updatePermission() {
     if (!ownsState || !ownedPermission || ownedWorking) return;
@@ -169,19 +170,20 @@ export default function NotificationSettings() {
     }
   }
 
-  async function updateNudgeChannel(enabled: boolean) {
-    if (!ownsState || !ownedNudgeChannelPreference || ownedNudgeChannelSaving) return;
+  async function updateNotificationChannel(value: NotificationChannelPreference, enabled: boolean) {
+    if (!ownsState || !ownedNotificationChannelPreference || ownedNotificationChannelSaving || value.enabled === enabled) return;
     const ownedSessionKey = activePresentation.sessionKey;
-    setNudgeChannelSaving(true);
-    setNudgeChannelError(false);
-    const result = await nudgeChannelOwner.submit(
-      reviewNudgeChannelChange(ownedNudgeChannelPreference, enabled),
-      (body, idempotencyKey) => activePresentation.updateNudgeChannelPreference(body, idempotencyKey),
+    setNotificationChannelSaving(true);
+    setSavingChannel(value.channel);
+    setNotificationChannelError(false);
+    const result = await notificationChannelOwner.submit(
+      { ...value, enabled },
+      (next, idempotencyKey) => activePresentation.updateNotificationChannel(next, idempotencyKey),
     );
     if (activeOwnerKey.current !== ownedSessionKey) return;
-    if (result.kind === 'applied') setNudgeChannelPreference(result.preference);
-    else if (result.kind === 'failed') setNudgeChannelError(true);
-    if (result.kind !== 'superseded') setNudgeChannelSaving(false);
+    if (result.kind === 'applied') setNotificationChannelPreference(rows => rows?.map(row => row.channel === result.preference.channel ? result.preference : row) ?? null);
+    else if (result.kind === 'failed') setNotificationChannelError(true);
+    if (result.kind !== 'superseded') setNotificationChannelSaving(false);
   }
 
   const stateKey = ownedPermission?.granted
@@ -202,26 +204,24 @@ export default function NotificationSettings() {
         value={i18n.t(stateKey)}
       />
     </SettingsSection>
-    <SettingsSection footer={i18n.t(ownedNudgeChannelError && ownedNudgeChannelPreference ? 'nudge.channel.saveError' : 'nudge.channel.footer')}>
-      {ownedNudgeChannelPreference ? <SettingsSwitchRow
-        accessibilityLabel={i18n.t('notification.settings.nudges')}
-        accessibilityLiveRegion="polite"
-        disabled={ownedNudgeChannelSaving}
-        label={i18n.t('notification.settings.nudges')}
-        onValueChange={(enabled) => void updateNudgeChannel(enabled)}
-        value={ownedNudgeChannelPreference.enabled}
-        valueLabel={i18n.t(ownedNudgeChannelSaving
-          ? 'nudge.channel.saving'
-          : ownedNudgeChannelPreference.enabled ? 'nudge.channel.on' : 'nudge.channel.off')}
-      /> : <SettingsValueRow
-        label={i18n.t('notification.settings.nudges')}
-        value={i18n.t(ownedNudgeChannelLoading ? 'nudge.channel.loading' : 'nudge.channel.loadError')}
-      />}
-      {ownedNudgeChannelError ? <><SettingsSeparator /><SettingsActionRow
+    <SettingsSection title={i18n.t('notification.channels.heading')} footer={i18n.t(ownedNotificationChannelError && ownedNotificationChannelPreference ? 'notification.channels.saveError' : 'notification.channels.footer')}>
+      {ownedNotificationChannelPreference ? ownedNotificationChannelPreference.map((row, index) => <Fragment key={row.channel}>
+        {index > 0 && <SettingsSeparator />}
+        <SettingsSwitchRow
+          accessibilityLabel={i18n.t(`notification.channel.${row.channel}`)}
+          accessibilityLiveRegion="polite"
+          disabled={ownedNotificationChannelSaving}
+          label={i18n.t(`notification.channel.${row.channel}`)}
+          onValueChange={enabled => void updateNotificationChannel(row, enabled)}
+          value={row.enabled}
+          valueLabel={i18n.t(ownedNotificationChannelSaving && savingChannel === row.channel ? 'notification.channels.saving' : row.enabled ? 'nudge.channel.on' : 'nudge.channel.off')}
+        />
+      </Fragment>) : <SettingsValueRow label={i18n.t('notification.channels.heading')} value={i18n.t(ownedNotificationChannelLoading ? 'notification.channels.loading' : 'notification.channels.loadError')} />}
+      {ownedNotificationChannelError ? <><SettingsSeparator /><SettingsActionRow
         accessibilityLabel={i18n.t('common.retry')}
-        disabled={ownedNudgeChannelSaving}
+        disabled={ownedNotificationChannelSaving}
         label={i18n.t('common.retry')}
-        onPress={() => void loadNudgeChannel()}
+        onPress={() => void loadNotificationChannel()}
         tone="default"
       /></> : null}
     </SettingsSection>

@@ -81,7 +81,7 @@ test('interaction controls have a dedicated native Settings destination', () => 
 test('loading, retry, saving, and authoritative rollback stay operation-owned', () => {
   const orchestration = home.slice(
     home.indexOf('async function getInteractionSettings'),
-    home.indexOf('async function getNudgeChannelPreference'),
+    home.indexOf('async function getNotificationChannels'),
   );
   assert.match(route, /ActivityIndicator/);
   assert.match(route, /NativeContentUnavailable/);

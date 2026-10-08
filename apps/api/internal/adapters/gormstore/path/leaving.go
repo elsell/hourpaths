@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	"sort"
 	"strings"
 	"time"
@@ -106,6 +107,13 @@ func (r *Repository) LeavePath(ctx context.Context, command application.LeavePat
 		for _, recipient := range ordered {
 			notificationID := command.NewID()
 			row := map[string]any{"id": notificationID, "recipient_user_id": recipient, "actor_user_id": command.ActorUserID, "path_id": string(command.PathID), "kind": string(application.NotificationPathMemberLeft), "presentation_class": string(application.NotificationInformational), "channel": invitationNotificationChannel, "created_at": command.LeftAt}
+			enabled, err := channelstore.Allowed(tx, recipient, "path_access")
+			if err != nil {
+				return err
+			}
+			if !enabled {
+				continue
+			}
 			if err := tx.Table("notification_models").Create(row).Error; err != nil {
 				return err
 			}
