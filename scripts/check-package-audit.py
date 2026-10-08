@@ -5,11 +5,12 @@ import json
 import subprocess
 import sys
 
-DEADLINE = dt.datetime(2026, 10, 9, tzinfo=dt.timezone.utc)
+DEADLINE = dt.datetime(2026, 10, 15, tzinfo=dt.timezone.utc)
 ADVISORY = 'GHSA-86w9-cpqp-85rv'
 EXCEPTIONS = {
     ADVISORY: ('node-forge', '1.4.0'),
     'GHSA-vfj7-8cjw-p6xm': ('braces', '3.0.3'),
+    'GHSA-hp3w-g68c-fv3c': ('sprintf-js', '1.0.3'),
 }
 
 

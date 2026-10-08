@@ -29,7 +29,7 @@ class AuditPolicyTest(unittest.TestCase):
         clean = {'metadata': {'vulnerabilities': {'high': 0}}, 'advisories': {}}
         self.assertEqual(audit.evaluate(clean, 0, now), [])
 
-    def test_braces_exception_is_exact_and_does_not_extend_the_existing_deadline(self):
+    def test_braces_exception_is_exact_and_expires_at_the_approved_deadline(self):
         now = dt.datetime(2026, 10, 3, tzinfo=dt.timezone.utc)
         report = {'metadata': {'vulnerabilities': {'high': 1}}, 'advisories': {'1': {
             'github_advisory_id': 'GHSA-vfj7-8cjw-p6xm', 'module_name': 'braces',
@@ -42,7 +42,19 @@ class AuditPolicyTest(unittest.TestCase):
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                 audit.evaluate(changed, 1, now)
         with self.assertRaises(ValueError):
-            audit.evaluate(report, 1, dt.datetime(2026, 10, 9, tzinfo=dt.timezone.utc))
+            audit.evaluate(report, 1, dt.datetime(2026, 10, 15, tzinfo=dt.timezone.utc))
+
+    def test_sprintf_exception_rejects_different_versions_and_deadline(self):
+        report = {'metadata': {'vulnerabilities': {'moderate': 1}}, 'advisories': {'1': {
+            'github_advisory_id': 'GHSA-hp3w-g68c-fv3c', 'module_name': 'sprintf-js',
+            'findings': [{'version': '1.0.3'}]}}}
+        now = dt.datetime(2026, 10, 8, tzinfo=dt.timezone.utc)
+        self.assertEqual(audit.evaluate(report, 1, now), ['GHSA-hp3w-g68c-fv3c'])
+        with self.assertRaises(ValueError):
+            audit.evaluate(report, 1, dt.datetime(2026, 10, 15, tzinfo=dt.timezone.utc))
+        report['advisories']['1']['findings'].append({'version': '1.1.3'})
+        with self.assertRaises(ValueError):
+            audit.evaluate(report, 1, now)
 
 if __name__ == '__main__':
     unittest.main()
