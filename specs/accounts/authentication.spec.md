@@ -162,6 +162,14 @@ Clients must discard local link intent when its account signs out, expires, or i
 deleted. Cleanup for an old account must not remove a replacement account's
 intent. A link callback must retain the current application session; ordinary
 sign-in callbacks must still require their own pre-redirect sign-in intent.
+A native provider-link attempt must be invalidated by sign-out, confirmed session
+rejection, account deletion, or replacement authentication, including signing
+back into the same account. Routine credential rotation within the same
+authenticated account must not cancel the attempt. A delayed challenge or proof
+from an invalidated attempt must not complete a link, clear a newer attempt, or
+prevent that newer attempt from starting. Each dispatched request must retain
+the credential selected for that request, rather than adopt a replacement
+account credential while awaiting transport.
 
 ## Duplicate-account prevention and recovery
 

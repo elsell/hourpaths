@@ -1249,6 +1249,7 @@ export function HomeScreen() {
   }
 
   function resetSettingsOperations() {
+    providerSettings.invalidate();
     settingsOperationTargets.current.clear();
     settingsMutationAdmissions.current.clear();
   }
@@ -1706,6 +1707,7 @@ export function HomeScreen() {
       renewable,
       current: ticket.current,
       adopt: (credential, canRenew) => {
+        if (!retainsOwnedHome) providerSettings.invalidate();
         if (pathCreationTarget.current && !pathCreationTarget.current.sessionTokens.includes(credential.token)) {
           if (retainsOwnedHome && activeBeforeAdoption.destination?.kind === 'home' &&
             activeBeforeAdoption.destination.profile.id === pathCreationTarget.current.ownerID) {
@@ -2273,6 +2275,7 @@ export function HomeScreen() {
     expected?: Readonly<{ ownerID: string; session: Session }>,
   ): Promise<boolean> {
     const disposedSession = expected?.session ?? session;
+    providerSettings.invalidate();
     sessionOperations.invalidate();
     invalidateOnboardingActivation();
     await deregisterPushSession(disposedSession).catch(() => undefined);
@@ -2345,6 +2348,7 @@ export function HomeScreen() {
       }
     }
     if (classifySessionFailure(failure).discardCredential) {
+      providerSettings.invalidate();
       nativeOffline.current?.pause();
       sessionOperations.invalidate();
       invalidateOnboardingActivation();

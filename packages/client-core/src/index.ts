@@ -869,3 +869,5 @@ export { apiProviderIdentities, ProviderIdentityFailure, type ProviderIdentityFa
 
 export { AccountRecovery, validAccountRecoveryIntent, type AccountRecoveryIntent, type AccountRecoveryPorts } from './account-recovery';
 export { apiAccountRecovery } from './adapters/api-account-recovery';
+
+export { ephemeralProviderSettings } from './ephemeral-provider-settings';
