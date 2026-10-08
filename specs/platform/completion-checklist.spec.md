@@ -96,7 +96,15 @@ tester group ([Apple status evidence](https://github.com/elsell/hourpaths/action
 Physical-device acceptance remains unverified. PR #101 fixes the demonstrated merge-evidence payload limit without
 weakening approval or check requirements.
 
-The active slice is large-account Home hydration: avoid refetching all Paths when downloaded history alone advances the local ledger, while preserving command/replay fences. Remembered sessions merged in PR #108 as `347cd27` after all five gates. Complete cross-device/device acceptance remains an area 2 closure requirement.
+Home hydration merged in PR #109 as `3c7a173` after all five gates. Real Chromium verified 11 rendered Paths, nine retained history entries, and one timer read per Path without API or page errors. Two independent browser ledgers converged on the newer online edit and retained the losing offline revision, including recovery from rate limiting. Remembered sessions merged in PR #108 as `347cd27`. Native device acceptance remains an area 2 closure requirement.
+
+The active slice is permanent account deletion (area 3), draft [PR #110](https://github.com/elsell/hourpaths/pull/110). Code covers mobile/Studio confirmation, atomic removal, account-scoped local cleanup, recovery, and bounded retention. Migration 75 passed real PostgreSQL eligibility/privilege checks; encrypted backup replay and journal restart/concurrency checks passed. The required critic identified administrator-ID authorization and expired-receipt recovery blockers; fixes and focused regressions are implemented. Nothing in this slice is shipped yet.
+
+Remaining area 3 release checklist, in order:
+1. Pass the final candidate gates and complete client acceptance, including deletion/restart/account switching in the warm environment.
+2. Provision the missing Infisical journal key; verify journal volume locking and key reconciliation. The current identity can read but cannot create the key; owner action is pending.
+3. Verify deployed retention scheduling and operational identifier expiry; inventory any retained backups and confirm encryption/expiry and restore acceptance. A new automated backup service is not an additional requirement: the product spec permits encrypted rolling backups.
+4. Merge through the checked merge script, release with store notes, update GitOps, and verify deployed revisions and native availability. Physical acceptance remains explicit, never inferred from an upload.
 
 The manual-activity slice now has a durable account queue, immutable replay,
 owner-only causal metadata, retained losing revisions, and Studio/mobile form
@@ -156,4 +164,43 @@ The user approved all future PRs within this goal; exact-head protected-path att
 
 Release v0.30.0 published `a8a6380` and deployed via GitOps `d2e55dfe00faefaf895d8cad907d9801e01359b8`. Flux Ready/Healthy, completed API/web rollouts, exact running source/image verification, and public Studio HTTP 200 passed. [Release evidence](https://github.com/elsell/hourpaths/actions/runs/37097322708). Web digest `sha256:6a089d5f1c4c67a06396cd1199bd71d0099584a2e4ef9fb852106054574cb81b`; API digest `sha256:141c83ee22ba83ccc99f5643e478608b7e96bd36dbf886bcf1e7da5c3798654f`. TestFlight 0.30.0 (286) is VALID, IN_BETA_TESTING, and assigned to the internal group ([Apple status evidence](https://github.com/elsell/hourpaths/actions/runs/37098278968)); this does not claim device acceptance.
 
-PR #107 publication was superseded by #108 at the exact-current-main guard before publishing. The combined [release](https://github.com/elsell/hourpaths/actions/runs/37099999117) published source `347cd27f871bc568a5ef264df0461d12068edc1d`; GitOps `669ab5fde8deb6fa77108c637e0ebdd4c2325fa6` deployed it. Flux Ready/Healthy, completed API/web rollouts, exact running source/image checks, and public Studio HTTP 200 passed. Web digest `sha256:348f2b3a0560b92b0b70523dea565ec7905e8ae9d1967fe0a4eb6fc6225748f9`; API digest `sha256:d98b16444c688c4ad6cb147daa6953960417659f6361801484ddfd992dce0c2f`. iOS archive/upload remains in progress; native availability and visual acceptance are not yet proven. Android emulator acceptance on Paul remains unverified: the refreshed development build passed the initial JDK mismatch after using cached JDK 17, then failed downloading NDK dependencies because the root disk lacked space. Newly downloaded NDKs were removed; hosted native CI remains passing. This is not visual/device acceptance.
+PR #107 publication was superseded by #108 at the exact-current-main guard before publishing. The combined [release](https://github.com/elsell/hourpaths/actions/runs/37099999117) published source `347cd27f871bc568a5ef264df0461d12068edc1d`; GitOps `669ab5fde8deb6fa77108c637e0ebdd4c2325fa6` deployed it. Flux Ready/Healthy, completed API/web rollouts, exact running source/image checks, and public Studio HTTP 200 passed. Web digest `sha256:348f2b3a0560b92b0b70523dea565ec7905e8ae9d1967fe0a4eb6fc6225748f9`; API digest `sha256:d98b16444c688c4ad6cb147daa6953960417659f6361801484ddfd992dce0c2f`. TestFlight 0.31.0 (292) is VALID, IN_BETA_TESTING, and assigned to the internal group ([Apple evidence](https://github.com/elsell/hourpaths/actions/runs/37101100815)). The release and release-note publication completed successfully. Physical-iPhone confirmation was requested and remains pending; availability does not prove visual acceptance. Android emulator acceptance on Paul remains unverified: the refreshed development build passed the initial JDK mismatch after using cached JDK 17, then failed downloading NDK dependencies because the root disk lacked space. Newly downloaded NDKs were removed; hosted native CI remains passing. This is not visual/device acceptance.
+
+Home hydration release [37102060283](https://github.com/elsell/hourpaths/actions/runs/37102060283) published source `3c7a17307a5fe6dbacb1124c2cdb84e54ac9003b`. GitOps `99acf1aee33376d1124746ec53398fb4a3364e2c` is Ready/Healthy with completed API/web rollouts and public Studio HTTP 200. Running web digest `sha256:26c54ce2f3f0f348b0fb40015fa21b98a2c2448ab249703da635468ef78b3426`; API digest `sha256:f25c9da1708fbe3f13ed6d7186b250f622cbb639ab99531f14da2e67c913a48d`. Native availability for this release remains unverified.
+
+Area 3 local verification (not released): an isolated PostgreSQL rehearsal took
+an encrypted `pg_dump` before deletion, deleted through the repository operation,
+exported deletion records independently, and restored the older backup with
+`pg_restore`. Assertions proved the deleted account and its activity were present
+before replay and absent afterward, while another participant and their activity
+survived. A second replay passed. Local evidence:
+`/tmp/hourpaths-deletion-rehearsal.log`; remote fixture directory
+`/tmp/hourpaths-deletion-rehearsal.sZLliu`. This establishes the replay mechanism,
+not production backup scheduling, external-journal completeness, authorization
+convergence, or the 30-day retention bound; those remain release requirements.
+
+Account-deletion recovery now exports accepted records directly from the encrypted
+external journal without a primary database connection. Local focused checks also
+cover automatic retry after database failure, progress past an independently
+failing account, and fencing authentication/session issuance/rotation/activation
+while deletion is pending. A missing journal remains a service error. These
+changes are unmerged; production journal storage and key management, retention,
+full boundary verification, and client/release acceptance remain outstanding.
+
+Fresh-database verification on 2026-10-03 applied the complete migration chain
+through version 72 with a clean ledger. Runtime/migration-role checks passed for
+atomic deletion, preserved unrelated shared activity, concurrent provisioning,
+fresh identity reuse after deletion, and idempotent restore. Restricted-role
+retention checks passed, including denied direct audit deletion and denied
+summary mutation. An encrypted pg_dump/pg_restore rehearsal exported the external
+journal with no database DSN, reapplied its accepted deletion to the old backup,
+preserved the survivor's data, and passed a second replay. This is isolated
+rehearsal evidence; production scheduling, key provisioning, retention completion,
+authorization convergence, and client/release acceptance are still required.
+
+Account-deletion candidate verification: the complete PostgreSQL store suite passed
+on a fresh migrated database after correcting fixture cleanup and assertions for
+random account IDs. Warm deployment exposed a Docker journal-directory mode
+mismatch; runtime rejection was retained and the Compose configuration now uses a private records subdirectory created by the
+non-root application, matching the staged Kubernetes configuration.
+Production secret/storage and client acceptance remain outstanding.

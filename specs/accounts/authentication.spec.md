@@ -110,6 +110,9 @@ passwords.
 - Social authentication must use OIDC.
 - Every application account must have a stable internal user identity that is
   independent of any external identity provider.
+- A newly provisioned account must receive a fresh internal identity. Existing
+  provider mappings must retain their account identity; deleting and later
+  recreating an account must never reuse the deleted identity or its local data.
 - Paths, memberships, follows, profile data, recorded activity, notifications,
   and other product data must belong to the internal application user rather
   than directly to a Google, Apple, or other provider identity.
@@ -308,3 +311,11 @@ Profile setup after first sign-in is defined in
 - Google sign-in must use the full Google authorization flow with
   `prompt=select_account`. Google One Tap must be disabled so its remembered-
   identity shortcut does not obscure account choice after explicit sign-out.
+
+### Invitation administrator identity
+
+- Invitation administration must use the persisted administrator status derived
+  from configured immutable issuer/subject identities. It must not compare a
+  freshly provisioned account ID with an identity-derived legacy account ID.
+  Recreating a deleted configured administrator must preserve this authorization
+  without reusing the deleted account ID or its data.

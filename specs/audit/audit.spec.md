@@ -52,3 +52,13 @@ administrative event browsing, or external audit sinks require further specs.
 The detail append-only trigger permits deletion only when PostgreSQL reports the
 retention credential as `session_user` and the migration-owned security-definer
 function as `current_user`; direct use of either role remains denied.
+
+Account deletion must not be blocked by immutable historical audit references.
+Actor and owner identifiers in audit events must remain immutable historical
+identifiers after the corresponding account row is removed; they must not
+preserve its profile or provider association. Deletion must append its successful
+event in the same transaction as account removal. This must not grant the API
+credential update, delete, or truncate privileges over audit history.
+The [account deletion retention rules](../accounts/deletion.spec.md) govern
+identifiable records after deletion; deployment must enable their bounded
+retention independently of optional general-history retention settings.

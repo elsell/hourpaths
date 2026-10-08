@@ -607,7 +607,7 @@ func TestInvitationAdministrationRequiresPersistedAdministratorAndAuditsCreate(t
 	now := time.Date(2026, 7, 18, 1, 0, 0, 0, time.UTC)
 	created := identity.Invitation{}
 	event := audit.Event{}
-	application := App{Clock: fakeClock{now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "admin", InvitationAdmin: true}}, InvitationAdminUsers: map[string]struct{}{"admin": {}}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, Invitations: fakeInvitations{created: &created, event: &event}}
+	application := App{Clock: fakeClock{now}, Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "admin", InvitationAdmin: true}}, Audits: fakeAudits{}, AuditRateLimiter: fakeAuditRateLimiter{}, Invitations: fakeInvitations{created: &created, event: &event}}
 	invitation, err := application.CreateInvitation(context.Background(), "Bearer valid", " Invited@Example.COM ", "invitation-key-0000001", 7)
 	if err != nil || invitation.Email != "invited@example.com" || created.ExpiresAt != now.Add(7*24*time.Hour) || event.Action != audit.InvitationCreated {
 		t.Fatalf("administrator invitation failed: invitation=%+v created=%+v event=%+v err=%v", invitation, created, event, err)
@@ -621,7 +621,7 @@ func TestInvitationAdministrationRequiresPersistedAdministratorAndAuditsCreate(t
 
 func TestInvitationReplayHashUsesRequestRatherThanClockDerivedExpiry(t *testing.T) {
 	var captured []ports.Idempotency
-	base := App{Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "admin", InvitationAdmin: true}}, InvitationAdminUsers: map[string]struct{}{"admin": {}}, AuditRateLimiter: fakeAuditRateLimiter{}, Invitations: fakeInvitations{idempotencies: &captured}}
+	base := App{Auth: fakeAuth{}, Users: fakeUsers{user: identity.User{ID: "admin", InvitationAdmin: true}}, AuditRateLimiter: fakeAuditRateLimiter{}, Invitations: fakeInvitations{idempotencies: &captured}}
 	first := base
 	first.Clock = fakeClock{time.Date(2026, 7, 17, 12, 0, 0, 0, time.UTC)}
 	second := base

@@ -78,6 +78,7 @@ services:
       HOURPATHS_SPICEDB_INSECURE: "true"
     depends_on: { spicedb: { condition: service_started } }
   api:
+    volumes: ["deletion-journal:/var/lib/hourpaths-deletion"]
     build: { context: ., dockerfile: apps/api/Dockerfile }
     env_file:
       - path: .env
@@ -87,6 +88,8 @@ services:
       HOURPATHS_PUBLIC_BASE_URL: ${HOURPATHS_API_PUBLIC_BASE_URL:-http://localhost:8080}
       HOURPATHS_DATABASE_DSN: postgres://app:app@postgres:5432/app?sslmode=disable
       HOURPATHS_DATABASE_INSECURE: "true"
+      HOURPATHS_DELETION_JOURNAL_DIRECTORY: /var/lib/hourpaths-deletion/records
+      HOURPATHS_DELETION_JOURNAL_KEY: ${HOURPATHS_DELETION_JOURNAL_KEY:-0101010101010101010101010101010101010101010101010101010101010101}
       HOURPATHS_CURSOR_SIGNING_KEY: local-development-cursor-signing-key-change-me
       HOURPATHS_PUSH_TOKEN_KEY: local-development-push-token-key-change-me
       HOURPATHS_PUSH_PROVIDER_ENDPOINT: ${HOURPATHS_PUSH_PROVIDER_ENDPOINT:-https://exp.host}
@@ -135,4 +138,5 @@ services:
     depends_on: { api: { condition: service_started } }
 
 volumes:
+  deletion-journal:
   postgres-data:

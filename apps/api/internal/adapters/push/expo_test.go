@@ -40,8 +40,9 @@ func TestExpoSendUsesOpaqueDataAndKeepsTicketDistinctFromDelivery(t *testing.T) 
 					"body":     "A Path invitation is ready.",
 					"priority": test.priority,
 					"data": map[string]any{
-						"version":        "1",
-						"notificationId": "notification-opaque-1",
+						"version":         "1",
+						"notificationId":  "notification-opaque-1",
+						"recipientUserId": "recipient-opaque-1",
 					},
 				}
 				if !equalJSON(body, want) {
@@ -63,7 +64,7 @@ func TestExpoSendUsesOpaqueDataAndKeepsTicketDistinctFromDelivery(t *testing.T) 
 			ticket, err := adapter.Send(context.Background(), ports.PushMessage{
 				DeviceToken: "ExponentPushToken[device-secret]",
 				Title:       "Invitation", Body: "A Path invitation is ready.",
-				NotificationID: "notification-opaque-1", Presentation: test.presentation,
+				NotificationID: "notification-opaque-1", RecipientUserID: "recipient-opaque-1", Presentation: test.presentation,
 			})
 			if err != nil {
 				t.Fatal(err)

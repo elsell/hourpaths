@@ -13,11 +13,12 @@ const (
 )
 
 type PushMessage struct {
-	DeviceToken    string
-	Title          string
-	Body           string
-	NotificationID string
-	Presentation   PushPresentation
+	DeviceToken     string
+	Title           string
+	Body            string
+	NotificationID  string
+	RecipientUserID string
+	Presentation    PushPresentation
 }
 
 type PushReceiptID string

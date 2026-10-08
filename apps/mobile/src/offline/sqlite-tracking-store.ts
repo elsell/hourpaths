@@ -1,4 +1,5 @@
 import type { TrackingSnapshot, TrackingStore } from '@hourpaths/client-core';
+import { deletionFenceSchema, visibleAccountSQL } from './sqlite-deletion-fence';
 
 export interface TrackingSQLConnection {
   getFirstAsync<T>(sql: string, ...params: (string | number)[]): Promise<T | null>;
@@ -15,13 +16,13 @@ export class SQLiteTrackingStore implements TrackingStore {
       PRAGMA synchronous = FULL;
       CREATE TABLE IF NOT EXISTS tracking_accounts_v1 (
         owner TEXT PRIMARY KEY NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL
-      );`);
+      ); ${deletionFenceSchema('tracking_accounts_v1')}`);
   }
   async read(owner: string): Promise<TrackingSnapshot | null> {
     if (!owner.trim()) throw new Error('tracking_owner_required');
     await this.ready;
     const row = await this.database.getFirstAsync<{ payload: string; revision: number }>(
-      'SELECT payload, revision FROM tracking_accounts_v1 WHERE owner = ?', owner);
+      `SELECT payload, revision FROM tracking_accounts_v1 WHERE owner = ? AND ${visibleAccountSQL()}`, owner);
     if (!row) return null;
     const snapshot = JSON.parse(row.payload) as TrackingSnapshot;
     if (snapshot.owner !== owner || snapshot.revision !== row.revision || !Number.isSafeInteger(row.revision)) {

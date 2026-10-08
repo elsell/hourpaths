@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -8,6 +9,7 @@ import (
 	"net/mail"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +17,7 @@ import (
 )
 
 type Config struct {
+	DeletionJournalDirectory, DeletionJournalKey                                                                                                                                                                              string
 	HTTPAddr, PublicBaseURL, DatabaseDSN, CursorSigningKey, PushTokenKey, PushProviderEndpoint, OIDCIssuer, OIDCBackchannelURL, OIDCDocsClientID, OIDCDocsRedirectURI, SpiceDBEndpoint, SpiceDBToken, AccountProvisioningMode string
 	MetricsBearerToken                                                                                                                                                                                                        string
 	Policy                                                                                                                                                                                                                    PolicyConfiguration
@@ -57,6 +60,8 @@ func Load() (Config, error) {
 		HTTPAddr:                       value("HOURPATHS_HTTP_ADDR", ":8080"),
 		PublicBaseURL:                  os.Getenv("HOURPATHS_PUBLIC_BASE_URL"),
 		DatabaseDSN:                    os.Getenv("HOURPATHS_DATABASE_DSN"),
+		DeletionJournalDirectory:       os.Getenv("HOURPATHS_DELETION_JOURNAL_DIRECTORY"),
+		DeletionJournalKey:             os.Getenv("HOURPATHS_DELETION_JOURNAL_KEY"),
 		DatabaseInsecure:               boolean("HOURPATHS_DATABASE_INSECURE"),
 		CursorSigningKey:               os.Getenv("HOURPATHS_CURSOR_SIGNING_KEY"),
 		PushTokenKey:                   os.Getenv("HOURPATHS_PUSH_TOKEN_KEY"),
@@ -182,6 +187,9 @@ func (c Config) validate() error {
 		len(c.PushTokenKey) < 32 || len(c.MetricsBearerToken) < 32 || c.OIDCIssuer == "" ||
 		len(c.OIDCAudiences) == 0 || c.SpiceDBEndpoint == "" {
 		return errors.New("database, OIDC audiences, and SpiceDB configuration is required")
+	}
+	if _, err := validateDeletionJournal(c.DeletionJournalDirectory, c.DeletionJournalKey); err != nil {
+		return err
 	}
 	pushEndpoint, err := url.Parse(c.PushProviderEndpoint)
 	if err != nil || pushEndpoint.Host == "" || pushEndpoint.User != nil ||
@@ -422,4 +430,17 @@ func normalizedList(key string) []string {
 func validEmail(value string) bool {
 	address, err := mail.ParseAddress(value)
 	return err == nil && address.Name == "" && address.Address == value && strings.Contains(value, "@")
+}
+
+func validateDeletionJournal(directory, key string) ([]byte, error) {
+	decoded, err := hex.DecodeString(key)
+	if !filepath.IsAbs(directory) || filepath.Clean(directory) != directory || err != nil || len(decoded) != 32 {
+		return nil, errors.New("absolute deletion journal directory and 32-byte hex encryption key are required")
+	}
+	return decoded, nil
+}
+func LoadDeletionJournal() (string, []byte, error) {
+	directory := os.Getenv("HOURPATHS_DELETION_JOURNAL_DIRECTORY")
+	key, err := validateDeletionJournal(directory, os.Getenv("HOURPATHS_DELETION_JOURNAL_KEY"))
+	return directory, key, err
 }
