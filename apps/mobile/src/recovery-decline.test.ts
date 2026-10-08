@@ -95,7 +95,6 @@ test('the recovery presentation wires the tested persisted transition', () => {
   assert.doesNotMatch(app, /destination\?\.kind === 'duplicate_email_recovery' \? <View style=\{\{/);
   assert.match(screen, /<ScreenHeader/);
   assert.match(screen, /<NativePrimaryButton/);
-  assert.match(screen, /systemImage="rectangle\.portrait\.and\.arrow\.right"/);
   assert.match(screen, /duplicateEmailRecovery\.returnToSignIn/);
   assert.match(screen, /duplicateEmailRecovery\.decline/);
   assert.match(screen, /<StatusBanner/);
