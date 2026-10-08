@@ -866,3 +866,6 @@ export { AccountDeletion, validDeletionIntent, type AccountDeletionPorts, type D
 export { apiAccountDeletion } from './adapters/api-account-deletion';
 export { ProviderIdentities, validIdentityLinkIntent, providerSignInScopes, type ProviderIdentityPorts, type IdentityProvider, type LinkedProvider, type IdentityLinkChallenge, type IdentityLinkIntent, type ProviderSettingsService } from './provider-identities';
 export { apiProviderIdentities, ProviderIdentityFailure, type ProviderIdentityFailureKind } from './adapters/api-provider-identities';
+
+export { AccountRecovery, validAccountRecoveryIntent, type AccountRecoveryIntent, type AccountRecoveryPorts } from './account-recovery';
+export { apiAccountRecovery } from './adapters/api-account-recovery';

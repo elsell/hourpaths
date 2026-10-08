@@ -21,6 +21,8 @@ type App struct {
 	Auth                             ports.Authenticator
 	IdentityVerifier                 ports.IdentityTokenVerifier
 	ProviderIdentities               ProviderIdentityRepository
+	AccountRecoveryAdmissions        AccountRecoveryAdmissionRepository
+	AccountRecoveryCompleter         AccountRecoveryCompleter
 	Sessions                         ports.Sessions
 	OnboardingActivator              ports.OnboardingActivator
 	PolicyAuthority                  ports.PolicyAuthority
@@ -161,7 +163,7 @@ func (a App) ExchangeIdentityToken(ctx context.Context, token string) (IdentityE
 		return nil, errors.New("session dependencies are invalid")
 	}
 	claims, err := a.IdentityVerifier.Verify(ctx, token)
-	if err != nil || strings.HasPrefix(claims.Nonce, identityLinkNoncePrefix) {
+	if err != nil || strings.HasPrefix(claims.Nonce, identityLinkNoncePrefix) || strings.HasPrefix(claims.Nonce, identityRecoveryNoncePrefix) {
 		return nil, ErrUnauthenticated
 	}
 	_, claims.InvitationAdmin = a.InvitationAdmins[claims.Issuer+"#"+claims.Subject]

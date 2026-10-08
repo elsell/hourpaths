@@ -2,7 +2,7 @@ import { createSessionApiClient, generatedResponse } from '@hourpaths/api-client
 import { retainedAccount, readRetainedAccount, classifySessionFailure, declineDuplicateEmailRecovery, exchangeSessionCredential, isSessionFailure, isValidSessionCredential, refreshSessionCredential, sessionFailureFromResponse, type ClientRuntimeConfig, type SessionCredential, type SessionFailure, type SessionNextAction, type SessionOperationTicket, type SessionRefreshResponse } from '@hourpaths/client-core';
 import { problemMessageKey, type MessageKey } from '@hourpaths/i18n';
 import { browserSessionState, invalidateBrowserSessionOperations } from './browser-session-state';
-import { beginProviderSignIn, completeProviderSignIn, type ApplicationDestination } from './provider-auth';
+import { forgetProviderRecoveryIntent, beginProviderSignIn, completeProviderSignIn, type ApplicationDestination } from './provider-auth';
 
 const sessionKey = 'hourpaths_application_session';
 export type ApplicationSession = SessionCredential;
@@ -64,6 +64,7 @@ export async function clearApplicationSession(storage?: SessionStorageRemover, e
 export const applicationSessionOperations = {
   issue: () => browserSessionState().operations.issue(),
   signIn: () => browserSessionState().signInTicket(),
+  recovery: (revision: string) => browserSessionState().operations.issue(revision, true),
   invalidate: invalidateBrowserSessionOperations,
 };
 export async function persistOwnedApplicationSession(
@@ -119,6 +120,7 @@ export async function declineApplicationRecovery(
   storage?: SessionStorageWriter,
 ): Promise<ApplicationSession | null> {
   const replacement = declineDuplicateEmailRecovery(session);
+  if (!storage && applicationSession()?.token === session.token) forgetProviderRecoveryIntent(browserSessionState().revision());
   try {
     return await persistOwnedApplicationSession(replacement, ticket, storage) ? replacement : null;
   } catch {

@@ -98,7 +98,7 @@ weakening approval or check requirements.
 
 Home hydration merged in PR #109 as `3c7a173` after all five gates. Real Chromium verified 11 rendered Paths, nine retained history entries, and one timer read per Path without API or page errors. Two independent browser ledgers converged on the newer online edit and retained the losing offline revision, including recovery from rate limiting. Remembered sessions merged in PR #108 as `347cd27`. Native device acceptance remains an area 2 closure requirement.
 
-The active implementation slice is provider identity management (area 4). Account deletion (area 3) remains open for physical-device and applicable external-retention acceptance. [PR #110](https://github.com/elsell/hourpaths/pull/110) merged as `b93b191` through the immutable checked gate on October 8. All five candidate gates passed. Migration 75 passed real PostgreSQL eligibility/privilege checks; encrypted backup replay, journal restart/concurrency, and live authorization cleanup passed. The final critic's confirmed blockers were resolved. Production deployment is verified below; native-device acceptance remains open.
+The active implementation slice is explicit duplicate-account recovery (area 4); ordinary provider management has merged and its release remains in progress. Account deletion (area 3) remains open for physical-device and applicable external-retention acceptance. [PR #110](https://github.com/elsell/hourpaths/pull/110) merged as `b93b191` through the immutable checked gate on October 8. All five candidate gates passed. Migration 75 passed real PostgreSQL eligibility/privilege checks; encrypted backup replay, journal restart/concurrency, and live authorization cleanup passed. The final critic's confirmed blockers were resolved. Production deployment is verified below; native-device acceptance remains open.
 
 Browser acceptance on candidate `069ae6b` completed approved deletion of an isolated disposable account: the review identified the intended account, confirmation removed its account/identity rows, local cleanup returned to sign-in, and reload stayed signed out. A subsequent provider sign-in showed fresh onboarding and created a different provisional account ID; the old account remained absent. This is web acceptance, not physical-device evidence.
 
@@ -212,3 +212,37 @@ random account IDs. Warm deployment exposed a Docker journal-directory mode
 mismatch; runtime rejection was retained and the Compose configuration now uses a private records subdirectory created by the
 non-root application, matching the staged Kubernetes configuration.
 Production secret/storage and client acceptance remain outstanding.
+
+## Area 4 delivery progress
+
+[PR #115](https://github.com/elsell/hourpaths/pull/115) merged on October 8 as
+`cf500603c74c708fc0252bdad2d511d82cc5a7c2` after all five exact-candidate gates
+passed. It adds account-bound Google/Apple linking, final-provider protection,
+and shared mobile/Studio settings. Real PostgreSQL checks cover ownership,
+replay, atomic audit failure, and concurrent final-provider removal. Rendered
+Studio settings acceptance passed with a controlled service; this is not proof
+of live Google/Apple conformance.
+
+Release [v0.33.0](https://github.com/elsell/hourpaths/releases/tag/v0.33.0) published
+that source after successful main CI. GitOps `54bd82fd0a775b1c635acbd3798a51cf994cf819`
+is Ready/Healthy; running API/web image IDs and source annotations match the
+published digests. Public Studio returned HTTP 200 and API readiness 204.
+Migration 76 is clean. Four trusted provider labels and four audit events
+committed; a subsequent rollback-only verification reported zero changes, and
+the private export was removed. One active and seven provisional identities
+without supported metadata were preserved; their support is unresolved.
+TestFlight 0.33.0 (330) is VALID, IN_BETA_TESTING and assigned to the internal
+group ([Apple status](https://github.com/elsell/hourpaths/actions/runs/37823225647));
+the publisher read back and verified its release notes. Android internal
+publication succeeded in [workflow 37822583347](https://github.com/elsell/hourpaths/actions/runs/37822583347), committing version code 291 with release notes. Device and real-provider
+acceptance remain separate from store availability.
+
+Remaining closure criteria:
+1. Verify signed mobile availability and both providers on both clients against
+   the actual broker; deployed API/web and metadata reconciliation are credited.
+2. Complete explicit dual-identity recovery, including atomic session adoption,
+   cancellation, concurrent onboarding/deletion, and completed-account guidance.
+3. Verify account-lifecycle cancellation on mobile, including a held callback
+   after same-owner sign-out/sign-in, and complete physical-device acceptance.
+
+No acceptance area closes from this partial delivery; twelve remain.

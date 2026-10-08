@@ -60,6 +60,11 @@ export class EntryController {
       }
     });
   }
+  recover() {
+    this.maintain();
+    if (this.state.phase !== 'recovery') return Promise.resolve();
+    return this.run(async () => { await this.service.recover(); });
+  }
   decline() {
     this.maintain();
     if (this.state.phase !== 'recovery') return Promise.resolve();

@@ -139,10 +139,14 @@ func (a App) FinishIdentityLink(ctx context.Context, authorization, challengeID,
 }
 
 func validIdentityLinkNonce(nonce string) bool {
-	if !strings.HasPrefix(nonce, identityLinkNoncePrefix) {
+	return validIdentityPurposeNonce(nonce, identityLinkNoncePrefix)
+}
+
+func validIdentityPurposeNonce(nonce, prefix string) bool {
+	if !strings.HasPrefix(nonce, prefix) {
 		return false
 	}
-	value := strings.TrimPrefix(nonce, identityLinkNoncePrefix)
+	value := strings.TrimPrefix(nonce, prefix)
 	if len(value) != 64 || value != strings.ToLower(value) {
 		return false
 	}

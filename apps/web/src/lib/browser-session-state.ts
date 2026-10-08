@@ -1,4 +1,4 @@
-import { forgetProviderLinkIntent } from './provider-auth';
+import { forgetProviderLinkIntent, forgetProviderRecoveryIntent } from './provider-auth';
 import { browserSessionRecords, sessionRecordKey } from './studio/session/adapters/browser-session-record';
 import { DurableSessionOperations } from './studio/session/application/session-operations';
 
@@ -14,6 +14,7 @@ function createState() {
   let clearing = false;
   return {
     operations,
+    revision: () => records.coordinator.read().revision,
     beginSignIn(): void {
       window.sessionStorage.setItem(signInRevisionKey, records.coordinator.read().revision);
     },
@@ -65,6 +66,7 @@ function createState() {
         catch { await records.discardUnreadable(); return; }
         const family = expectedToken ? observedFamilies.get(expectedToken) : previous.family;
         if (family !== undefined && family === previous.family) {
+          forgetProviderRecoveryIntent(previous.revision);
           if (previous.value) {
             let prior: unknown;
             try { prior = JSON.parse(previous.value); } catch { prior = null; }

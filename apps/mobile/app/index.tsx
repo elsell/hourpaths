@@ -1,3 +1,4 @@
+import { recoverNativeAccount } from '../src/provider-identity-settings';
 import { isValidSessionCredential } from '@hourpaths/client-core';
 import { nativeAccountDeletion } from '../src/offline/native-account-deletion';
 import { captureDeletionNotifications, clearDeletionNotifications, clearRecipientNotifications, installDeletionNotificationCleanup } from '../src/push-notifications-native';
@@ -635,6 +636,8 @@ export function HomeScreen() {
   const [destination, setDestination] = useState<Destination | null>(null);
   const homeProjectionSessionToken = useRef<string | null>(null);
   const [decliningRecovery, setDecliningRecovery] = useState(false);
+  const [recoveringAccount, setRecoveringAccount] = useState(false);
+  const recoveryBusy = useRef(false);
   const [activatingOnboarding, setActivatingOnboarding] = useState(false);
   const [onboardingHomeRecovery, setOnboardingHomeRecovery] = useState<OnboardingHomeRecovery | null>(null);
   const [homeRecovery, setHomeRecovery] = useState<HomeRecovery | null>(null);
@@ -2816,8 +2819,38 @@ export function HomeScreen() {
         : current);
   };
 
+  async function recoverExistingAccount() {
+    if (recoveryBusy.current || decliningRecovery || !session || session.nextAction !== 'duplicate_email_recovery' || destination?.kind !== 'duplicate_email_recovery') return;
+    recoveryBusy.current = true;
+    setRecoveringAccount(true); setErrorKey(null);
+    const source = session, ticket = sessionOperations.issue();
+    let recovered: Session | null = null;
+    let persisted = false;
+    try {
+      recovered = await recoverNativeAccount({ apiURL, issuer, clientId,
+        token: source.token, current: ticket.current,
+        revoke: async token => { await createSessionApiClient(apiURL, () => token).revoke(); },
+      });
+      if (!recovered) return;
+      if (!ticket.current()) { await revokeSupersededSession(recovered); return; }
+      await serializedSessionStorage.persist(recovered, ticket.current);
+      persisted = true;
+      if (!ticket.current()) { await revokeSupersededSession(recovered); return; }
+      await activate(recovered, true, ticket, source.token);
+    } catch (cause) {
+      if (recovered && !persisted) await revokeSupersededSession(recovered);
+      if (ticket.current()) {
+        if (recovered && persisted) await handleSessionFailure(cause, recovered, 'profile', ticket);
+        else setErrorKey('duplicateEmailRecovery.failed');
+      }
+    } finally {
+      recoveryBusy.current = false;
+      setRecoveringAccount(false);
+    }
+  }
+
   async function continueCreatingNewAccount() {
-    if (!session || session.nextAction !== 'duplicate_email_recovery' || destination?.kind !== 'duplicate_email_recovery' || decliningRecovery) return;
+    if (!session || session.nextAction !== 'duplicate_email_recovery' || destination?.kind !== 'duplicate_email_recovery' || decliningRecovery || recoveryBusy.current) return;
     const onboardingProfile = destination.profile;
     setDecliningRecovery(true);
     setErrorKey(null);
@@ -9229,6 +9262,8 @@ export function HomeScreen() {
     /> : null}
     {ready && destination?.kind === 'duplicate_email_recovery' ? <DuplicateEmailRecoveryScreen
       declining={decliningRecovery}
+      recovering={recoveringAccount}
+      onRecover={() => void recoverExistingAccount()}
       errorText={errorKey ? i18n.t(errorKey) : undefined}
       onContinue={() => void continueCreatingNewAccount()}
       onReturnToSignIn={() => void clearSession()}

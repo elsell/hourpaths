@@ -13,6 +13,7 @@ function fixture() {
   let active = true, reviews = 0, saves = 0, policyChanged = false;
   const navigation: string[] = [];
   const service: EntryService = {
+    recover: async () => {},
     async restore() { return { kind: mode, expiresAt: mode === 'entry' ? undefined : 100 }; },
     async callback() { return service.restore(); },
     async review() { return { ...review, token: `review-${++reviews}` }; },

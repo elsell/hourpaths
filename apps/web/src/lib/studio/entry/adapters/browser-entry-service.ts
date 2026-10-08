@@ -1,3 +1,4 @@
+import { browserAccountRecovery, recoveryCallback } from './browser-account-recovery';
 import { createSessionApiClient, generatedResponse, type OnboardingProfile } from '@hourpaths/api-client';
 import { isSessionFailure, validateSessionCredential, validateSessionMutation, type ClientRuntimeConfig, type SessionOperationTicket } from '@hourpaths/client-core';
 import { pauseApplicationSession, initializeApplicationSession, activateApplicationSession, applicationSession, applicationSessionExpired, applicationSessionOperations, beginApplicationSignIn, clearApplicationSession, declineApplicationRecovery, exchangeApplicationSession, revokeApplicationSession, revokeSupersededApplicationSession, webSessionFailure, type ApplicationSession } from '../../../auth';
@@ -22,17 +23,19 @@ export function entryReview(value: OnboardingProfile): EntryReview {
 export interface ProviderCallbackPort {
   authenticate(): Promise<{ identityToken: string; state: unknown }>;
   link(identityToken: string, state: unknown): Promise<void>;
+  recover?(identityToken: string, state: unknown, ticket: SessionOperationTicket): Promise<void>;
 }
 export function browserEntryService(config: ClientRuntimeConfig, now: () => number = () => Date.now(), providerCallbacks: ProviderCallbackPort = {
   authenticate: () => completeProviderAuthentication(config.oidcIssuer, config.oidcClientId),
   link: (token, state) => browserProviderIdentities(config).complete(token, state),
+  recover: (token, state, ticket) => browserAccountRecovery(config).complete(token, state, ticket),
 }): EntryService {
   let current: ApplicationSession | null = null, disposed = false;
   let issued: SessionOperationTicket | null = null;
   let linkResult: 'success' | 'failed' | null = null;
   function same() { try { return !disposed && !!current && applicationSession()?.token === current.token; } catch { return false; } }
   function cancelTicket() { if (issued?.current()) applicationSessionOperations.invalidate(); issued = null; }
-  function ticket(signIn = false): SessionOperationTicket { const own = signIn ? applicationSessionOperations.signIn() : applicationSessionOperations.issue(); issued = own; return { ...own, current: () => !disposed && own.current() }; }
+  function ticket(signIn = false, recoveryRevision?: string): SessionOperationTicket { const own = recoveryRevision ? applicationSessionOperations.recovery(recoveryRevision) : signIn ? applicationSessionOperations.signIn() : applicationSessionOperations.issue(); issued = own; return { ...own, current: () => !disposed && own.current() }; }
   function context(): EntryContext {
     if (!current) return { kind: 'entry' };
     return { kind: current.nextAction === 'onboarding' ? 'onboarding' : current.nextAction === 'duplicate_email_recovery' ? 'recovery' : 'home', expiresAt: Date.parse(current.expiresAt) };
@@ -85,6 +88,17 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
           if (!current || (current.nextAction ?? 'home') !== 'home') throw new EntryFailure('expired');
           return context();
         }
+        if (provider.state && typeof provider.state === 'object' && 'purpose' in provider.state && provider.state.purpose === 'account-recovery') {
+          if (!own.current() || !providerCallbacks.recover) throw new EntryFailure('superseded');
+          const intent = recoveryCallback(provider.state);
+          own = ticket(false, intent.lifecycle);
+          if (!own.current()) throw new EntryFailure('superseded');
+          try { await providerCallbacks.recover(provider.identityToken, provider.state, own); }
+          catch { if (!own.current()) throw new EntryFailure('superseded'); throw new EntryFailure('recovery'); }
+          current = applicationSession();
+          if (!current || current.nextAction !== 'home') throw new EntryFailure('recovery');
+          return context();
+        }
         const identity = provider.identityToken;
         if (!own.current()) throw new EntryFailure('superseded');
         // Ordinary sign-in still requires its pre-redirect revision. Linking
@@ -133,6 +147,7 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
         current = replacement; return context();
       } catch (cause) { if (!own.current()) throw new EntryFailure('superseded'); return failure(cause); }
     },
+    async recover() { authorized('duplicate_email_recovery'); try { await browserAccountRecovery(config).begin(); } catch { throw new EntryFailure('recovery'); } },
     async begin() { if (disposed) return; try { await beginApplicationSignIn(config); } catch { throw new EntryFailure('signIn'); } },
     async signOut() { const previous = same() ? current : null; cancelTicket(); if (previous) await revokeApplicationSession(config, previous); current = null; },
     current: same, expire,

@@ -15,15 +15,20 @@ const i18n = createDeviceTranslator(getLocales);
 
 export function DuplicateEmailRecoveryScreen({
   declining,
+  recovering,
+  onRecover,
   errorText,
   onContinue,
   onReturnToSignIn,
 }: {
   declining: boolean;
+  recovering: boolean;
+  onRecover: () => void;
   errorText?: string;
   onContinue: () => void;
   onReturnToSignIn: () => void;
 }) {
+  const busy = declining || recovering;
   return <ScrollView
     automaticallyAdjustContentInsets
     contentContainerStyle={styles.content}
@@ -38,18 +43,15 @@ export function DuplicateEmailRecoveryScreen({
     {errorText ? <StatusBanner text={errorText} tone="error" /> : null}
     {declining ? <StatusBanner text={i18n.t('duplicateEmailRecovery.declining')} /> : null}
 
-    <NativePrimaryButton
-      disabled={declining}
-      label={i18n.t('duplicateEmailRecovery.returnToSignIn')}
-      onPress={onReturnToSignIn}
-      systemImage="rectangle.portrait.and.arrow.right"
-    />
+    <Text style={styles.secondary}>{i18n.t('duplicateEmailRecovery.recoverExplanation')}</Text>
+    <NativePrimaryButton disabled={busy} label={i18n.t(recovering ? 'duplicateEmailRecovery.recovering' : 'duplicateEmailRecovery.recover')} onPress={onRecover} systemImage="person.crop.circle.badge.checkmark" />
+    <ActionButton disabled={busy} label={i18n.t('duplicateEmailRecovery.returnToSignIn')} onPress={onReturnToSignIn} variant="secondary" />
 
     <View style={styles.separateChoice}>
       <Text style={styles.secondary}>{i18n.t('duplicateEmailRecovery.separateExplanation')}</Text>
       <ActionButton
         busy={declining}
-        disabled={declining}
+        disabled={busy}
         label={i18n.t('duplicateEmailRecovery.decline')}
         onPress={onContinue}
         variant="secondary"

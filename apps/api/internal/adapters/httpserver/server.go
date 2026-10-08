@@ -294,6 +294,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	registerAuthorizationRecoveryRoutes(api, application)
 	registerInvitationRoutes(api, application)
 	registerOnboardingRoutes(api, application)
+	registerAccountRecoveryRoutes(api, application)
 	registerPushInstallationRoutes(api, application)
 	for _, register := range options.DomainRegistrations {
 		register(api)
@@ -664,6 +665,9 @@ func docsExchangeError(err error) (int, string, string) {
 	}
 }
 func mapError(err error, concealForbidden bool) error {
+	if errors.Is(err, app.ErrAccountRecoveryProofInvalid) {
+		return newCodedAPIError(http.StatusBadRequest, "account_recovery_proof_invalid", "provider authentication could not complete this recovery")
+	}
 	if errors.Is(err, app.ErrIdentityLinkProofInvalid) {
 		return newCodedAPIError(http.StatusBadRequest, "identity_link_proof_invalid", "provider authentication could not complete this link")
 	}

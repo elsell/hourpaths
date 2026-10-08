@@ -1,6 +1,6 @@
 export type EntryPhase = 'entry' | 'onboarding' | 'recovery' | 'home';
 export interface EntryContext { kind: EntryPhase; expiresAt?: number }
-export type EntryError = 'unavailable' | 'expired' | 'storage' | 'username' | 'policy' | 'timeZone' | 'locale' | 'validation' | 'signIn' | 'callback' | 'superseded' | 'rejected' | 'forbidden' | 'identity' | 'rateLimited';
+export type EntryError = 'recovery' | 'unavailable' | 'expired' | 'storage' | 'username' | 'policy' | 'timeZone' | 'locale' | 'validation' | 'signIn' | 'callback' | 'superseded' | 'rejected' | 'forbidden' | 'identity' | 'rateLimited';
 export class EntryFailure extends Error { constructor(readonly kind: EntryError) { super(kind); } }
 export interface PolicyLink { url: string; version: string }
 export interface EntryReview { email: string; displayName: string; username: string; token: string; policies: { terms: PolicyLink; privacy: PolicyLink; guidelines: PolicyLink; support: string } }

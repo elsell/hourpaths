@@ -454,6 +454,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     activityRevisions: (pathId: string, activityId: string, cursor?: string) => authenticatedClient.GET('/v1/paths/{pathId}/activities/{activityId}/revisions', {
       params: { path: { pathId, activityId }, query: { cursor, limit: 25 } },
     }),
+    beginAccountRecovery: () => authenticatedClient.POST('/v1/onboarding/duplicate-email-recovery'),
+    completeAccountRecovery: (challengeId: string, identityToken: string) => authenticatedClient.POST('/v1/onboarding/duplicate-email-recovery/complete', { body: { challengeId, identityToken } }),
     declineDuplicateEmailRecovery: () => authenticatedClient.POST('/v1/onboarding/duplicate-email-recovery/decline'),
     revoke: () => authenticatedClient.DELETE('/v1/session'),
   };
