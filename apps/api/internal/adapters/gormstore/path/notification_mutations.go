@@ -2,6 +2,7 @@ package pathstore
 
 import (
 	"context"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -74,11 +75,11 @@ func (r *Repository) MarkAllNotificationsRead(
 			Where("recipient_user_id = ? AND created_at <= ? AND deleted_at IS NULL AND read_at IS NULL",
 				command.RecipientUserID, command.ChangedAt).
 			Where(notificationPairVisiblePredicate).
-			Where(notificationRepresentationPredicate(command.EmojiReactions, command.TimerStarts)).
+			Where(notificationRepresentationPredicate(command.EmojiReactions, command.TimerStarts, command.Achievements)).
 			Update("read_at", command.ChangedAt).Error; err != nil {
 			return err
 		}
-		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions, command.TimerStarts)
+		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions, command.TimerStarts, command.Achievements)
 		if err != nil {
 			return err
 		}
@@ -101,11 +102,12 @@ func (r *Repository) mutateOneNotification(
 		}
 		ids := []string{command.RecipientUserID, subject.ActorUserID}
 		sort.Strings(ids)
+		ids = slices.Compact(ids)
 		var locked []struct{ ID string }
 		if err := tx.Table("user_models").Select("id").Where("id IN ?", ids).Order("id ASC").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&locked).Error; err != nil {
 			return err
 		}
-		if len(locked) != 2 {
+		if len(locked) != len(ids) {
 			return gorm.ErrRecordNotFound
 		}
 		var row notificationMutationRow
@@ -113,7 +115,7 @@ func (r *Repository) mutateOneNotification(
 			Where("id = ? AND recipient_user_id = ? AND deleted_at IS NULL",
 				command.NotificationID, command.RecipientUserID).
 			Where(notificationPairVisiblePredicate).
-			Where(notificationRepresentationPredicate(command.EmojiReactions, command.TimerStarts)).
+			Where(notificationRepresentationPredicate(command.EmojiReactions, command.TimerStarts, command.Achievements)).
 			First(&row).Error; err != nil {
 			return err
 		}
@@ -125,7 +127,7 @@ func (r *Repository) mutateOneNotification(
 		if err := mutate(tx, row); err != nil {
 			return err
 		}
-		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions, command.TimerStarts)
+		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions, command.TimerStarts, command.Achievements)
 		if err != nil {
 			return err
 		}

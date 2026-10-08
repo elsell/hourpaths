@@ -73,6 +73,7 @@ func (service *InvitationService) mutateNotification(
 	result, err := mutate(NotificationMutationCommand{
 		EmojiReactions:  notificationEmojiRepresentation(ctx),
 		TimerStarts:     notificationTimerRepresentation(ctx),
+		Achievements:    notificationAchievementRepresentation(ctx),
 		RecipientUserID: principal.UserID,
 		NotificationID:  targetID,
 		ChangedAt:       now,

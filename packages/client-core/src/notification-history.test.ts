@@ -622,3 +622,14 @@ test('timer-start history maps a readable Path target and rejects foreign subjec
   assert.equal(notificationPresentationMessageKey(state.items[0]!), 'notification.timerStarted');
   assert.throws(() => mergeNotificationHistoryPage({ items: [], nextCursor: '', unreadCount: 0 }, { items: [{ ...timer, invitationId: 'foreign' }], nextCursor: '', unreadCount: 1 }, ''));
 });
+
+test('achievement history distinguishes goals and rejects unrelated payloads', () => {
+  for (const [type, key] of [['interval_goal_achieved', 'notification.intervalGoalAchieved'], ['overall_target_achieved', 'notification.overallTargetAchieved']]) {
+    const notice: Record<string, unknown> = { id: 'earned', type, presentation: 'informational', read: false, createdAt: received.createdAt, actor: received.actor, pathId: received.pathId, pathName: received.pathName, socialFeedEventId: 'achievement:earned' };
+    const page = (item: unknown) => mergeNotificationHistoryPage({ items: [], nextCursor: '', unreadCount: 0 }, { items: [item], nextCursor: '', unreadCount: 1 }, '');
+    assert.equal(notificationPresentationMessageKey(page(notice).items[0]!), key);
+    assert.throws(() => page({ ...notice, socialFeedEventId: '' }));
+    assert.throws(() => page({ ...notice, reaction: 'heart' }));
+    assert.throws(() => page({ ...notice, presentation: 'actionable' }));
+  }
+});

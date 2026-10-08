@@ -220,7 +220,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { query: { cursor, limit: 25 } },
     }),
     notifications: (cursor?: string) => authenticatedClient.GET('/v1/notifications', {
-      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true } },
+      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true, achievements: true } },
     }),
     notificationChannels: () => authenticatedClient.GET('/v1/me/notification-channels'),
     timerSubscription: (scope: TimerSubscriptionScope, subjectId: string) => authenticatedClient.GET('/v1/me/timer-subscriptions/{scope}/{subjectId}', { params: { path: { scope, subjectId } } }),
@@ -342,15 +342,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { requestId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     getNotification: (notificationId: string) => authenticatedClient.GET('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true } },
     }),
     markNotificationRead: (notificationId: string) => authenticatedClient.PATCH('/v1/notifications/{notificationId}/read', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true } },
     }),
     deleteNotification: (notificationId: string) => authenticatedClient.DELETE('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true } },
     }),
-    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true } } }),
+    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true, achievements: true } } }),
     ownershipTransferCandidates: (pathId: string, cursor?: string) => authenticatedClient.GET('/v1/paths/{pathId}/ownership-transfer-candidates', {
       params: { path: { pathId }, query: { cursor, limit: 25 } },
     }),
@@ -454,7 +454,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       body,
     }),
     deleteActivity: (pathId: string, activityId: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/paths/{pathId}/activities/{activityId}', {
-      params: { path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
+      params: { query: { achievements: true }, path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     activity: (pathId: string, activityId: string) => authenticatedClient.GET('/v1/paths/{pathId}/activities/{activityId}', {
       params: { path: { pathId, activityId } },

@@ -323,10 +323,17 @@ func (repository *SocialRelationshipRepository) removeSocialPairRelationships(tx
 }
 
 func suppressBlockedPairPush(tx *gorm.DB, first, second string, at time.Time) error {
+	achievementIDs := tx.Table("notification_models AS notice").Select("notice.id").
+		Joins("JOIN path_models path ON path.id = notice.path_id").
+		Where("notice.kind IN ('interval_goal_achieved','overall_target_achieved') AND ((notice.recipient_user_id = ? AND path.owner_user_id = ?) OR (notice.recipient_user_id = ? AND path.owner_user_id = ?))", first, second, second, first)
+	if err := tx.Table("notification_models").Where("id IN (?) AND deleted_at IS NULL", achievementIDs).
+		Update("deleted_at", gorm.Expr("GREATEST(created_at, ?)", at)).Error; err != nil {
+		return err
+	}
 	notificationIDs := tx.Table("notification_models").Select("id").Where(
 		"(recipient_user_id = ? AND actor_user_id = ?) OR (recipient_user_id = ? AND actor_user_id = ?)",
 		first, second, second, first,
-	)
+	).Or("id IN (?)", achievementIDs)
 	pending := tx.Table("notification_push_delivery_models AS pending").Select("1").
 		Where("pending.notification_id = notification_push_outbox_models.notification_id").
 		Where("pending.delivered_at IS NULL AND pending.suppressed_at IS NULL AND pending.permanently_failed_at IS NULL")

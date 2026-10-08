@@ -82,7 +82,10 @@ func (w PushDeliveryWorker) process(ctx context.Context, delivery ports.PushDeli
 		}
 		return err
 	}
-	if projection.Kind == pathapp.NotificationTimerStarted {
+	if projection.Kind.IsAchievement() && projection.Actor.UserID != delivery.RecipientUserID {
+		return w.terminal(ctx, delivery, ports.PushDeliverySuppressed, "notification_ineligible")
+	}
+	if projection.Kind == pathapp.NotificationTimerStarted || projection.Kind.IsAchievement() {
 		if w.Authorizer == nil {
 			return errPushDeliveryProcessing
 		}
@@ -283,6 +286,25 @@ func localizedPushMessage(
 		DeviceToken: delivery.Token, NotificationID: delivery.NotificationID, RecipientUserID: delivery.RecipientUserID,
 	}
 	switch {
+	case projection.Kind.IsAchievement() && projection.Presentation == pathapp.NotificationInformational:
+		message.Presentation = ports.PushInformational
+		if delivery.Locale == "es" {
+			message.Title = "Meta alcanzada"
+			if projection.Kind == pathapp.NotificationIntervalGoalAchieved {
+				message.Body = fmt.Sprintf("Alcanzaste tu meta del período en %s.", projection.PathName)
+			} else {
+				message.Body = fmt.Sprintf("Alcanzaste tu objetivo total en %s.", projection.PathName)
+			}
+		} else if delivery.Locale == "en" {
+			message.Title = "Goal achieved"
+			if projection.Kind == pathapp.NotificationIntervalGoalAchieved {
+				message.Body = fmt.Sprintf("You reached your interval goal on %s.", projection.PathName)
+			} else {
+				message.Body = fmt.Sprintf("You reached your overall target on %s.", projection.PathName)
+			}
+		} else {
+			return ports.PushMessage{}, false
+		}
 	case projection.Kind == pathapp.NotificationTimerStarted && projection.Presentation == pathapp.NotificationInformational:
 		message.Presentation = ports.PushInformational
 		if delivery.Locale == "es" {
@@ -530,6 +552,7 @@ func validPushNotificationSubject(projection pathapp.InvitationNotificationProje
 	timer := projection.Kind == pathapp.NotificationTimerStarted && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.InvitationID == "" && projection.OfferedRole == "" && projection.OwnershipTransferID == "" &&
 		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""
+	achievement := projection.Kind.IsAchievement() && projection.Presentation == pathapp.NotificationInformational && pathIDPresent && projection.SocialFeedEventID != "" && strings.TrimSpace(projection.SocialFeedEventID) == projection.SocialFeedEventID && projection.CommentID == "" && projection.Reaction == "" && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == "" && projection.FollowRequestID == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""
 	noNudgeContent := projection.NudgeContent == (socialdomain.NudgeContent{})
-	return ((invitation || transfer || deletion || leave || removal || visibility || reaction || comment || heart || timer) && noNudgeContent) || nudge
+	return ((invitation || transfer || deletion || leave || removal || visibility || reaction || comment || heart || timer || achievement) && noNudgeContent) || nudge
 }

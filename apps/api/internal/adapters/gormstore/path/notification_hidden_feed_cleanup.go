@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var hiddenFeedTargetNotificationKinds = []string{"practice_reaction", "practice_comment", "comment_heart"}
+var hiddenFeedTargetNotificationKinds = []string{"practice_reaction", "practice_comment", "comment_heart", "interval_goal_achieved", "overall_target_achieved"}
 
 func hiddenFeedTargetNotificationKind(kind string) bool {
 	for _, allowed := range hiddenFeedTargetNotificationKinds {

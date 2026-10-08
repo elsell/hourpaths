@@ -113,6 +113,7 @@ type UpdateActivityResult struct {
 }
 
 type DeleteActivityCommand struct {
+	Achievements                      bool
 	ActivityID, PathID, ParticipantID string
 	Idempotency                       ports.Idempotency
 	Audit                             audit.Event

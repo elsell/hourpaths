@@ -158,11 +158,14 @@ func createGoalAchievement(tx *gorm.DB, activity activitydomain.RecordedActivity
 	if err := tx.Create(&row).Error; err != nil {
 		return err
 	}
-	return tx.Table("social_feed_event_models").Create(map[string]any{
+	if err := tx.Table("social_feed_event_models").Create(map[string]any{
 		"id": "achievement:" + row.ID, "achievement_id": row.ID,
 		"participant_user_id": row.ParticipantUserID, "path_id": row.PathID,
 		"published_at": row.PublishedAt,
-	}).Error
+	}).Error; err != nil {
+		return err
+	}
+	return createAchievementNotification(tx, value)
 }
 
 func removeUnsupportedGoalAchievements(tx *gorm.DB, participantID, pathID string) ([]string, error) {

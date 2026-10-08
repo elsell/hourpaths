@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationachievement"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
@@ -110,7 +111,7 @@ func (r *Repository) DeleteActivity(ctx context.Context, command application.Del
 		if err := tx.Model(&activityModel{}).Where("participant_id = ? AND path_id = ?", command.ParticipantID, command.PathID).Count(&sessionCount).Error; err != nil {
 			return err
 		}
-		unreadNotificationCount, err := activityDeletionVisibleUnreadNotificationCount(tx, command.ParticipantID, command.Audit.OccurredAt)
+		unreadNotificationCount, err := activityDeletionVisibleUnreadNotificationCount(tx, command.ParticipantID, command.Audit.OccurredAt, command.Achievements)
 		if err != nil {
 			return err
 		}
@@ -163,15 +164,20 @@ const activityDeletionVisibleNotificationPredicate = `notification_models.delete
   (notification_models.kind <> 'path_ownership_transfer_received' OR (path_ownership_transfer_models.accepted_at IS NULL AND path_ownership_transfer_models.declined_at IS NULL AND path_ownership_transfer_models.canceled_at IS NULL AND path_ownership_transfer_models.expired_at IS NULL AND path_ownership_transfer_models.expires_at > CURRENT_TIMESTAMP)) AND
   (notification_models.kind <> 'follow_request_received' OR (follow_request_models.accepted_at IS NULL AND follow_request_models.rejected_at IS NULL AND follow_request_models.canceled_at IS NULL))`
 
-func activityDeletionVisibleUnreadNotificationCount(tx *gorm.DB, recipientUserID string, snapshot time.Time) (int64, error) {
+func activityDeletionVisibleUnreadNotificationCount(tx *gorm.DB, recipientUserID string, snapshot time.Time, achievements ...bool) (int64, error) {
 	var count int64
-	err := tx.Table("notification_models").
+	query := tx.Table("notification_models").
 		Joins("LEFT JOIN path_invitation_models ON path_invitation_models.id = notification_models.path_invitation_id").
 		Joins("LEFT JOIN path_ownership_transfer_models ON path_ownership_transfer_models.id = notification_models.path_ownership_transfer_id").
 		Joins("LEFT JOIN follow_request_models ON follow_request_models.id = notification_models.follow_request_id").
 		Joins("JOIN user_models AS notification_actor ON notification_actor.id = notification_models.actor_user_id").
-		Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND notification_models.read_at IS NULL AND "+activityDeletionVisibleNotificationPredicate, recipientUserID, snapshot).
-		Count(&count).Error
+		Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND notification_models.read_at IS NULL AND "+activityDeletionVisibleNotificationPredicate, recipientUserID, snapshot)
+	if len(achievements) == 0 || !achievements[0] {
+		query = query.Where("notification_models.kind NOT IN ('interval_goal_achieved','overall_target_achieved')")
+	} else {
+		query = query.Joins("LEFT JOIN path_models ON path_models.id = notification_models.path_id").Joins("LEFT JOIN social_feed_event_models notification_event ON notification_event.id = notification_models.social_feed_event_id").Where(notificationachievement.VisiblePredicate)
+	}
+	err := query.Count(&count).Error
 	return count, err
 }
 

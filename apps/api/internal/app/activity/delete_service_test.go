@@ -38,6 +38,20 @@ func TestDeleteActivityAuthorizesTrackingAndBuildsOwnerScopedAtomicCommand(t *te
 	}
 }
 
+func TestDeleteActivityNegotiatesAchievementCountAndReplayIdentity(t *testing.T) {
+	var commands []DeleteActivityCommand
+	service := testService(testRepository{deletes: &commands, deleteResult: DeleteActivityResult{RemovedFeedEventIDs: []string{"practice:activity-1"}}})
+	for _, enabled := range []bool{false, true} {
+		_, err := service.DeleteActivity(WithAchievementNotificationRepresentation(context.Background(), enabled), "Bearer valid", "path-1", "activity-1", "delete-request-001")
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(commands) != 2 || commands[0].Achievements || !commands[1].Achievements || string(commands[0].Idempotency.RequestHash) == string(commands[1].Idempotency.RequestHash) {
+		t.Fatalf("representation or replay identity not isolated: %+v", commands)
+	}
+}
+
 func TestDeleteActivityPreservesReplayAndAuditsOpaqueNotFound(t *testing.T) {
 	service := testService(testRepository{deleteResult: DeleteActivityResult{AccumulatedSeconds: 7, SessionCount: 2, UnreadNotificationCount: 5, RemovedFeedEventIDs: []string{"practice:activity-1"}, Replayed: true}})
 	result, err := service.DeleteActivity(context.Background(), "Bearer valid", "path-1", "activity-1", "delete-request-001")
