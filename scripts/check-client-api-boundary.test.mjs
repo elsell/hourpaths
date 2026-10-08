@@ -34,6 +34,7 @@ const protectedPaths = [
   'apps/web/src/routes/callback/+page.svelte',
   'apps/web/src/lib/studio/presentation/avatar.tsx',
   'apps/mobile/src/provider-auth.ts',
+  'apps/mobile/src/provider-identity-settings.ts',
   'apps/mobile/src/provider-auth-state.ts',
   'apps/mobile/src/provider-discovery.ts',
   'apps/mobile/src/push-notifications-native.ts',
