@@ -1,44 +1,18 @@
 import * as AuthSession from 'expo-auth-session';
-import { ProviderIdentities, apiProviderIdentities, AccountRecovery, apiAccountRecovery, type AccountRecoveryIntent, type IdentityLinkChallenge, type IdentityLinkIntent, type ProviderSettingsService } from '@hourpaths/client-core';
+import { ephemeralProviderSettings, apiProviderIdentities, AccountRecovery, apiAccountRecovery, type AccountRecoveryIntent, type IdentityLinkChallenge } from '@hourpaths/client-core';
 
 /** Linking uses an independent PKCE request and never exchanges/replaces the
  * application session. A process restart cancels the local attempt safely. */
 export function nativeProviderSettings(options: {
   apiURL: string; issuer: string; clientId: string;
   current(): { owner: string; token: string } | null;
-}): ProviderSettingsService {
-  let pending: IdentityLinkIntent | null = null;
-  let busy = false;
-  const service = new ProviderIdentities({
-    currentOwner: () => options.current()?.owner ?? null,
+}) {
+  return ephemeralProviderSettings({
+    current: options.current,
     now: () => Date.now(),
-    pending: {
-      async read() { return pending; },
-      async save(intent) { pending = intent; },
-      async remove(owner, id) { if (pending?.owner === owner && pending.id === id) pending = null; },
-    },
-    remote: apiProviderIdentities(options.apiURL, () => options.current()?.token ?? null),
+    remote: token => apiProviderIdentities(options.apiURL, () => token),
+    authenticate: (intent, current) => authenticateProviderProof(options, intent, current),
   });
-  return {
-    owner: () => options.current()?.owner ?? null,
-    list: () => service.list(),
-    unlink: (provider, owner) => service.unlink(provider, owner),
-    async link(provider) {
-      if (busy) throw new Error('identity_link_busy');
-      busy = true;
-      let intent: IdentityLinkIntent | null = null;
-      try {
-        intent = await service.begin(provider);
-        const active = intent;
-        const proof = await authenticateProviderProof(options, active, () => options.current()?.owner === active.owner);
-        if (!proof) { await service.cancel(active); return; }
-        await service.complete(proof, { owner: active.owner, id: active.id });
-      } catch (error) {
-        if (intent) await service.cancel(intent);
-        throw error;
-      } finally { busy = false; }
-    },
-  };
 }
 
 /** Both account operations use the same ephemeral browser and independent PKCE

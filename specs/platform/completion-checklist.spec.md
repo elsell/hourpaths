@@ -98,7 +98,7 @@ weakening approval or check requirements.
 
 Home hydration merged in PR #109 as `3c7a173` after all five gates. Real Chromium verified 11 rendered Paths, nine retained history entries, and one timer read per Path without API or page errors. Two independent browser ledgers converged on the newer online edit and retained the losing offline revision, including recovery from rate limiting. Remembered sessions merged in PR #108 as `347cd27`. Native device acceptance remains an area 2 closure requirement.
 
-The active implementation slice is explicit duplicate-account recovery (area 4); ordinary provider management has merged and its release remains in progress. Account deletion (area 3) remains open for physical-device and applicable external-retention acceptance. [PR #110](https://github.com/elsell/hourpaths/pull/110) merged as `b93b191` through the immutable checked gate on October 8. All five candidate gates passed. Migration 75 passed real PostgreSQL eligibility/privilege checks; encrypted backup replay, journal restart/concurrency, and live authorization cleanup passed. The final critic's confirmed blockers were resolved. Production deployment is verified below; native-device acceptance remains open.
+The active implementation slice is native provider-link cancellation across authentication lifetimes (area 4). Duplicate-account recovery merged in PR #116; its release remains in progress. Account deletion (area 3) remains open for physical-device and applicable external-retention acceptance. [PR #110](https://github.com/elsell/hourpaths/pull/110) merged as `b93b191` through the immutable checked gate on October 8. All five candidate gates passed. Migration 75 passed real PostgreSQL eligibility/privilege checks; encrypted backup replay, journal restart/concurrency, and live authorization cleanup passed. The final critic's confirmed blockers were resolved. Production deployment is verified below; native-device acceptance remains open.
 
 Browser acceptance on candidate `069ae6b` completed approved deletion of an isolated disposable account: the review identified the intended account, confirmation removed its account/identity rows, local cleanup returned to sign-in, and reload stayed signed out. A subsequent provider sign-in showed fresh onboarding and created a different provisional account ID; the old account remained absent. This is web acceptance, not physical-device evidence.
 
@@ -236,6 +236,19 @@ group ([Apple status](https://github.com/elsell/hourpaths/actions/runs/378232256
 the publisher read back and verified its release notes. Android internal
 publication succeeded in [workflow 37822583347](https://github.com/elsell/hourpaths/actions/runs/37822583347), committing version code 291 with release notes. Device and real-provider
 acceptance remain separate from store availability.
+
+[PR #116](https://github.com/elsell/hourpaths/pull/116) merged as `fbae5f0`
+after all five candidate gates passed. Explicit recovery now verifies both
+identities, preserves consumed-proof replay protection and original session
+expiry, and retires the provisional account atomically. PostgreSQL race and
+audit-failure checks, signed OIDC boundary checks, shared client lifecycle
+checks, and rendered Studio recovery acceptance passed. Release and actual
+provider/device acceptance remain pending.
+
+The next bounded slice invalidates pending native provider links on authentication
+lifetime changes, including same-owner reauthentication. A controlled held-proof
+check reproduced the previous failure; the fix also preserves routine credential
+rotation and prevents old attempts from clearing newer admission.
 
 Remaining closure criteria:
 1. Verify signed mobile availability and both providers on both clients against
