@@ -20,6 +20,7 @@ func newPushRuntime(
 	db *gorm.DB,
 	cfg config.Config,
 	clock ports.Clock,
+	authorizer ports.Authorizer,
 ) (*gormstore.PushRepository, pushapp.PushDeliveryWorker, error) {
 	repository, err := gormstore.NewPushRepository(db, []byte(cfg.PushTokenKey))
 	if err != nil {
@@ -30,7 +31,7 @@ func newPushRuntime(
 		return nil, pushapp.PushDeliveryWorker{}, err
 	}
 	return repository, pushapp.PushDeliveryWorker{
-		Repository: repository, Provider: provider, Notifications: pathstore.New(db),
+		Repository: repository, Provider: provider, Notifications: pathstore.New(db), Authorizer: authorizer,
 		Clock: clock, WorkerID: uuid.NewString(),
 		Lease: 30 * time.Second, ReceiptDelay: 15 * time.Minute,
 		BaseRetryDelay: time.Minute, MaxRetryDelay: time.Hour,

@@ -35,7 +35,7 @@ export type TrackingOutcome = { activity?: RetainedActivity | null; serverTimerI
   kind: 'rejected'; reason: TrackingRejection; disclosePath: boolean; savedSeconds?: number; discardedSeconds?: number;
 });
 export interface TrackingSync {
-  send(owner: string, operation: TrackingOperation): Promise<TrackingOutcome>;
+  send(owner: string, operation: TrackingOperation, stillRunning?: boolean): Promise<TrackingOutcome>;
   sendActivity?(owner: string, operation: RecordedActivityOperation): Promise<RecordedActivityOutcome>;
 }
 export interface TrackingNotice { id: string; reason: TrackingRejection | 'subsecond'; subject?: 'activity'; pathId?: string; savedSeconds?: number; discardedSeconds?: number }
@@ -159,7 +159,10 @@ export class OfflineTracking {
         await this.change(state => settleRecordedActivity(state, recorded, result));
         continue;
       }
-      const outcome = await sync.send(this.owner, copy(operation));
+      // Current device state is delivery context, not a rewrite of the durable
+      // operation. Completed sessions still replay causally, without a late alert.
+      const stillRunning = operation.kind === 'start' && snapshot.timers.some(timer => timer.id === operation.timerId);
+      const outcome = await sync.send(this.owner, copy(operation), stillRunning);
       if (this.disposed) return; // Its stable identity makes a later retry safe.
       const archiveStopId = outcome.mustStop ? this.newId() : '';
       const archiveEnd = outcome.mustStop ? new Date(this.now()).toISOString() : '';

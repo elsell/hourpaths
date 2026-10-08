@@ -1,3 +1,4 @@
+import type { TimerSubscriptionsRepository } from '@hourpaths/client-core';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { PushPermission } from '../push-notifications';
@@ -11,6 +12,7 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  timerSubscriptions: TimerSubscriptionsRepository;
   providers?: ProviderSettingsService;
   deleteAccount?: () => void;
   displayName: string;
@@ -36,6 +38,7 @@ function emitChange() {
 }
 
 export function SettingsPresentationSource({
+  timerSubscriptions,
   providers,
   deleteAccount,
   displayName,
@@ -52,6 +55,8 @@ export function SettingsPresentationSource({
   updateNotificationChannel,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const timerSubscriptionsRef = useRef(timerSubscriptions);
+  timerSubscriptionsRef.current = timerSubscriptions;
   const providersRef = useRef(providers);
   providersRef.current = providers;
   const deleteAccountRef = useRef(deleteAccount);
@@ -79,7 +84,11 @@ export function SettingsPresentationSource({
     const assertActive = () => {
       if (!active || !isCurrentRef.current()) throw new Error('settings_presentation_superseded');
     };
-    const presentation = {
+    const presentation: SettingsPresentation = {
+      timerSubscriptions: {
+        get: subject => { assertActive(); return timerSubscriptionsRef.current.get(subject); },
+        update: (subject, value, key) => { assertActive(); return timerSubscriptionsRef.current.update(subject, value, key); },
+      },
       providers: providers ? {
         owner: () => { assertActive(); return providersRef.current!.owner(); },
         list: () => { assertActive(); return providersRef.current!.list(); },

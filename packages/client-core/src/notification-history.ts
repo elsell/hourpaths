@@ -86,6 +86,12 @@ type PathVisibilityChangedNotification = PathNotificationBase & Readonly<{
   pathVisibility: 'private' | 'followers' | 'public';
 }>;
 
+type TimerStartedNotification = PathNotificationBase & Readonly<{
+  type: 'timer_started';
+  presentation: 'informational';
+  pathId: string;
+}>;
+
 type PracticeReactionNotification = PathNotificationBase & Readonly<{
   type: 'practice_reaction';
   presentation: 'informational';
@@ -132,6 +138,7 @@ export type NotificationHistoryItem =
   | PathMemberAccessNotification
   | PathVisibilityChangedNotification
   | PracticeReactionNotification
+  | TimerStartedNotification
   | PracticeCommentNotification
   | NudgeNotification
   | SocialNotification;
@@ -177,6 +184,7 @@ export type NotificationPresentationMessageKey =
   | 'notification.pathMemberRemoved.participant'
   | 'notification.pathMemberRemoved.supporter'
   | 'notification.pathVisibilityChanged'
+  | 'notification.timerStarted'
   | 'notification.newFollower'
   | 'notification.followRequestReceived'
   | 'notification.followRequestAccepted'
@@ -204,6 +212,7 @@ const ownershipTransferNotificationKeys = [...notificationBaseKeys, 'ownershipTr
 const pathDeletionNotificationKeys = [...notificationBaseKeys, 'pathName'].sort();
 const pathMemberAccessNotificationKeys = [...notificationBaseKeys, 'offeredRole', 'pathId', 'pathName'].sort();
 const pathVisibilityChangedNotificationKeys = [...notificationBaseKeys, 'pathId', 'pathName', 'pathVisibility'].sort();
+const timerStartedNotificationKeys = [...notificationBaseKeys, 'pathId', 'pathName'].sort();
 const newFollowerNotificationKeys = [...notificationBaseKeys].sort();
 const followRequestNotificationKeys = [...notificationBaseKeys, 'followRequestId'].sort();
 const practiceReactionNotificationKeys = [
@@ -324,6 +333,11 @@ function validatedNotification(value: unknown): PathInvitationNotification | und
   }
 
   if (!validText(record.pathId) || !validText(record.pathName)) return undefined;
+
+  if (record.type === 'timer_started') {
+    if (record.presentation !== 'informational' || !hasExactKeys(record, timerStartedNotificationKeys)) return undefined;
+    return Object.freeze({ id: record.id, type: 'timer_started', presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName });
+  }
 
   if (record.type === 'nudge_received') {
     const content = validatedNudgeContent(record.content);
@@ -524,6 +538,8 @@ export function notificationPresentationMessageKey(
   notification: PathInvitationNotification,
 ): NotificationPresentationMessageKey {
   switch (notification.type) {
+  case 'timer_started':
+    return 'notification.timerStarted';
   case 'new_follower':
     return 'notification.newFollower';
   case 'follow_request_received':

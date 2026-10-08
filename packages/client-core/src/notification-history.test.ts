@@ -614,3 +614,11 @@ test('notification mutations fail closed on malformed results and unknown local 
     /unknown notification/,
   );
 });
+
+test('timer-start history maps a readable Path target and rejects foreign subjects', () => {
+  const timer = { id: 'timer-notice', type: 'timer_started', presentation: 'informational', read: false, createdAt: received.createdAt, actor: received.actor, pathId: received.pathId, pathName: received.pathName };
+  const state = mergeNotificationHistoryPage({ items: [], nextCursor: '', unreadCount: 0 }, { items: [timer], nextCursor: '', unreadCount: 1 }, '');
+  assert.equal(state.items[0]?.type, 'timer_started');
+  assert.equal(notificationPresentationMessageKey(state.items[0]!), 'notification.timerStarted');
+  assert.throws(() => mergeNotificationHistoryPage({ items: [], nextCursor: '', unreadCount: 0 }, { items: [{ ...timer, invitationId: 'foreign' }], nextCursor: '', unreadCount: 1 }, ''));
+});

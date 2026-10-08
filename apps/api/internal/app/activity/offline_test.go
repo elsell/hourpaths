@@ -34,7 +34,7 @@ func (f *offlineMemory) SynchronizeTimer(_ context.Context, c OfflineTimerComman
 }
 func TestOfflineReplayPreservesDeviceOccurrenceAndBindsImmutableContent(t *testing.T) {
 	repository := &offlineMemory{}
-	input := OfflineTimerInput{TimerID: "device-timer", Kind: "start", StartedAt: testNow.Add(-time.Hour), OccurrenceTimeZone: "Asia/Tokyo"}
+	input := OfflineTimerInput{StillRunning: true, TimerID: "device-timer", Kind: "start", StartedAt: testNow.Add(-time.Hour), OccurrenceTimeZone: "Asia/Tokyo"}
 	first := testService(testRepository{})
 	first.Repository = repository
 	result, err := first.SynchronizeTimer(context.Background(), "Bearer valid", "path-1", "offline-request-0001", input)
@@ -42,12 +42,13 @@ func TestOfflineReplayPreservesDeviceOccurrenceAndBindsImmutableContent(t *testi
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 	command := repository.commands["user-1:offline-request-0001"]
-	if command.Timer.ParticipantID != "user-1" || !command.Audit.Valid() || command.Audit.TargetID != input.TimerID {
+	if !command.NotifyStart || command.Timer.ParticipantID != "user-1" || !command.Audit.Valid() || command.Audit.TargetID != input.TimerID {
 		t.Fatalf("command=%+v", command)
 	}
 	retry := testService(testRepository{})
 	retry.Repository = repository
 	retry.Clock = testClock{now: testNow.Add(time.Minute)}
+	input.StillRunning = false // Current device state must not rewrite durable replay identity.
 	result, err = retry.SynchronizeTimer(context.Background(), "Bearer valid", "path-1", "offline-request-0001", input)
 	if err != nil || !result.Replayed || len(repository.commands) != 1 {
 		t.Fatalf("replay=%+v err=%v", result, err)

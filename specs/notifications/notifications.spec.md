@@ -479,6 +479,34 @@ Status: Approved for implementation
   directions, including when they remain participants in the same path.
 - A participant must not receive a notification for starting their own timer.
 - Timer-start notifications must support operating-system push delivery.
+- An offline timer must create a start notification only when synchronization
+  establishes that it is still running. A session completed offline must appear
+  in activity history without a late start notification. This policy was approved
+  on October 8, 2026.
+- Replaying the same online or offline start must not create another notification
+  or another push delivery for the same recipient and timer.
+- The global Tracking activity channel must override both subscription sources.
+  Disabling one source must not disable an independently eligible second source.
+- Subscription changes must persist for the signed-in user across native and web
+  clients. Another user's settings must never be readable or writable through
+  those controls. Concurrent edits must reject stale revisions without silently
+  overwriting newer preferences.
+
+### Timer-start delivery acceptance
+
+- With a public Path, an opted-in follower receives one notice when its participant
+  starts a timer; an otherwise identical follower with the default preference
+  receives none.
+- A shared Path participant receives one notice by default without following the
+  starter. Disabling that Path's subscription prevents subsequent participant
+  notices. Supporter membership alone does not grant this participant default.
+- A recipient subscribed through both sources receives one notice. Blocking,
+  loss of activity visibility, or disabling Tracking activity prevents delivery.
+- Native and Studio profile/Path controls display the same persisted preference
+  after reload and sign-in on a second client.
+- A still-running offline timer creates at most one notice after synchronization;
+  a completed offline session creates none, including after repeated replay.
+
 
 ## Exact event behavior
 

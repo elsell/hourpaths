@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/activity"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
@@ -101,6 +102,10 @@ func (r *Repository) StartTimer(ctx context.Context, command application.StartTi
 	var result application.StartTimerResult
 	var activeTimerConflict bool
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := timerstore.Lock(tx, command.Timer.PathID); err != nil {
+			return err
+		}
+
 		if err := lockActivePathAt(tx, command.Timer.PathID, command.Timer.ParticipantID, command.Timer.StartedAt); err != nil {
 			return err
 		}
@@ -168,6 +173,9 @@ func (r *Repository) StartTimer(ctx context.Context, command application.StartTi
 			return nil
 		}
 		if err := registerOnlineTimer(tx, *fromTimer(canonicalTimer)); err != nil {
+			return err
+		}
+		if err := timerstore.Create(tx, canonicalTimer, command.NotificationRecipients, command.Audit.OccurredAt); err != nil {
 			return err
 		}
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {

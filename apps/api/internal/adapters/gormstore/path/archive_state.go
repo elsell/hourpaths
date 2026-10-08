@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"strings"
 
 	activitystore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/activity"
@@ -21,6 +22,10 @@ func (r *Repository) SetArchiveState(ctx context.Context, command application.Se
 	}
 	var result application.SetArchiveStateResult
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := timerstore.Lock(tx, string(command.Path.ID)); err != nil {
+			return err
+		}
+
 		reservation := idempotencyModel{
 			PrincipalID: command.Idempotency.PrincipalID,
 			Operation:   command.Idempotency.Operation,
@@ -88,6 +93,10 @@ func (r *Repository) SetArchiveState(ctx context.Context, command application.Se
 		if updated.RowsAffected != 1 {
 			return ports.ErrNotFound
 		}
+		if err := timerstore.Retire(tx, "", string(command.Path.ID), command.Path.UpdatedAt); err != nil {
+			return err
+		}
+
 		if err := tx.Create(fromAudit(command.Audit)).Error; err != nil {
 			return err
 		}

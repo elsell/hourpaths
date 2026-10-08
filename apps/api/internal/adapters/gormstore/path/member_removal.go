@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"strings"
 	"time"
 
@@ -225,6 +226,10 @@ func (r *Repository) RemoveMember(ctx context.Context, command application.Remov
 	}
 	var result application.RemoveMemberResult
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := timerstore.Lock(tx, string(command.PathID)); err != nil {
+			return err
+		}
+
 		resourceID := removalResourceID(command.PathID, command.TargetUserID)
 		reservation := idempotencyModel{PrincipalID: command.ActorUserID, Operation: command.Idempotency.Operation, Key: command.Idempotency.Key, RequestHash: append([]byte(nil), command.Idempotency.RequestHash...), ResourceID: resourceID, CreatedAt: command.RemovedAt}
 		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&reservation)
@@ -260,6 +265,9 @@ func (r *Repository) RemoveMember(ctx context.Context, command application.Remov
 			return err
 		}
 		if err := tx.Model(&outbox).Update("locked_until", gorm.Expr("CURRENT_TIMESTAMP + (? * INTERVAL '1 millisecond')", command.AuthorizationLease.Milliseconds())).Error; err != nil {
+			return err
+		}
+		if err := timerstore.Retire(tx, "", string(command.PathID), command.RemovedAt); err != nil {
 			return err
 		}
 		if err := retireInaccessiblePathTargetNotifications(tx, string(command.PathID), command.TargetUserID, command.RemovedAt); err != nil {
@@ -310,6 +318,10 @@ func (r *Repository) ChangeMemberRole(ctx context.Context, command application.C
 	}
 	var result application.ChangeMemberRoleResult
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := timerstore.Lock(tx, string(command.PathID)); err != nil {
+			return err
+		}
+
 		resourceID := removalResourceID(command.PathID, command.TargetUserID)
 		reservation := idempotencyModel{PrincipalID: command.ActorUserID, Operation: command.Idempotency.Operation, Key: command.Idempotency.Key, RequestHash: append([]byte(nil), command.Idempotency.RequestHash...), ResourceID: resourceID, CreatedAt: command.ChangedAt}
 		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&reservation)
@@ -339,6 +351,9 @@ func (r *Repository) ChangeMemberRole(ctx context.Context, command application.C
 			return ports.ErrNotFound
 		}
 
+		if err := timerstore.Retire(tx, "", string(command.PathID), command.ChangedAt); err != nil {
+			return err
+		}
 		changes := []ports.AuthorizationChange{
 			{ID: command.NewID(), ResourceType: "path", ResourceID: string(command.PathID), Relation: changed.PreviousRole, SubjectType: "user", SubjectID: command.TargetUserID, OwnerUserID: changed.OwnerUserID, ActorUserID: command.ActorUserID, Operation: ports.AuthorizationDelete, LockedBy: command.AuthorizationWorker, Lease: command.AuthorizationLease},
 			{ID: command.NewID(), ResourceType: "path", ResourceID: string(command.PathID), Relation: changed.ResultingRole, SubjectType: "user", SubjectID: command.TargetUserID, OwnerUserID: changed.OwnerUserID, ActorUserID: command.ActorUserID, Operation: ports.AuthorizationTouch, LockedBy: command.AuthorizationWorker, Lease: command.AuthorizationLease},

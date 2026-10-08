@@ -23,6 +23,7 @@ type PushDeliveryWorker struct {
 	Repository     ports.PushRepository
 	Provider       ports.PushProvider
 	Notifications  PushNotificationResolver
+	Authorizer     ports.Authorizer
 	Clock          ports.Clock
 	WorkerID       string
 	Lease          time.Duration
@@ -69,7 +70,7 @@ func (w PushDeliveryWorker) process(ctx context.Context, delivery ports.PushDeli
 		return err
 	}
 	if !eligible {
-		return nil
+		return w.suppressIneligible(ctx, delivery)
 	}
 	if delivery.ProviderTicket != "" {
 		return w.pollReceipt(ctx, delivery)
@@ -80,6 +81,18 @@ func (w PushDeliveryWorker) process(ctx context.Context, delivery ports.PushDeli
 			return w.terminal(ctx, delivery, ports.PushDeliverySuppressed, "notification_ineligible")
 		}
 		return err
+	}
+	if projection.Kind == pathapp.NotificationTimerStarted {
+		if w.Authorizer == nil {
+			return errPushDeliveryProcessing
+		}
+		allowed, err := w.Authorizer.Check(ctx, "path", string(projection.PathID), "view", delivery.RecipientUserID)
+		if err != nil {
+			return err
+		}
+		if !allowed {
+			return w.terminal(ctx, delivery, ports.PushDeliverySuppressed, "notification_ineligible")
+		}
 	}
 	message, ok := localizedPushMessage(delivery, projection)
 	if !ok {
@@ -99,12 +112,22 @@ func (w PushDeliveryWorker) process(ctx context.Context, delivery ports.PushDeli
 		return err
 	}
 	if !handedOff {
-		return nil
+		return w.suppressIneligible(ctx, delivery)
 	}
 	if providerErr != nil {
 		return w.handleProviderError(ctx, delivery, providerErr)
 	}
 	return w.handleTicket(ctx, delivery, ticket)
+}
+
+// A concurrent opt-out may already have retired the lease. Otherwise retire
+// it here so re-enabling a subscription never revives stale queued alerts.
+func (w PushDeliveryWorker) suppressIneligible(ctx context.Context, delivery ports.PushDelivery) error {
+	err := w.terminal(ctx, delivery, ports.PushDeliverySuppressed, "notification_ineligible")
+	if errors.Is(err, ports.ErrNotFound) {
+		return nil
+	}
+	return err
 }
 
 func (w PushDeliveryWorker) handleTicket(ctx context.Context, delivery ports.PushDelivery, ticket ports.PushTicket) error {
@@ -260,6 +283,17 @@ func localizedPushMessage(
 		DeviceToken: delivery.Token, NotificationID: delivery.NotificationID, RecipientUserID: delivery.RecipientUserID,
 	}
 	switch {
+	case projection.Kind == pathapp.NotificationTimerStarted && projection.Presentation == pathapp.NotificationInformational:
+		message.Presentation = ports.PushInformational
+		if delivery.Locale == "es" {
+			message.Title = "Temporizador iniciado"
+			message.Body = fmt.Sprintf("%s empezó a registrar tiempo en %s.", projection.Actor.DisplayName, projection.PathName)
+		} else if delivery.Locale == "en" {
+			message.Title = "Timer started"
+			message.Body = fmt.Sprintf("%s started tracking on %s.", projection.Actor.DisplayName, projection.PathName)
+		} else {
+			return ports.PushMessage{}, false
+		}
 	case projection.Kind == pathapp.NotificationPathInvitationReceived &&
 		projection.Presentation == pathapp.NotificationActionable:
 		message.Presentation = ports.PushActionable
@@ -493,6 +527,9 @@ func validPushNotificationSubject(projection pathapp.InvitationNotificationProje
 	nudge := projection.Kind == pathapp.NotificationNudgeReceived && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.NudgeContent.Valid() && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == "" &&
 		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == ""
+	timer := projection.Kind == pathapp.NotificationTimerStarted && projection.Presentation == pathapp.NotificationInformational &&
+		pathIDPresent && projection.InvitationID == "" && projection.OfferedRole == "" && projection.OwnershipTransferID == "" &&
+		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""
 	noNudgeContent := projection.NudgeContent == (socialdomain.NudgeContent{})
-	return ((invitation || transfer || deletion || leave || removal || visibility || reaction || comment || heart) && noNudgeContent) || nudge
+	return ((invitation || transfer || deletion || leave || removal || visibility || reaction || comment || heart || timer) && noNudgeContent) || nudge
 }

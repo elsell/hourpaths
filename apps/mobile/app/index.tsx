@@ -1,3 +1,5 @@
+import { timerSubscriptionFromAPI, type TimerSubscriptionSubject, type TimerSubscriptionPreference } from '@hourpaths/client-core';
+import { TimerSubscriptionControl } from '../src/ui/timer-subscription-control';
 import { recoverNativeAccount } from '../src/provider-identity-settings';
 import { isValidSessionCredential } from '@hourpaths/client-core';
 import { nativeAccountDeletion } from '../src/offline/native-account-deletion';
@@ -4387,6 +4389,28 @@ export function HomeScreen() {
     }
   }
 
+  async function timerSubscriptionRequest(subject: TimerSubscriptionSubject, value?: TimerSubscriptionPreference, key?: string): Promise<TimerSubscriptionPreference> {
+    if (!session || destination?.kind !== 'home') throw new Error('timer_subscription_unavailable');
+    const currentSession = session;
+    const owner = destination.profile.id;
+    const generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === currentSession.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    const api = createSessionApiClient(apiURL, () => currentSession.token);
+    try {
+      const response = generatedResponse(await (value
+        ? api.updateTimerSubscription(subject.scope, subject.id, { enabled: value.enabled, expectedRevision: value.revision }, key!)
+        : api.timerSubscription(subject.scope, subject.id)));
+      if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+      const envelope = await response.json();
+      if (!current()) throw new Error('timer_subscription_superseded');
+      return timerSubscriptionFromAPI(envelope?.data);
+    } catch (cause) {
+      await handleNotificationOperationFailure(cause, currentSession, current);
+      throw cause;
+    }
+  }
+
   async function getNotificationChannels(): Promise<NotificationChannelPreference[]> {
     if (!session || destination?.kind !== 'home') throw new Error('nudge_channel_unavailable');
     const currentSession = session;
@@ -8382,6 +8406,7 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      timerSubscriptions={{ get: subject => timerSubscriptionRequest(subject), update: (subject, value, key) => timerSubscriptionRequest(subject, value, key) }}
       providers={providerSettings}
       displayName={ownedHomeDestination.profile.displayName}
       email={ownedHomeDestination.profile.email}
@@ -8555,6 +8580,7 @@ export function HomeScreen() {
           } satisfies PathMemberListState}
         /> : undefined}
       />
+      {selectedCapabilities.trackTime && !selectedPath.archivedAt ? <TimerSubscriptionControl key={[socialPresentationKey, selectedPath.id].join(':')} subject={{ scope: 'path', id: selectedPath.id }} i18n={i18n} /> : null}
       {pathLeaveBusy ? <StatusBanner text={i18n.t('pathLeave.leaving')} /> : null}
       {pathLeaveErrorKey ? <StatusBanner text={i18n.t(pathLeaveErrorKey)} tone="error" /> : null}
       {sharingPath && (selectedCapabilities.inviteMembers || selectedCapabilities.manageVisibility || selectedCapabilities.manageMembers) ? <PathShareSheet

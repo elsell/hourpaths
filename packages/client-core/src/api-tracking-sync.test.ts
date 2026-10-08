@@ -10,13 +10,13 @@ test('real HTTP replay retains identity and maps archive, authorization and fore
   let status = 200;
   let participant = 'alice';
   let identified = true;
-  const received: { key: string | undefined; body: unknown }[] = [];
+  const received: { key: string | undefined; body: unknown; running: string | undefined }[] = [];
   const server = createServer(async (request, response) => {
     assert.equal(request.url, '/v1/paths/guitar/offline-timer');
     assert.equal(request.headers.authorization, 'Bearer account-session');
     let body = '';
     for await (const part of request) body += part;
-    received.push({ key: request.headers['idempotency-key'] as string | undefined, body: JSON.parse(body) });
+    received.push({ key: request.headers['idempotency-key'] as string | undefined, body: JSON.parse(body), running: request.headers['x-hourpaths-timer-running'] as string | undefined });
     response.writeHead(status, { 'content-type': 'application/json' });
     response.end(JSON.stringify(status === 200 ? { data: {
       outcome: 'archived', terminal: true, mustStop: false, savedSeconds: 120, discardedSeconds: 180,
@@ -37,7 +37,7 @@ test('real HTTP replay retains identity and maps archive, authorization and fore
   const result = await sync.send('alice', operation);
   assert.equal(result.kind, 'rejected');
   assert.equal(result.activity?.owner, 'alice');
-  assert.deepEqual(received[0], { key: operation.operationId, body: {
+  assert.deepEqual(received[0], { key: operation.operationId, running: 'false', body: {
     timerId: 'timer', kind: 'stop', startedAt: operation.startedAt, endedAt: operation.endedAt, occurrenceTimeZone: operation.timeZone,
   } });
   participant = 'bob';
@@ -46,6 +46,10 @@ test('real HTTP replay retains identity and maps archive, authorization and fore
   await sync.send('alice', { ...operation, kind: 'correct', correctedStartedAt: '2026-10-01T11:59:00Z' });
   assert.deepEqual(received.at(-1)?.body, { timerId: operation.timerId, kind: 'correct', startedAt: operation.startedAt,
     correctedStartedAt: '2026-10-01T11:59:00Z', endedAt: operation.endedAt, occurrenceTimeZone: operation.timeZone });
+  await sync.send('alice', { ...operation, kind: 'start', endedAt: undefined }, true);
+  assert.equal(received.at(-1)?.running, 'true');
+  await sync.send('alice', { ...operation, kind: 'start', endedAt: undefined }, false);
+  assert.equal(received.at(-1)?.running, 'false');
   status = 503;
   await assert.rejects(sync.send('alice', operation), /temporarily_unavailable/);
   status = 404;

@@ -36,10 +36,13 @@ func (service *InvitationService) ListNotifications(
 	if !service.AuditRateLimiter.Allow(principal.UserID, now) {
 		return nil, "", 0, platformapp.ErrRateLimited
 	}
-	request := NotificationPageRequest{Limit: limit, Snapshot: now, EmojiReactions: notificationEmojiRepresentation(ctx)}
+	request := NotificationPageRequest{Limit: limit, Snapshot: now, TimerStarts: notificationTimerRepresentation(ctx), EmojiReactions: notificationEmojiRepresentation(ctx)}
 	cursorDomain := "path-notification"
 	if request.EmojiReactions {
 		cursorDomain = "path-notification-emoji"
+	}
+	if request.TimerStarts {
+		cursorDomain += "-timers"
 	}
 	if cursor != "" {
 		payload, decodeErr := shared.DecodeCursor(service.CursorSigningKey, cursor)
@@ -57,6 +60,13 @@ func (service *InvitationService) ListNotifications(
 	}
 	if !validNotificationPage(page, limit, request.Snapshot) {
 		return nil, "", 0, errInvalidInvitationDependencies
+	}
+	for _, item := range page.Items {
+		if err := service.authorizeTimerNotification(ctx, principal.UserID, item); err != nil {
+			// Never expose a partial page or unread count from a stale permission
+			// projection. Its next refresh must reconcile with authoritative access.
+			return nil, "", 0, ports.ErrUnavailable
+		}
 	}
 	nextCursor := ""
 	if page.HasMore {

@@ -1,3 +1,4 @@
+import { TimerSubscription } from './timer-subscription';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
 import { AccountDeletionSettings } from './account-deletion';
 import type { AccountDeletionService } from '../account/ports/account-deletion';
@@ -118,6 +119,7 @@ function PathPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const query = useQuery({ queryKey: [d.accountScope, 'path', pathId], queryFn: ({ signal }) => d.paths.read(pathId, signal), staleTime: 0, gcTime: 0, refetchOnWindowFocus: true });
   return <StudioShell page="paths" i18n={d.i18n}><main className="studio-main"><header className="studio-header"><h1>{query.data && !query.isError && !query.isFetching ? query.data.name : d.i18n.t('studio.path')}</h1></header>
     {query.isPending || query.isFetching ? <p role="status">{d.i18n.t('common.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : <ul className="studio-paths"><PathRow key={pathId} path={query.data} dependencies={d} moving={false} initialDetails /></ul>}
+    {query.data?.canTrack && !query.data.archived && !query.isError && <TimerSubscription key={pathId} subject={{ scope: 'path', id: pathId }} dependencies={d} />}
   </main></StudioShell>;
 }
 function PathsPage({ dependencies: d }: { dependencies: StudioDependencies }) {

@@ -1,3 +1,4 @@
+import { TimerSubscriptionControl } from '../../src/ui/timer-subscription-control';
 import * as Crypto from 'expo-crypto';
 import { getLocales } from 'expo-localization';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -185,7 +186,8 @@ export default function SocialProfileScreen() {
       />
       {profile.status === 'ready' ? <>
         <SectionHeading>{i18n.t('social.profileActivityHeading')}</SectionHeading>
-        <SocialTimeline profile i18n={i18n} state={social.activity}
+        {profile.profile?.relationship === 'following' ? <TimerSubscriptionControl key={profile.profile.userId} subject={{ scope: 'person', id: profile.profile.userId }} i18n={i18n} /> : null}
+      <SocialTimeline profile i18n={i18n} state={social.activity}
           onLoadMore={social.loadMoreActivity} onRetry={social.retryActivity}
           onDismissInteractionNotice={social.dismissActivityNotice}
           onOpen={social.openActivity} onOpenComments={social.openComments}

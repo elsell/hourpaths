@@ -14,6 +14,9 @@ import (
 const OfflineTimerOperation = "activity.offline.timer"
 
 type OfflineTimerInput struct {
+	// StillRunning is current device delivery context, not timer identity. Older
+	// clients omit it and cannot produce a delayed start notification.
+	StillRunning       bool
 	CorrectedStartedAt *time.Time
 	TimerID            string
 	Kind               string
@@ -22,15 +25,17 @@ type OfflineTimerInput struct {
 	OccurrenceTimeZone string
 }
 type OfflineTimerCommand struct {
-	CorrectedStartedAt *time.Time
-	IdentityHash       []byte
-	Timer              domain.RunningTimer
-	Kind               string
-	EndedAt            *time.Time
-	RecordedAt         time.Time
-	ActivityID         string
-	Idempotency        ports.Idempotency
-	Audit              audit.Event
+	NotificationRecipients []string
+	NotifyStart            bool
+	CorrectedStartedAt     *time.Time
+	IdentityHash           []byte
+	Timer                  domain.RunningTimer
+	Kind                   string
+	EndedAt                *time.Time
+	RecordedAt             time.Time
+	ActivityID             string
+	Idempotency            ports.Idempotency
+	Audit                  audit.Event
 }
 type OfflineTimerResult struct {
 	Terminal         bool
@@ -54,7 +59,7 @@ func (s *Service) SynchronizeTimer(ctx context.Context, authorization, pathID, k
 	if !validPathID(pathID) || !validIdempotencyKey(key) || strings.TrimSpace(input.TimerID) != input.TimerID || input.TimerID == "" || len(input.TimerID) > 128 {
 		return OfflineTimerResult{}, ports.ErrInvalidArgument
 	}
-	if input.Kind != "start" && input.Kind != "stop" && input.Kind != "correct" || (input.Kind == "start" && input.EndedAt != nil) || (input.Kind != "start" && input.EndedAt == nil) || (input.Kind == "correct") != (input.CorrectedStartedAt != nil) {
+	if input.Kind != "start" && input.Kind != "stop" && input.Kind != "correct" || (input.Kind == "start" && input.EndedAt != nil) || (input.Kind != "start" && input.EndedAt == nil) || (input.Kind == "correct") != (input.CorrectedStartedAt != nil) || (input.StillRunning && input.Kind != "start") {
 		return OfflineTimerResult{}, ports.ErrInvalidArgument
 	}
 	now, err := s.authorizeTracking(ctx, principal.UserID, pathID)
@@ -98,10 +103,16 @@ func (s *Service) SynchronizeTimer(ctx context.Context, authorization, pathID, k
 	if input.Kind != "start" {
 		action = audit.ActivityTimerStopped
 	}
-	command := OfflineTimerCommand{IdentityHash: OfflineTimerIdentityHash(timer), Timer: timer, Kind: input.Kind, EndedAt: endedAt, CorrectedStartedAt: correctedStartedAt, RecordedAt: now, ActivityID: s.NewID(),
+	command := OfflineTimerCommand{NotifyStart: input.StillRunning, IdentityHash: OfflineTimerIdentityHash(timer), Timer: timer, Kind: input.Kind, EndedAt: endedAt, CorrectedStartedAt: correctedStartedAt, RecordedAt: now, ActivityID: s.NewID(),
 		Idempotency: ports.Idempotency{PrincipalID: principal.UserID, Operation: OfflineTimerOperation, Key: key,
 			RequestHash: requestHash(OfflineTimerOperation, pathID, input.TimerID, input.Kind, timer.StartedAt.Format(time.RFC3339Nano), endHash, timer.OccurrenceTimeZone, correctionHash)},
 		Audit: s.auditEvent(ctx, principal.UserID, action, input.TimerID)}
+	if command.NotifyStart {
+		command.NotificationRecipients, err = s.timerNotificationRecipients(ctx, principal.UserID, pathID)
+		if err != nil {
+			return OfflineTimerResult{}, err
+		}
+	}
 	result, err := s.Repository.SynchronizeTimer(ctx, command)
 	if err != nil {
 		return OfflineTimerResult{}, err

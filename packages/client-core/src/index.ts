@@ -873,3 +873,5 @@ export { apiAccountRecovery } from './adapters/api-account-recovery';
 export { ephemeralProviderSettings } from './ephemeral-provider-settings';
 export { NOTIFICATION_CHANNELS, NotificationChannelFailure, createNotificationChannelOperationOwner, type NotificationChannel, type NotificationChannelPreference, type NotificationChannelsRepository } from './notification-channels';
 export { apiNotificationChannels, notificationChannelPreferenceFromAPI, notificationChannelPreferencesFromAPI } from './adapters/api-notification-channels';
+export { createTimerSubscriptionOperationOwner, TimerSubscriptionFailure, type TimerSubscriptionScope, type TimerSubscriptionSubject, type TimerSubscriptionPreference, type TimerSubscriptionsRepository } from './timer-subscriptions';
+export { apiTimerSubscriptions, timerSubscriptionFromAPI } from './adapters/api-timer-subscriptions';

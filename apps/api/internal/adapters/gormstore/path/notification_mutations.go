@@ -74,11 +74,11 @@ func (r *Repository) MarkAllNotificationsRead(
 			Where("recipient_user_id = ? AND created_at <= ? AND deleted_at IS NULL AND read_at IS NULL",
 				command.RecipientUserID, command.ChangedAt).
 			Where(notificationPairVisiblePredicate).
-			Where(notificationRepresentationPredicate(command.EmojiReactions)).
+			Where(notificationRepresentationPredicate(command.EmojiReactions, command.TimerStarts)).
 			Update("read_at", command.ChangedAt).Error; err != nil {
 			return err
 		}
-		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions)
+		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions, command.TimerStarts)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (r *Repository) mutateOneNotification(
 			Where("id = ? AND recipient_user_id = ? AND deleted_at IS NULL",
 				command.NotificationID, command.RecipientUserID).
 			Where(notificationPairVisiblePredicate).
-			Where(notificationRepresentationPredicate(command.EmojiReactions)).
+			Where(notificationRepresentationPredicate(command.EmojiReactions, command.TimerStarts)).
 			First(&row).Error; err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ func (r *Repository) mutateOneNotification(
 		if err := mutate(tx, row); err != nil {
 			return err
 		}
-		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions)
+		count, err := visibleUnreadNotificationCount(tx, command.RecipientUserID, command.ChangedAt, command.EmojiReactions, command.TimerStarts)
 		if err != nil {
 			return err
 		}

@@ -46,6 +46,7 @@ type notificationModel struct {
 	SocialFeedEventID         string
 	ReactionType              string
 	CommentID                 string
+	TimerID                   *string
 	NudgeID                   string
 	PathVisibility            string
 	Kind                      string

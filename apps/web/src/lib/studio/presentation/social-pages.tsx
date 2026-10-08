@@ -1,3 +1,4 @@
+import { TimerSubscription } from './timer-subscription';
 import { ProfileBlocking } from './profile-blocking';
 import { useCallback, useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
@@ -56,6 +57,7 @@ function ProfileContent({ username, dependencies: d }: { username: string; depen
         <div><dt>{d.i18n.t('studio.social.following')}</dt><dd>{d.i18n.number(profile.following)}</dd></div>
       </dl></div></div>
       {profile.description && <p className="studio-profile-description">{profile.description}</p>}<FollowButton profile={profile} dependencies={d} /><ProfileBlocking profile={profile} dependencies={d} />
+      {profile.relationship === 'following' && <TimerSubscription key={profile.id} subject={{ scope: 'person', id: profile.id }} dependencies={d} />}
       {paths.isError && <p role="alert">{d.i18n.t('studio.loadFailed')} <button onClick={refresh}>{d.i18n.t('common.retry')}</button></p>}
     </section><SocialFeed dependencies={d} username={username} /></>}
     {selected && <LiveViewer people={active ? [active] : []} selected={selected} close={() => setSelected(null)} refresh={refresh} dependencies={d} />}

@@ -13,6 +13,7 @@ import (
 )
 
 type offlineTimerInput struct {
+	StillRunning   bool   `header:"X-HourPaths-Timer-Running"`
 	Authorization  string `header:"Authorization"`
 	IdempotencyKey string `header:"Idempotency-Key" required:"true" minLength:"16" maxLength:"128"`
 	PathID         string `path:"pathId"`
@@ -26,7 +27,7 @@ type offlineTimerOutput struct {
 
 func registerOfflineTimer(api huma.API, service Service) {
 	huma.Register(api, huma.Operation{OperationID: "synchronize-offline-path-timer", Method: http.MethodPost, Path: "/v1/paths/{pathId}/offline-timer", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *offlineTimerInput) (*offlineTimerOutput, error) {
-		result, err := service.SynchronizeTimer(ctx, input.Authorization, input.PathID, input.IdempotencyKey, application.OfflineTimerInput{TimerID: input.Body.TimerID, Kind: input.Body.Kind, StartedAt: input.Body.StartedAt, EndedAt: input.Body.EndedAt, CorrectedStartedAt: input.Body.CorrectedStartedAt, OccurrenceTimeZone: input.Body.OccurrenceTimeZone})
+		result, err := service.SynchronizeTimer(ctx, input.Authorization, input.PathID, input.IdempotencyKey, application.OfflineTimerInput{StillRunning: input.StillRunning, TimerID: input.Body.TimerID, Kind: input.Body.Kind, StartedAt: input.Body.StartedAt, EndedAt: input.Body.EndedAt, CorrectedStartedAt: input.Body.CorrectedStartedAt, OccurrenceTimeZone: input.Body.OccurrenceTimeZone})
 		if err != nil {
 			mapped := shared.MapError(err, true)
 			var problem *shared.APIError

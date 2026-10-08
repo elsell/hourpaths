@@ -105,6 +105,10 @@ func (f testRepository) StartTimer(_ context.Context, command StartTimerCommand)
 	}
 	return f.startResult, f.startErr
 }
+
+func (f testRepository) TimerNotificationCandidates(context.Context, string, string) ([]string, error) {
+	return nil, nil
+}
 func (f testRepository) StopTimer(_ context.Context, command StopTimerCommand) (StopTimerResult, error) {
 	if f.stops != nil {
 		*f.stops = append(*f.stops, command)

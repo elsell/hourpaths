@@ -9,6 +9,7 @@ const notificationPairVisiblePredicate = `NOT EXISTS (SELECT 1 FROM block_models
          notification_block.blocked_user_id = notification_models.recipient_user_id))`
 
 const visibleNotificationPredicate = `notification_models.deleted_at IS NULL AND
+  ` + timerNotificationVisiblePredicate + ` AND
   ` + notificationPairVisiblePredicate + ` AND
   (notification_models.kind <> 'path_invitation_received' OR
     (path_invitation_models.accepted_at IS NULL AND
@@ -30,6 +31,7 @@ func notificationProjectionQuery(tx *gorm.DB) *gorm.DB {
 		Select(`notification_models.id,
       notification_models.recipient_user_id,
       notification_models.actor_user_id,
+      notification_models.timer_id,
       notification_models.path_id,
       COALESCE(notification_models.path_invitation_id, '') AS path_invitation_id,
       COALESCE(notification_models.path_ownership_transfer_id, '') AS path_ownership_transfer_id,

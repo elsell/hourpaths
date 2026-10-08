@@ -457,23 +457,7 @@ func createCommentNotification(tx *gorm.DB, command socialapp.CommentCommand, co
 }
 
 func createSocialInteractionPush(tx *gorm.DB, notificationID, recipientUserID string, eligibleAt time.Time) error {
-	if err := tx.Table("notification_push_outbox_models").Create(map[string]any{"notification_id": notificationID, "created_at": eligibleAt}).Error; err != nil {
-		return err
-	}
-	if err := tx.Exec(`INSERT INTO notification_push_delivery_models (
-notification_id, installation_id, recipient_user_id, provider, platform, locale,
-token_ciphertext, token_nonce, token_hash, available_at, created_at)
-SELECT ?, installation.id, ?, installation.provider, installation.platform, installation.locale,
-installation.token_ciphertext, installation.token_nonce, installation.token_hash, ?, ?
-FROM push_installation_models installation
-WHERE installation.owner_user_id = ? AND installation.deleted_at IS NULL
-ON CONFLICT (notification_id, installation_id) DO NOTHING`, notificationID, recipientUserID, eligibleAt, eligibleAt, recipientUserID).Error; err != nil {
-		return err
-	}
-	return tx.Exec(`UPDATE notification_push_outbox_models
-SET suppressed_at = ?, failure_code = 'no_active_installation'
-WHERE notification_id = ?
-  AND NOT EXISTS (SELECT 1 FROM notification_push_delivery_models WHERE notification_id = ?)`, eligibleAt, notificationID, notificationID).Error
+	return channelstore.QueuePush(tx, notificationID, recipientUserID, eligibleAt)
 }
 
 func validSocialCommentCommand(repository *SocialFeedRepository, command socialapp.CommentCommand, operation string) bool {

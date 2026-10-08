@@ -62,8 +62,13 @@ func (s *Service) StartTimer(ctx context.Context, authorization, pathID, idempot
 	if err != nil {
 		return StartTimerResult{}, errInvalidDependencies
 	}
+	recipients, err := s.timerNotificationRecipients(ctx, principal.UserID, pathID)
+	if err != nil {
+		return StartTimerResult{}, err
+	}
 	result, err := s.Repository.StartTimer(ctx, StartTimerCommand{
-		Timer: timer,
+		NotificationRecipients: recipients,
+		Timer:                  timer,
 		Idempotency: ports.Idempotency{PrincipalID: principal.UserID, Operation: StartTimerOperation, Key: idempotencyKey,
 			RequestHash: requestHash(StartTimerOperation, pathID)},
 		Audit:            s.auditEvent(ctx, principal.UserID, audit.ActivityTimerStarted, timer.ID),

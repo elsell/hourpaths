@@ -37,10 +37,13 @@ func (service *InvitationService) GetNotification(
 	item, err := service.Invitations.GetNotification(
 		ctx, principal.UserID, notificationID,
 	)
-	if err == nil && (item.CreatedAt.After(now) || (!notificationEmojiRepresentation(ctx) && item.Kind == NotificationPracticeReaction && item.Reaction.ValidStored() && !item.Reaction.Valid())) {
+	if err == nil && (item.CreatedAt.After(now) || (!notificationTimerRepresentation(ctx) && item.Kind == NotificationTimerStarted) || (!notificationEmojiRepresentation(ctx) && item.Kind == NotificationPracticeReaction && item.Reaction.ValidStored() && !item.Reaction.Valid())) {
 		err = ports.ErrNotFound
 	}
 	if err == nil {
+		if authorizationErr := service.authorizeTimerNotification(ctx, principal.UserID, item); authorizationErr != nil {
+			return InvitationNotificationProjection{}, authorizationErr
+		}
 		if !validNotificationPage(
 			NotificationPage{Items: []InvitationNotificationProjection{item}},
 			1,

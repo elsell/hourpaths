@@ -319,6 +319,7 @@ const (
 	NotificationPracticeComment               InvitationNotificationKind = "practice_comment"
 	NotificationCommentHeart                  InvitationNotificationKind = "comment_heart"
 	NotificationNudgeReceived                 InvitationNotificationKind = "nudge_received"
+	NotificationTimerStarted                  InvitationNotificationKind = "timer_started"
 )
 
 type NotificationPresentation string
@@ -361,6 +362,7 @@ type InvitationNotificationProjection struct {
 }
 
 type NotificationPageRequest struct {
+	TimerStarts    bool
 	EmojiReactions bool
 	AfterID        string
 	AfterCreated   time.Time
@@ -375,6 +377,7 @@ type NotificationPage struct {
 }
 
 type NotificationMutationCommand struct {
+	TimerStarts     bool
 	EmojiReactions  bool
 	RecipientUserID string
 	NotificationID  string
