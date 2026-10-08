@@ -2,11 +2,11 @@ package gormstore
 
 import (
 	"bytes"
- "errors"
- pathstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/path"
- pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"context"
+	"errors"
 	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
+	pathstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/path"
+	pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"testing"
@@ -94,25 +94,47 @@ func TestPostgresTimerStartNotificationDeduplicatesAndRechecksDisabledChannel(t 
 }
 
 func TestPostgresTimerNotificationHistoryNegotiatesVocabularyAndVisibility(t *testing.T) {
- f := newNudgeFixture(t, "timerhistory", false)
- timer,err := domain.StartTimer("timer-"+newTestID(),f.pathID,f.sender.ID,f.now,"Etc/UTC",f.now)
- if err!=nil {t.Fatal(err)}
- if err:=f.runtime.DB.Transaction(func(tx *gorm.DB)error{return timerstore.Create(tx,timer,[]string{f.recipient.ID},f.now)});err!=nil {t.Fatal(err)}
- repository:=pathstore.New(f.runtime.DB)
- request:=pathapp.NotificationPageRequest{Limit:25,Snapshot:f.now.Add(time.Minute),EmojiReactions:true}
- old,err:=repository.ListNotifications(context.Background(),f.recipient.ID,request)
- if err!=nil || len(old.Items)!=0 || old.UnreadCount!=0 {t.Fatalf("old client: %+v %v",old,err)}
- request.TimerStarts=true
- page,err:=repository.ListNotifications(context.Background(),f.recipient.ID,request)
- if err!=nil || len(page.Items)!=1 || page.UnreadCount!=1 {t.Fatalf("timer history: %+v %v",page,err)}
- notice:=page.Items[0]
- if notice.Kind!=pathapp.NotificationTimerStarted || string(notice.PathID)!=f.pathID || notice.Actor.UserID!=f.sender.ID {t.Fatalf("projection: %+v",notice)}
- if _,err:=repository.GetNotification(context.Background(),f.recipient.ID,notice.ID);err!=nil {t.Fatal(err)}
- if _,err:=repository.GetNotification(context.Background(),f.sender.ID,notice.ID);!errors.Is(err,ports.ErrNotFound){t.Fatalf("cross user: %v",err)}
- // Losing both membership and following removes the history target as well as its count.
- if err:=f.migration.DB.Table("path_membership_models").Where("path_id = ? AND user_id = ?",f.pathID,f.recipient.ID).Delete(map[string]any{}).Error;err!=nil{t.Fatal(err)}
- if err:=f.migration.DB.Table("follow_models").Where("follower_user_id = ? AND following_user_id = ?",f.recipient.ID,f.sender.ID).Delete(map[string]any{}).Error;err!=nil{t.Fatal(err)}
- page,err=repository.ListNotifications(context.Background(),f.recipient.ID,request)
- if err!=nil || len(page.Items)!=0 || page.UnreadCount!=0{t.Fatalf("inaccessible history: %+v %v",page,err)}
- if _,err:=repository.GetNotification(context.Background(),f.recipient.ID,notice.ID);!errors.Is(err,ports.ErrNotFound){t.Fatalf("inaccessible target: %v",err)}
+	f := newNudgeFixture(t, "timerhistory", false)
+	timer, err := domain.StartTimer("timer-"+newTestID(), f.pathID, f.sender.ID, f.now, "Etc/UTC", f.now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.runtime.DB.Transaction(func(tx *gorm.DB) error { return timerstore.Create(tx, timer, []string{f.recipient.ID}, f.now) }); err != nil {
+		t.Fatal(err)
+	}
+	repository := pathstore.New(f.runtime.DB)
+	request := pathapp.NotificationPageRequest{Limit: 25, Snapshot: f.now.Add(time.Minute), EmojiReactions: true}
+	old, err := repository.ListNotifications(context.Background(), f.recipient.ID, request)
+	if err != nil || len(old.Items) != 0 || old.UnreadCount != 0 {
+		t.Fatalf("old client: %+v %v", old, err)
+	}
+	request.TimerStarts = true
+	page, err := repository.ListNotifications(context.Background(), f.recipient.ID, request)
+	if err != nil || len(page.Items) != 1 || page.UnreadCount != 1 {
+		t.Fatalf("timer history: %+v %v", page, err)
+	}
+	notice := page.Items[0]
+	if notice.Kind != pathapp.NotificationTimerStarted || string(notice.PathID) != f.pathID || notice.Actor.UserID != f.sender.ID {
+		t.Fatalf("projection: %+v", notice)
+	}
+	if _, err := repository.GetNotification(context.Background(), f.recipient.ID, notice.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repository.GetNotification(context.Background(), f.sender.ID, notice.ID); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("cross user: %v", err)
+	}
+	// Losing both membership and following removes the history target as well as its count.
+	if err := f.migration.DB.Table("path_membership_models").Where("path_id = ? AND user_id = ?", f.pathID, f.recipient.ID).Delete(map[string]any{}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := f.migration.DB.Table("follow_models").Where("follower_user_id = ? AND following_user_id = ?", f.recipient.ID, f.sender.ID).Delete(map[string]any{}).Error; err != nil {
+		t.Fatal(err)
+	}
+	page, err = repository.ListNotifications(context.Background(), f.recipient.ID, request)
+	if err != nil || len(page.Items) != 0 || page.UnreadCount != 0 {
+		t.Fatalf("inaccessible history: %+v %v", page, err)
+	}
+	if _, err := repository.GetNotification(context.Background(), f.recipient.ID, notice.ID); !errors.Is(err, ports.ErrNotFound) {
+		t.Fatalf("inaccessible target: %v", err)
+	}
 }
