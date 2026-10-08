@@ -9,7 +9,7 @@ import (
 )
 
 var visibilityTargetOpeningNotificationKinds = []string{
-	"nudge_received", "practice_reaction", "practice_comment", "comment_heart", "timer_started",
+	"nudge_received", "practice_reaction", "practice_comment", "comment_heart", "timer_started", "interval_goal_achieved", "overall_target_achieved",
 }
 
 func visibilityTargetOpeningNotificationKind(kind string) bool {

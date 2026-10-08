@@ -2886,7 +2886,7 @@ export interface components {
             read: boolean;
             socialFeedEventId?: string;
             /** @enum {string} */
-            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started";
+            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started" | "interval_goal_achieved" | "overall_target_achieved";
         };
         PathInvitationOutputBody: {
             /**
@@ -4629,6 +4629,7 @@ export interface operations {
             query?: {
                 emojiReactions?: boolean;
                 timerStarts?: boolean;
+                achievements?: boolean;
                 cursor?: string;
                 limit?: number;
             };
@@ -4665,6 +4666,7 @@ export interface operations {
             query?: {
                 emojiReactions?: boolean;
                 timerStarts?: boolean;
+                achievements?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -4699,6 +4701,7 @@ export interface operations {
             query?: {
                 emojiReactions?: boolean;
                 timerStarts?: boolean;
+                achievements?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -4735,6 +4738,7 @@ export interface operations {
             query?: {
                 emojiReactions?: boolean;
                 timerStarts?: boolean;
+                achievements?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -4771,6 +4775,7 @@ export interface operations {
             query?: {
                 emojiReactions?: boolean;
                 timerStarts?: boolean;
+                achievements?: boolean;
             };
             header?: {
                 Authorization?: string;

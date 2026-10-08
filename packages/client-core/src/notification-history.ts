@@ -86,6 +86,13 @@ type PathVisibilityChangedNotification = PathNotificationBase & Readonly<{
   pathVisibility: 'private' | 'followers' | 'public';
 }>;
 
+type AchievementNotification = PathNotificationBase & Readonly<{
+  type: 'interval_goal_achieved' | 'overall_target_achieved';
+  presentation: 'informational';
+  pathId: string;
+  socialFeedEventId: string;
+}>;
+
 type TimerStartedNotification = PathNotificationBase & Readonly<{
   type: 'timer_started';
   presentation: 'informational';
@@ -139,6 +146,7 @@ export type NotificationHistoryItem =
   | PathVisibilityChangedNotification
   | PracticeReactionNotification
   | TimerStartedNotification
+  | AchievementNotification
   | PracticeCommentNotification
   | NudgeNotification
   | SocialNotification;
@@ -185,6 +193,8 @@ export type NotificationPresentationMessageKey =
   | 'notification.pathMemberRemoved.supporter'
   | 'notification.pathVisibilityChanged'
   | 'notification.timerStarted'
+  | 'notification.intervalGoalAchieved'
+  | 'notification.overallTargetAchieved'
   | 'notification.newFollower'
   | 'notification.followRequestReceived'
   | 'notification.followRequestAccepted'
@@ -212,6 +222,7 @@ const ownershipTransferNotificationKeys = [...notificationBaseKeys, 'ownershipTr
 const pathDeletionNotificationKeys = [...notificationBaseKeys, 'pathName'].sort();
 const pathMemberAccessNotificationKeys = [...notificationBaseKeys, 'offeredRole', 'pathId', 'pathName'].sort();
 const pathVisibilityChangedNotificationKeys = [...notificationBaseKeys, 'pathId', 'pathName', 'pathVisibility'].sort();
+const achievementNotificationKeys = [...notificationBaseKeys, 'pathId', 'pathName', 'socialFeedEventId'].sort();
 const timerStartedNotificationKeys = [...notificationBaseKeys, 'pathId', 'pathName'].sort();
 const newFollowerNotificationKeys = [...notificationBaseKeys].sort();
 const followRequestNotificationKeys = [...notificationBaseKeys, 'followRequestId'].sort();
@@ -333,6 +344,11 @@ function validatedNotification(value: unknown): PathInvitationNotification | und
   }
 
   if (!validText(record.pathId) || !validText(record.pathName)) return undefined;
+
+  if (record.type === 'interval_goal_achieved' || record.type === 'overall_target_achieved') {
+    if (record.presentation !== 'informational' || !validText(record.socialFeedEventId) || !hasExactKeys(record, achievementNotificationKeys)) return undefined;
+    return Object.freeze({ id: record.id, type: record.type, presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName, socialFeedEventId: record.socialFeedEventId });
+  }
 
   if (record.type === 'timer_started') {
     if (record.presentation !== 'informational' || !hasExactKeys(record, timerStartedNotificationKeys)) return undefined;
@@ -538,6 +554,10 @@ export function notificationPresentationMessageKey(
   notification: PathInvitationNotification,
 ): NotificationPresentationMessageKey {
   switch (notification.type) {
+  case 'interval_goal_achieved':
+    return 'notification.intervalGoalAchieved';
+  case 'overall_target_achieved':
+    return 'notification.overallTargetAchieved';
   case 'timer_started':
     return 'notification.timerStarted';
   case 'new_follower':

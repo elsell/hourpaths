@@ -24,3 +24,17 @@ func notificationTimerRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(notificationTimerRepresentationKey{}).(bool)
 	return enabled
 }
+
+// Achievement vocabulary is independent of timer-start support.
+type notificationAchievementRepresentationKey struct{}
+
+func WithNotificationAchievementRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, notificationAchievementRepresentationKey{}, enabled)
+}
+func notificationAchievementRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(notificationAchievementRepresentationKey{}).(bool)
+	return enabled
+}
+func (kind InvitationNotificationKind) IsAchievement() bool {
+	return kind == NotificationIntervalGoalAchieved || kind == NotificationOverallTargetAchieved
+}

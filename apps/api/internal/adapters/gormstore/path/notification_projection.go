@@ -1,6 +1,9 @@
 package pathstore
 
-import "gorm.io/gorm"
+import (
+	achievementstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationachievement"
+	"gorm.io/gorm"
+)
 
 const notificationPairVisiblePredicate = `NOT EXISTS (SELECT 1 FROM block_models notification_block
   WHERE (notification_block.blocker_user_id = notification_models.recipient_user_id AND
@@ -10,6 +13,7 @@ const notificationPairVisiblePredicate = `NOT EXISTS (SELECT 1 FROM block_models
 
 const visibleNotificationPredicate = `notification_models.deleted_at IS NULL AND
   ` + timerNotificationVisiblePredicate + ` AND
+  ` + achievementstore.VisiblePredicate + ` AND
   ` + notificationPairVisiblePredicate + ` AND
   (notification_models.kind <> 'path_invitation_received' OR
     (path_invitation_models.accepted_at IS NULL AND

@@ -200,7 +200,7 @@ test('path invitation operations use generated routes, current credentials, and 
   assert.equal(requests[1]!.headers.get('idempotency-key'), 'send-invite-key-01');
   assert.equal(requests[2]!.headers.get('idempotency-key'), 'send-invite-key-01');
   assert.equal(new URL(requests[3]!.url).search, '?cursor=signed-current-page&limit=25');
-  assert.equal(new URL(requests[4]!.url).search, '?cursor=signed-notification-current&limit=25&emojiReactions=true&timerStarts=true');
+  assert.equal(new URL(requests[4]!.url).search, '?cursor=signed-notification-current&limit=25&emojiReactions=true&timerStarts=true&achievements=true');
   assert.equal(requests[8]!.headers.get('idempotency-key'), 'accept-invite-key1');
   assert.equal(await requests[8]!.text(), '');
   assert.equal(requests[9]!.headers.get('idempotency-key'), 'accept-confirm-key');

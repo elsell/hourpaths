@@ -8,7 +8,7 @@ import (
 )
 
 func (s *InvitationService) authorizeTimerNotification(ctx context.Context, recipient string, notice InvitationNotificationProjection) error {
-	if notice.Kind != NotificationTimerStarted {
+	if notice.Kind != NotificationTimerStarted && !notice.Kind.IsAchievement() {
 		return nil
 	}
 	if s.Authorizer == nil {

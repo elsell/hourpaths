@@ -92,6 +92,10 @@ func InvitationNotification(value pathapp.InvitationNotificationProjection) dto.
 		if value.InteractionDisabled == "" {
 			result.CommentID = value.CommentID
 		}
+	case pathapp.NotificationIntervalGoalAchieved, pathapp.NotificationOverallTargetAchieved:
+		result.PathID = string(value.PathID)
+		result.PathName = value.PathName
+		result.SocialFeedEventID = value.SocialFeedEventID
 	case pathapp.NotificationTimerStarted:
 		result.PathID = string(value.PathID)
 		result.PathName = value.PathName

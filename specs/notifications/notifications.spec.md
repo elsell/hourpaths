@@ -581,6 +581,35 @@ Status: Approved for implementation
   achievement, comment, reaction, or heart action unless a requirement above
   explicitly identifies a distinct outcome they need to know.
 
+### Participant achievement delivery acceptance
+
+- Creating an interval-goal or overall-target achievement under the
+  [achievement lifecycle](../goals/time-goals.spec.md#achievement-event-lifecycle)
+  must atomically create one informational notification for its participant
+  when that participant's Achievements channel is enabled. The notice must
+  distinguish an interval goal from an overall target and identify the Path.
+- The notice must reference the same achievement feed event. Opening it must
+  reach the related accessible Path context. Deleting or invalidating that
+  achievement must remove its notice and retire push work that has not already
+  been handed to the provider, under the referenced-content deletion rules.
+- Idempotent activity replay and additional time above an already achieved
+  threshold must not create another notice. A later interval occurrence or a
+  genuine re-achievement after invalidation must remain eligible for its own
+  notice. Changing goal configuration alone must not produce a notice.
+- A single activity that genuinely achieves both an interval goal and an
+  overall target must create two independently readable notices. No follower,
+  supporter, administrator, or other participant must receive a direct
+  achievement notice for that activity.
+- Disabled channels must suppress new notices and push work; re-enabling the
+  channel must not recreate missed notices. Disabling it after creation must
+  retain existing history and suppress unsent push under the channel rules.
+- Quiet push, unavailable periods, current authorization, recipient isolation,
+  notification read/delete behavior, and account/Path lifecycle rules must
+  apply to these notices as they do to other informational notifications.
+- Native and Studio clients must display localized achievement notices.
+  Older clients that do not negotiate this vocabulary must not receive new
+  kinds in list, detail, mutation, or unread-count projections.
+
 ## Notification grouping
 
 - Every in-application notification must remain an individually readable

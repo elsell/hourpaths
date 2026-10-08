@@ -12,7 +12,10 @@ import (
 	"strings"
 	"time"
 
+	achievementstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationachievement"
 	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/progresslock"
+	pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"gorm.io/gorm"
@@ -328,8 +331,22 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 		if err != nil {
 			return err
 		}
-		if notice.Kind == "timer_started" {
+		if notice.Kind == "timer_started" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
 			if err := timerstore.Lock(tx, notice.PathID); err != nil {
+				return err
+			}
+		}
+		if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
+			var owner string
+			if err := tx.Table("path_models").Select("owner_user_id").Where("id = ?", notice.PathID).Take(&owner).Error; err != nil {
+				return err
+			}
+			if owner != notice.RecipientUserID {
+				if err := lockSocialPair(tx, owner, notice.RecipientUserID); err != nil {
+					return err
+				}
+			}
+			if err := progresslock.Lock(tx, notice.RecipientUserID, notice.PathID); err != nil {
 				return err
 			}
 		}
@@ -378,6 +395,9 @@ WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_bl
 		Joins("JOIN notification_push_delivery_models delivery ON delivery.notification_id = notice.id").
 		Where("notice.id = ? AND delivery.installation_id = ?", notificationID, installationID).Take(&notice).Error; err != nil {
 		return false, err
+	}
+	if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() && notice.ProviderTicket == "" {
+		return achievementstore.Eligible(tx, notificationID, notice.RecipientUserID)
 	}
 	// Already handed-off messages still need their receipt reconciled.
 	if notice.Kind == "timer_started" && notice.ProviderTicket == "" {
