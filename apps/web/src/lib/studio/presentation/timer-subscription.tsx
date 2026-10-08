@@ -22,8 +22,8 @@ export function TimerSubscription({ subject, dependencies: d }: { subject: Timer
   });
   const conflict = mutation.error instanceof TimerSubscriptionFailure && mutation.error.kind === 'conflict';
   const label = d.i18n.t(subject.scope === 'person' ? 'timerSubscription.person' : 'timerSubscription.path');
-  return <section className="studio-settings-section" aria-label={label}>
-    <label className="studio-setting-row"><span>{label}</span><input type="checkbox" checked={query.data?.enabled ?? false} disabled={!query.data || query.isError || query.isFetching || mutation.isPending || conflict} onChange={event => { if (query.data) mutation.mutate({ ...query.data, enabled: event.target.checked }); }} /></label>
+  return <section className="studio-settings-card studio-settings-form" aria-label={label}>
+    <label className="studio-settings-toggle"><span>{label}</span><input type="checkbox" checked={query.data?.enabled ?? false} disabled={!query.data || query.isError || query.isFetching || mutation.isPending || conflict} onChange={event => { if (query.data) mutation.mutate({ ...query.data, enabled: event.target.checked }); }} /></label>
     <p>{d.i18n.t('timerSubscription.channelHint')}</p>
     {(query.isError || mutation.isError) && <p role="alert">{d.i18n.t(conflict ? 'studio.settings.conflict' : 'timerSubscription.failed')} <button disabled={mutation.isPending} onClick={() => {
       if (!conflict && mutation.variables) mutation.mutate(mutation.variables);
