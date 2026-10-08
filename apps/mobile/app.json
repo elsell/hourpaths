@@ -13,9 +13,28 @@
       "resizeMode": "contain",
       "backgroundColor": "#0b145a"
     },
-    "runtimeVersion": { "policy": "appVersion" },
-    "updates": { "enabled": false, "checkAutomatically": "NEVER" },
-    "plugins": ["expo-router", "expo-secure-store", "expo-dev-client", "expo-notifications"],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-dev-client",
+      "expo-notifications",
+      [
+        "expo-widgets",
+        {
+          "widgets": [],
+          "enablePushNotifications": false,
+          "bundleIdentifier": "com.hourpaths.mobile.ExpoWidgetsTarget",
+          "groupIdentifier": "group.com.hourpaths.mobile"
+        }
+      ]
+    ],
     "ios": {
       "bundleIdentifier": "com.hourpaths.mobile",
       "buildNumber": "1",
@@ -41,6 +60,8 @@
       "backgroundColor": "#141414",
       "barStyle": "light-content"
     },
-    "web": { "favicon": "./assets/favicon.png" }
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
   }
 }

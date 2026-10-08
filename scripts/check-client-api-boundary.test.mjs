@@ -7,6 +7,12 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+  'apps/mobile/src/timers/timer-surface.ios.tsx',
+  'apps/mobile/src/timers/timer-surface.android.ts',
+  'apps/mobile/modules/hourpaths-timers/expo-module.config.json',
+  'apps/mobile/modules/hourpaths-timers/android/build.gradle',
+  'apps/mobile/modules/hourpaths-timers/android/src/main/AndroidManifest.xml',
+  'apps/mobile/modules/hourpaths-timers/android/src/main/java/com/hourpaths/timers/HourPathsTimersModule.kt',
   'apps/web/src/lib/studio/session/domain/session.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts',
   'apps/web/src/lib/studio/account/ports/account-deletion.ts',
@@ -74,6 +80,7 @@ function check(files, symlinks = {}) {
       'apps/web/src/lib/studio/social/domain/activity.ts': 'export {};',
       'apps/web/src/lib/studio/bootstrap/mount.tsx': 'export {};',
       'apps/mobile/src/session-destination.ts': 'export {};',
+      'apps/mobile/src/timers/timer-surface-types.ts': 'export {};',
       'apps/mobile/src/home-preference-operation.ts': 'export {};',
       'apps/web/src/lib/studio/offline/ports/home-cache.ts': 'export {};',
       'apps/web/src/lib/studio/paths/domain/path.ts': 'export {};',

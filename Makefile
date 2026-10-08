@@ -29,6 +29,7 @@ check:
 	./scripts/test-web-browser-acceptance.sh
 	python3 scripts/test_ci_changes.py
 	python3 scripts/test-google-play-delivery.py
+	python3 scripts/test-ios-timer-profiles.py
 	node --test scripts/configure-android-release-signing.test.mjs
 	node --test scripts/google-play-api.test.mjs
 	node --test scripts/release-notes.test.mjs scripts/test-testflight-notes.mjs

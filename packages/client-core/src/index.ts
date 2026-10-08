@@ -875,3 +875,5 @@ export { NOTIFICATION_CHANNELS, NotificationChannelFailure, createNotificationCh
 export { apiNotificationChannels, notificationChannelPreferenceFromAPI, notificationChannelPreferencesFromAPI } from './adapters/api-notification-channels';
 export { createTimerSubscriptionOperationOwner, TimerSubscriptionFailure, type TimerSubscriptionScope, type TimerSubscriptionSubject, type TimerSubscriptionPreference, type TimerSubscriptionsRepository } from './timer-subscriptions';
 export { apiTimerSubscriptions, timerSubscriptionFromAPI } from './adapters/api-timer-subscriptions';
+
+export * from "./native-timer-surface";

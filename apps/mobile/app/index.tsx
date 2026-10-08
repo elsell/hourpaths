@@ -11,6 +11,7 @@ import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
 import { retainedHistoryDetails } from '../src/offline/retained-history-presentation';
 import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualActivityInterval, type TrackingSnapshot } from '@hourpaths/client-core';
 import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
+import { nativeTimerSurfaces } from '../src/timers/native-timer-surfaces';
 import { openNativeOfflineStorage } from '../src/offline/native-tracking-store';
 import { initialStatsSelection, type StatsSelection, type StatsState } from '@hourpaths/client-core';
 import { StatsRouteSource } from '../src/ui/stats-route-presentation';
@@ -242,6 +243,7 @@ const {
 const storageKey = 'application_session';
 const intervalProgressPresentation = intervalProgress;
 const i18n = createDeviceTranslator(getLocales);
+const timerSurfaces = nativeTimerSurfaces(i18n);
 
 type Session = SessionExchangeCredential;
 type Profile = MobileHomeProfile;
@@ -1992,12 +1994,14 @@ export function HomeScreen() {
   }
 
   function disposeNativeTracking() {
+    const clearedSurfaces = timerSurfaces.clear();
     retainedHomeRef.current = null; setRetainedHome(null);
     nativeOfflineGeneration.current++;
     nativeOffline.current?.dispose();
     nativeOffline.current = null;
     nativeOfflineOpening.current = null;
     setNativeTrackingState(null);
+    return clearedSurfaces;
   }
 
   const deletionService = useRef<ReturnType<typeof nativeAccountDeletion> | null>(null);
@@ -2029,6 +2033,9 @@ export function HomeScreen() {
       setAccountDeletionReview(current => current?.owner === owner ? { ...current, recovery: true } : current);
     },
     clearSurfaces: async (owner, identifiers) => {
+      if (!notificationLifecycleState.current.session || notificationLifecycleState.current.session?.ownerId === owner) {
+        if (!await timerSurfaces.clear()) throw new Error('deletion_timer_surface_cleanup_unavailable');
+      }
       await clearDeletionNotifications(identifiers);
       await clearRecipientNotifications(owner);
       const pending = await loadNativePushDeregistration();
@@ -2120,6 +2127,7 @@ export function HomeScreen() {
             setNativeTrackingState(snapshot);
             if (replace) { setAccessState('authenticated_online'); setOfflineStatusDismissed(false); }
             const next = { ...active.destination, profile: replace ? profile : { ...active.destination.profile, paths: active.destination.profile.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)), timers: profile.timers } };
+            void timerSurfaces.publish(owner, next.profile.paths, next.profile.timers);
             commitTimerProjectionBeforeRender(next,
               value => { notificationLifecycleState.current = { ...active, destination: value }; }, setDestination);
           },
@@ -2135,6 +2143,10 @@ export function HomeScreen() {
   }
 
   useEffect(() => () => { nativeOfflineGeneration.current++; nativeOffline.current?.dispose(); }, []);
+
+  useEffect(() => {
+    if (!session) void timerSurfaces.clear();
+  }, [session]);
 
   useEffect(() => {
     if (!session || destination?.kind !== 'home' || session.ownerId !== destination.profile.id) return;
@@ -2285,7 +2297,7 @@ export function HomeScreen() {
     if (expected
       ? !ownsSignOutResolution(expected.ownerID, expected.session)
       : active.session !== disposedSession) return false;
-    disposeNativeTracking();
+    const clearedSurfaces = disposeNativeTracking();
     cancelPathCreation();
     resetTimerPresentation();
     resetGoalManagement();
@@ -2297,6 +2309,10 @@ export function HomeScreen() {
     resetSettingsOperations();
     void setNativeNotificationBadge(0).catch(() => false);
     resetSocialProfileDiscovery();
+    await clearedSurfaces;
+    if (expected
+      ? !ownsSignOutResolution(expected.ownerID, expected.session)
+      : notificationLifecycleState.current.session !== disposedSession) return false;
     await disposeMobileSession(disposedSession, state, {
       discardStored: () => serializedSessionStorage.discard(),
       transition: (next) => {

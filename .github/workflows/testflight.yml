@@ -19,6 +19,8 @@ on:
         required: true
       BUILD_PROVISION_PROFILE_BASE64:
         required: true
+      BUILD_WIDGET_PROVISION_PROFILE_BASE64:
+        required: true
       APP_STORE_CONNECT_API_KEY_BASE64:
         required: true
       APP_STORE_CONNECT_KEY_ID:
@@ -95,6 +97,8 @@ jobs:
       HOURPATHS_API_URL: https://api.hourpaths.com
       HOURPATHS_OIDC_ISSUER: https://login.hourpaths.com/oidc
       HOURPATHS_MOBILE_OIDC_CLIENT_ID: ctdb003l6t7f3d5hidfm7
+      APPLE_WIDGET_PROVISIONING_PROFILE_NAME: ${{ vars.APPLE_WIDGET_PROVISIONING_PROFILE_NAME }}
+      APPLE_WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.BUILD_WIDGET_PROVISION_PROFILE_BASE64 }}
       APPLE_BUNDLE_ID: com.hourpaths.mobile
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       APPLE_PROVISIONING_PROFILE_NAME: ${{ vars.APPLE_PROVISIONING_PROFILE_NAME }}
@@ -116,7 +120,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in APPLE_TEAM_ID APPLE_PROVISIONING_PROFILE_NAME ASC_API_KEY_ID ASC_API_ISSUER_ID APPLE_DISTRIBUTION_P12_BASE64 APPLE_DISTRIBUTION_P12_PASSWORD APPLE_PROVISIONING_PROFILE_BASE64 ASC_API_KEY_P8_BASE64; do
+          for name in APPLE_WIDGET_PROVISIONING_PROFILE_NAME APPLE_WIDGET_PROVISIONING_PROFILE_BASE64 APPLE_TEAM_ID APPLE_PROVISIONING_PROFILE_NAME ASC_API_KEY_ID ASC_API_ISSUER_ID APPLE_DISTRIBUTION_P12_BASE64 APPLE_DISTRIBUTION_P12_PASSWORD APPLE_PROVISIONING_PROFILE_BASE64 ASC_API_KEY_P8_BASE64; do
             test -n "${!name:-}" || { echo "$name is required" >&2; exit 1; }
           done
 
@@ -193,8 +197,21 @@ jobs:
           mkdir -p "$profile_dir"
           cp "$profile_path" "$profile_dir/$profile_uuid.mobileprovision"
 
+          widget_profile_path="$RUNNER_TEMP/widget-profile.mobileprovision"
+          printf '%s' "$APPLE_WIDGET_PROVISIONING_PROFILE_BASE64" | decode_base64 > "$widget_profile_path"
+          security cms -D -i "$profile_path" > "$RUNNER_TEMP/app-profile.plist"
+          security cms -D -i "$widget_profile_path" > "$RUNNER_TEMP/widget-profile.plist"
+          python3 scripts/verify-ios-timer-profiles.py "$RUNNER_TEMP/app-profile.plist" "$RUNNER_TEMP/widget-profile.plist" "$RUNNER_TEMP/ExportOptions.plist"
+          widget_profile_uuid="$(plutil -extract UUID raw -o - "$RUNNER_TEMP/widget-profile.plist")"
+          test -n "$widget_profile_uuid"
+          cp "$widget_profile_path" "$profile_dir/$widget_profile_uuid.mobileprovision"
+
           echo "keychain_path=$keychain_path" >> "$GITHUB_OUTPUT"
           echo "profile_uuid=$profile_uuid" >> "$GITHUB_OUTPUT"
+
+      - name: Configure app and Live Activity target signing
+        working-directory: apps/mobile
+        run: bundle exec ruby ../../scripts/configure-ios-timer-signing.rb ios/HourPaths.xcodeproj
 
       - name: Archive signed application
         shell: bash
@@ -211,8 +228,6 @@ jobs:
             -archivePath "$archive_path" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            PRODUCT_BUNDLE_IDENTIFIER="$APPLE_BUNDLE_ID" \
-            PROVISIONING_PROFILE_SPECIFIER="$APPLE_PROVISIONING_PROFILE_NAME" \
             CODE_SIGN_IDENTITY='Apple Distribution' \
             archive
           echo "ARCHIVE_PATH=$archive_path" >> "$GITHUB_ENV"
@@ -242,19 +257,7 @@ jobs:
           set -euo pipefail
           export_path="$RUNNER_TEMP/HourPaths-export"
           options_path="$RUNNER_TEMP/ExportOptions.plist"
-          cat > "$options_path" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>app-store</string>
-            <key>signingStyle</key><string>manual</string>
-            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
-            <key>provisioningProfiles</key>
-            <dict><key>${APPLE_BUNDLE_ID}</key><string>${APPLE_PROVISIONING_PROFILE_NAME}</string></dict>
-          </dict>
-          </plist>
-          PLIST
+          test -s "$options_path"
           xcodebuild -exportArchive -archivePath "$ARCHIVE_PATH" -exportOptionsPlist "$options_path" -exportPath "$export_path"
           ipa_path="$(find "$export_path" -maxdepth 1 -name '*.ipa' -print -quit)"
           test -n "$ipa_path"

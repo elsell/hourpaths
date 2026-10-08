@@ -152,6 +152,28 @@ native builds verify this exact existing combination.
 - Permanently deleting the account must end and remove every operating-system
   surface associated with that account's running timers.
 
+### Native timer surface acceptance
+
+- Native timer presentation must consume the durable account-scoped tracking
+  projection, including offline starts and stops, instead of maintaining a
+  second timer authority.
+- Updating or denying an operating-system surface must not roll back a timer
+  mutation or discard a pending synchronization operation.
+- Restoring an authenticated account and returning to the foreground must
+  reconcile its current timers with existing native surfaces. Reconciliation
+  must not create duplicate consolidated surfaces.
+- Sign-out, credential removal, account replacement, and permanent deletion
+  must invalidate queued presentation updates before removing native surfaces.
+  A delayed update from the prior account must not restore its Path names.
+- Elapsed time must use the original session start instant and native clock
+  presentation, so suspending JavaScript does not freeze the displayed timer.
+- A consolidated surface must identify the number of running timers and provide
+  a route to the running timers in the app. Its expanded presentation must show
+  running Path names within platform size limits.
+- Acceptance must cover two simultaneous timers, stopping one and then the last,
+  offline restoration, denied presentation permission, and sign-out while
+  retaining server timers. Signed-device evidence remains required.
+
 ### Home tile presentation APIs
 
 - The mobile Home view may use React Native `AccessibilityInfo` and
