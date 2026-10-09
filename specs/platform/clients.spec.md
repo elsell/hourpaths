@@ -220,3 +220,18 @@ native builds verify this exact existing combination.
   mismatch fails before writing; Play sends notes on the exact uploaded release.
 
 The shared mobile transient-feedback adapter may import only `FullWindowOverlay` from the existing pinned `react-native-screens` package, and React Native accessibility announcements. This permits presentation above native navigation, not broader native or transport capabilities. The client boundary must reject namespace/re-export and unreviewed package imports.
+
+
+### Android screen-listener lifetime recovery
+
+Native startup and reload must not invoke a freed screen-removal listener or a
+listener owned by a destroyed React host. The pinned `react-native-screens`
+4.23.0 Android dependency receives the reviewed upstream #4413 backport from
+commit `204d36b45f2a718c6f86e00cfc70765cbde06565`; only its four C++ listener files
+may change, with the `cpp/legacy` paths mapped to the pinned version's `cpp` paths.
+The patch must be applied reproducibly through the package-manager lockfile.
+
+Verification must include native compilation and repeated cold launches with
+retained offline data, followed by ordinary navigation and reconnection. Existing
+timer and pending-activity state must remain intact. The change does not alter
+product navigation, offline authorization, or dependency versions.

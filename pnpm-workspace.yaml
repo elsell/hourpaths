@@ -109,4 +109,5 @@ overrides:
   yargs: '17.7.2'
 
 patchedDependencies:
+  react-native-screens@4.23.0: patches/react-native-screens@4.23.0.patch
   brace-expansion@5.0.12: patches/brace-expansion@5.0.12.patch
