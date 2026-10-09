@@ -20,16 +20,21 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Native route recovery (area 2/13) is the sole active implementation slice.
-Opening a History deep link from activity details reproduces a permanent loading
-screen even online. Route teardown must preserve content shared by a surviving
-screen while still releasing it on ordinary Back navigation and account change.
+Offline-banner persistence (area 2) is the sole active implementation slice.
+Dismissal must survive restarting a client during the same outage; an unsuccessful
+retry must not reset it. The existing account-scoped durable store carries this
+choice, and a verified successful refresh resets it for the next outage.
+
+Native route recovery merged in [PR #143](https://github.com/elsell/hourpaths/pull/143)
+as `048c331` after all five candidate gates passed. Android acceptance covers
+activity-to-History replacement and Back navigation. Release is in progress.
 
 Retained-history synchronization merged in [PR #142](https://github.com/elsell/hourpaths/pull/142)
 as `d9b2f20` after all five candidate gates passed. Android acceptance verifies
 pending-to-saved convergence, offline edit persistence across restart, and a
 Studio/native conflict preserving the later edit and both revisions. Publication
-is in progress. Separate debug startup crashes and route recovery remain open;
+has deployed exact API/web images through GitOps `906faa3`; TestFlight upload
+is in progress. Separate debug offline-startup crashes remain open;
 this evidence does not close signed physical-device acceptance.
 
 Native Live Activity row restoration merged in [PR #141](https://github.com/elsell/hourpaths/pull/141)

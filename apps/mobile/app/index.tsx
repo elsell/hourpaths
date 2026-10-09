@@ -672,7 +672,6 @@ export function HomeScreen() {
   const [accountDeletionReview, setAccountDeletionReview] = useState<{ owner: string; name?: string; recovery: boolean } | null>(null);
   const deletionCredential = useRef<Session | null>(null);
   const [errorKey, setErrorKey] = useState<MessageKey | null>(null);
-  const [offlineStatusDismissed, setOfflineStatusDismissed] = useState(false);
   const [creatingPath, setCreatingPath] = useState(false);
   const [pathName, setPathName] = useState('');
   const [pathVisibility, setPathVisibility] = useState<PathVisibility>('private');
@@ -2144,7 +2143,7 @@ export function HomeScreen() {
             if (generation !== nativeOfflineGeneration.current || active.destination?.kind !== 'home' ||
               active.destination.profile.id !== owner || active.session?.ownerId !== owner) return;
             setNativeTrackingState(snapshot);
-            if (replace) { setAccessState('authenticated_online'); setOfflineStatusDismissed(false); }
+            if (replace) { setAccessState('authenticated_online'); }
             const next = { ...active.destination, profile: replace ? profile : { ...active.destination.profile, paths: active.destination.profile.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)), timers: profile.timers } };
             void timerSurfaces.publish(owner, next.profile.paths, next.profile.timers);
             commitTimerProjectionBeforeRender(next,
@@ -2620,9 +2619,6 @@ export function HomeScreen() {
     }
   }
 
-  useEffect(() => {
-    if (accessState !== 'authenticated_offline') setOfflineStatusDismissed(false);
-  }, [accessState]);
 
   async function restoreInitialSession() {
       try {
@@ -8450,9 +8446,9 @@ export function HomeScreen() {
       text={i18n.t('offline.pending')} tone="sync" actionLabel={i18n.t('common.retry')}
       onAction={() => nativeOffline.current?.wake()}
     /></DelayedStatus> : null}
-    {accessState === 'authenticated_offline' && !errorKey && !offlineStatusDismissed ? <StatusBanner
+    {accessState === 'authenticated_offline' && !errorKey && !(nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.offlineBannerDismissed) ? <StatusBanner
       actionLabel={i18n.t('common.dismiss')}
-      onAction={() => setOfflineStatusDismissed(true)}
+      onAction={() => { void nativeOffline.current?.dismissOfflineBanner().catch(() => setErrorKey('errors.temporarilyUnavailable')); }}
       text={i18n.t('offline.banner')}
       tone="offline"
     /> : errorKey ? <StatusBanner text={i18n.t(errorKey)} tone="error" /> : null}

@@ -444,7 +444,7 @@ test('signed-out, loading, offline, and error states use explicit accessible pre
   assert.match(page, /shellDestination === 'home-tabs'[\s\S]*rootNavigation\.dispatch\(CommonActions\.reset\(\{ index: 0, routes: \[\{ name: '\(tabs\)' \}\]/);
   assert.match(page, /shellDestination === 'account-entry'[\s\S]*rootNavigation\.dispatch\(CommonActions\.reset\(\{ index: 0, routes: \[\{ name: 'index' \}\]/);
   assert.match(homeView, /presentation\.kind === 'loading'[\s\S]*text=\{i18n\.t\('home\.loading'\)\}/);
-  assert.match(page, /const homeNotice[\s\S]*accessState === 'authenticated_offline' && !errorKey && !offlineStatusDismissed/);
+  assert.match(page, /const homeNotice[\s\S]*accessState === 'authenticated_offline' && !errorKey && !\(nativeTrackingState/);
   assert.match(page, /const homeNotice[\s\S]*<StatusBanner[\s\S]*onAction=[\s\S]*text=\{i18n\.t\('offline\.banner'\)\}/);
   assert.match(page, /<HomeView[\s\S]*notice=\{<>[\s\S]*\{homeNotice\}/);
   assert.match(page, /if \(next\.retryable\)[\s\S]*setErrorKey\(null\)/);

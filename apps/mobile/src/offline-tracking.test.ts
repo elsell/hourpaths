@@ -79,24 +79,32 @@ test('native cold Home restoration publishes durable timers before making a netw
     },
   };
   const homes = new Map<string, import('./offline/mobile-home-cache').RetainedMobileHome>();
+  let online = true;
   let requests = 0, sequence = 0, now = Date.parse('2026-10-01T12:00:00Z');
   const credential = { token: 'session', nextAction: 'home' as const, ownerId: 'alice', expiresAt: '2026-10-02T12:00:00Z' };
   const create = () => mobileOfflineHome({
     store, home: { readHome: async owner => homes.get(owner) ?? null, saveHome: async value => { homes.set(value.owner, structuredClone(value)); } },
     now: () => now, newId: () => `home-${++sequence}`, schedule: () => () => {},
     owner: async () => { requests++; return 'alice'; }, bind: async (value, owner) => { value.ownerId = owner; },
-    remote: async () => { requests++; return structuredClone(home); }, timeZone: async () => utcTimeZone,
+    remote: async () => { requests++; if (!online) throw new Error('offline'); return structuredClone(home); }, timeZone: async () => utcTimeZone,
     sync: () => ({ send: async () => { throw new TypeError('network'); } }), publish: () => {},
   });
   const first = create();
   assert.equal((await first.load(credential, () => true)).retained, false);
   const started = await first.start('guitar');
-  first.dispose(); now += 60000;
+  await first.dismissOfflineBanner();
+  first.dispose(); online = false; now += 60000;
   const restored = create(); const before = requests;
   const loaded = await restored.load(credential, () => true);
   assert.equal(requests, before);
   assert.equal(loaded.retained, true);
   assert.equal(loaded.profile.timers.guitar.timer?.id, started.timer?.id);
+  assert.equal((await restored.retained())?.state.offlineBannerDismissed, true);
+  await assert.rejects(restored.refresh(), /offline/);
+  assert.equal((await restored.retained())?.state.offlineBannerDismissed, true);
+  online = true;
+  await restored.refresh();
+  assert.notEqual((await restored.retained())?.state.offlineBannerDismissed, true);
   await restored.stop('guitar', started.timer!.id);
   assert.deepEqual(rows.get('alice')?.operations.map(value => value.kind), ['start', 'stop']);
   await assert.rejects(restored.load({ ...credential, ownerId: 'bob' }, () => true), /owner/);
