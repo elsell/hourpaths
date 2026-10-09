@@ -16,3 +16,10 @@ export function retainedHistoryFromSnapshot(snapshot: TrackingSnapshot, ownerID:
   if (snapshot.owner !== ownerID || snapshot.unavailablePaths?.includes(pathID)) return [];
   return retainedHistoryDetails(projectTrackingHistory(snapshot, ownerID, pathID).items);
 }
+
+/** Only an account-scoped tombstone proves deletion; cache absence does not. */
+export function activityDeletionFromSnapshot(snapshot: TrackingSnapshot | null, ownerID: string, activityID: string): boolean {
+  if (snapshot?.owner !== ownerID) return false;
+  const canonicalID = snapshot.activityAliases?.[activityID] ?? activityID;
+  return snapshot.deletedActivityIds?.includes(canonicalID) === true;
+}

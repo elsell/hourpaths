@@ -5089,7 +5089,7 @@
   "offline.activityArchived": "Esta ruta se archivó. Tu cambio de actividad pendiente no se guardó.",
   "offline.rejection.archived": "Esta ruta se archivó. El tiempo posterior al archivo no se guardó.",
   "offline.rejection.validation": "No se pudo guardar este cambio. Revisa la actividad antes de volver a intentarlo.",
-  "offline.archiveAmounts": "Guardado: {saved}. Descartado: {discarded}.",
+  "offline.archiveAmounts": "Guardado: {{saved}}. Descartado: {{discarded}}.",
   "offline.historyIncomplete": "Es posible que parte de la actividad aún no esté disponible en este dispositivo. Se muestran el historial guardado y las sesiones pendientes.",
   "offline.historyRetained": "Se muestran la actividad guardada de los últimos 90 días y las sesiones pendientes. El historial anterior está disponible en línea.",
   "offline.retainedPath": "Ruta guardada",

@@ -20,14 +20,20 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Offline-banner persistence (area 2) is the sole active implementation slice.
-Dismissal must survive restarting a client during the same outage; an unsuccessful
-retry must not reset it. The existing account-scoped durable store carries this
-choice, and a verified successful refresh resets it for the next outage.
+Native synchronization feedback (area 2) is the sole active implementation slice:
+confirmed deletion must replace an open stale detail screen, and archival notices
+must show localized saved/discarded durations. Android acceptance demonstrated
+both presentation defects while proving the underlying replay results correct.
+
+Offline-banner persistence merged in PR #144 as `3c8732d` after all five gates;
+publication is in progress. Android screen-listener lifetime PR #145 is the
+qualifying native-startup blocker: all five gates and 20 offline cold launches
+passed; checked merge and release remain pending.
 
 Native route recovery merged in [PR #143](https://github.com/elsell/hourpaths/pull/143)
 as `048c331` after all five candidate gates passed. Android acceptance covers
-activity-to-History replacement and Back navigation. Release is in progress.
+activity-to-History replacement and Back navigation. Exact API/web images and
+public readiness are verified through GitOps `bae8ab0`; TestFlight is pending.
 
 Retained-history synchronization merged in [PR #142](https://github.com/elsell/hourpaths/pull/142)
 as `d9b2f20` after all five candidate gates passed. Android acceptance verifies

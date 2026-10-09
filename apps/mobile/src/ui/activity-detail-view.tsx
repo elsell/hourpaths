@@ -19,6 +19,7 @@ const i18n = createDeviceTranslator(getLocales);
 
 export function ActivityDetailView({
   activity,
+  deleted = false,
   archived,
   busy,
   deletionBusy,
@@ -39,6 +40,7 @@ export function ActivityDetailView({
   revisions,
 }: {
   activity: ActivityDetail | null;
+  deleted?: boolean;
   archived: boolean;
   busy: boolean;
   deletionBusy: boolean;
@@ -60,6 +62,8 @@ export function ActivityDetailView({
 }) {
   const { fontScale, width } = useWindowDimensions();
   const compact = needsCompactVerticalLayout(width, fontScale);
+
+  if (deleted) return <StatusBanner text={i18n.t('offline.rejection.deleted')} tone="error" />;
 
   if (!activity) {
     return <View style={styles.stack}>

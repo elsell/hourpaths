@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { OfflineTracking, type TrackingSnapshot, type TrackingStore } from '@hourpaths/client-core';
-import { retainedHistoryFromSnapshot } from './offline/retained-history-presentation';
+import { retainedHistoryFromSnapshot, activityDeletionFromSnapshot } from './offline/retained-history-presentation';
 
 class DurableHistoryStore implements TrackingStore {
   private rows = new Map<string, TrackingSnapshot>();
@@ -45,4 +45,16 @@ test('an open retained timeline follows acknowledgement without retaining its pe
   assert.equal(before[0].pending, true, 'the old route snapshot stays immutable');
   assert.deepEqual(retainedHistoryFromSnapshot(published, 'replacement-owner', 'guitar'), []);
   assert.deepEqual(retainedHistoryFromSnapshot({ ...published, unavailablePaths: ['guitar'] }, 'owner', 'guitar'), []);
+});
+
+test('an open detail only becomes deleted from its own account explicit tombstone', async () => {
+  const tracking = new OfflineTracking(new DurableHistoryStore(), 'owner', () => 0, () => 'id');
+  const snapshot = await tracking.snapshot();
+  assert.equal(activityDeletionFromSnapshot(snapshot, 'owner', 'entry'), false, 'missing history is not deletion');
+  const deleted = { ...snapshot, deletedActivityIds: ['entry'] };
+  assert.equal(activityDeletionFromSnapshot(deleted, 'owner', 'entry'), true);
+  assert.equal(activityDeletionFromSnapshot(deleted, 'owner', 'other'), false);
+  assert.equal(activityDeletionFromSnapshot({ ...deleted, activityAliases: { 'pending-entry': 'entry' } }, 'owner', 'pending-entry'), true);
+  assert.equal(activityDeletionFromSnapshot(deleted, 'replacement-owner', 'entry'), false);
+  assert.equal(activityDeletionFromSnapshot(null, 'owner', 'entry'), false);
 });
