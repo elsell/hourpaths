@@ -1,6 +1,5 @@
 import SegmentedControl from '@expo/ui/community/segmented-control';
 import { StyleSheet } from 'react-native';
-import { mobileTheme } from './tokens';
 
 export type NativeSegment<Value extends string> = {
   label: string;
@@ -28,7 +27,6 @@ export function NativeSegmentedControl<Value extends string>({
     }}
     selectedIndex={selectedIndex}
     style={styles.control}
-    tintColor={mobileTheme.colors.accent}
     values={segments.map((segment) => segment.label)}
   />;
 }
