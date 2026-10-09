@@ -23,6 +23,13 @@ and retained. Release evidence below is historical unless identified as current.
 Comment removal and appeal enforcement ([issue #154](https://github.com/elsell/hourpaths/issues/154), area 10) is the sole active
 implementation slice. An operational removal must hide the comment across
 social reads and deliveries and expose the existing private notice/appeal flow.
+Draft [PR #155](https://github.com/elsell/hourpaths/pull/155) implements removal,
+private notices and appeal reversal. Real PostgreSQL checks cover hidden reads,
+counts/retries, competing edit and push transactions, and ordinary deletion.
+Studio acceptance verifies the affected-comment reference, appeal submission
+and persisted reload at desktop and narrow widths. Native acceptance, final
+merge gates and release availability remain outstanding.
+
 Draft PR #153 (bundled goal reminders and quiet periods) is paused for the
 outstanding equal-start/end quiet-period decision. It is not released.
 
