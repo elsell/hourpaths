@@ -4947,7 +4947,7 @@
   "social.profilePaths": "Rutas",
   "social.profileOpenActive": "Ver las rutas activas de {name} ({count})",
   "social.profileCountUnavailable": "—",
-  "social.profileCountLabel": "{count} {label}",
+  "social.profileCountLabel": "{{count}} {{label}}",
   "home.arrange.dragHint": "Mantén pulsado y arrastra para reordenar. También puedes usar Organizar rutas.",
   "studio.navigation": "Navegación principal",
   "studio.paths": "Caminos",
@@ -5195,9 +5195,9 @@
   "connections.noFollowers": "Aún no hay seguidores.",
   "connections.noFollowing": "Aún no sigue a nadie.",
   "connections.remove": "Eliminar",
-  "connections.removeLabel": "Eliminar a {name} de tus seguidores",
+  "connections.removeLabel": "Eliminar a {{name}} de tus seguidores",
   "connections.removing": "Eliminando…",
-  "connections.confirmTitle": "¿Eliminar a {name}?",
+  "connections.confirmTitle": "¿Eliminar a {{name}}?",
   "connections.confirmDescription": "No recibirá ninguna notificación. Perderá el acceso exclusivo para seguidores, pero conservará su participación en los Paths compartidos. Podrá volver a seguirte o solicitar seguirte.",
   "connections.removeFailed": "No se pudo confirmar la eliminación. Puedes volver a intentarlo de forma segura."
 }
