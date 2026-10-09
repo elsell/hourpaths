@@ -320,6 +320,7 @@ const (
 	NotificationCommentHeart                  InvitationNotificationKind = "comment_heart"
 	NotificationNudgeReceived                 InvitationNotificationKind = "nudge_received"
 	NotificationTimerStarted                  InvitationNotificationKind = "timer_started"
+	NotificationLongTimerRunning              InvitationNotificationKind = "long_timer_running"
 	NotificationIntervalGoalAchieved          InvitationNotificationKind = "interval_goal_achieved"
 	NotificationOverallTargetAchieved         InvitationNotificationKind = "overall_target_achieved"
 )
@@ -364,6 +365,7 @@ type InvitationNotificationProjection struct {
 }
 
 type NotificationPageRequest struct {
+	LongTimers     bool
 	Achievements   bool
 	TimerStarts    bool
 	EmojiReactions bool
@@ -380,6 +382,7 @@ type NotificationPage struct {
 }
 
 type NotificationMutationCommand struct {
+	LongTimers      bool
 	Achievements    bool
 	TimerStarts     bool
 	EmojiReactions  bool

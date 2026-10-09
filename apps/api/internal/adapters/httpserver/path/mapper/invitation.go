@@ -96,7 +96,7 @@ func InvitationNotification(value pathapp.InvitationNotificationProjection) dto.
 		result.PathID = string(value.PathID)
 		result.PathName = value.PathName
 		result.SocialFeedEventID = value.SocialFeedEventID
-	case pathapp.NotificationTimerStarted:
+	case pathapp.NotificationTimerStarted, pathapp.NotificationLongTimerRunning:
 		result.PathID = string(value.PathID)
 		result.PathName = value.PathName
 	case pathapp.NotificationNudgeReceived:

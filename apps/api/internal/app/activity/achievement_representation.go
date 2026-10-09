@@ -12,3 +12,13 @@ func achievementNotificationRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(achievementRepresentationKey{}).(bool)
 	return enabled
 }
+
+type longTimerRepresentationKey struct{}
+
+func WithLongTimerNotificationRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, longTimerRepresentationKey{}, enabled)
+}
+func longTimerNotificationRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(longTimerRepresentationKey{}).(bool)
+	return enabled
+}

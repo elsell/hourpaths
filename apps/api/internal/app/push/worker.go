@@ -82,10 +82,10 @@ func (w PushDeliveryWorker) process(ctx context.Context, delivery ports.PushDeli
 		}
 		return err
 	}
-	if projection.Kind.IsAchievement() && projection.Actor.UserID != delivery.RecipientUserID {
+	if (projection.Kind.IsAchievement() || projection.Kind == pathapp.NotificationLongTimerRunning) && projection.Actor.UserID != delivery.RecipientUserID {
 		return w.terminal(ctx, delivery, ports.PushDeliverySuppressed, "notification_ineligible")
 	}
-	if projection.Kind == pathapp.NotificationTimerStarted || projection.Kind.IsAchievement() {
+	if projection.Kind == pathapp.NotificationTimerStarted || projection.Kind == pathapp.NotificationLongTimerRunning || projection.Kind.IsAchievement() {
 		if w.Authorizer == nil {
 			return errPushDeliveryProcessing
 		}
@@ -302,6 +302,17 @@ func localizedPushMessage(
 			} else {
 				message.Body = fmt.Sprintf("You reached your overall target on %s.", projection.PathName)
 			}
+		} else {
+			return ports.PushMessage{}, false
+		}
+	case projection.Kind == pathapp.NotificationLongTimerRunning && projection.Presentation == pathapp.NotificationInformational:
+		message.Presentation = ports.PushInformational
+		if delivery.Locale == "es" {
+			message.Title = "El temporizador sigue en marcha"
+			message.Body = fmt.Sprintf("Tu temporizador en %s sigue en marcha. ¿Es hora de detenerlo?", projection.PathName)
+		} else if delivery.Locale == "en" {
+			message.Title = "Timer still running"
+			message.Body = fmt.Sprintf("Your timer on %s is still running. Is it time to stop?", projection.PathName)
 		} else {
 			return ports.PushMessage{}, false
 		}
@@ -549,7 +560,7 @@ func validPushNotificationSubject(projection pathapp.InvitationNotificationProje
 	nudge := projection.Kind == pathapp.NotificationNudgeReceived && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.NudgeContent.Valid() && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == "" &&
 		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == ""
-	timer := projection.Kind == pathapp.NotificationTimerStarted && projection.Presentation == pathapp.NotificationInformational &&
+	timer := (projection.Kind == pathapp.NotificationTimerStarted || projection.Kind == pathapp.NotificationLongTimerRunning) && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.InvitationID == "" && projection.OfferedRole == "" && projection.OwnershipTransferID == "" &&
 		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""
 	achievement := projection.Kind.IsAchievement() && projection.Presentation == pathapp.NotificationInformational && pathIDPresent && projection.SocialFeedEventID != "" && strings.TrimSpace(projection.SocialFeedEventID) == projection.SocialFeedEventID && projection.CommentID == "" && projection.Reaction == "" && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == "" && projection.FollowRequestID == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""

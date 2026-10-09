@@ -3,6 +3,7 @@ package activitystore
 import (
 	"context"
 	"errors"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationlongtimer"
 	"slices"
 	"sort"
 	"strings"
@@ -111,7 +112,7 @@ func (r *Repository) DeleteActivity(ctx context.Context, command application.Del
 		if err := tx.Model(&activityModel{}).Where("participant_id = ? AND path_id = ?", command.ParticipantID, command.PathID).Count(&sessionCount).Error; err != nil {
 			return err
 		}
-		unreadNotificationCount, err := activityDeletionVisibleUnreadNotificationCount(tx, command.ParticipantID, command.Audit.OccurredAt, command.Achievements)
+		unreadNotificationCount, err := activityDeletionVisibleUnreadNotificationCount(tx, command.ParticipantID, command.Audit.OccurredAt, command.Achievements, command.LongTimers)
 		if err != nil {
 			return err
 		}
@@ -172,10 +173,18 @@ func activityDeletionVisibleUnreadNotificationCount(tx *gorm.DB, recipientUserID
 		Joins("LEFT JOIN follow_request_models ON follow_request_models.id = notification_models.follow_request_id").
 		Joins("JOIN user_models AS notification_actor ON notification_actor.id = notification_models.actor_user_id").
 		Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND notification_models.read_at IS NULL AND "+activityDeletionVisibleNotificationPredicate, recipientUserID, snapshot)
+	if len(achievements) > 0 && achievements[0] || len(achievements) > 1 && achievements[1] {
+		query = query.Joins("LEFT JOIN path_models ON path_models.id = notification_models.path_id")
+	}
+	if len(achievements) < 2 || !achievements[1] {
+		query = query.Where("notification_models.kind <> 'long_timer_running'")
+	} else {
+		query = query.Where(notificationlongtimer.VisiblePredicate)
+	}
 	if len(achievements) == 0 || !achievements[0] {
 		query = query.Where("notification_models.kind NOT IN ('interval_goal_achieved','overall_target_achieved')")
 	} else {
-		query = query.Joins("LEFT JOIN path_models ON path_models.id = notification_models.path_id").Joins("LEFT JOIN social_feed_event_models notification_event ON notification_event.id = notification_models.social_feed_event_id").Where(notificationachievement.VisiblePredicate)
+		query = query.Joins("LEFT JOIN social_feed_event_models notification_event ON notification_event.id = notification_models.social_feed_event_id").Where(notificationachievement.VisiblePredicate)
 	}
 	err := query.Count(&count).Error
 	return count, err

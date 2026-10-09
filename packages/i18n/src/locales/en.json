@@ -879,6 +879,7 @@
   "timerSubscription.failed": "Couldn’t save or load this preference. Try again.",
   "notification.intervalGoalAchieved": "You reached your interval goal on {{pathName}}.",
   "notification.overallTargetAchieved": "You reached your overall target on {{pathName}}.",
+  "notification.longTimerRunning": "Your timer on {{pathName}} is still running. Is it time to stop?",
   "notification.timerStarted": "{{displayName}} started tracking on {{pathName}}.",
   "notification.pathVisibilityChanged": "{{displayName}} changed {{pathName}} visibility to {{pathVisibility}}. Eligible participant identity, progress, and activity in this Path are now visible to the broader Path audience. Your profile and unrelated Paths remain unchanged.",
   "duration.fieldLabel": "{{label}}: {{unit}}",

@@ -331,12 +331,12 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 		if err != nil {
 			return err
 		}
-		if notice.Kind == "timer_started" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
+		if notice.Kind == "timer_started" || notice.Kind == "long_timer_running" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
 			if err := timerstore.Lock(tx, notice.PathID); err != nil {
 				return err
 			}
 		}
-		if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
+		if notice.Kind == "long_timer_running" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
 			var owner string
 			if err := tx.Table("path_models").Select("owner_user_id").Where("id = ?", notice.PathID).Take(&owner).Error; err != nil {
 				return err
@@ -398,6 +398,17 @@ WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_bl
 	}
 	if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() && notice.ProviderTicket == "" {
 		return achievementstore.Eligible(tx, notificationID, notice.RecipientUserID)
+	}
+	if notice.Kind == "long_timer_running" && notice.ProviderTicket == "" {
+		var active int64
+		err := tx.Table("running_timer_models timer").
+			Joins("JOIN notification_models notice ON notice.timer_id = timer.id AND notice.path_id = timer.path_id AND notice.recipient_user_id = timer.participant_id").
+			Joins("JOIN user_models owner ON owner.id = timer.participant_id AND owner.status = 'active'").
+			Joins("JOIN path_models path ON path.id = timer.path_id AND path.archived_at IS NULL").
+			Where("notice.id = ? AND notice.deleted_at IS NULL AND notice.recipient_user_id = notice.actor_user_id", notificationID).
+			Where("EXISTS (SELECT 1 FROM path_membership_models member WHERE member.path_id = timer.path_id AND member.user_id = timer.participant_id AND member.role IN ('participant','administrator'))").
+			Where("NOT EXISTS (SELECT 1 FROM block_models b WHERE (b.blocker_user_id = timer.participant_id AND b.blocked_user_id = path.owner_user_id) OR (b.blocked_user_id = timer.participant_id AND b.blocker_user_id = path.owner_user_id))").Count(&active).Error
+		return active == 1, err
 	}
 	// Already handed-off messages still need their receipt reconciled.
 	if notice.Kind == "timer_started" && notice.ProviderTicket == "" {

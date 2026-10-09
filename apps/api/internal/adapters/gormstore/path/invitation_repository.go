@@ -219,12 +219,12 @@ func (r *Repository) ListNotifications(
 	}
 	var result application.NotificationPage
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		count, err := visibleUnreadNotificationCount(tx, recipientUserID, page.Snapshot, page.EmojiReactions, page.TimerStarts, page.Achievements)
+		count, err := visibleUnreadNotificationCount(tx, recipientUserID, page.Snapshot, page.EmojiReactions, page.TimerStarts, page.Achievements, page.LongTimers)
 		if err != nil {
 			return err
 		}
 		query := notificationProjectionQuery(tx).
-			Where(notificationRepresentationPredicate(page.EmojiReactions, page.TimerStarts, page.Achievements)).
+			Where(notificationRepresentationPredicate(page.EmojiReactions, page.TimerStarts, page.Achievements, page.LongTimers)).
 			Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND "+visibleNotificationPredicate,
 				recipientUserID, page.Snapshot)
 		if page.AfterID != "" {
@@ -337,7 +337,7 @@ func invitationNotificationFromRow(
 		row.RecipientUserID != row.ActorUserID && row.ReactionType == "" && row.PathInvitationID == "" &&
 		row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.OfferedRole == ""
 	achievementSemantics := kind.IsAchievement() && presentation == application.NotificationInformational && row.Channel == "achievements" && row.RecipientUserID == row.ActorUserID && row.EventOwnerID == row.RecipientUserID && row.SocialFeedEventID != "" && row.PathID != "" && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.ReactionType == "" && row.CommentID == "" && row.NudgeID == "" && row.OfferedRole == "" && row.PathVisibility == "" && row.TimerID == nil
-	timerSemantics := kind == application.NotificationTimerStarted && presentation == application.NotificationInformational && row.Channel == "tracking_activity" && row.TimerID != nil && strings.TrimSpace(*row.TimerID) != "" && row.PathID != "" && row.RecipientUserID != row.ActorUserID && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.SocialFeedEventID == "" && row.CommentID == "" && row.ReactionType == "" && row.NudgeID == "" && row.OfferedRole == "" && row.PathVisibility == ""
+	timerSemantics := (kind == application.NotificationTimerStarted || kind == application.NotificationLongTimerRunning) && presentation == application.NotificationInformational && ((kind == application.NotificationTimerStarted && row.Channel == "tracking_activity" && row.RecipientUserID != row.ActorUserID) || (kind == application.NotificationLongTimerRunning && row.Channel == "timer_health" && row.RecipientUserID == row.ActorUserID)) && row.TimerID != nil && strings.TrimSpace(*row.TimerID) != "" && row.PathID != "" && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.SocialFeedEventID == "" && row.CommentID == "" && row.ReactionType == "" && row.NudgeID == "" && row.OfferedRole == "" && row.PathVisibility == ""
 	nudgeContent := socialdomain.NudgeContent{Kind: socialdomain.NudgeContentKind(row.NudgeContentKind), Preset: socialdomain.NudgePreset(row.NudgePreset)}
 	nudgeSemantics := kind == application.NotificationNudgeReceived && presentation == application.NotificationInformational &&
 		row.Channel == "nudges" && row.NudgeID != "" && row.NudgeID == row.NudgeRecordID && nudgeContent.Valid() &&
