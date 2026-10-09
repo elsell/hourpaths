@@ -236,6 +236,21 @@ on a path.
 - A path with fewer than three eligible completed sessions must not produce an
   average-based long-timer notification.
 
+### Long-timer acceptance scenarios
+
+- With current eligible durations of 60, 120, and 180 seconds, the mean is 120
+  seconds. A running timer is not due before 180 elapsed seconds and is due at
+  180 seconds. Repeated worker passes must not create another notice.
+- With durations of 1, 1, and 3 seconds, the threshold is 2.5 seconds; rounding
+  the mean down must not send a notice before that threshold.
+- Editing the 180-second session to 360 seconds changes the threshold to 270
+  seconds. Deleting a session so that only two remain makes the timer ineligible.
+- A different participant's sessions and sessions on a different Path must not
+  contribute to the calculation. Manual sessions use the same rule as timed ones.
+- Notification channel and visibility rules follow
+  [Notifications](../notifications/notifications.spec.md). Notice creation must
+  not stop, extend, or otherwise change the running timer.
+
 ## Simultaneous timers
 
 - A participant must be able to run timers for multiple paths simultaneously.

@@ -145,6 +145,7 @@ func main() {
 	go reconcile(ctx, application, authorizationWorker)
 	go recoverDeletions(ctx, journal, store)
 	go reconcilePush(ctx, pushWorker)
+	go reconcileLongTimers(ctx, store, authorizer, clock, auditLimiter, probe)
 	registrations := generated.Registrations(generated.Dependencies{DB: store.DB, Auth: sessions, Profiles: store, Authorizer: authorizer, AuthorizationOutbox: store, AuthorizationSerializer: store, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock, Probe: probe, NewID: uuid.NewString, AuthorizationWorker: uuid.NewString(), AuthorizationLease: 30 * time.Second, CursorSigningKey: []byte(cfg.CursorSigningKey)})
 	registrations = append(registrations, func(api huma.API) {
 		statsroutes.Register(api, &statsapp.Service{Auth: sessions, Repository: gormstore.StatsRepository{DB: store.DB}, Authorizer: authorizer, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock})

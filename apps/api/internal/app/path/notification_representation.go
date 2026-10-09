@@ -38,3 +38,13 @@ func notificationAchievementRepresentation(ctx context.Context) bool {
 func (kind InvitationNotificationKind) IsAchievement() bool {
 	return kind == NotificationIntervalGoalAchieved || kind == NotificationOverallTargetAchieved
 }
+
+type notificationLongTimerRepresentationKey struct{}
+
+func WithNotificationLongTimerRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, notificationLongTimerRepresentationKey{}, enabled)
+}
+func notificationLongTimerRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(notificationLongTimerRepresentationKey{}).(bool)
+	return enabled
+}

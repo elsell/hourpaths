@@ -94,7 +94,7 @@ type AchievementNotification = PathNotificationBase & Readonly<{
 }>;
 
 type TimerStartedNotification = PathNotificationBase & Readonly<{
-  type: 'timer_started';
+  type: 'timer_started' | 'long_timer_running';
   presentation: 'informational';
   pathId: string;
 }>;
@@ -193,6 +193,7 @@ export type NotificationPresentationMessageKey =
   | 'notification.pathMemberRemoved.supporter'
   | 'notification.pathVisibilityChanged'
   | 'notification.timerStarted'
+  | 'notification.longTimerRunning'
   | 'notification.intervalGoalAchieved'
   | 'notification.overallTargetAchieved'
   | 'notification.newFollower'
@@ -350,9 +351,9 @@ function validatedNotification(value: unknown): PathInvitationNotification | und
     return Object.freeze({ id: record.id, type: record.type, presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName, socialFeedEventId: record.socialFeedEventId });
   }
 
-  if (record.type === 'timer_started') {
+  if (record.type === 'timer_started' || record.type === 'long_timer_running') {
     if (record.presentation !== 'informational' || !hasExactKeys(record, timerStartedNotificationKeys)) return undefined;
-    return Object.freeze({ id: record.id, type: 'timer_started', presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName });
+    return Object.freeze({ id: record.id, type: record.type, presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName });
   }
 
   if (record.type === 'nudge_received') {
@@ -560,6 +561,8 @@ export function notificationPresentationMessageKey(
     return 'notification.overallTargetAchieved';
   case 'timer_started':
     return 'notification.timerStarted';
+  case 'long_timer_running':
+    return 'notification.longTimerRunning';
   case 'new_follower':
     return 'notification.newFollower';
   case 'follow_request_received':

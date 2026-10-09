@@ -370,12 +370,19 @@ func (s *Service) DeleteActivity(ctx context.Context, authorization, pathID, act
 	event := s.auditEvent(ctx, principal.UserID, audit.ResourceDeleted, activityID)
 	event.TargetType = "activity"
 	achievements := achievementNotificationRepresentation(ctx)
+	longTimers := longTimerNotificationRepresentation(ctx)
 	hash := requestHash(DeleteActivityOperation, pathID, activityID)
 	if achievements {
 		hash = requestHash(DeleteActivityOperation, pathID, activityID, "achievements")
 	}
+	if longTimers {
+		hash = requestHash(DeleteActivityOperation, pathID, activityID, "long-timers")
+		if achievements {
+			hash = requestHash(DeleteActivityOperation, pathID, activityID, "achievements", "long-timers")
+		}
+	}
 	result, err := s.Repository.DeleteActivity(ctx, DeleteActivityCommand{
-		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements,
+		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements, LongTimers: longTimers,
 		Idempotency: ports.Idempotency{
 			PrincipalID: principal.UserID, Operation: DeleteActivityOperation, Key: idempotencyKey,
 			RequestHash: hash,
