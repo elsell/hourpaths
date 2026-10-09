@@ -571,3 +571,11 @@ and clean symbol/package vulnerability scans. Required image and acceptance
 gates remain in force. The required minimum module graph includes `x/text` v0.42.0, `x/sync`
 v0.23.0, and `x/sys` v0.48.0; their exact age exceptions use the same checks.
 No unrelated dependency upgrades belong in this fix.
+
+### Reporting persistence dependency isolation
+
+Reporting snapshot reads and ordinary Path reads must share the same actor-scoped
+Path visibility query. The shared query must remain independent of repositories
+that depend on the root persistence adapter, so all persistence test packages
+remain independently compilable. This extraction must not change membership,
+follow, block, or SpiceDB authorization behavior.

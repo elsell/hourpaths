@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
-	pathstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/path"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/pathaccess"
 	app "github.com/elsell/hour-paths/apps/api/internal/app/moderation"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/moderation"
-	pathdomain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"gorm.io/gorm"
 )
@@ -60,7 +59,7 @@ func resolveReportSnapshot(tx *gorm.DB, viewer string, target domain.Target, at 
 		}
 		result.JPEG = picture.JPEG
 	case domain.Path:
-		path, err := pathstore.New(tx).Get(tx.Statement.Context, viewer, pathdomain.ID(target.ID))
+		path, err := reportPath(tx, viewer, target.ID)
 		if err != nil {
 			return result, err
 		}
@@ -99,7 +98,7 @@ func resolveReportSnapshot(tx *gorm.DB, viewer string, target domain.Target, at 
 		if err != nil {
 			return result, err
 		}
-		if _, err = pathstore.New(tx).Get(tx.Statement.Context, viewer, pathdomain.ID(row.PathID)); err != nil {
+		if _, err = reportPath(tx, viewer, row.PathID); err != nil {
 			return result, err
 		}
 		result.Access.SubjectUserID = row.SenderUserID
@@ -114,4 +113,16 @@ func resolveReportSnapshot(tx *gorm.DB, viewer string, target domain.Target, at 
 	var err error
 	result.Evidence, err = json.Marshal(evidence)
 	return result, err
+}
+
+// Only the report evidence fields are selected; authorization stays actor scoped.
+func reportPath(tx *gorm.DB, viewer, id string) (reportPathRow, error) {
+	var row reportPathRow
+	err := pathaccess.Query(tx, viewer, id).Select("path_models.id, path_models.owner_user_id, path_models.name, path_models.updated_at").Take(&row).Error
+	return row, err
+}
+
+type reportPathRow struct {
+	ID, OwnerUserID, Name string
+	UpdatedAt             time.Time
 }
