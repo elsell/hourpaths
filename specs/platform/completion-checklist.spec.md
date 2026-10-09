@@ -20,39 +20,55 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Ordinary goal reminders with saved quiet hours (areas 8–9) are the sole active
-slice, in [draft PR #153](https://github.com/elsell/hourpaths/pull/153). Scheduling,
-bundles, immediate online/offline Stop recalculation, account-scoped quiet-hour
-settings and final push suppression are implemented. Studio and Android at 160%
-text verify settings save and cross-client readback. Database checks cover
-atomic receipts/audit, access revocation, quiet-hour updates, DST boundaries and
-delayed handoff. Equal start/end semantics still require the owner's decision;
-final candidate gates, checked merge and release remain outstanding.
+Comment removal and appeal enforcement ([issue #154](https://github.com/elsell/hourpaths/issues/154), area 10) merged in PR #155 as `d2bd82c` after all five checks.
+Its production/store release is the active delivery step. An operational removal must hide the comment across
+social reads and deliveries and expose the existing private notice/appeal flow.
+[PR #155](https://github.com/elsell/hourpaths/pull/155) implements removal,
+private notices and appeal reversal. Real PostgreSQL checks cover hidden reads,
+counts/retries, competing edit and push transactions, and ordinary deletion.
+Studio acceptance verifies the affected-comment reference, appeal submission
+and persisted reload at desktop and narrow widths. Android at 160% font size
+shows the same notice and appeal, then the final reversal after Refresh. Final
+release availability and signed physical-device acceptance remain outstanding.
 
-Online history convergence merged in PR #147. Its TestFlight 0.49.6 (436) is
-available; combined PRs #144–#146 are available in 0.49.5 (434). Native expiry
-recovery (PR #149) is available in 0.49.7 (438), and the time-zone catalog fix
-(PR #152) is available in 0.49.8 (442), confirmed VALID, IN_BETA_TESTING and
-assigned to the internal group by Apple status run `37992233224`. Exact-source
-API/web deployments are verified. Physical-device acceptance remains open.
+Draft PR #153 (bundled goal reminders and quiet periods) integrates the merged
+moderation behavior and reserves migrations 95–96 after moderation migration 94.
+It remains paused for the
+outstanding equal-start/end quiet-period decision. It is not released. Scheduling,
+bundles, online/offline Stop recalculation, account-scoped settings and final push
+suppression are implemented. Prior Studio and Android at 160% text acceptance
+verified saved settings and cross-client readback. Integration with moderation
+passes fresh migrations, focused PostgreSQL delivery/authorization checks, both
+client type checks, generated-contract validation and localization checks.
 
-Android acceptance covers 20 offline cold launches, edit/deletion and archival
-conflicts, membership removal, and a newer Studio timer superseding an older
-native timer with one saved result and notification cleanup. These checks do not
-close signed-device acceptance.
+Online history convergence and time-zone selection have subsequently shipped.
+The latest verified availability is TestFlight 0.49.8 (442), source `92477b5`,
+VALID and IN_BETA_TESTING with internal-group assignment. This does not close
+physical-device acceptance or the remaining areas below.
+
+Offline-banner persistence, Android screen-listener lifetime, and native
+synchronization feedback merged in PRs #144–#146 through their five-check gates.
+Combined source `f27cd1f` is deployed through GitOps `b26e1fc`, with exact
+API/web images and Ready/Healthy Flux verified. TestFlight 0.49.5 (434) is VALID,
+IN_BETA_TESTING and assigned to the internal group (status run `37984186271`). Android acceptance covers 20 offline
+cold launches, edit/deletion and archival conflicts, membership removal, and a
+newer Studio timer superseding an older native timer with one saved result and
+notification cleanup. These checks do not close signed-device acceptance.
 
 Native route recovery merged in [PR #143](https://github.com/elsell/hourpaths/pull/143)
 as `048c331` after all five candidate gates passed. Android acceptance covers
 activity-to-History replacement and Back navigation. Exact API/web images and
-public readiness are verified through GitOps `bae8ab0`; TestFlight is pending.
+public readiness are verified through GitOps `bae8ab0`. TestFlight 0.49.3 (426)
+is VALID, IN_BETA_TESTING and internally assigned (status run `37977765960`).
 
 Retained-history synchronization merged in [PR #142](https://github.com/elsell/hourpaths/pull/142)
 as `d9b2f20` after all five candidate gates passed. Android acceptance verifies
 pending-to-saved convergence, offline edit persistence across restart, and a
 Studio/native conflict preserving the later edit and both revisions. Publication
 has deployed exact API/web images through GitOps `906faa3`; TestFlight upload
-is in progress. Separate debug offline-startup crashes remain open;
-this evidence does not close signed physical-device acceptance.
+completed: TestFlight 0.49.2 (424) is VALID, IN_BETA_TESTING and internally
+assigned (status run `37974613215`). Subsequent PRs #144–#146 address the
+reported offline-startup and listener failures. Signed-device acceptance remains open.
 
 Native Live Activity row restoration merged in [PR #141](https://github.com/elsell/hourpaths/pull/141)
 as `cfa403d` after all five candidate gates passed. The actual widget serializer
@@ -345,7 +361,8 @@ Remaining closure criteria:
 3. Verify account-lifecycle cancellation on mobile, including a held callback
    after same-owner sign-out/sign-in, and complete physical-device acceptance.
 
-No acceptance area closes from this partial delivery; twelve remain.
+This historical partial delivery did not close another acceptance area. The
+current remaining count is maintained at the top of this checklist.
 
 Nonblocking notification follow-up: revalidate a delayed goal-deadline push against interval expiry and subsequently recorded goal completion before provider handoff. Current delivery already rechecks preferences, active timers and access.
 
@@ -371,7 +388,7 @@ control as a nonblocking follow-up. Enforcement, appeals, and public-text checks
 remain separate open requirements in area 10.
 
 
-### Warning notices and appeals (review-ready)
+### Warning notices and appeals (released; device acceptance open)
 
 Native and Studio Settings now expose private Account notices, one immutable
 appeal within 30 days, and its final decision. Isolated QA demonstrated an
@@ -380,11 +397,12 @@ and the same reversed decision with original explanation in Android Settings.
 Fresh migrations through 93 and PostgreSQL checks cover ownership, retries,
 audit rollback, restricted review grants and immutable final decisions. Native
 and Studio types, localization, transport boundary and Settings checks passed;
-the scoped security critic found no P0/P1 blockers. Final CI, merge and release
-remain pending. This does not close area 10: content removal, suspension, bans,
+the scoped security critic found no P0/P1 blockers. PR #137 merged as `70d4cd7`
+and is included in verified TestFlight 0.49.8 (442). This does not close area 10:
+content removal, suspension, bans,
 restricted-account appeals and automated public-text checks remain required.
 
-### Native expired-session timer recovery (review-ready)
+### Native expired-session timer recovery (released; device acceptance open)
 
 Cold and foreground expiry now preserve the verified account's local Stop-only
 recovery, without restoring API access, new starts, or replay. Android acceptance
@@ -394,24 +412,7 @@ also exposes and completes local Stop. Emulator clock changes were restored
 before stopping; production session settings were unchanged. Focused restoration,
 owner isolation, delayed-account recovery and native tracking tests pass, along
 with mobile types, localization and client-boundary checks. Issue #148 tracks
-this slice. Final candidate gates, merge and release remain pending; area 2 is
-not closed by this evidence.
-
-
-### Active slice: ordinary goal reminders (issue #150, unreleased)
-
-This slice remains in progress; the following evidence does not close area 9.
-
-| Remaining delivery step | Current evidence or acceptance needed |
-| --- | --- |
-| Scheduling and delivery | Implemented: participant-scoped five-minute bundles, atomic receipts/audit/push admission, and immediate online/offline-stop recalculation. Real worker delivered two QA Paths as one notice; online Stop produced its eligible notice within 95 ms and offline Stop synchronization within 98 ms. Final handoff rejects expired actionability, completed/removed goals, and changed canonical goal/time-zone intervals; focused PostgreSQL checks pass. |
-| Client experience | Studio and Android at 160% font display both destinations and open each selected Path. A shared native sheet and localized chooser title are implemented. The integrated quiet-hours flow also passes Android at 160% text, native system time selection, save confirmation, and independent Studio/API readback. A persistent Path appearance-refresh warning remains unclassified. |
-| Visibility and compatibility | Focused HTTP and PostgreSQL checks cover old-client filtering, cross-account access, partial Path revocation, unavailable authorization, preference changes, running timers and completed/removed goals. |
-| Quiet-period integration | Integrated recurring unavailable periods across native/Studio preferences, reminder planning, and final push handoff. PostgreSQL verifies earlier effective deadlines, atomic preference changes and suppressed push with retained in-app notices; local-time/DST checks pass. The equal-start/end product decision remains open, so release remains held. |
-| Final candidate | Bounded P0/P1 review completed; its delayed-handoff finding is fixed with a red/green PostgreSQL regression. Applicable merge checks and checked merge remain pending on `codex/actionable-goal-reminders`. |
-| Release and availability | Pending release notes, API/web GitOps deployment, native publication, availability evidence and physical-device acceptance. |
-
-Integrated warm acceptance uses the version-95 API on Paul at port 28093. The three private
-reminder QA Paths created for delivery and navigation checks were archived after
-verification. The source worktree is `/home/john/code/hourpaths-native-route-recovery`;
-acceptance scripts and receipts are recorded in the local goal evidence ledger.
+this slice. PR #149 merged as `01a4939`; exact API/web deployment through
+GitOps `f18bd8e` is verified. TestFlight 0.49.7 (438) is VALID, IN_BETA_TESTING
+and internally assigned (status run `37989424308`). Area 2 remains open for its
+remaining acceptance criteria.

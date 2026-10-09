@@ -246,6 +246,27 @@ acknowledgments must remain unchanged.
    replacing the account clears pending notice and appeal presentation, and late
    completions cannot display the previous account's private information.
 
+### Comment-removal acceptance (`SAFE-COMMENT-REMOVAL-01`)
+
+1. An operational reviewer can remove the comment identified by an open or
+   reviewing comment case. Removal, the private enforcement notice, case
+   transition and decision event must commit together. Runtime credentials and
+   ordinary users cannot invoke this operational action.
+2. Removed comments must not appear in comment lists, feed comment counts,
+   comment history, heart rosters, notifications or pending push deliveries.
+   Direct identifiers and lost-response mutation retries must not reveal removed
+   text or allow edits to make it visible again. Other comments remain available.
+3. The author's private notice must identify the affected comment without
+   disclosing the reporter or restricted evidence. The existing 30-day appeal,
+   immutable decision and reviewer requirements apply.
+4. Reversing a removal must lift that decision's visibility restriction, subject
+   to ordinary access and any other active restriction. It must not recreate
+   content deleted through ordinary Path, activity or account lifecycle actions,
+   bypass a block, or resend a suppressed notification.
+5. Concurrent comment mutation and removal must serialize so that no edit or
+   heart committed after removal can republish or interact with removed content.
+   A removal committed before push handoff must suppress that delivery.
+
 ## Automated public-text checks
 
 - A new or edited public comment or profile description must pass an automated

@@ -114,8 +114,21 @@ reviewer must record why that is unavailable. Final decisions cannot be
 replaced. The subject sees the result without reviewer identity or report
 contents. Pending appeals keep their case evidence until final resolution.
 
-Content removal, suspension and ban enforcement remain separate unfinished
-work; issuing a warning does not apply those restrictions.
+For a reviewed comment case, grant the operator only
+`moderation_remove_comment(text,text,text)` and call it with
+`(case_id, notice_id, policy_reason)`. It hides the comment and removes associated
+notifications atomically with the subject notice and decision event. The private
+notice identifies the original comment's posting time and reference. Ordinary
+runtime credentials cannot issue or undo a removal.
+
+Comment appeals use `moderation_decide_comment_appeal(text,text,text,text)` with
+the same decision arguments and reviewer requirements as warning appeals.
+Reversal lifts that restriction; it never recreates deleted content, bypasses
+ordinary audience rules, or sends old notifications. A duplicate removal fails
+without another notice or partial case transition.
+
+Other content types, suspension and ban enforcement remain unfinished; issuing
+a warning does not apply those restrictions.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the

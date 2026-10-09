@@ -23,14 +23,19 @@ type EnforcementAppealData struct {
 	DecisionReason string     `json:"decisionReason,omitempty"`
 	DecidedAt      *time.Time `json:"decidedAt,omitempty"`
 }
+type EnforcementCommentData struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+}
 type EnforcementNoticeData struct {
-	ID             string                 `json:"id"`
-	Action         string                 `json:"action"`
-	PolicyReason   string                 `json:"policyReason"`
-	IssuedAt       time.Time              `json:"issuedAt"`
-	Until          *time.Time             `json:"until,omitempty"`
-	AppealDeadline time.Time              `json:"appealDeadline"`
-	Appeal         *EnforcementAppealData `json:"appeal,omitempty"`
+	AffectedComment *EnforcementCommentData `json:"affectedComment,omitempty"`
+	ID              string                  `json:"id"`
+	Action          string                  `json:"action"`
+	PolicyReason    string                  `json:"policyReason"`
+	IssuedAt        time.Time               `json:"issuedAt"`
+	Until           *time.Time              `json:"until,omitempty"`
+	AppealDeadline  time.Time               `json:"appealDeadline"`
+	Appeal          *EnforcementAppealData  `json:"appeal,omitempty"`
 }
 type noticeInput struct {
 	Authorization string `header:"Authorization"`
@@ -82,6 +87,9 @@ func appealData(a domain.Appeal) EnforcementAppealData {
 func noticeData(n app.Notice) EnforcementNoticeData {
 	e := n.Decision
 	d := EnforcementNoticeData{ID: e.ID, Action: string(e.Action), PolicyReason: e.PolicyReason, IssuedAt: e.IssuedAt, AppealDeadline: e.IssuedAt.Add(30 * 24 * time.Hour)}
+	if e.AffectedCommentID != "" && !e.AffectedCommentCreatedAt.IsZero() {
+		d.AffectedComment = &EnforcementCommentData{ID: e.AffectedCommentID, CreatedAt: e.AffectedCommentCreatedAt}
+	}
 	if !e.Until.IsZero() {
 		until := e.Until
 		d.Until = &until

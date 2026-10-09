@@ -5257,6 +5257,7 @@
   "studio.settings.enforcement": "Account notices",
   "enforcement.empty": "No account notices",
   "enforcement.loadFailed": "Account notices couldn’t be loaded. Try again.",
+  "enforcement.affectedComment": "Comment posted {{date}} · Reference: {{id}}",
   "enforcement.action.warning": "Warning",
   "enforcement.action.content_removal": "Content removed",
   "enforcement.action.suspension": "Account suspended",

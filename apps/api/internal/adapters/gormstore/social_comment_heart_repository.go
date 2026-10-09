@@ -178,6 +178,9 @@ func readCommentHeartReplay(tx *gorm.DB, idempotency ports.Idempotency) (socialC
 	if !bytes.Equal(replay.RequestHash, idempotency.RequestHash) {
 		return replay, false, ports.ErrIdempotencyConflict
 	}
+	if err := rejectRemovedComment(tx, replay.CommentID); err != nil {
+		return replay, false, err
+	}
 	return replay, true, nil
 }
 
