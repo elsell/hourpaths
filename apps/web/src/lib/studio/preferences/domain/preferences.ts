@@ -15,3 +15,8 @@ export interface NotificationChannelPreference { readonly channel: NotificationC
 
 export interface TimerSubscriptionSubject { scope: 'person' | 'path'; id: string }
 export interface TimerSubscriptionPreference { enabled: boolean; revision: number }
+
+export interface ProfilePicture {userId:string;url:string;revision:number}
+export interface PictureCrop {x:number;y:number;size:number}
+export interface PicturePreview {image:string;width:number;height:number}
+export interface PictureChange {userId:string;revision:number;image:string;crop?:PictureCrop;remove:boolean}

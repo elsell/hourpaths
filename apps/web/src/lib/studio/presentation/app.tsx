@@ -45,6 +45,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  pictureFiles?: {read(file:File,signal?:AbortSignal):Promise<string>};
   providers?: ProviderSettingsService;
   deletion?: AccountDeletionService;
   offline?: OfflineStatus;

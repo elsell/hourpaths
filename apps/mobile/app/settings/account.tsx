@@ -1,3 +1,4 @@
+import { PictureSettings } from '../../src/ui/picture-settings';
 import { ProfilePrivacySettings } from '../../src/ui/profile-privacy-settings';
 import { ProfileSettings } from '../../src/ui/profile-settings';
 import { ProviderSettings } from '../../src/ui/provider-settings';
@@ -132,6 +133,7 @@ export default function AccountSettings() {
       { text: i18n.t('common.cancel'), style: 'cancel' },
       { text: i18n.t('profile.privacy.confirm'), onPress: accepted },
     ])} /> : null}
+    {activePresentation.profilePicture && activePresentation.pickProfilePicture && activePresentation.profileOperationId ? <PictureSettings key={[activePresentation.sessionKey, 'picture'].join(':')} repository={activePresentation.profilePicture} pick={activePresentation.pickProfilePicture} operationId={activePresentation.profileOperationId} isCurrent={activePresentation.isCurrent} i18n={i18n} /> : null}
     {activePresentation.profileEditing && activePresentation.profileOperationId ? <ProfileSettings key={profileEditorKey} repository={activePresentation.profileEditing} operationId={activePresentation.profileOperationId} isCurrent={activePresentation.isCurrent} i18n={i18n} /> : null}
     {activePresentation.providers ? <ProviderSettings key={activePresentation.sessionKey} service={activePresentation.providers} i18n={i18n} confirmUnlink={(provider, confirmed) => Alert.alert(i18n.t('identity.unlink'), i18n.t('identity.unlinkConfirm', { provider: i18n.t(provider === 'google' ? 'identity.google' : 'identity.apple') }), [
       { text: i18n.t('common.cancel'), style: 'cancel' },

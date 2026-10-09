@@ -68,3 +68,11 @@
 .studio-retained-timers { display: grid; gap: 1rem; margin-block: 1rem; }
 .studio-retained-timer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.75rem; border-bottom: 1px solid var(--border); }
 .studio-retained-timer p { margin: 0.25rem 0 0; font-variant-numeric: tabular-nums; }
+
+.studio-picture-current .studio-avatar{width:96px;height:96px;}
+.studio-picture-crop{display:grid;gap:12px;max-width:360px;}
+.studio-picture-viewport{position:relative;width:min(100%,280px);aspect-ratio:1;overflow:hidden;border-radius:18px;background:var(--surface);touch-action:none;cursor:grab;}
+.studio-picture-viewport:active{cursor:grabbing;}
+.studio-picture-viewport img{position:absolute;max-width:none;user-select:none;pointer-events:none;}
+.studio-picture-crop label{display:grid;gap:6px;}
+.studio-picture-crop input[type=range]{width:100%;}

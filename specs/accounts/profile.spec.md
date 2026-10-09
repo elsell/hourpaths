@@ -113,6 +113,40 @@ their paths or activity.
 - Invalid, unsupported, or oversized image content must be rejected without
   changing the current profile picture.
 
+### Picture editing and removal
+
+- Mobile and Studio account settings must let the owner select a supported
+  picture, preview and position a square crop, and explicitly save or cancel.
+  Selection and preview must not change the saved profile picture.
+- Removing a picture must be an explicit owner action and must restore the
+  shared neutral avatar. A later provider sign-in must not restore it.
+- Picture updates must use a separate revision from profile text so a picture
+  change cannot overwrite an independently edited name or description.
+- The ownership, stale-review, stable-retry, failure-retention and account-switch
+  guarantees in Editing authorization and outcomes also apply to pictures.
+- After save or removal, subsequent authorized profile reads in both clients
+  must show the saved result. Replaced or removed application-hosted images must
+  no longer be retrievable from the application media endpoint.
+- Original uploads and embedded metadata must not be retained. Account deletion
+  must remove stored pictures alongside the rest of the account's product data.
+
+### Picture acceptance scenarios
+
+1. Select each supported format, position a square crop, and save; another client
+   shows the same picture on the same account. The stored image contains no
+   original metadata.
+2. Cancel a selected replacement; the previous picture remains unchanged.
+3. Invalid content, forged content types, oversized input, or failed processing
+   preserves the previous picture and provides recoverable feedback.
+4. Remove a picture; both clients show the neutral avatar, the old media URL no
+   longer returns the image, and provider sign-in does not restore it.
+5. Concurrent picture edits cannot silently overwrite each other; retry after a
+   lost response does not duplicate a mutation or audit event. Account replacement
+   cannot dispatch or apply the previous account's pending picture operation.
+
+Storage, processing and delivery boundaries are defined in
+[Profile picture storage](../platform/profile-picture-storage.spec.md).
+
 ## Private account identity reference
 
 - Account settings must show each linked identity provider and any account email

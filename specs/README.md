@@ -68,3 +68,5 @@ Following omits the people-list sidebar; timelines remain connected across days.
 Delivery completion is tracked separately from specification coverage in the
 [ordered gap-closure checklist](platform/completion-checklist.spec.md). A Covered
 cell above does not establish implementation, release, or device acceptance.
+
+Profile-picture delivery boundaries: [safe processing, storage and cleanup](platform/profile-picture-storage.spec.md).

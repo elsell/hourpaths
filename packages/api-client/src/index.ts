@@ -175,6 +175,9 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     confirmAccountDeletion: (body: AccountDeletionReceiptInput) => publicClient.POST('/v1/account-deletion/receipt', { body }),
     ownProfilePrivacy: () => authenticatedClient.GET('/v1/me/profile/privacy'),
     updateOwnProfilePrivacy: (body: Omit<components['schemas']['ProfilePrivacyUpdateInputBody'], '$schema'>, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile/privacy', { params: { header: { 'Idempotency-Key': idempotencyKey } }, body }),
+    ownProfilePicture: () => authenticatedClient.GET('/v1/me/profile/picture'),
+    previewProfilePicture: (image: string) => authenticatedClient.POST('/v1/me/profile/picture/preview', { body: { image } }),
+    updateProfilePicture: (body: Omit<components['schemas']['PictureUpdateInputBody'], '$schema'>, key: string) => authenticatedClient.PUT('/v1/me/profile/picture', { body, params: { header: { 'Idempotency-Key': key } } }),
     ownProfile: () => authenticatedClient.GET('/v1/me/profile'),
     updateOwnProfile: (body: OwnProfileUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile', {
       params: { header: { 'Idempotency-Key': idempotencyKey } }, body,

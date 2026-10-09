@@ -15,3 +15,5 @@ d0c955b5120fecedb54465567559806fb09b39ded64c185339080b4a6041e743  apps/web/src/l
 188ec896c102fbdba0f455153182fb3945047385c3b68575febe9ec0d30ca3a1  apps/web/src/lib/offline-shell/cache.ts
 c13ef1a33dc079f52b465afb6a5c6a1780078b3507b5d81a301abb2f7e3194d2  apps/web/src/lib/browser-session-state.ts
 ad260f663593fd1f60388164938563e8e74d42c82caf438eaa4fa67582a0ec9b  apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts
+f8a25f8e213007af2baa3ab8064b636be1d94e0444aee86986a2d2ceb914c6dc  apps/web/src/lib/studio/presentation/picture-crop.tsx
+30494bdbc7bc3d5c4ee4f527b94555d2a9021f54da524ba15c9fa7f1ac1ba8ea  apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts

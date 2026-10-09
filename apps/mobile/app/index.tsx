@@ -1,3 +1,5 @@
+import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
+import { pickProfilePicture } from '../src/profile-picture-picker';
 import { apiProfilePrivacy, ProfilePrivacyFailure, type ProfilePrivacy, type ProfileVisibility } from '@hourpaths/client-core';
 import { timerSubscriptionFromAPI, type TimerSubscriptionSubject, type TimerSubscriptionPreference } from '@hourpaths/client-core';
 import { TimerSubscriptionControl } from '../src/ui/timer-subscription-control';
@@ -4432,6 +4434,21 @@ export function HomeScreen() {
     }
   }
 
+  async function profilePictureRequest<T>(request: (repository: ProfilePictureRepository) => Promise<T>): Promise<T> {
+    if (!session || destination?.kind !== 'home') throw new PictureFailure('rejected');
+    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    try {
+      const result = await request(apiProfilePicture(apiURL, credential.token, owner));
+      if (!current()) throw new Error('profile_picture_superseded');
+      return result;
+    } catch (cause) {
+      if (cause instanceof PictureFailure && cause.kind === 'rejected') await handleNotificationOperationFailure(sessionFailureFromResponse(401), credential, current);
+      throw cause;
+    }
+  }
+
   async function profileEditingRequest(value?: EditableProfile, key?: string): Promise<EditableProfile> {
     if (!session || destination?.kind !== 'home') throw new ProfileEditFailure('rejected');
     const currentSession = session, owner = destination.profile.id;
@@ -8470,6 +8487,8 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      pickProfilePicture={pickProfilePicture}
+      profilePicture={{ read: () => profilePictureRequest(repo => repo.read()), preview: image => profilePictureRequest(repo => repo.preview(image)), save: (value, key) => profilePictureRequest(repo => repo.save(value, key)) }}
       profilePrivacy={{ read: () => profilePrivacyRequest(), save: (value, visibility, key) => profilePrivacyRequest(value, visibility, key) }}
       profileEditing={{ read: () => profileEditingRequest(), save: (value, key) => profileEditingRequest(value, key) }}
       profileOperationId={() => Crypto.randomUUID()}

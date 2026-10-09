@@ -1,6 +1,9 @@
 import type { TimerSubscriptionSubject, TimerSubscriptionPreference } from '../domain/preferences';
 import type { NotificationChannelPreference, AccountIdentity, TimeZonePreference, TimeZoneChange, Interactions, NudgePreference, BlockedPerson } from '../domain/preferences';
 export interface PreferencesRepository {
+  profilePicture(owner:string,signal?:AbortSignal):Promise<import('../domain/preferences').ProfilePicture>;
+  previewPicture(owner:string,image:string,signal?:AbortSignal):Promise<import('../domain/preferences').PicturePreview>;
+  savePicture(value:import('../domain/preferences').PictureChange,key:string,signal?:AbortSignal):Promise<import('../domain/preferences').ProfilePicture>;
   profilePrivacy(owner: string, signal?: AbortSignal): Promise<import('../domain/preferences').ProfilePrivacy>;
   saveProfilePrivacy(value: import('../domain/preferences').ProfilePrivacy, visibility: "public" | "private", key: string, signal?: AbortSignal): Promise<import('../domain/preferences').ProfilePrivacy>;
   editableProfile(owner: string, signal?: AbortSignal): Promise<import('../domain/preferences').EditableProfile>;
