@@ -5155,5 +5155,19 @@
   "profile.edit.unavailable": "Couldn’t save your profile. Your edits are still here. Try again.",
   "profile.edit.loadFailed": "Couldn’t load your profile. Try again.",
   "profile.edit.reload": "Load latest profile",
-  "profile.edit.review": "Latest version loaded. Review your edits, then save or cancel to use the latest profile."
+  "profile.edit.review": "Latest version loaded. Review your edits, then save or cancel to use the latest profile.",
+  "profile.privacy.heading": "Profile privacy",
+  "profile.privacy.hint": "Your name, username and profile picture remain public. Private profiles approve new followers.",
+  "profile.privacy.private": "Private profile",
+  "profile.privacy.public": "Public profile",
+  "profile.privacy.makePrivate": "Make profile private",
+  "profile.privacy.makePublic": "Make profile public",
+  "profile.privacy.confirm": "Confirm change",
+  "profile.privacy.privateWarning": "All your public Paths, including archived Paths, will become followers-only. Your current followers stay approved. Private Paths, explicit access, and recorded activity stay unchanged.",
+  "profile.privacy.publicWarning": "New followers will no longer need approval. Your existing Paths keep their current visibility; none become public automatically.",
+  "profile.privacy.loadFailed": "Profile privacy couldn’t be loaded.",
+  "profile.privacy.invalid": "This privacy change could not be applied. Refresh and try again.",
+  "profile.privacy.conflict": "Your privacy setting changed elsewhere. Refresh and review it before trying again.",
+  "profile.privacy.rejected": "Your session could not authorize this change.",
+  "profile.privacy.unavailable": "We couldn’t confirm the change. You can retry, or refresh to check your current privacy setting."
 }

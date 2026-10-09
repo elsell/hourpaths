@@ -39,6 +39,7 @@ type App struct {
 	DeletionJournal                  AccountDeletionJournal
 	TimeZonePreferences              TimeZonePreferenceRepository
 	Profiles                         ProfileRepository
+	ProfilePrivacy                   ProfilePrivacyRepository
 	DuplicateAccountHints            ports.DuplicateAccountHints
 	DuplicateAccountRecoveryDeclines ports.DuplicateAccountRecoveryDeclines
 	UsernameSuggestions              ports.UsernameSuggestions

@@ -1,3 +1,4 @@
+import { ProfilePrivacySettings } from '../../src/ui/profile-privacy-settings';
 import { ProfileSettings } from '../../src/ui/profile-settings';
 import { ProviderSettings } from '../../src/ui/provider-settings';
 import { getLocales } from 'expo-localization';
@@ -64,6 +65,7 @@ export default function AccountSettings() {
   const ownedWorking = ownsState && working;
   const ownedFailureKey = ownsState ? failureKey : null;
   const name = activePresentation.displayName || activePresentation.email;
+  const privacyEditorKey = [activePresentation.sessionKey, 'privacy'].join(':');
   const profileEditorKey = [activePresentation.sessionKey, 'profile'].join(':');
 
   async function signOut(resolution: SignOutTimerChoice) {
@@ -126,6 +128,10 @@ export default function AccountSettings() {
       <SettingsSeparator />
       <SettingsValueRow label={i18n.t('settings.account.email')} value={activePresentation.email} />
     </SettingsSection>
+    {activePresentation.profilePrivacy && activePresentation.profileOperationId ? <ProfilePrivacySettings key={privacyEditorKey} repository={activePresentation.profilePrivacy} operationId={activePresentation.profileOperationId} isCurrent={activePresentation.isCurrent} i18n={i18n} confirm={(visibility, accepted) => Alert.alert(i18n.t(visibility === 'private' ? 'profile.privacy.makePrivate' : 'profile.privacy.makePublic'), i18n.t(visibility === 'private' ? 'profile.privacy.privateWarning' : 'profile.privacy.publicWarning'), [
+      { text: i18n.t('common.cancel'), style: 'cancel' },
+      { text: i18n.t('profile.privacy.confirm'), onPress: accepted },
+    ])} /> : null}
     {activePresentation.profileEditing && activePresentation.profileOperationId ? <ProfileSettings key={profileEditorKey} repository={activePresentation.profileEditing} operationId={activePresentation.profileOperationId} isCurrent={activePresentation.isCurrent} i18n={i18n} /> : null}
     {activePresentation.providers ? <ProviderSettings key={activePresentation.sessionKey} service={activePresentation.providers} i18n={i18n} confirmUnlink={(provider, confirmed) => Alert.alert(i18n.t('identity.unlink'), i18n.t('identity.unlinkConfirm', { provider: i18n.t(provider === 'google' ? 'identity.google' : 'identity.apple') }), [
       { text: i18n.t('common.cancel'), style: 'cancel' },

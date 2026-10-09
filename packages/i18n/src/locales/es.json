@@ -5155,5 +5155,19 @@
   "profile.edit.unavailable": "No se pudo guardar tu perfil. Tus cambios siguen aquí. Inténtalo de nuevo.",
   "profile.edit.loadFailed": "No se pudo cargar tu perfil. Inténtalo de nuevo.",
   "profile.edit.reload": "Cargar el perfil más reciente",
-  "profile.edit.review": "Versión más reciente cargada. Revisa tus cambios y guarda, o cancela para usar el perfil más reciente."
+  "profile.edit.review": "Versión más reciente cargada. Revisa tus cambios y guarda, o cancela para usar el perfil más reciente.",
+  "profile.privacy.heading": "Privacidad del perfil",
+  "profile.privacy.hint": "Tu nombre, nombre de usuario y foto de perfil siguen siendo públicos. Los perfiles privados aprueban a los nuevos seguidores.",
+  "profile.privacy.private": "Perfil privado",
+  "profile.privacy.public": "Perfil público",
+  "profile.privacy.makePrivate": "Hacer privado el perfil",
+  "profile.privacy.makePublic": "Hacer público el perfil",
+  "profile.privacy.confirm": "Confirmar cambio",
+  "profile.privacy.privateWarning": "Todos tus Paths públicos, incluidos los archivados, serán visibles solo para seguidores. Tus seguidores actuales seguirán aprobados. Los Paths privados, los permisos explícitos y la actividad registrada no cambiarán.",
+  "profile.privacy.publicWarning": "Los nuevos seguidores ya no necesitarán aprobación. Tus Paths actuales conservarán su visibilidad; ninguno se hará público automáticamente.",
+  "profile.privacy.loadFailed": "No se pudo cargar la privacidad del perfil.",
+  "profile.privacy.invalid": "No se pudo aplicar este cambio de privacidad. Actualiza e inténtalo de nuevo.",
+  "profile.privacy.conflict": "Tu privacidad cambió en otro lugar. Actualiza y revísala antes de volver a intentarlo.",
+  "profile.privacy.rejected": "Tu sesión no pudo autorizar este cambio.",
+  "profile.privacy.unavailable": "No pudimos confirmar el cambio. Puedes volver a intentarlo o actualizar para comprobar la privacidad actual."
 }

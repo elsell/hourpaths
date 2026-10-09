@@ -412,6 +412,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/profile/privacy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the signed-in account's profile privacy */
+        get: operations["get-own-profile-privacy"];
+        /** Confirm the signed-in account's profile privacy change */
+        put: operations["update-own-profile-privacy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/time-zone": {
         parameters: {
             query?: never;
@@ -2646,6 +2664,22 @@ export interface components {
             readonly $schema?: string;
             data: components["schemas"]["OwnProfileDTO"];
         };
+        OwnProfilePrivacyDTO: {
+            /** Format: int64 */
+            revision: number;
+            userId: string;
+            /** @enum {string} */
+            visibility: "public" | "private";
+        };
+        OwnProfilePrivacyOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OwnProfilePrivacyOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OwnProfilePrivacyDTO"];
+        };
         OwnProfileUpdateInputBody: {
             /**
              * Format: uri
@@ -3317,6 +3351,19 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["ProfilePathsData"];
+        };
+        ProfilePrivacyUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ProfilePrivacyUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            confirmed: boolean;
+            /** Format: int64 */
+            expectedRevision: number;
+            /** @enum {string} */
+            visibility: "public" | "private";
         };
         ProviderIdentityOutputBody: {
             /**
@@ -4586,6 +4633,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnProfileOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-own-profile-privacy": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnProfilePrivacyOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-own-profile-privacy": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfilePrivacyUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnProfilePrivacyOutputBody"];
                 };
             };
             /** @description Error */

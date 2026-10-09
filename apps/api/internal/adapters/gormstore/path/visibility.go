@@ -25,6 +25,9 @@ func (r *Repository) SetVisibility(ctx context.Context, command application.SetV
 	}
 	var result application.SetVisibilityResult
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := lockProfilePaths(tx, command.ActorUserID); err != nil {
+			return err
+		}
 		if err := lockVisibilityNotificationWriters(tx, string(command.Path.ID)); err != nil {
 			return err
 		}

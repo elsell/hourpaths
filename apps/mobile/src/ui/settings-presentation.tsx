@@ -1,3 +1,4 @@
+import type { ProfilePrivacyRepository } from '@hourpaths/client-core';
 import type { ProfileEditingRepository } from '@hourpaths/client-core';
 import type { TimerSubscriptionsRepository } from '@hourpaths/client-core';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
@@ -13,6 +14,7 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  profilePrivacy?: ProfilePrivacyRepository;
   profileEditing?: ProfileEditingRepository;
   profileOperationId?: () => string;
   timerSubscriptions: TimerSubscriptionsRepository;
@@ -42,6 +44,7 @@ function emitChange() {
 
 export function SettingsPresentationSource({
   timerSubscriptions,
+  profilePrivacy,
   profileEditing,
   profileOperationId,
   providers,
@@ -60,6 +63,8 @@ export function SettingsPresentationSource({
   updateNotificationChannel,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const profilePrivacyRef = useRef(profilePrivacy);
+  profilePrivacyRef.current = profilePrivacy;
   const profileEditingRef = useRef(profileEditing);
   profileEditingRef.current = profileEditing;
   const timerSubscriptionsRef = useRef(timerSubscriptions);
@@ -98,6 +103,10 @@ export function SettingsPresentationSource({
     };
     const presentation: SettingsPresentation = {
       profileOperationId,
+      profilePrivacy: profilePrivacy ? {
+        read: async () => { assertActive(); const value = await profilePrivacyRef.current!.read(); assertProfileOwner(); return value; },
+        save: async (value, visibility, key) => { assertActive(); const saved = await profilePrivacyRef.current!.save(value, visibility, key); assertProfileOwner(); return saved; },
+      } : undefined,
       profileEditing: profileEditing ? {
         read: async () => { assertActive(); const value = await profileEditingRef.current!.read(); assertProfileOwner(); return value; },
         save: async (value, key) => { assertActive(); const saved = await profileEditingRef.current!.save(value, key); assertProfileOwner(); return saved; },

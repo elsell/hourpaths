@@ -8,6 +8,7 @@ import (
 
 	application "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"gorm.io/gorm"
@@ -93,6 +94,9 @@ func (r *Repository) Create(ctx context.Context, entity domain.Entity, change po
 	result := domain.Entity{}
 	replayed := false
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := lockProfilePaths(tx, entity.OwnerUserID); err != nil {
+			return err
+		}
 		reservation := idempotencyModel{PrincipalID: idempotency.PrincipalID, Operation: idempotency.Operation, Key: idempotency.Key, RequestHash: append([]byte(nil), idempotency.RequestHash...), ResourceID: string(entity.ID), CreatedAt: entity.CreatedAt}
 		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&reservation)
 		if created.Error != nil {
@@ -117,6 +121,16 @@ func (r *Repository) Create(ctx context.Context, entity domain.Entity, change po
 			result = decoded
 			replayed = true
 			return nil
+		}
+		var owner privacyUserModel
+		if err := tx.Where("id = ? AND status = ?", entity.OwnerUserID, identity.StatusActive).Take(&owner).Error; err != nil {
+			return err
+		}
+		if identity.ValidateProfileVisibility(owner.ProfileVisibility) != nil {
+			return ports.ErrUnavailable
+		}
+		if entity.Visibility == "public" && owner.ProfileVisibility == identity.ProfileVisibilityPrivate {
+			return ports.ErrInvalidArgument
 		}
 		if err := tx.Create(fromEntity(entity)).Error; err != nil {
 			return err

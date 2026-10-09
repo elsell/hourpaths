@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -314,6 +315,15 @@ func (r *OwnershipTransferRepository) complete(ctx context.Context, transfer dom
 	var result application.OwnershipTransferResult
 	terminalAt := transferTerminalTime(transfer, terminalColumn)
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if changeOwner {
+			owners := []string{transfer.InitiatorUserID, transfer.RecipientUserID}
+			sort.Strings(owners)
+			for _, owner := range owners {
+				if err := lockProfilePaths(tx, owner); err != nil {
+					return err
+				}
+			}
+		}
 		replayed, err := reserveTransferMutation(tx, idempotency, string(transfer.ID), terminalAt)
 		if err != nil {
 			return err

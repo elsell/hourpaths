@@ -1,3 +1,4 @@
+import { apiProfilePrivacy, ProfilePrivacyFailure, type ProfilePrivacy, type ProfileVisibility } from '@hourpaths/client-core';
 import { timerSubscriptionFromAPI, type TimerSubscriptionSubject, type TimerSubscriptionPreference } from '@hourpaths/client-core';
 import { TimerSubscriptionControl } from '../src/ui/timer-subscription-control';
 import { recoverNativeAccount } from '../src/provider-identity-settings';
@@ -4406,6 +4407,31 @@ export function HomeScreen() {
     }
   }
 
+  async function profilePrivacyRequest(value?: ProfilePrivacy, visibility?: ProfileVisibility, key?: string): Promise<ProfilePrivacy> {
+    if (!session || destination?.kind !== 'home') throw new ProfilePrivacyFailure('rejected');
+    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    const repository = apiProfilePrivacy(apiURL, credential.token, owner);
+    try {
+      const profile = value ? await repository.save(value, visibility!, key!) : await repository.read();
+      if (!current()) throw new ProfilePrivacyFailure('rejected');
+      if (value) {
+        setDestination(previous => {
+          if (!current() || previous?.kind !== 'home' || previous.profile.id !== owner) return previous;
+          const narrowed = <P extends SessionPath,>(path: P): P => profile.visibility === 'private' && path.visibility === 'public' && path.capabilities.manageLifecycle
+            ? { ...path, visibility: 'followers' } : path;
+          return { ...previous, profile: { ...previous.profile, profileVisibility: profile.visibility, paths: previous.profile.paths.map(narrowed), archivedPaths: previous.profile.archivedPaths.map(narrowed) } };
+        });
+        void nativeOffline.current?.refresh().catch(() => undefined);
+      }
+      return profile;
+    } catch (cause) {
+      if (cause instanceof ProfilePrivacyFailure && cause.kind === 'rejected') await handleNotificationOperationFailure(sessionFailureFromResponse(401), credential, current);
+      throw cause;
+    }
+  }
+
   async function profileEditingRequest(value?: EditableProfile, key?: string): Promise<EditableProfile> {
     if (!session || destination?.kind !== 'home') throw new ProfileEditFailure('rejected');
     const currentSession = session, owner = destination.profile.id;
@@ -8444,6 +8470,7 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      profilePrivacy={{ read: () => profilePrivacyRequest(), save: (value, visibility, key) => profilePrivacyRequest(value, visibility, key) }}
       profileEditing={{ read: () => profileEditingRequest(), save: (value, key) => profileEditingRequest(value, key) }}
       profileOperationId={() => Crypto.randomUUID()}
       timerSubscriptions={{ get: subject => timerSubscriptionRequest(subject), update: (subject, value, key) => timerSubscriptionRequest(subject, value, key) }}
