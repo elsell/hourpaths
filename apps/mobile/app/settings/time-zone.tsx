@@ -1,3 +1,4 @@
+import { timeZoneChoices } from '@hourpaths/client-core';
 import * as Crypto from 'expo-crypto';
 import { getLocales } from 'expo-localization';
 import { router } from 'expo-router';
@@ -19,10 +20,7 @@ import { mobileTheme } from '../../src/ui/tokens';
 const i18n = createDeviceTranslator(getLocales);
 const intent = { kind: 'time-zone', routeKey: 'settings:time-zone' } as const;
 const keyboardAccessoryID = 'settings-time-zone-keyboard';
-const supportedTimeZones = (() => {
-  const intl = Intl as typeof Intl & { supportedValuesOf?: (key: 'timeZone') => string[] };
-  return intl.supportedValuesOf?.('timeZone') ?? [];
-})();
+const supportedTimeZones = timeZoneChoices();
 
 export default function TimeZoneSettingsRoute() {
   const publishedPresentation = useSettingsPresentation();

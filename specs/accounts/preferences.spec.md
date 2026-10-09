@@ -100,6 +100,21 @@ Acceptance examples:
 - Canceling or dismissing the confirmation must leave the configured time zone
   and current interval unchanged.
 
+### Time-zone choice availability
+
+Native and Studio time-zone pickers must offer the shared IANA geographic-zone
+catalog even when the JavaScript runtime cannot enumerate time zones. Choices
+must be limited to zones the runtime can interpret. The currently configured
+valid zone must remain selectable even when it is an alias absent from the
+catalog. A missing enumeration API must not reduce the picker to its current
+value or prevent opening Settings.
+
+Acceptance: on Hermes without `Intl.supportedValuesOf`, searching for London
+must offer `Europe/London`; cancel preserves the saved zone, while confirmed
+save persists through the existing preference API and is visible in the other
+client. The search and required actions must remain accessible with large text
+and the keyboard shown.
+
 ## Native preference-settings presentation
 
 - Time Zone must open from the compact Settings hierarchy as a titled native-
