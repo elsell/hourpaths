@@ -19,7 +19,8 @@ export const handle: Handle = async ({ event, resolve }) => {
   const generatedCSP = response.headers.get('Content-Security-Policy');
   response.headers.set(
     'Content-Security-Policy',
-    generatedCSP?.replace(/connect-src [^;]+/, ['connect-src', ...connectOrigins].join(' ')) ?? "default-src 'none'"
+    generatedCSP?.replace(/connect-src [^;]+/, ['connect-src', ...connectOrigins].join(' '))
+      .replace(/img-src [^;]+/, ['img-src', "'self'", 'https:', 'data:', new URL(apiURL).origin].join(' ')) ?? "default-src 'none'"
   );
   response.headers.set('Referrer-Policy', 'no-referrer');
   response.headers.set('X-Content-Type-Options', 'nosniff');
