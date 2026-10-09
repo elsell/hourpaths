@@ -172,7 +172,9 @@ native builds verify this exact existing combination.
   presentation, so suspending JavaScript does not freeze the displayed timer.
 - A consolidated surface must identify the number of running timers and provide
   a route to the running timers in the app. Its expanded presentation must show
-  running Path names within platform size limits.
+  running Path names within platform size limits. Each visible Path row must retain
+  its name and native elapsed timer after widget serialization, for one timer
+  as well as multiple timers. A remaining-timer summary must not hide those rows.
 - Acceptance must cover two simultaneous timers, stopping one and then the last,
   offline restoration, denied presentation permission, and sign-out while
   retaining server timers. Signed-device evidence remains required.

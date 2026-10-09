@@ -14,6 +14,7 @@ const protectedPaths = [
   'apps/web/src/lib/studio/presentation/picture-crop.tsx',
   'apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts',
   'apps/mobile/src/timers/timer-surface.ios.tsx',
+  'apps/mobile/src/timers/ios-timer-layout.tsx',
   'apps/mobile/src/timers/timer-surface.android.ts',
   'apps/mobile/modules/hourpaths-timers/expo-module.config.json',
   'apps/mobile/modules/hourpaths-timers/android/build.gradle',

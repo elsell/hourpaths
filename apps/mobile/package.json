@@ -17,7 +17,7 @@
     "mobile:release:ios": "node ../../scripts/validate-mobile-release-env.mjs && node ../../scripts/run-eas.mjs ios",
     "build": "pnpm mobile:export",
     "check": "tsc --noEmit",
-    "test": "tsx --test src/*.test.ts ../../apps/web/src/lib/config.test.ts && node --test ../../scripts/run-eas.test.mjs ../../scripts/native-timer-resolution.test.mjs"
+    "test": "tsx --test src/*.test.ts ../../apps/web/src/lib/config.test.ts && node --test ../../scripts/run-eas.test.mjs ../../scripts/native-timer-resolution.test.mjs ../../scripts/native-timer-layout.test.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "55.0.12",
