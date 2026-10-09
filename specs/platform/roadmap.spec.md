@@ -18,7 +18,8 @@ still required; publication does not close the wider moderation area.
 Draft PR #153 contains bundled goal reminders and unavailable periods. Its local
 integration preserves moderation migration 94 and assigns the unpublished
 reminder migrations 95–96. Focused database and client integration checks pass.
-It remains paused for the explicit decision on equal quiet-period endpoints.
+The owner approved rejecting equal quiet-period endpoints; the prepared slice
+now proceeds through final review and release.
 The richer Live Activity proposal and public-text processing location also await
 owner decisions. These unresolved decisions do not authorize inferred behavior.
 

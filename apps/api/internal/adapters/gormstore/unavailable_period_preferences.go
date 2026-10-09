@@ -40,7 +40,7 @@ func (unavailablePeriodMutationModel) TableName() string {
 	return "user_unavailable_period_mutation_models"
 }
 func validUnavailableMinutes(p preferences.UnavailablePeriod) bool {
-	return p.StartMinute >= 0 && p.StartMinute < 1440 && p.EndMinute >= 0 && p.EndMinute < 1440
+	return p.StartMinute >= 0 && p.StartMinute < 1440 && p.EndMinute >= 0 && p.EndMinute < 1440 && (!p.Enabled || p.StartMinute != p.EndMinute)
 }
 
 func (s *Store) GetUnavailablePeriod(ctx context.Context, userID string) (application.UnavailablePeriodPreference, error) {

@@ -3,7 +3,7 @@ package preferences
 import "time"
 
 // UnavailablePeriod is a daily wall-clock interval. Boundary adapters must
-// validate minute ranges; equal-endpoint policy is not yet exposed.
+// validate minute ranges and reject enabled intervals with equal endpoints.
 type UnavailablePeriod struct {
 	Enabled                bool
 	StartMinute, EndMinute int

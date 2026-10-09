@@ -5285,6 +5285,7 @@
   "settings.quietHours.saving": "Saving…",
   "settings.quietHours.conflict": "Quiet hours changed elsewhere. Refresh before saving.",
   "settings.quietHours.saveFailed": "Quiet hours couldn’t be saved. Try again.",
+  "settings.quietHours.differentTimes": "Choose different start and end times.",
   "settings.quietHours.saved": "Quiet hours saved.",
   "settings.quietHours.on": "On",
   "settings.quietHours.off": "Off"

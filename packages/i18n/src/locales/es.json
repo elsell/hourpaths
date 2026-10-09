@@ -5285,6 +5285,7 @@
   "settings.quietHours.saving": "Guardando…",
   "settings.quietHours.conflict": "El horario de silencio cambió en otro lugar. Actualiza antes de guardar.",
   "settings.quietHours.saveFailed": "No se pudo guardar el horario de silencio. Inténtalo de nuevo.",
+  "settings.quietHours.differentTimes": "Elige horas de inicio y fin diferentes.",
   "settings.quietHours.saved": "Horario de silencio guardado.",
   "settings.quietHours.on": "Activado",
   "settings.quietHours.off": "Desactivado"

@@ -37,8 +37,8 @@ Signed physical-device acceptance remains outstanding.
 
 Draft PR #153 (bundled goal reminders and quiet periods) integrates the merged
 moderation behavior and reserves migrations 95–96 after moderation migration 94.
-It remains paused for the
-outstanding equal-start/end quiet-period decision. It is not released. Scheduling,
+The owner has approved rejecting equal enabled start/end times. Client validation
+and API rejection now implement that rule; final review, merge and release remain. Scheduling,
 bundles, online/offline Stop recalculation, account-scoped settings and final push
 suppression are implemented. Prior Studio and Android at 160% text acceptance
 verified saved settings and cross-client readback. Integration with moderation

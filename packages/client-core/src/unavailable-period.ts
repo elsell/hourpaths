@@ -33,7 +33,7 @@ export function createUnavailablePeriodOwner(userId: string, keyFactory: () => s
       const generation = ++epoch; active = generation;
       try {
         const frozen = { ...change };
-        if (!userId || frozen.userId !== userId || typeof frozen.enabled !== 'boolean' || !validUnavailableMinutes(frozen.startMinute, frozen.endMinute) || !Number.isSafeInteger(frozen.expectedRevision) || frozen.expectedRevision < 0 || !frozen.reviewedTimeZone) throw new UnavailablePeriodFailure('invalid');
+        if (!userId || frozen.userId !== userId || typeof frozen.enabled !== 'boolean' || !validUnavailableMinutes(frozen.startMinute, frozen.endMinute) || (frozen.enabled && frozen.startMinute === frozen.endMinute) || !Number.isSafeInteger(frozen.expectedRevision) || frozen.expectedRevision < 0 || !frozen.reviewedTimeZone) throw new UnavailablePeriodFailure('invalid');
         const signature = JSON.stringify([userId, frozen.enabled, frozen.startMinute, frozen.endMinute, frozen.expectedRevision, frozen.reviewedTimeZone]);
         const attempt = retry?.signature === signature ? retry : { signature, key: keyFactory() }; retry = attempt;
         const preference = await save(frozen, attempt.key);

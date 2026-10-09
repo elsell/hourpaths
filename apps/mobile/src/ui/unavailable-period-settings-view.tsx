@@ -31,6 +31,7 @@ function UnavailablePeriodForm({ i18n, repository, initial }: { i18n: Translator
   const [owner] = useState(() => createUnavailablePeriodOwner(initial.userId, Crypto.randomUUID));
   useEffect(() => { current.current = true; return () => { current.current = false; owner.cancel(); }; }, [owner]);
   const dirty = draft.enabled !== saved.enabled || draft.startMinute !== saved.startMinute || draft.endMinute !== saved.endMinute;
+  const equalTimes = draft.enabled && draft.startMinute === draft.endMinute;
   async function refresh() {
     if (admitted.current) return; admitted.current = true; setBusy(true);
     try { const value = await repo.current.read(); if (current.current) { owner.cancel(); setSaved(value); setDraft(value); setError(null); setSuccess(false); } }
@@ -38,7 +39,7 @@ function UnavailablePeriodForm({ i18n, repository, initial }: { i18n: Translator
     finally { admitted.current = false; if (current.current) setBusy(false); }
   }
   async function save() {
-    if (admitted.current || !dirty || error === 'conflict') return; admitted.current = true; setBusy(true); setError(null); setSuccess(false);
+    if (admitted.current || !dirty || equalTimes || error === 'conflict') return; admitted.current = true; setBusy(true); setError(null); setSuccess(false);
     const result = await owner.submit({ userId: saved.userId, enabled: draft.enabled, startMinute: draft.startMinute, endMinute: draft.endMinute, expectedRevision: saved.revision, reviewedTimeZone: saved.timeZone }, (value, key) => repo.current.save(value, key));
     if (current.current) {
       if (result.kind === 'applied') {
@@ -54,10 +55,11 @@ function UnavailablePeriodForm({ i18n, repository, initial }: { i18n: Translator
     {draft.enabled && <><SettingsSeparator /><NativeTimeField i18n={i18n} label={i18n.t('settings.quietHours.start')} minute={draft.startMinute} disabled={busy} onChange={startMinute => { setDraft({ ...draft, startMinute }); setSuccess(false); }} /><SettingsSeparator /><NativeTimeField i18n={i18n} label={i18n.t('settings.quietHours.end')} minute={draft.endMinute} disabled={busy} onChange={endMinute => { setDraft({ ...draft, endMinute }); setSuccess(false); }} /></>}
   </SettingsSection>
     <Text>{i18n.t('settings.quietHours.zone', { zone: saved.timeZone })}</Text>
+    {equalTimes && <Text accessibilityRole="alert">{i18n.t('settings.quietHours.differentTimes')}</Text>}
     {error && <Text accessibilityRole="alert">{i18n.t(error === 'conflict' ? 'settings.quietHours.conflict' : 'settings.quietHours.saveFailed')}</Text>}
     {error === 'conflict' && <NativeButton label={i18n.t('common.refresh')} variant="quiet" disabled={busy} onPress={() => void refresh()} />}
     {success && <Text accessibilityLiveRegion="polite">{i18n.t('settings.quietHours.saved')}</Text>}
-    <NativeButton label={i18n.t(busy ? 'settings.quietHours.saving' : 'common.save')} busy={busy} disabled={!dirty || error === 'conflict'} onPress={() => void save()} />
+    <NativeButton label={i18n.t(busy ? 'settings.quietHours.saving' : 'common.save')} busy={busy} disabled={!dirty || equalTimes || error === 'conflict'} onPress={() => void save()} />
     <NativeButton label={i18n.t('common.cancel')} variant="quiet" disabled={!dirty || busy} onPress={() => { owner.cancel(); setDraft(saved); setSuccess(false); }} />
   </SettingsShell>;
 }

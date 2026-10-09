@@ -197,9 +197,11 @@ Acceptance examples for distinct start and end times:
    01:45. During a spring-forward, a 02:30–03:30 interval includes 03:00
    where the clock skipped from 01:59 to 03:00.
 
-Open question: identical local start and end times require an owner decision
-between validation rejection and an all-day interval. Do not expose or ship
-that case until resolved.
+When enabled, identical local start and end times must be rejected as invalid.
+Both clients must explain that the start and end times must differ and preserve
+the draft for correction. A rejected save must not change the saved preference.
+Disabled preferences may retain equal placeholder times; disabling quiet hours
+must remain possible without editing hidden time fields.
 
 ### Persistence and concurrent edits
 

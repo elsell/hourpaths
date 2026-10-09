@@ -87,3 +87,20 @@ func TestUnavailablePeriodRoutesAuthenticateAndBindPreferencesToSessionOwner(t *
 		}
 	}
 }
+
+func TestUnavailablePeriodRejectsEqualEnabledTimesWithoutSaving(t *testing.T) {
+	received := ""
+	var gets []string
+	var commands []app.UnavailablePeriodCommand
+	application := app.App{Auth: unavailablePeriodRouteAuth{ports.Principal{UserID: "owner", Scopes: []string{"api:user"}}, nil, &received}, Users: timeZoneRouteUsers{}, UnavailablePeriods: unavailablePeriodRouteStore{&gets, &commands}, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC)}}
+	handler, _ := newHTTPTestServer(application, nil, Options{})
+	request := httptest.NewRequest("PUT", "/v1/me/unavailable-period", strings.NewReader(`{"expectedRevision":0,"reviewedTimeZone":"Etc/UTC","enabled":true,"startMinute":480,"endMinute":480}`))
+	request.Header.Set("Authorization", "Bearer current")
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "quiet-hours-equal-0001")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != 400 || len(commands) != 0 {
+		t.Fatalf("equal times: status=%d writes=%d body=%s", response.Code, len(commands), response.Body.String())
+	}
+}

@@ -19,6 +19,7 @@ function UnavailablePeriodForm({ initial, dependencies: d }: { initial: Unavaila
   const operation = useOwnedOperation(d), cache = useQueryClient(), admitted = useRef(false);
   useEffect(() => () => owner.cancel(), [owner]);
   const dirty = saved.enabled !== draft.enabled || saved.startMinute !== draft.startMinute || saved.endMinute !== draft.endMinute;
+  const equalTimes = draft.enabled && draft.startMinute === draft.endMinute;
   const timeValue = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
   const parseTime = (value: string) => { const [hour, minute] = value.split(':').map(Number); return hour * 60 + minute; };
   useEffect(() => { if (!busy && !dirty) { setSaved(initial); setDraft(initial); } }, [initial, busy, dirty]);
@@ -33,7 +34,7 @@ function UnavailablePeriodForm({ initial, dependencies: d }: { initial: Unavaila
     finally { admitted.current = false; if (operation.active()) setBusy(false); }
   }
   async function save() {
-    if (admitted.current || !dirty || error === 'conflict') return;
+    if (admitted.current || !dirty || equalTimes || error === 'conflict') return;
     admitted.current = true; setBusy(true); setError(null); setSuccess(false);
     const result = await owner.submit({ userId: saved.userId, enabled: draft.enabled, startMinute: draft.startMinute, endMinute: draft.endMinute, expectedRevision: saved.revision, reviewedTimeZone: saved.timeZone }, (value, key) => operation.run(signal => d.preferences.saveUnavailablePeriod(value, key, signal)));
     if (operation.active()) {
@@ -53,8 +54,9 @@ function UnavailablePeriodForm({ initial, dependencies: d }: { initial: Unavaila
       {draft.enabled && <><label>{d.i18n.t('settings.quietHours.start')}<input type="time" required value={timeValue(draft.startMinute)} onChange={event => { if (event.target.value) setDraft({ ...draft, startMinute: parseTime(event.target.value) }); setSuccess(false); }} /></label>
       <label>{d.i18n.t('settings.quietHours.end')}<input type="time" required value={timeValue(draft.endMinute)} onChange={event => { if (event.target.value) setDraft({ ...draft, endMinute: parseTime(event.target.value) }); setSuccess(false); }} /></label></>}
       <p>{d.i18n.t('settings.quietHours.zone', { zone: saved.timeZone })}</p>
-      <div className="studio-settings-actions"><button type="button" disabled={!dirty} onClick={() => { owner.cancel(); setDraft(saved); setSuccess(false); }}>{d.i18n.t('common.cancel')}</button><button className="studio-primary" disabled={!dirty || error === 'conflict'}>{d.i18n.t(busy ? 'settings.quietHours.saving' : 'common.save')}</button></div>
+      <div className="studio-settings-actions"><button type="button" disabled={!dirty} onClick={() => { owner.cancel(); setDraft(saved); setSuccess(false); }}>{d.i18n.t('common.cancel')}</button><button className="studio-primary" disabled={!dirty || equalTimes || error === 'conflict'}>{d.i18n.t(busy ? 'settings.quietHours.saving' : 'common.save')}</button></div>
     </fieldset>
+    {equalTimes && <p role="alert">{d.i18n.t('settings.quietHours.differentTimes')}</p>}
     {error && <p role="alert">{d.i18n.t(error === 'conflict' ? 'settings.quietHours.conflict' : 'settings.quietHours.saveFailed')}</p>}
     {error === 'conflict' && <button type="button" disabled={busy} onClick={() => void refresh()}>{d.i18n.t('common.refresh')}</button>}
     {success && <p role="status">{d.i18n.t('settings.quietHours.saved')}</p>}

@@ -79,9 +79,9 @@ func (a App) UpdateConfiguredUnavailablePeriod(ctx context.Context, authorizatio
 	if !validTimeZoneMutationKey(key) || input.ExpectedRevision < 0 || input.ExpectedRevision == math.MaxInt64 || identity.ValidateIANATimeZone(identity.IANATimeZone(input.ReviewedTimeZone)) != nil || p.StartMinute < 0 || p.StartMinute >= 1440 || p.EndMinute < 0 || p.EndMinute >= 1440 {
 		return UnavailablePeriodResult{}, ports.ErrInvalidArgument
 	}
-	// This draft route must not be released before equal-endpoint policy is resolved.
+	// An enabled interval must have distinct endpoints.
 	if p.Enabled && p.StartMinute == p.EndMinute {
-		return UnavailablePeriodResult{}, ports.ErrUnavailable
+		return UnavailablePeriodResult{}, ports.ErrInvalidArgument
 	}
 	now := a.Clock.Now().UTC().Truncate(time.Microsecond)
 	if now.IsZero() {

@@ -17,3 +17,16 @@ test('quiet-hours retries preserve identity and cannot cross account lifetimes',
  assert.equal((await owner.submit({...change,userId:'bob'},async()=>{wrongAccountReached=true;return {userId:'bob',enabled:true,startMinute:1320,endMinute:480,revision:1,timeZone:'Etc/UTC'};})).kind,'failed');
  assert.equal(wrongAccountReached,false);
 });
+
+
+test('equal enabled quiet hours are rejected before transport, while disabling remains possible', async () => {
+ const owner=createUnavailablePeriodOwner('alice',()=> 'quiet-key');
+ let writes=0;
+ const save=async (value:import('./unavailable-period').UnavailablePeriodChange)=>{writes++;return {userId:value.userId,enabled:value.enabled,startMinute:value.startMinute,endMinute:value.endMinute,revision:1,timeZone:value.reviewedTimeZone};};
+ const change={userId:'alice',enabled:true,startMinute:480,endMinute:480,expectedRevision:0,reviewedTimeZone:'Etc/UTC'};
+ const rejected=await owner.submit(change,save);
+ assert.equal(rejected.kind,'failed');
+ assert.equal(writes,0);
+ assert.equal((await owner.submit({...change,enabled:false},save)).kind,'applied');
+ assert.equal(writes,1);
+});
