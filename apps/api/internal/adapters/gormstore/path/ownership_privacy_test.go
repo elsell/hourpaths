@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	rootstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore"
 	"github.com/elsell/hour-paths/apps/api/internal/app"
+	pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
@@ -33,7 +35,11 @@ func TestPostgresOwnershipPrivateRecipientNarrowsAndReplaysAudience(t *testing.T
 	}
 	accepted, _ := transfer.Accept(recipient, now.Add(time.Minute))
 	command := acceptTransferCommand(accepted, prefix+"-accept", 2, prefix+"-accepted")
-	result, err := repository.Accept(ctx, command)
+	store := &rootstore.Store{DB: runtimeDB}
+	reconciler := app.App{AuthorizationBatchOutbox: store, AuthorizationSerializer: store, Audits: store, RelationshipWriter: privacyRelationshipWriter{}, Clock: privacyTransferClock{}}
+	service := pathapp.NewOwnershipTransferService(pathapp.OwnershipTransferDependencies{Auth: privacyTransferAuth{recipient}, Profiles: privacyTransferProfile{}, Transfers: repository, Audits: store, AuditRateLimiter: privacyTransferLimiter{}, Clock: privacyFixedClock{now.Add(time.Minute)}, NewID: func() string { return fmt.Sprintf("event-%d", time.Now().UnixNano()) }, AuthorizationReconciler: privacyCheckedReconciler{reconciler, store}, AuthorizationWorker: "privacy-test-worker"})
+	result, err := service.Accept(ctx, "Bearer test", transfer.ID, command.Idempotency.Key)
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +50,7 @@ func TestPostgresOwnershipPrivateRecipientNarrowsAndReplaysAudience(t *testing.T
 	if len(updates) != 6 || updates[4] != (ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: "path", ResourceID: pathID, Relation: "public_viewer", SubjectType: "user", SubjectID: "*"}) || updates[5] != (ports.RelationshipUpdate{Operation: ports.AuthorizationTouch, ResourceType: "path", ResourceID: pathID, Relation: "followers_owner", SubjectType: "user", SubjectID: recipient}) {
 		t.Fatalf("audience batch: %+v", updates)
 	}
-	replay, err := repository.Accept(ctx, command)
+	replay, err := service.Accept(ctx, "Bearer test", transfer.ID, command.Idempotency.Key)
 	if err != nil || !replay.Replayed || !reflect.DeepEqual(replay.AuthorizationBatch, result.AuthorizationBatch) || !reflect.DeepEqual(replay.RelationshipUpdates, updates) {
 		t.Fatalf("replay %+v, %v", replay, err)
 	}
@@ -92,4 +98,52 @@ func TestPostgresOwnershipPrivacyConcurrentAcceptance(t *testing.T) {
 	if err := db.Where("id = ?", pathID).Take(&row).Error; err != nil || row.OwnerUserID != recipient || row.Visibility != "followers" {
 		t.Fatalf("race result %+v %v", row, err)
 	}
+}
+
+type privacyTransferClock struct{}
+
+func (privacyTransferClock) Now() time.Time { return time.Now().UTC() }
+
+type privacyRelationshipWriter struct{}
+
+func (privacyRelationshipWriter) WriteRelationships(_ context.Context, changes []ports.RelationshipUpdate) error {
+	if len(changes) != 6 {
+		return fmt.Errorf("expected atomic audience batch, got %d", len(changes))
+	}
+	return nil
+}
+
+type privacyTransferAuth struct{ user string }
+
+func (a privacyTransferAuth) Authenticate(context.Context, string) (ports.Principal, error) {
+	return ports.Principal{UserID: a.user, Scopes: []string{"api:user"}}, nil
+}
+
+type privacyTransferProfile struct{}
+
+func (privacyTransferProfile) TimeZone(context.Context, string) (string, error) {
+	return "Etc/UTC", nil
+}
+func (privacyTransferProfile) PathCreationProfile(context.Context, string) (pathapp.PathCreationProfile, error) {
+	return pathapp.PathCreationProfile{}, nil
+}
+
+type privacyTransferLimiter struct{}
+
+func (privacyTransferLimiter) Allow(string, time.Time) bool { return true }
+
+type privacyFixedClock struct{ now time.Time }
+
+func (c privacyFixedClock) Now() time.Time { return c.now }
+
+type privacyCheckedReconciler struct {
+	app   app.App
+	store *rootstore.Store
+}
+
+func (r privacyCheckedReconciler) ReconcileAuthorizationBatch(ctx context.Context, id, worker string) error {
+	if _, err := r.store.AuthorizationBatchCompleted(ctx, id); err != nil {
+		return fmt.Errorf("completion read: %w", err)
+	}
+	return r.app.ReconcileAuthorizationBatch(ctx, id, worker)
 }

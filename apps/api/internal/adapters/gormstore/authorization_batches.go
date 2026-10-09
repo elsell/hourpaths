@@ -155,15 +155,15 @@ func (s *Store) AuthorizationBatchCompleted(ctx context.Context, id string) (boo
 	if strings.TrimSpace(id) == "" {
 		return false, ports.ErrInvalidArgument
 	}
-	var completedAt *time.Time
-	result := s.DB.WithContext(ctx).Model(&authorizationBatchOutboxModel{}).Select("completed_at").Where("id = ?", id).Scan(&completedAt)
+	var row struct{ CompletedAt *time.Time }
+	result := s.DB.WithContext(ctx).Model(&authorizationBatchOutboxModel{}).Select("completed_at").Where("id = ?", id).Scan(&row)
 	if result.Error != nil {
 		return false, result.Error
 	}
 	if result.RowsAffected != 1 {
 		return false, ports.ErrNotFound
 	}
-	return completedAt != nil, nil
+	return row.CompletedAt != nil, nil
 }
 
 func earlierAuthorizationWork(tx *gorm.DB, resourceType, resourceID string, createdAt time.Time, id string) (bool, error) {
