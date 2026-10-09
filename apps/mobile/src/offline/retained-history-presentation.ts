@@ -1,5 +1,5 @@
 import { projectTrackingHistory, type TrackingSnapshot, type RetainedActivity } from '@hourpaths/client-core';
-import type { ActivityDetail } from '../activity-history';
+import { newestActivitiesFirst, type ActivityDetail } from '../activity-history';
 
 /** Retained rows are summaries. Unknown server metadata stays absent and these
  * rows cannot navigate to details or revision/edit controls while offline. */
@@ -22,4 +22,24 @@ export function activityDeletionFromSnapshot(snapshot: TrackingSnapshot | null, 
   if (snapshot?.owner !== ownerID) return false;
   const canonicalID = snapshot.activityAliases?.[activityID] ?? activityID;
   return snapshot.deletedActivityIds?.includes(canonicalID) === true;
+}
+
+
+/** Overlay this account's durable changes on the loaded online window. Other
+ * participants and older loaded pages remain server-owned. */
+export function onlineHistoryFromSnapshot(rows: readonly ActivityDetail[], snapshot: TrackingSnapshot, ownerID: string, pathID: string): ActivityDetail[] {
+  if (snapshot.owner !== ownerID || snapshot.unavailablePaths?.includes(pathID)) return [];
+  const deleted = new Set(snapshot.deletedActivityIds ?? []);
+  const loaded = rows.filter(row => row.activity.pathId === pathID);
+  const floor = loaded.length ? Math.min(...loaded.map(row => Date.parse(row.activity.startedAt))) : -Infinity;
+  const visible = new Map(loaded.filter(row => !deleted.has(row.activity.id)).map(row => [row.activity.id, row]));
+  for (const row of retainedHistoryFromSnapshot(snapshot, ownerID, pathID)) {
+    if (deleted.has(row.activity.id)) continue;
+    const existing = visible.get(row.activity.id);
+    if (existing && (existing.activity.participantId !== ownerID || (!row.pending && existing.version >= row.version))) continue;
+    if (existing || row.pending || Date.parse(row.activity.startedAt) >= floor) {
+      visible.set(row.activity.id, { ...row, retained: row.pending === true });
+    }
+  }
+  return newestActivitiesFirst([...visible.values()]);
 }

@@ -104,6 +104,11 @@ connection and the limits of other offline surfaces.
   latest account-scoped synchronization projection. Once an entry is acknowledged,
   its pending indicator must clear without navigating away or manually refreshing;
   its server identity must replace its local identity without a duplicate row.
+- An online native timeline must also incorporate the current account’s pending
+  and acknowledged tracking changes without requiring navigation or refresh. It
+  must preserve loaded rows from other participants and its pagination cursor.
+  Retained older rows must not replace newer server revisions; only explicit
+  tombstones may remove a loaded activity.
 - Synchronization must preserve the participant and path attribution of each
   offline entry.
 - Every locally created synchronization mutation must receive a stable unique
