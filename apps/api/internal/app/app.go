@@ -38,6 +38,7 @@ type App struct {
 	AccountDeletion                  AccountDeletionRepository
 	DeletionJournal                  AccountDeletionJournal
 	TimeZonePreferences              TimeZonePreferenceRepository
+	WeekStartPreferences             WeekStartPreferenceRepository
 	Pictures                         PictureRepository
 	PictureProcessor                 ports.ProfilePictureProcessor
 	PictureRateLimiter               ports.AuditRateLimiter

@@ -72,3 +72,5 @@ cell above does not establish implementation, release, or device acceptance.
 Profile-picture delivery boundaries: [safe processing, storage and cleanup](platform/profile-picture-storage.spec.md).
 
 Profile connection-list browsing and inbound follower removal acceptance is specified in [SOC-01C](social/following.spec.md#profile-connection-lists-and-follower-removal-soc-01c).
+
+- `PREF-01`: [Editable week start](accounts/preferences.spec.md#editable-week-start-acceptance-pref-01) — settings persistence, future goal defaults, calendar grouping, and isolated retry.

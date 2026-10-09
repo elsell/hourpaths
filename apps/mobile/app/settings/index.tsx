@@ -62,6 +62,13 @@ export default function Settings() {
       />
       <SettingsSeparator />
       <SettingsNavigationRow
+        accessibilityLabel={i18n.t('settings.weekStart.heading')}
+        icon={<SettingsIcon systemName="calendar" />}
+        label={i18n.t('settings.weekStart.heading')}
+        onPress={() => router.push('/settings/week-start')}
+      />
+      <SettingsSeparator />
+      <SettingsNavigationRow
         accessibilityLabel={i18n.t('settings.timeZone.openLabel')}
         icon={<SettingsIcon systemName="globe" />}
         label={i18n.t('settings.timeZone.heading')}

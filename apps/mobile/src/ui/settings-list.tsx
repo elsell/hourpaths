@@ -128,6 +128,15 @@ export function SettingsSwitchRow({
   </View>;
 }
 
+export function SettingsChoiceRow({ label, selected, disabled = false, onPress }: {
+  label: string; selected: boolean; disabled?: boolean; onPress(): void;
+}) {
+  return <Pressable accessibilityLabel={label} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled }}
+    disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null, disabled ? styles.disabled : null]}>
+    <View style={styles.rowContent}><Text style={styles.rowLabel}>{label}</Text>{selected && <SettingsIcon systemName="checkmark" variant="inline" />}</View>
+  </Pressable>;
+}
+
 export function SettingsActionRow({
   accessibilityLabel,
   disabled = false,

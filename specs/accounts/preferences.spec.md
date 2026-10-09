@@ -23,6 +23,38 @@ the meaning of goals that already exist.
 - Changing the profile preference must not alter existing goals, including goals
   that are shared with or visible to other users.
 
+### Editable week-start acceptance (`PREF-01`)
+
+- Native Settings and Studio Settings must expose all seven weekdays in the
+  current locale and show the saved selection. Saving must persist for the
+  authenticated user across clients.
+- The setting must explain that existing goals retain their saved alignment.
+  Calendar presentations governed by the profile week-start preference must
+  use the saved value when refreshed; the authoritative calendar rules remain
+  in [Stats and History](../analytics/stats-history.spec.md).
+- A save must identify the previously loaded value. A conflicting change from
+  another client must require refresh and review instead of silently replacing
+  the newer selection. Retrying an identical save must not repeat its mutation
+  or audit event; reusing its mutation identity with different values must fail.
+- Reads and updates must be scoped to the activated authenticated account,
+  audited, and unavailable to expired, revoked, provisional, or other-account
+  sessions. Replacing an account must discard the prior account's selection and
+  in-flight UI completions.
+- Loading, saving, success, failure, and retry must use the existing shared
+  localized preference presentation. The setting must remain operable with
+  assistive technology and large text.
+
+Acceptance examples:
+1. Change Monday to Sunday in native Settings; refresh Studio Settings and see
+   Sunday. A new weekly goal defaults to Sunday while an existing Monday goal
+   retains Monday. A deliberately chosen Wednesday alignment remains Wednesday.
+2. Refresh Stats after the change: calendar grouping uses Sunday without moving
+   recorded activity to a different historical date or changing goal intervals.
+3. Two clients loaded Monday. One saves Sunday; the other's save to Tuesday
+   conflicts, preserving Sunday until it refreshes and deliberately saves again.
+4. A lost successful response can be retried with the same mutation identity;
+   a later preference change is not undone by that retry.
+
 ## Time zone
 
 - Each user profile must have a configured time zone.

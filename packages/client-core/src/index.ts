@@ -890,3 +890,7 @@ export { apiProfilePicture } from './adapters/api-profile-picture';
 
 export { createFollowerRemovalOwner, ProfileConnectionsFailure, type ConnectionDirection, type ConnectionPerson, type ConnectionsPage, type ProfileConnectionsRepository } from './profile-connections';
 export { apiProfileConnections } from './adapters/api-profile-connections';
+
+export { createWeekStartOperationOwner, validWeekday, WeekStartFailure } from './week-start-preference';
+export type { WeekStartPreference, WeekStartChange, WeekStartPreferenceRepository } from './week-start-preference';
+export { apiWeekStartPreference } from './adapters/api-week-start-preference';
