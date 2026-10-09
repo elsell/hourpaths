@@ -11,6 +11,20 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Restricted case INSERT avoids runtime read grants; fixtures verify operator/retention isolation.
+    'apps/api/internal/adapters/gormstore/moderation_report.go': (
+        '\t\tif err = tx.Exec(`INSERT INTO moderation_case_models (id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,evidence_jpeg,created_at) VALUES (?,?,?,?,?,?,?,?::jsonb,?,?)`, c.ID, c.ReporterID, c.Access.SubjectUserID, string(c.Access.Target.Kind), c.Access.Target.ID, string(c.Reason), c.Explanation, string(snapshot.Evidence), snapshot.JPEG, c.At).Error; err != nil {',
+    ),
+    'apps/api/internal/adapters/auditretention/moderation_postgres_test.go': (
+        "\t\tif err = admin.Exec(`INSERT INTO moderation_case_models(id,target_kind,target_id,reason,explanation,evidence,state,created_at,closed_at) VALUES (?,'profile','test-subject','something_else','','{}',?,?,?)`, tc.id, tc.state, now.Add(-100*24*time.Hour), tc.closed).Error; err != nil {",
+        '\tif err = admin.Exec("SELECT moderation_list_cases(NULL)").Error; err == nil {',
+        '\tif err = retention.Raw("SELECT moderation_read_case(?)", active).Scan(&snapshot).Error; err == nil {',
+        '\tif err = admin.Raw("SELECT moderation_read_case(?)", active).Scan(&snapshot).Error; err != nil {',
+        '\tif err = admin.Exec("SELECT moderation_set_case_state(?, \'open\',\'reviewing\',\'Investigating reported content\')", active).Error; err != nil {',
+        '\tif err = admin.Exec("SELECT moderation_set_case_state(?, \'open\',\'dismissed\',\'Stale decision\')", active).Error; err == nil {',
+        '\tif err = retention.Exec("DELETE FROM moderation_case_models WHERE id=?", active).Error; err == nil {',
+    ),
+
     # Reviewed deletion receipt locking, offline-restore isolation, and controlled retention fixtures.
     'apps/api/cmd/account-deletion-records/main.go': (
         '\tif err = db.WithContext(ctx).Raw("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND backend_type=\'client backend\'").Scan(&clients).Error; err != nil {',

@@ -310,6 +310,10 @@ audit, focused web tests and type checking, and a production web build.
 The structural gate rejects oversized handwritten Go files, mocks, ad hoc print
 calls, direct SQL helpers, environment reads outside configuration/bootstrap,
 floating CI action references, and container images without immutable digests.
+Restricted moderation persistence may use the exact reviewed parameterized case
+INSERT to avoid granting runtime SELECT/RETURNING privileges. Operational-review
+and retention PostgreSQL fixtures may use exact reviewed setup and privilege
+checks; the direct-SQL guard must continue rejecting altered or additional calls.
 It also rejects raw `/v1` requests in web and mobile presentation code. Generated
 client and shared transport adapters are the only client-side locations permitted
 to construct application API requests; public provider discovery and authorization
