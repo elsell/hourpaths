@@ -20,15 +20,18 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Native synchronization feedback (area 2) is the sole active implementation slice:
-confirmed deletion must replace an open stale detail screen, and archival notices
-must show localized saved/discarded durations. Android acceptance demonstrated
-both presentation defects while proving the underlying replay results correct.
+Native online history convergence (area 2) is the sole active implementation
+slice: an open online Path must show a newly stopped session without navigation,
+while preserving other participants, newer server revisions and loaded pages.
+Android acceptance found stale recent rows alongside correctly updated totals.
 
-Offline-banner persistence merged in PR #144 as `3c8732d` after all five gates;
-publication is in progress. Android screen-listener lifetime PR #145 is the
-qualifying native-startup blocker: all five gates and 20 offline cold launches
-passed; checked merge and release remain pending.
+Offline-banner persistence, Android screen-listener lifetime, and native
+synchronization feedback merged in PRs #144–#146 through their five-check gates.
+Combined source `f27cd1f` is awaiting main CI and release availability; separate
+intermediate deployments are not required. Android acceptance covers 20 offline
+cold launches, edit/deletion and archival conflicts, membership removal, and a
+newer Studio timer superseding an older native timer with one saved result and
+notification cleanup. These checks do not close signed-device acceptance.
 
 Native route recovery merged in [PR #143](https://github.com/elsell/hourpaths/pull/143)
 as `048c331` after all five candidate gates passed. Android acceptance covers

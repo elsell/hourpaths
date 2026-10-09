@@ -21,7 +21,7 @@ import { AccountDeletionView } from '../src/ui/account-deletion-view';
 import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
-import { activityDeletionFromSnapshot, retainedHistoryDetails, retainedHistoryFromSnapshot } from '../src/offline/retained-history-presentation';
+import { activityDeletionFromSnapshot, onlineHistoryFromSnapshot, retainedHistoryDetails, retainedHistoryFromSnapshot } from '../src/offline/retained-history-presentation';
 import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualActivityInterval, type TrackingSnapshot } from '@hourpaths/client-core';
 import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
 import { nativeTimerSurfaces } from '../src/timers/native-timer-surfaces';
@@ -8152,8 +8152,10 @@ export function HomeScreen() {
     ownedHomeDestination?.profile.id ?? '',
     socialPresentationGeneration.current,
   ].join(':');
-  const visibleActivityHistory = activityHistoryLocal.retained && nativeTrackingState && ownedHomeDestination && selectedPathID
-    ? retainedHistoryFromSnapshot(nativeTrackingState, ownedHomeDestination.profile.id, selectedPathID)
+  const visibleActivityHistory = nativeTrackingState && ownedHomeDestination && selectedPathID
+    ? activityHistoryLocal.retained
+      ? retainedHistoryFromSnapshot(nativeTrackingState, ownedHomeDestination.profile.id, selectedPathID)
+      : onlineHistoryFromSnapshot(activityHistory, nativeTrackingState, ownedHomeDestination.profile.id, selectedPathID)
     : activityHistory;
   const selectedPath = ownedHomeDestination
     ? ownedHomeDestination.profile.paths.find((path) => path.id === selectedPathID)
