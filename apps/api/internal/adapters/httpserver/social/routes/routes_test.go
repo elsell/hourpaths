@@ -213,7 +213,7 @@ func (service *controlledService) ListPracticeCommentHearts(_ context.Context, a
 }
 
 func handler(service Service) http.Handler {
-	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
 	return handler
 }
 
@@ -283,7 +283,7 @@ func TestGetProfileMapsUnavailableAndHiddenProfilesWithoutLeakage(t *testing.T) 
 }
 
 func TestProfileDiscoveryContractIsAuthenticatedAndBounded(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	search := api.OpenAPI().Paths["/v1/profiles"].Get
 	detail := api.OpenAPI().Paths["/v1/profiles/{username}"].Get
 	if search == nil || detail == nil || len(search.Security) == 0 || len(detail.Security) == 0 {
@@ -492,7 +492,7 @@ func TestPracticeReactionContractRejectsMissingKeyAndUncuratedReaction(t *testin
 }
 
 func TestPracticeReactionContractRegistersSecuredPutAndDelete(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	path := api.OpenAPI().Paths["/v1/social/feed/{eventId}/reaction"]
 	if path == nil || path.Put == nil || path.Delete == nil || len(path.Put.Security) == 0 || len(path.Delete.Security) == 0 || path.Put.OperationID != "set-practice-reaction" || path.Delete.OperationID != "remove-practice-reaction" {
 		t.Fatalf("reaction path=%+v", path)
@@ -513,7 +513,7 @@ func TestPracticeReactionMapsFailuresWithoutLeakingDetails(t *testing.T) {
 }
 
 func TestPracticeFeedContractIsAuthenticatedAndBounded(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	operation := api.OpenAPI().Paths["/v1/social/feed"].Get
 	if operation == nil || len(operation.Security) == 0 || operation.OperationID != "list-practice-feed" || operation.Summary != "List chronological feed events" {
 		t.Fatalf("practice feed operation=%+v", operation)
@@ -588,7 +588,7 @@ func TestActiveFollowingReturnsGroupedTimerProjectionAndPagination(t *testing.T)
 }
 
 func TestActiveFollowingContractIsAuthenticatedAndBounded(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	operation := api.OpenAPI().Paths["/v1/social/feed/active"].Get
 	if operation == nil || len(operation.Security) == 0 || operation.OperationID != "list-active-following" {
 		t.Fatalf("active following operation=%+v", operation)
@@ -669,7 +669,7 @@ func mustJSON(t *testing.T, encoded []byte) any {
 }
 
 func TestFollowRelationshipContractRegistersDedicatedAuthenticatedEndpoints(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	operations := []*huma.Operation{
 		api.OpenAPI().Paths["/v1/profiles/{username}/follow"].Post,
 		api.OpenAPI().Paths["/v1/profiles/{username}/follow"].Delete,
