@@ -1,3 +1,4 @@
+import { apiWeekStartPreference, WeekStartFailure, type WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import { apiProfileConnections } from '@hourpaths/client-core';
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
 import { clearProfilePictureCache, pickProfilePicture } from '../src/profile-picture-picker';
@@ -4437,6 +4438,21 @@ export function HomeScreen() {
     }
   }
 
+  async function weekStartRequest<T>(request: (repository: WeekStartPreferenceRepository) => Promise<T>): Promise<T> {
+    if (!session || destination?.kind !== 'home') throw new WeekStartFailure('rejected');
+    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    try {
+      const result = await request(apiWeekStartPreference(apiURL, credential.token, owner));
+      if (!current()) throw new Error('week_start_superseded');
+      return result;
+    } catch (cause) {
+      if (cause instanceof WeekStartFailure && cause.kind === 'rejected') await handleNotificationOperationFailure(sessionFailureFromResponse(401), credential, current);
+      throw cause;
+    }
+  }
+
   async function profilePictureRequest<T>(request: (repository: ProfilePictureRepository) => Promise<T>): Promise<T> {
     if (!session || destination?.kind !== 'home') throw new PictureFailure('rejected');
     const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
@@ -8490,6 +8506,7 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      weekStart={{ read: signal => weekStartRequest(repository => repository.read(signal)), save: (value, key, signal) => weekStartRequest(repository => repository.save(value, key, signal)) }}
       pickProfilePicture={pickProfilePicture}
       profilePicture={{ read: () => profilePictureRequest(repo => repo.read()), preview: image => profilePictureRequest(repo => repo.preview(image)), save: (value, key) => profilePictureRequest(repo => repo.save(value, key)) }}
       profilePrivacy={{ read: () => profilePrivacyRequest(), save: (value, visibility, key) => profilePrivacyRequest(value, visibility, key) }}

@@ -518,6 +518,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/week-start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the configured first day of the week */
+        get: operations["get-configured-week-start"];
+        /** Update the first day of the week without changing existing goals */
+        put: operations["update-configured-week-start"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications": {
         parameters: {
             query?: never;
@@ -3796,6 +3814,32 @@ export interface components {
             /** @enum {string} */
             profileVisibility: "private" | "public";
         };
+        WeekStartPreferenceDTO: {
+            changed: boolean;
+            /** Format: int64 */
+            firstDayOfWeek: number;
+        };
+        WeekStartPreferenceInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WeekStartPreferenceInputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: int64 */
+            proposedFirstDayOfWeek: number;
+            /** Format: int64 */
+            reviewedFirstDayOfWeek: number;
+        };
+        WeekStartPreferenceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/WeekStartPreferenceOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["WeekStartPreferenceDTO"];
+        };
     };
     responses: never;
     parameters: never;
@@ -5140,6 +5184,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimerSubscriptionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-configured-week-start": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekStartPreferenceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-configured-week-start": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WeekStartPreferenceInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeekStartPreferenceOutputBody"];
                 };
             };
             /** @description Error */

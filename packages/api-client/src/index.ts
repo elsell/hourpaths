@@ -182,6 +182,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     updateOwnProfile: (body: OwnProfileUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile', {
       params: { header: { 'Idempotency-Key': idempotencyKey } }, body,
     }),
+    configuredWeekStart: () => authenticatedClient.GET('/v1/me/week-start'),
+    updateConfiguredWeekStart: (body: { reviewedFirstDayOfWeek: number; proposedFirstDayOfWeek: number }, key: string) => authenticatedClient.PUT('/v1/me/week-start', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredTimeZone: () => authenticatedClient.GET('/v1/me/time-zone'),
     updateConfiguredTimeZone: (body: ConfiguredTimeZoneUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/time-zone', {
       params: { header: { 'Idempotency-Key': idempotencyKey } },

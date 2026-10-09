@@ -20,3 +20,6 @@ export interface ProfilePicture {userId:string;url:string;revision:number}
 export interface PictureCrop {x:number;y:number;size:number}
 export interface PicturePreview {image:string;width:number;height:number}
 export interface PictureChange {userId:string;revision:number;image:string;crop?:PictureCrop;remove:boolean}
+
+export interface WeekStartPreference { userId: string; firstDayOfWeek: number }
+export interface WeekStartChange { userId: string; reviewedFirstDayOfWeek: number; proposedFirstDayOfWeek: number }

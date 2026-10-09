@@ -1,3 +1,4 @@
+import type { WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import type { ProfilePictureRepository } from '@hourpaths/client-core';
 import { providerSettingsLifetime } from '@hourpaths/client-core';
 import type { ProfilePrivacyRepository } from '@hourpaths/client-core';
@@ -16,6 +17,7 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  weekStart?: WeekStartPreferenceRepository;
   profilePrivacy?: ProfilePrivacyRepository;
   profileEditing?: ProfileEditingRepository;
   profilePicture?: ProfilePictureRepository;
@@ -47,6 +49,7 @@ function emitChange() {
 }
 
 export function SettingsPresentationSource({
+  weekStart,
   timerSubscriptions,
   profilePrivacy,
   profileEditing,
@@ -69,6 +72,7 @@ export function SettingsPresentationSource({
   updateNotificationChannel,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const weekStartRef = useRef(weekStart); weekStartRef.current = weekStart;
   const profilePrivacyRef = useRef(profilePrivacy);
   profilePrivacyRef.current = profilePrivacy;
   const profilePictureRef = useRef(profilePicture);
@@ -110,6 +114,10 @@ export function SettingsPresentationSource({
       if (currentPresentation?.sessionKey !== sessionKey || !currentPresentation.isCurrent()) throw new Error('settings_presentation_superseded');
     };
     const presentation: SettingsPresentation = {
+      weekStart: weekStart ? {
+        read: async signal => { assertActive(); const value = await weekStartRef.current!.read(signal); assertProfileOwner(); return value; },
+        save: async (value, key, signal) => { assertActive(); const saved = await weekStartRef.current!.save(value, key, signal); assertProfileOwner(); return saved; },
+      } : undefined,
       profileOperationId,
       pickProfilePicture,
       profilePicture: profilePicture ? {

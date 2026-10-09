@@ -5199,5 +5199,12 @@
   "connections.removing": "Removing…",
   "connections.confirmTitle": "Remove {{name}}?",
   "connections.confirmDescription": "They won’t be notified. They’ll lose follower-only access, but any shared Path membership stays. They can follow or request to follow you again.",
-  "connections.removeFailed": "The removal couldn’t be confirmed. Try again safely."
+  "connections.removeFailed": "The removal couldn’t be confirmed. Try again safely.",
+  "settings.weekStart.heading": "First day of the week",
+  "settings.weekStart.explanation": "Sets calendar weeks and the default for new weekly goals. Existing goals keep their current alignment.",
+  "settings.weekStart.loadFailed": "Your week preference couldn’t be loaded.",
+  "settings.weekStart.saving": "Saving…",
+  "settings.weekStart.saved": "Week preference saved.",
+  "settings.weekStart.saveFailed": "Your week preference couldn’t be saved. Try again.",
+  "settings.weekStart.conflict": "Your week preference changed elsewhere. Refresh before saving again."
 }
