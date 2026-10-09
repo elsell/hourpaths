@@ -38,6 +38,11 @@ type App struct {
 	AccountDeletion                  AccountDeletionRepository
 	DeletionJournal                  AccountDeletionJournal
 	TimeZonePreferences              TimeZonePreferenceRepository
+	Pictures                         PictureRepository
+	PictureProcessor                 ports.ProfilePictureProcessor
+	PictureRateLimiter               ports.AuditRateLimiter
+	NewPictureID                     func() string
+	PictureLocation                  func(string) string
 	Profiles                         ProfileRepository
 	ProfilePrivacy                   ProfilePrivacyRepository
 	DuplicateAccountHints            ports.DuplicateAccountHints

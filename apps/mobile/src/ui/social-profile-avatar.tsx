@@ -20,6 +20,7 @@ export function SocialProfileAvatar({
     {profilePictureURL ? <ExpoImage
       accessibilityElementsHidden
       contentFit="cover"
+      cachePolicy="none"
       source={{ uri: profilePictureURL }}
       style={frame}
     /> : <>

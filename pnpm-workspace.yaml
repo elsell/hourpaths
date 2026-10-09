@@ -79,7 +79,7 @@ overrides:
   expo-crypto: '55.0.19'
   expo-web-browser: '55.0.20'
   expo-system-ui: '55.0.22'
-  expo-file-system: '55.0.22'
+  expo-file-system: '55.0.26'
   'lru-cache@5': '5.1.1'
   'lru-cache@10': '10.4.3'
   'lru-cache@11': '11.5.1'

@@ -36,7 +36,7 @@ const approvedWorkspacePackages = new Map([
   ['packages/i18n/package.json', { name: '@hourpaths/i18n', exports: './src/index.ts' }],
 ]);
 const approvedExternalImports = new Set([
-  'expo', 'expo-widgets',
+  'expo', 'expo-widgets', 'expo-image-picker', 'expo-file-system/legacy',
   '@sveltejs/kit', 'expo-auth-session', 'expo-constants', 'expo-crypto',
   'expo-image', 'expo-linking', 'expo-localization', 'expo-notifications', 'expo-router/unstable-native-tabs', 'expo-secure-store', 'expo-sqlite', 'expo-web-browser',
   '@expo/ui/community/segmented-control', '@expo/ui/swift-ui', '@expo/ui/swift-ui/modifiers',
@@ -46,6 +46,7 @@ const approvedExternalImports = new Set([
   ...[...approvedWorkspacePackages.values()].map((workspacePackage) => workspacePackage.name),
 ]);
 const providerImports = new Map([
+  ['apps/mobile/src/profile-picture-picker.ts', new Set(['expo-image-picker', 'expo-file-system/legacy'])],
   ['apps/mobile/src/timers/timer-surface.ios.tsx', new Set(['expo-widgets'])],
   ['apps/mobile/src/timers/timer-surface.android.ts', new Set(['expo'])],
   ['apps/mobile/src/offline/native-tracking-store.ts', new Set(['expo-sqlite'])],
@@ -66,6 +67,7 @@ const browserGlobalReferences = new Set([
 ]);
 const windowProxyMembers = new Set(['contentWindow', 'defaultView', 'view']);
 const protectedProviderAdapters = new Set([
+  'apps/mobile/src/profile-picture-picker.ts',
   'apps/mobile/src/timers/timer-surface.ios.tsx',
   'apps/mobile/src/timers/timer-surface.android.ts',
   'apps/mobile/modules/hourpaths-timers/expo-module.config.json',
@@ -98,6 +100,8 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts',
   ...studioHosts,
   'apps/web/src/lib/studio/presentation/avatar.tsx',
+  'apps/web/src/lib/studio/presentation/picture-crop.tsx',
+  'apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts',
   'apps/mobile/src/policy-link-native.ts',
   'apps/web/src/lib/accessibility-focus.ts',
   'apps/web/src/lib/device-locale.ts',
@@ -105,6 +109,8 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/notification-convergence-browser.ts',
 ]);
 const protectedClientCapabilityConstructors = new Map([
+  // Only the user-selected file; no network or persistent storage capability.
+  ['apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts', new Set(['FileReader'])],
   // Fixed-size cryptographic receipt bytes; this grants no transport capability.
   ['apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts', new Set(['Uint8Array'])],
   ['apps/web/src/lib/notification-convergence-browser.ts', new Set(['BroadcastChannel'])],
@@ -988,7 +994,8 @@ function inspectSource(relative, file, source, index) {
         (ts.isJsxOpeningElement(element) || ts.isJsxSelfClosingElement(element)) &&
         ts.isIdentifier(element.tagName) && element.tagName.text === 'FlatList';
       // The checksum-protected avatar owns only this anonymous public-image sink.
-      const publicAvatarImage = relative === 'apps/web/src/lib/studio/presentation/avatar.tsx' &&
+      const publicAvatarImage = (relative === 'apps/web/src/lib/studio/presentation/avatar.tsx' ||
+        relative === 'apps/web/src/lib/studio/presentation/picture-crop.tsx') &&
         node.name.text === 'src' && ts.isJsxSelfClosingElement(element) &&
         ts.isIdentifier(element.tagName) && element.tagName.text === 'img';
       if (!nativeListData && !publicAvatarImage && !destinationProven(destination)) violation = true;

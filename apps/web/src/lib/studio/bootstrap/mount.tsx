@@ -1,3 +1,4 @@
+import { readBrowserPictureFile } from '../preferences/adapters/browser-picture-file';
 import { browserProviderIdentities } from '../account/adapters/browser-provider-identities';
 import { browserAccountDeletion } from '../account/adapters/browser-account-deletion';
 import type { AccountDeletionService } from '../account/ports/account-deletion';
@@ -153,6 +154,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     sharing: apiSharingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     activities: durableActivityRepository(apiActivityRepository(options.apiURL, () => session.token(), credential => session.reject(credential)), offline.runtime, error => error instanceof TypeError || error instanceof ActivityFailure && error.retryable),
     session: accountSession(paths, () => !!session.token(), () => session.signOut(), () => crypto.randomUUID()),
+    pictureFiles:{read:readBrowserPictureFile},
     preferences: apiPreferencesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     social: apiSocialRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),

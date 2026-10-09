@@ -1,3 +1,4 @@
+import type { ProfilePictureRepository } from '@hourpaths/client-core';
 import { providerSettingsLifetime } from '@hourpaths/client-core';
 import type { ProfilePrivacyRepository } from '@hourpaths/client-core';
 import type { ProfileEditingRepository } from '@hourpaths/client-core';
@@ -17,6 +18,8 @@ export type SignOutPresentationResult =
 export type SettingsPresentation = {
   profilePrivacy?: ProfilePrivacyRepository;
   profileEditing?: ProfileEditingRepository;
+  profilePicture?: ProfilePictureRepository;
+  pickProfilePicture?: () => Promise<string | null>;
   profileOperationId?: () => string;
   timerSubscriptions: TimerSubscriptionsRepository;
   providers?: ProviderSettingsService;
@@ -47,6 +50,8 @@ export function SettingsPresentationSource({
   timerSubscriptions,
   profilePrivacy,
   profileEditing,
+  profilePicture,
+  pickProfilePicture,
   profileOperationId,
   providers,
   deleteAccount,
@@ -66,6 +71,8 @@ export function SettingsPresentationSource({
 }: SettingsPresentation) {
   const profilePrivacyRef = useRef(profilePrivacy);
   profilePrivacyRef.current = profilePrivacy;
+  const profilePictureRef = useRef(profilePicture);
+  profilePictureRef.current = profilePicture;
   const profileEditingRef = useRef(profileEditing);
   profileEditingRef.current = profileEditing;
   const timerSubscriptionsRef = useRef(timerSubscriptions);
@@ -104,6 +111,12 @@ export function SettingsPresentationSource({
     };
     const presentation: SettingsPresentation = {
       profileOperationId,
+      pickProfilePicture,
+      profilePicture: profilePicture ? {
+        read: async () => { assertActive(); const value = await profilePictureRef.current!.read(); assertProfileOwner(); return value; },
+        preview: async image => { assertActive(); const value = await profilePictureRef.current!.preview(image); assertProfileOwner(); return value; },
+        save: async (value, key) => { assertActive(); const saved = await profilePictureRef.current!.save(value, key); assertProfileOwner(); return saved; },
+      } : undefined,
       profilePrivacy: profilePrivacy ? {
         read: async () => { assertActive(); const value = await profilePrivacyRef.current!.read(); assertProfileOwner(); return value; },
         save: async (value, visibility, key) => { assertActive(); const saved = await profilePrivacyRef.current!.save(value, visibility, key); assertProfileOwner(); return saved; },

@@ -15,6 +15,7 @@ import (
 	statsroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/stats"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/observability"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/oidcauth"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/profileimage"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/ratelimit"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/sessionauth"
 	spice "github.com/elsell/hour-paths/apps/api/internal/adapters/spicedb"
@@ -48,7 +49,20 @@ func socialRelationshipRateLimitKey(actor, target string) string {
 	return fmt.Sprintf("%d:%s%d:%s", len(actor), actor, len(target), target)
 }
 
+type pictureUploadLimiter struct{ limiter *ratelimit.Limiter }
+
+func (l pictureUploadLimiter) Allow(owner string, now time.Time) bool {
+	return l.limiter != nil && l.limiter.Allow("profile-picture:"+owner, now)
+}
+
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == profileimage.WorkerArgument {
+		if err := profileimage.RunWorker(os.Stdin, os.Stdout); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	cfg, err := config.Load()
@@ -118,7 +132,15 @@ func main() {
 	for _, configured := range cfg.InvitationAdminIdentities {
 		invitationAdmins[configured] = struct{}{}
 	}
-	application := app.App{Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, ProviderIdentities: store, AccountRecoveryAdmissions: sessions, AccountRecoveryCompleter: sessions, DeletionJournal: journal, TimeZonePreferences: store, Profiles: store, ProfilePrivacy: pathstore.New(store.DB), DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
+	executable, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	pictureLimiter, err := ratelimit.New(store.DB, "audit", 6, time.Minute, cfg.AuditLimiterPrincipals)
+	if err != nil {
+		panic(err)
+	}
+	application := app.App{Pictures: store, PictureProcessor: profileimage.NewWorker(executable, profileimage.WorkerArgument), PictureRateLimiter: pictureUploadLimiter{pictureLimiter}, NewPictureID: uuid.NewString, PictureLocation: func(id string) string { return cfg.PublicBaseURL + "/v1/profile-pictures/" + id }, Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, ProviderIdentities: store, AccountRecoveryAdmissions: sessions, AccountRecoveryCompleter: sessions, DeletionJournal: journal, TimeZonePreferences: store, Profiles: store, ProfilePrivacy: pathstore.New(store.DB), DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
 	authorizationWorker := uuid.NewString()
 	go reconcile(ctx, application, authorizationWorker)
 	go recoverDeletions(ctx, journal, store)

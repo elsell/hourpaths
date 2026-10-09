@@ -884,3 +884,6 @@ export { createProfilePrivacyOperationOwner, ProfilePrivacyFailure, type Profile
 export { apiProfilePrivacy } from "./adapters/api-profile-privacy";
 
 export { providerSettingsLifetime } from './provider-settings-lifetime';
+
+export { createPictureOperationOwner, centerPictureCrop, PictureFailure, validatePictureBytes, validatePicturePreview, type ProfilePicture, type PicturePreview, type PictureCrop, type PictureChange, type ProfilePictureRepository } from './profile-picture';
+export { apiProfilePicture } from './adapters/api-profile-picture';

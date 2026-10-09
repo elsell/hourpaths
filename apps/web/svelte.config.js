@@ -12,6 +12,8 @@ export default {
         'default-src': ['self'],
         'base-uri': ['self'],
         'connect-src': ['self'],
+        // Reviewed avatars use anonymous HTTPS; crop previews are normalized JPEG data.
+        'img-src': ['self', 'https:', 'data:'],
         'form-action': ['self'],
         'frame-ancestors': ['none'],
         'object-src': ['none']

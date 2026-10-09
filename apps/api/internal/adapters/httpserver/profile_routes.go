@@ -42,6 +42,7 @@ func profileOutput(profile app.OwnProfile) *ownProfileOutput {
 
 func registerProfileRoutes(api huma.API, application app.App) {
 	registerProfilePrivacyRoutes(api, application)
+	registerPictureRoutes(api, application)
 	huma.Register(api, huma.Operation{OperationID: "get-own-profile", Method: http.MethodGet, Path: "/v1/me/profile", Summary: "Read the signed-in account's editable profile", Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*ownProfileOutput, error) {
 		profile, err := application.OwnProfile(ctx, input.Authorization)
 		if err != nil {

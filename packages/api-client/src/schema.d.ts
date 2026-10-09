@@ -412,6 +412,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/profile/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the signed-in account's profile picture */
+        get: operations["get-own-profile-picture"];
+        /** Save or remove the signed-in account's profile picture */
+        put: operations["update-own-profile-picture"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/profile/picture/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate and preview a profile picture without saving */
+        post: operations["preview-own-profile-picture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/profile/privacy": {
         parameters: {
             query?: never;
@@ -1157,6 +1192,23 @@ export interface paths {
         };
         get?: never;
         put: operations["set-path-visibility"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/profile-pictures/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a current application-hosted profile picture */
+        get: operations["get-public-profile-picture"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2647,6 +2699,12 @@ export interface components {
             /** Format: int64 */
             targetSeconds: number;
         };
+        OwnPictureDTO: {
+            /** Format: int64 */
+            revision: number;
+            url: string;
+            userId: string;
+        };
         OwnProfileDTO: {
             description: string;
             displayName: string;
@@ -3150,6 +3208,61 @@ export interface components {
             inviter: components["schemas"]["PathInvitationPublicIdentity"];
             pathName: string;
             warning?: components["schemas"]["PathInvitationVisibilityWarning"];
+        };
+        PictureCropDTO: {
+            /** Format: int64 */
+            size: number;
+            /** Format: int64 */
+            x: number;
+            /** Format: int64 */
+            y: number;
+        };
+        PictureOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PictureOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OwnPictureDTO"];
+        };
+        PicturePreviewDTO: {
+            /** Format: int64 */
+            height: number;
+            image: string;
+            /** Format: int64 */
+            width: number;
+        };
+        PicturePreviewInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PicturePreviewInputBody.json
+             */
+            readonly $schema?: string;
+            image: string;
+        };
+        PicturePreviewOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PicturePreviewOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["PicturePreviewDTO"];
+        };
+        PictureUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PictureUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            crop?: components["schemas"]["PictureCropDTO"];
+            /** Format: int64 */
+            expectedRevision: number;
+            image: string;
+            remove: boolean;
         };
         PracticeComment: {
             authorUserId: string;
@@ -4633,6 +4746,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnProfileOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-own-profile-picture": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-own-profile-picture": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PictureUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "preview-own-profile-picture": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PicturePreviewInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PicturePreviewOutputBody"];
                 };
             };
             /** @description Error */
@@ -6775,6 +6990,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PathProjectionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-public-profile-picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Normalized JPEG picture */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    "Content-Type"?: string;
+                    "X-Content-Type-Options"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
                 };
             };
             /** @description Error */
