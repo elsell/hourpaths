@@ -231,10 +231,18 @@ its own visibility.
 - An opaque access failure must not imply that requesting access is possible or
   reveal another user to contact.
 
-## Open question: ownership acceptance by a private profile
+## Ownership acceptance by a private profile
 
-The visibility ceiling also applies when ownership changes. The owner is
-reviewing whether accepting a public Path as a private-profile user should
-convert it to followers-only after an explicit warning, or require its current
-creator to narrow it first. This choice is not yet approved; implementation must
-not silently choose either behavior.
+- Accepting ownership of a public Path into a private profile must atomically
+  change the Path to followers-only. The acceptance screen must explain this
+  effect before the recipient confirms; canceling must change nothing.
+- The transaction must re-read the recipient's current privacy under the same
+  serialization used for privacy changes. Concurrent acceptance and privacy
+  changes must never leave a private creator owning a public Path.
+- Followers-only visibility must use the new creator's followers. The ownership
+  authorization batch must atomically revoke the old audience and grant the new
+  audience; replay must retain that same batch. Explicit roles and activity
+  remain intact. Inaccessible notifications must be retired in the transaction.
+- Given a public Path and a private recipient, acceptance makes the recipient
+  creator, the former creator administrator, and the Path followers-only.
+  A retry must not create another transition or widen its audience.

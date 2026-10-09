@@ -38,7 +38,7 @@ type persistedRelationshipUpdate struct {
 }
 
 func encodeRelationshipUpdates(updates []ports.RelationshipUpdate) ([]byte, error) {
-	if len(updates) != 4 {
+	if len(updates) != 4 && len(updates) != 6 {
 		return nil, ports.ErrInvalidArgument
 	}
 	persisted := make([]persistedRelationshipUpdate, len(updates))
@@ -56,7 +56,7 @@ func encodeRelationshipUpdates(updates []ports.RelationshipUpdate) ([]byte, erro
 
 func decodeRelationshipUpdates(value []byte) ([]ports.RelationshipUpdate, error) {
 	var persisted []persistedRelationshipUpdate
-	if err := json.Unmarshal(value, &persisted); err != nil || len(persisted) != 4 {
+	if err := json.Unmarshal(value, &persisted); err != nil || (len(persisted) != 4 && len(persisted) != 6) {
 		return nil, errors.New("persisted authorization batch is invalid")
 	}
 	updates := make([]ports.RelationshipUpdate, len(persisted))
