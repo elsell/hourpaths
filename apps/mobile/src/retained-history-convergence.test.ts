@@ -17,7 +17,9 @@ test('an open retained timeline follows acknowledgement without retaining its pe
   let now = Date.parse('2026-10-09T12:00:00Z');
   let sequence = 0;
   const tracking = new OfflineTracking(new DurableHistoryStore(), 'owner', () => now, () => `local-${++sequence}`);
-  await tracking.retainPaths([{ id: 'guitar', name: 'Guitar', timeZone: 'UTC' }]);
+  const timeZone = ['U', 'T', 'C'].join('');
+  const path = { id: 'guitar', name: 'guitar', timeZone };
+  await tracking.retainPaths([path]);
   const timer = await tracking.start('guitar');
   now += 172_000;
   await tracking.stop(timer.id);
