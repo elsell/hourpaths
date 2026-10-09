@@ -5089,7 +5089,7 @@
   "offline.activityArchived": "This Path was archived. Your pending activity change wasn’t saved.",
   "offline.rejection.archived": "This Path was archived. Time after archival wasn’t saved.",
   "offline.rejection.validation": "This change couldn’t be saved. Review the activity before trying again.",
-  "offline.archiveAmounts": "Saved: {saved}. Discarded: {discarded}.",
+  "offline.archiveAmounts": "Saved: {{saved}}. Discarded: {{discarded}}.",
   "offline.historyIncomplete": "Some activity may not be available on this device yet. Showing saved history and pending sessions.",
   "offline.historyRetained": "Showing saved activity from the last 90 days and pending sessions. Older history is available online.",
   "offline.retainedPath": "Saved Path",

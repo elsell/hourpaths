@@ -236,6 +236,8 @@ connection and the limits of other offline surfaces.
 - The application must clearly tell the participant whenever any elapsed time
   is discarded because the Path became archived, including how much time was
   saved and how much was discarded when a session was split.
+- The saved/discarded amounts in that explanation must be localized durations,
+  not unresolved translation placeholders.
 - The discarded portion must not contribute to activity history, goals,
   statistics, achievements, or feed events.
 - Processing one archived Path's pending session must not alter pending activity
@@ -266,5 +268,9 @@ connection and the limits of other offline surfaces.
   the pending retry queue and remove the deleted entry from local history.
 - The application must tell the user plainly that their edit was not saved
   because the activity was deleted elsewhere.
+- An already-open native detail screen must react to the account’s confirmed
+  deletion tombstone: it must replace the obsolete entry and its edit/delete
+  controls with the deletion explanation without requiring navigation or retry.
+  Missing cached history alone must not be treated as proof of deletion.
 - Rejecting that edit must not affect pending changes for another activity
   entry.

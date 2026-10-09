@@ -21,7 +21,7 @@ import { AccountDeletionView } from '../src/ui/account-deletion-view';
 import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
-import { retainedHistoryDetails, retainedHistoryFromSnapshot } from '../src/offline/retained-history-presentation';
+import { activityDeletionFromSnapshot, retainedHistoryDetails, retainedHistoryFromSnapshot } from '../src/offline/retained-history-presentation';
 import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualActivityInterval, type TrackingSnapshot } from '@hourpaths/client-core';
 import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
 import { nativeTimerSurfaces } from '../src/timers/native-timer-surfaces';
@@ -9199,6 +9199,7 @@ export function HomeScreen() {
       >
         <ActivityDetailView
           activity={selectedActivity}
+          deleted={activityDeletionFromSnapshot(nativeTrackingState, ownedHomeDestination.profile.id, activeActivityID)}
           archived={!selectedCapabilities.trackTime || Boolean(selectedPath.archivedAt)}
           busy={pathDetailBusy}
           deletionBusy={activityDeletionBusy}
@@ -9221,7 +9222,7 @@ export function HomeScreen() {
           revisionErrorText={activityRevisionErrorKey ? i18n.t(activityRevisionErrorKey) : undefined}
           revisions={activityRevisions}
         />
-        {ownsManualActivityPresentation(manualActivityPresentationOwner, 'activity-details') ? manualActivityPresentation : null}
+        {!activityDeletionFromSnapshot(nativeTrackingState, ownedHomeDestination.profile.id, activeActivityID) && ownsManualActivityPresentation(manualActivityPresentationOwner, 'activity-details') ? manualActivityPresentation : null}
       </NativeChildRouteSource> : null}
       {pathCreated ? <NativeToast message={i18n.t('pathCreate.created')} onDismiss={() => setPathCreated(false)} /> : null}
       {pathArchiveSavedKey ? <NativeToast message={i18n.t(pathArchiveSavedKey)} onDismiss={() => setPathArchiveSavedKey(null)} /> : null}
