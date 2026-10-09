@@ -693,6 +693,7 @@ func postgresDB(t *testing.T, migrationOwner bool) *gorm.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
+	closePostgresFixture(t, db)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatal(tx.Error)
@@ -772,4 +773,17 @@ func seedPath(t *testing.T, db *gorm.DB, participantID, pathID string, now time.
 	if err := db.Table("path_membership_models").Create(&membershipRow{PathID: pathID, UserID: participantID, Role: "participant", JoinedAt: now}).Error; err != nil {
 		t.Fatal(err)
 	}
+}
+
+func closePostgresFixture(t *testing.T, db *gorm.DB) {
+	t.Helper()
+	pool, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := pool.Close(); err != nil {
+			t.Errorf("close PostgreSQL fixture: %v", err)
+		}
+	})
 }

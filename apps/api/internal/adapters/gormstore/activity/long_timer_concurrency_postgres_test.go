@@ -20,10 +20,12 @@ func TestPostgresLongTimerConcurrentWorkersCommitOneNotice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	closePostgresFixture(t, runtimeDB)
 	ownerDB, err := gorm.Open(postgres.Open(*migrationDatabaseDSN), &gorm.Config{TranslateError: true})
 	if err != nil {
 		t.Fatal(err)
 	}
+	closePostgresFixture(t, ownerDB)
 	suffix := fmt.Sprint(time.Now().UnixNano())
 	owner, path, timerID := "long-owner-"+suffix, "long-path-"+suffix, "long-timer-"+suffix
 	at := time.Now().UTC().Truncate(time.Microsecond)
