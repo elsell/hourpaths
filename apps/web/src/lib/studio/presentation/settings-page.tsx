@@ -48,9 +48,10 @@ function useIntent(d: StudioDependencies) {
 }
 function AccountSettings({ dependencies: d }: { dependencies: StudioDependencies }) {
   const identity = useQuery({ queryKey: [d.accountScope, 'preferences', 'identity'], queryFn: ({ signal }) => d.preferences.identity(signal) });
+  const privacyKey = [identity.data?.id, 'privacy'].join(':');
   const zone = useQuery({ queryKey: [d.accountScope, 'preferences', 'zone'], queryFn: ({ signal }) => d.preferences.timeZone(signal) });
   return <><section className="studio-settings-card"><Status pending={identity.isPending} error={identity.isError} retry={() => void identity.refetch()} dependencies={d} />{identity.data && <dl className="studio-settings-identity"><div><dt>{d.i18n.t('studio.settings.name')}</dt><dd>{identity.data.name}</dd></div><div><dt>{d.i18n.t('settings.account.email')}</dt><dd>{identity.data.email}<small>{d.i18n.t('studio.settings.providerEmail')}</small></dd></div></dl>}</section>
-    {identity.data && <ProfilePrivacySettings key={identity.data.id} owner={identity.data.id} dependencies={d} />}
+    {identity.data && <ProfilePrivacySettings key={privacyKey} owner={identity.data.id} dependencies={d} />}
     {identity.data && <ProfileSettings key={identity.data.id} owner={identity.data.id} dependencies={d} />}
     {d.providers && <ProviderSettings service={d.providers} i18n={d.i18n} />}<section className="studio-settings-card"><h3>{d.i18n.t('studio.settings.preferences')}</h3><p>{d.i18n.t('studio.settings.locale')}</p><Status pending={zone.isPending} error={zone.isError} retry={() => void zone.refetch()} dependencies={d} />{zone.data && <TimeZoneForm initial={zone.data} dependencies={d} reload={() => zone.refetch()} />}</section><SessionSettings dependencies={d} name={identity.data?.name ?? ''} />{d.deletion && <AccountDeletionSettings service={d.deletion} i18n={d.i18n} />}</>;
 }
