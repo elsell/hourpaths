@@ -72,9 +72,9 @@ func (s *Store) RenewPolicyAcceptance(ctx context.Context, c application.PolicyR
 			return err
 		}
 		// Publication and acceptance serialize on the authority's existing lock.
-		if err = tx.Exec("SELECT pg_advisory_xact_lock(?)", policyPublisherAdvisoryLock).Error; err != nil {
+		if err = tx.Exec("SELECT pg_advisory_xact_lock(?)", policyPublisherAdvisoryLock).Error; err != nil { // hourpaths-direct-sql: allow PostgreSQL transaction advisory lock
 			return err
-		} // hourpaths-direct-sql: allow PostgreSQL transaction advisory lock
+		}
 		var current currentPolicySetModel
 		if err = tx.Where("singleton = ?", true).Take(&current).Error; err != nil {
 			return err

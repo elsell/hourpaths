@@ -74,6 +74,9 @@ REVIEWED_LINES: dict[str, tuple[str, ...]] = {
         "\tbackfilled := migrationDB.Exec(`UPDATE public.path_membership_models AS membership SET joined_at = evidence.accepted_at FROM (SELECT invitation.path_id, invitation.recipient_user_id AS user_id, max(invitation.accepted_at) AS accepted_at FROM public.path_invitation_models AS invitation WHERE invitation.accepted_at IS NOT NULL GROUP BY invitation.path_id, invitation.recipient_user_id) AS evidence WHERE membership.path_id = evidence.path_id AND membership.user_id = evidence.user_id`)",
         "\tbackfilled := migrationDB.Exec(`UPDATE public.path_membership_models AS membership SET joined_at = COALESCE((SELECT max(invitation.accepted_at) FROM public.path_invitation_models AS invitation WHERE invitation.path_id = membership.path_id AND invitation.recipient_user_id = membership.user_id AND invitation.accepted_at IS NOT NULL), CASE WHEN membership.user_id = COALESCE((SELECT transfer.initiator_user_id FROM public.path_ownership_transfer_models AS transfer WHERE transfer.path_id = membership.path_id AND transfer.accepted_at IS NOT NULL ORDER BY transfer.accepted_at, transfer.created_at, transfer.id LIMIT 1), path.owner_user_id) THEN path.created_at END, CURRENT_TIMESTAMP) FROM public.path_models AS path WHERE path.id = membership.path_id AND path.id = ?`, pathID)",
     ),
+    "apps/api/internal/adapters/gormstore/policy_renewal.go": (
+        '\t\tif err = tx.Exec("SELECT pg_advisory_xact_lock(?)", policyPublisherAdvisoryLock).Error; err != nil { // hourpaths-direct-sql: allow PostgreSQL transaction advisory lock',
+    ),
     "apps/api/internal/adapters/gormstore/policy_authority.go": (
         '\t\tlocked := tx.Exec("SELECT pg_advisory_xact_lock(?)", '
         "policyPublisherAdvisoryLock) // hourpaths-direct-sql: allow PostgreSQL transaction "

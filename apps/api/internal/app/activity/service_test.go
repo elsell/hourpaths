@@ -797,7 +797,3 @@ func TestActivityServiceRejectsWeakIdempotencyKeysBeforeAuthorization(t *testing
 		}
 	}
 }
-
-func (testRepository) ListRunningTimerCandidates(context.Context, string, RunningTimerPageRequest) ([]RunningTimerCandidate, error) {
-	return nil, nil
-}

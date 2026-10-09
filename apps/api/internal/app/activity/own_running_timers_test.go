@@ -68,3 +68,7 @@ func TestOwnRunningTimersFailClosedForForeignRowsAndAuthorizationFailure(t *test
 		t.Fatalf("foreign row=%+v %v", items, err)
 	}
 }
+
+func (testRepository) ListRunningTimerCandidates(context.Context, string, RunningTimerPageRequest) ([]RunningTimerCandidate, error) {
+	return nil, nil
+}
