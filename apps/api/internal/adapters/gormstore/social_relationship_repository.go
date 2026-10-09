@@ -131,6 +131,10 @@ func (repository *SocialRelationshipRepository) Follow(ctx context.Context, comm
 			return nil
 		}
 
+		if err := waitForFollowerRemoval(tx, target.ID, command.ActorUserID, true); err != nil {
+			return err
+		}
+
 		var existingFollow int64
 		if err := tx.Model(&socialFollowModel{}).
 			Where("follower_user_id = ? AND following_user_id = ?", command.ActorUserID, target.ID).
@@ -218,6 +222,10 @@ func (repository *SocialRelationshipRepository) Unfollow(ctx context.Context, co
 	return repository.endByTarget(ctx, command, socialapp.UnfollowOperation)
 }
 
+func (repository *SocialRelationshipRepository) RemoveFollower(ctx context.Context, command socialapp.RelationshipCommand) (socialapp.RelationshipResult, error) {
+	return repository.endByTarget(ctx, command, socialapp.RemoveFollowerOperation)
+}
+
 func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context, command socialapp.RelationshipCommand, operation string) (socialapp.RelationshipResult, error) {
 	if !repository.validCommand(command, operation, true) {
 		return socialapp.RelationshipResult{}, ports.ErrInvalidArgument
@@ -227,7 +235,13 @@ func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context,
 		if err := lockSocialIdempotency(tx, command); err != nil {
 			return err
 		}
-		target, err := lockVisibleSocialTarget(tx, command.ActorUserID, command.TargetUsername)
+		var target socialRelationshipUser
+		var err error
+		if operation == socialapp.RemoveFollowerOperation {
+			target, err = lockVisibleSocialTargetID(tx, command.ActorUserID, command.TargetUserID)
+		} else {
+			target, err = lockVisibleSocialTarget(tx, command.ActorUserID, command.TargetUsername)
+		}
 		if err != nil {
 			return err
 		}
@@ -238,13 +252,21 @@ func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context,
 			if err != nil {
 				return err
 			}
-			profile.Relationship = domain.RelationshipNone
+			if operation != socialapp.RemoveFollowerOperation {
+				profile.Relationship = domain.RelationshipNone
+			}
 			change, err := replayAuthorizationChange(tx, replay, command.OccurredAt, repository.authorizationWorker, repository.authorizationLease)
 			if err != nil {
 				return err
 			}
 			result = socialapp.RelationshipResult{Target: profile, RequestID: replayRequestID(replay), Changed: replay.Changed, AuthorizationChange: change, Replayed: true}
 			return nil
+		}
+
+		if operation == socialapp.RemoveFollowerOperation {
+			if err := waitForFollowerRemoval(tx, command.ActorUserID, target.ID, false); err != nil {
+				return err
+			}
 		}
 
 		requestID := ""
@@ -272,7 +294,11 @@ func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context,
 			}
 			requestID = request.ID
 		} else {
-			deleted := tx.Where("follower_user_id = ? AND following_user_id = ?", command.ActorUserID, target.ID).
+			follower, following := command.ActorUserID, target.ID
+			if operation == socialapp.RemoveFollowerOperation {
+				follower, following = target.ID, command.ActorUserID
+			}
+			deleted := tx.Where("follower_user_id = ? AND following_user_id = ?", follower, following).
 				Delete(&socialFollowModel{})
 			if deleted.Error != nil {
 				return deleted.Error
@@ -280,14 +306,14 @@ func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context,
 			if deleted.RowsAffected != 1 {
 				return errSocialRelationshipUnavailable
 			}
-			if err := suppressUnsubscribedTimerDeliveries(tx, command.ActorUserID, command.OccurredAt); err != nil {
+			if err := suppressUnsubscribedTimerDeliveries(tx, follower, command.OccurredAt); err != nil {
 				return err
 			}
 			changeID := repository.nextID()
 			if changeID == "" {
 				return errInvalidSocialRelationshipRepository
 			}
-			authorizationChange, err = repository.enqueueFollowerAuthorization(tx, changeID, target.ID, command.ActorUserID, command.ActorUserID, ports.AuthorizationDelete, command.OccurredAt)
+			authorizationChange, err = repository.enqueueFollowerAuthorization(tx, changeID, following, follower, command.ActorUserID, ports.AuthorizationDelete, command.OccurredAt)
 			if err != nil {
 				return err
 			}
@@ -303,7 +329,9 @@ func (repository *SocialRelationshipRepository) endByTarget(ctx context.Context,
 		if err != nil {
 			return err
 		}
-		profile.Relationship = domain.RelationshipNone
+		if operation != socialapp.RemoveFollowerOperation {
+			profile.Relationship = domain.RelationshipNone
+		}
 		result = socialapp.RelationshipResult{Target: profile, RequestID: requestID, Changed: true, AuthorizationChange: authorizationChange}
 		return nil
 	})
@@ -462,6 +490,12 @@ func (repository *SocialRelationshipRepository) validCommand(command socialapp.R
 		strings.TrimSpace(command.Idempotency.Key) == "" || len(command.Idempotency.RequestHash) != 32 || !command.Audit.Valid() ||
 		command.Audit.OwnerUserID != command.ActorUserID || command.Audit.ActorUserID != command.ActorUserID ||
 		command.Audit.Outcome != "succeeded" || !command.Audit.OccurredAt.Equal(command.OccurredAt) {
+		return false
+	}
+	if operation == socialapp.RemoveFollowerOperation {
+		return command.TargetUserID != "" && strings.TrimSpace(command.TargetUserID) == command.TargetUserID && command.TargetUsername == "" && command.RequestID == ""
+	}
+	if command.TargetUserID != "" {
 		return false
 	}
 	if targetByUsername {
@@ -739,7 +773,7 @@ func classifySocialRelationshipError(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Is(err, ports.ErrNotFound), errors.Is(err, ports.ErrIdempotencyConflict), errors.Is(err, ports.ErrInvalidArgument):
+	case errors.Is(err, ports.ErrNotFound), errors.Is(err, ports.ErrIdempotencyConflict), errors.Is(err, ports.ErrInvalidArgument), errors.Is(err, ports.ErrAuthorizationPending), errors.Is(err, ports.ErrAuthorizationDeadLettered):
 		return err
 	case errors.Is(err, errSocialRelationshipUnavailable), errors.Is(err, gorm.ErrDuplicatedKey), errors.Is(err, gorm.ErrForeignKeyViolated):
 		return ports.ErrConflict

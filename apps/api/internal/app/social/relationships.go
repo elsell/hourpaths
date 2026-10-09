@@ -19,6 +19,7 @@ import (
 
 const (
 	FollowOperation              = "social.follow"
+	RemoveFollowerOperation      = "social.follower.remove"
 	CancelFollowRequestOperation = "social.follow_request.cancel"
 	UnfollowOperation            = "social.unfollow"
 	AcceptFollowRequestOperation = "social.follow_request.accept"
@@ -33,10 +34,10 @@ const (
 )
 
 type RelationshipCommand struct {
-	ActorUserID, TargetUsername, RequestID string
-	OccurredAt                             time.Time
-	Idempotency                            ports.Idempotency
-	Audit                                  audit.Event
+	ActorUserID, TargetUsername, TargetUserID, RequestID string
+	OccurredAt                                           time.Time
+	Idempotency                                          ports.Idempotency
+	Audit                                                audit.Event
 }
 
 type RelationshipResult struct {
@@ -103,6 +104,13 @@ func (service *Service) mutateTarget(ctx context.Context, authorization, rawTarg
 		return RelationshipResult{}, err
 	}
 	targetUsername, err := domain.NormalizeUsername(rawTargetUsername)
+	if operation == RemoveFollowerOperation {
+		targetUsername = rawTargetUsername
+		err = nil
+		if !validOpaqueID(targetUsername) {
+			err = ports.ErrInvalidArgument
+		}
+	}
 	if err != nil || !validRelationshipIdempotencyKey(idempotencyKey) {
 		return RelationshipResult{}, ports.ErrInvalidArgument
 	}
@@ -115,7 +123,7 @@ func (service *Service) mutateTarget(ctx context.Context, authorization, rawTarg
 	case FollowOperation:
 	case CancelFollowRequestOperation:
 		action, targetType = audit.ResourceDeleted, "follow_request"
-	case UnfollowOperation:
+	case UnfollowOperation, RemoveFollowerOperation:
 		action = audit.ResourceDeleted
 	default:
 		return RelationshipResult{}, errInvalidDependencies
@@ -126,6 +134,10 @@ func (service *Service) mutateTarget(ctx context.Context, authorization, rawTarg
 		Audit:       shared.NewAuditEvent(ctx, service.Clock, principal.UserID, principal.UserID, action, targetType, targetUsername, audit.Succeeded),
 	}
 	command.Audit.OccurredAt = now
+	if operation == RemoveFollowerOperation {
+		command.TargetUserID = targetUsername
+		command.TargetUsername = ""
+	}
 	var result RelationshipResult
 	switch operation {
 	case FollowOperation:
@@ -134,6 +146,12 @@ func (service *Service) mutateTarget(ctx context.Context, authorization, rawTarg
 		result, err = service.Relationships.CancelRequest(ctx, command)
 	case UnfollowOperation:
 		result, err = service.Relationships.Unfollow(ctx, command)
+	case RemoveFollowerOperation:
+		repo, ok := service.Relationships.(ConnectionRepository)
+		if !ok {
+			return RelationshipResult{}, errInvalidDependencies
+		}
+		result, err = repo.RemoveFollower(ctx, command)
 	}
 	if err != nil {
 		return RelationshipResult{}, service.relationshipError(ctx, principal.UserID, err, now)
@@ -285,7 +303,11 @@ func (service *Service) relationshipError(ctx context.Context, actor string, rep
 
 func validRelationshipResult(result RelationshipResult, actor, username, operation string) bool {
 	target := result.Target
-	if !target.Valid() || target.ID == actor || !strings.EqualFold(target.Username, username) || target.Relationship == domain.RelationshipSelf {
+	matchesTarget := strings.EqualFold(target.Username, username)
+	if operation == RemoveFollowerOperation {
+		matchesTarget = target.ID == username
+	}
+	if !target.Valid() || target.ID == actor || !matchesTarget || target.Relationship == domain.RelationshipSelf {
 		return false
 	}
 	changeEmpty := result.AuthorizationChange == (ports.AuthorizationChange{})
@@ -303,6 +325,8 @@ func validRelationshipResult(result RelationshipResult, actor, username, operati
 		return validFollowerAuthorizationChange(result.AuthorizationChange, target.ID, actor, actor, ports.AuthorizationTouch)
 	case CancelFollowRequestOperation:
 		return target.Relationship == domain.RelationshipNone && validOpaqueID(result.RequestID) && changeEmpty
+	case RemoveFollowerOperation:
+		return result.RequestID == "" && result.Changed && validFollowerAuthorizationChange(result.AuthorizationChange, actor, target.ID, actor, ports.AuthorizationDelete)
 	case UnfollowOperation:
 		if target.Relationship != domain.RelationshipNone || result.RequestID != "" {
 			return false

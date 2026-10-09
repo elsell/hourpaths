@@ -9,14 +9,14 @@ import type { SocialProfileSearchState } from './social-profile-route-presentati
 import { SettingsIcon } from './settings-icon';
 import { mobileTheme } from './tokens';
 
-function ProfileRow({
+export function ProfileRow({
   i18n,
   onOpen,
   profile,
 }: {
   i18n: Translator;
   onOpen: () => void;
-  profile: SocialPublicProfile;
+  profile: Pick<SocialPublicProfile, 'displayName' | 'username' | 'description' | 'profilePictureUrl'>;
 }) {
   const label = profileAccessibilityLabel(profile);
   return <Pressable
@@ -26,6 +26,7 @@ function ProfileRow({
     style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}
   >
     <SocialProfileAvatar
+      profilePictureURL={profile.profilePictureUrl}
       accessibilityLabel={i18n.t('social.neutralAvatarLabel')}
     />
     <View style={styles.identity}>

@@ -887,3 +887,6 @@ export { providerSettingsLifetime } from './provider-settings-lifetime';
 
 export { createPictureOperationOwner, centerPictureCrop, PictureFailure, validatePictureBytes, validatePicturePreview, type ProfilePicture, type PicturePreview, type PictureCrop, type PictureChange, type ProfilePictureRepository } from './profile-picture';
 export { apiProfilePicture } from './adapters/api-profile-picture';
+
+export { createFollowerRemovalOwner, ProfileConnectionsFailure, type ConnectionDirection, type ConnectionPerson, type ConnectionsPage, type ProfileConnectionsRepository } from './profile-connections';
+export { apiProfileConnections } from './adapters/api-profile-connections';

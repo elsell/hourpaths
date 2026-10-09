@@ -1,3 +1,4 @@
+import { ProfileConnectionsPage } from './profile-connections';
 import { TimerSubscription } from './timer-subscription';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
 import { AccountDeletionSettings } from './account-deletion';
@@ -84,11 +85,13 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const addActivity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/new', component: () => <ActivityEditorPage dependencies={d} /> });
     const editActivity = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/activities/$activityId/edit', component: () => <ActivityEditorPage dependencies={d} editing /> });
     const people = createRoute({ getParentRoute: () => root, path: '/people', component: () => <PeoplePage dependencies={d} /> });
+    const followers = createRoute({ getParentRoute: () => root, path: '/profile/$username/followers', component: () => <ProfileConnectionsPage dependencies={d} direction="followers" /> });
+    const followingPeople = createRoute({ getParentRoute: () => root, path: '/profile/$username/following', component: () => <ProfileConnectionsPage dependencies={d} direction="following" /> });
     const profile = createRoute({ getParentRoute: () => root, path: '/profile/$username', component: () => <ProfilePage dependencies={d} /> });
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const accountDeletion = createRoute({ getParentRoute: () => root, path: '/delete-account', component: () => <StudioShell page="settings" i18n={d.i18n}><main className="studio-settings-main"><h1>{d.i18n.t('accountDelete.heading')}</h1>{d.deletion && <AccountDeletionSettings service={d.deletion} i18n={d.i18n} />}</main></StudioShell> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, statistics, settings, accountDeletion]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, followers, followingPeople, statistics, settings, accountDeletion]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   useEffect(() => d.offline?.subscribe((change = {}) => {

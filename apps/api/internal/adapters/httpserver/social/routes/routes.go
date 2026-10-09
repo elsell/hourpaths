@@ -354,6 +354,7 @@ func Register(api huma.API, service Service) {
 	registerNotificationChannelRoutes(api, service, security)
 	registerTimerSubscriptionRoutes(api, service, security)
 	registerProfilePaths(api, service, security)
+	registerConnections(api, service, security)
 	huma.Register(api, huma.Operation{OperationID: "get-interaction-settings", Method: http.MethodGet, Path: "/v1/me/interaction-settings", Summary: "Get the viewer's interaction settings", Security: security}, func(ctx context.Context, input *interactionSettingsInput) (*interactionSettingsOutput, error) {
 		settings, err := service.GetInteractionSettings(ctx, input.Authorization)
 		if err != nil {

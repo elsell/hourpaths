@@ -196,6 +196,44 @@ user's shared activity.
   when the profile is public or sending a new request when the profile is
   private.
 
+## Profile connection lists and follower removal (`SOC-01C`)
+
+- Mobile and Studio profile follower/following counts must open the corresponding
+  paginated identity list for the profile owner or a current follower. Counts
+  remain public; counts must not imply that an unauthorized identity list is
+  available. The visibility rules in [User Profile](../accounts/profile.spec.md)
+  are authoritative for these lists.
+- Every page must revalidate current visibility. A cursor must be bound to the
+  requesting account, profile, and list direction; it must not grant access after
+  unfollowing, removal, blocking, or account deletion.
+- Lists must use the shared compact identity rows and safe avatar, support opening
+  a listed profile, and provide localized loading, empty, retry and pagination
+  states. Account replacement must discard the previous account's list and work.
+- Only the owner of the follower list may remove an inbound follower. The action
+  must clearly identify the affected person and require explicit confirmation.
+  Its behavior is governed by Removing a follower above; independent Path access
+  and the opposite-direction relationship must remain unchanged.
+- Removal must persist the relationship change, retry receipt and audit event
+  atomically and converge authorization before returning success. A retry after
+  a lost response must not remove a newly established follow relationship.
+- Removal must not create a notification. Pending deliveries that depended on
+  the removed follow subscription must no longer be eligible.
+
+### Acceptance scenarios
+
+1. An owner and a current follower can page through both lists. An unrelated user
+   can read the counts but not the identities, even with shared Path membership.
+2. A cursor from another account, profile or direction is rejected. Losing the
+   follow relationship between pages removes access immediately. Blocked and
+   deleted identities are excluded.
+3. Removing an inbound follower updates counts and removes follower-derived
+   access without a notification, without ending the reverse follow, and without
+   removing an independent participant/supporter role.
+4. The removed person can follow a public profile again or request a private
+   profile again. Replaying the old removal cannot remove that new relationship.
+5. Failure or account replacement cannot report false success, leak the former
+   account's list, or discard the user's ability to safely retry.
+
 ## Canceling and unfollowing
 
 - A user must be able to cancel a follow request they sent while it remains

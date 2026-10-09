@@ -163,6 +163,7 @@ export default function SocialProfileScreen() {
         blockingStatus={blockingStatus === 'idle' ? undefined : blockingStatus}
         i18n={i18n}
         onRetry={social.retryProfile}
+        onOpenConnections={(direction) => router.push({ pathname: '/profile/[username]/connections', params: { username: username!, direction } })}
         onRelationshipAction={(action) => {
           if (!username) return;
           if (action === 'unfollow') {
