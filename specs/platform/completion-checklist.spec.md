@@ -27,8 +27,10 @@ Draft [PR #155](https://github.com/elsell/hourpaths/pull/155) implements removal
 private notices and appeal reversal. Real PostgreSQL checks cover hidden reads,
 counts/retries, competing edit and push transactions, and ordinary deletion.
 Studio acceptance verifies the affected-comment reference, appeal submission
-and persisted reload at desktop and narrow widths. Native acceptance, final
-merge gates and release availability remain outstanding.
+and persisted reload at desktop and narrow widths. Android at 160% font size
+shows the same notice and appeal, then the final reversal after Refresh. Final
+merge gates, release availability and signed physical-device acceptance remain
+outstanding.
 
 Draft PR #153 (bundled goal reminders and quiet periods) is paused for the
 outstanding equal-start/end quiet-period decision. It is not released.
