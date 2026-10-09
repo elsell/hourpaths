@@ -1,3 +1,4 @@
+import type { EnforcementRepository } from '@hourpaths/client-core';
 import type { ReportingRepository } from '@hourpaths/client-core';
 import { GoalReminder } from './goal-reminder';
 import { PolicyReviewBoundary } from './policy-review';
@@ -50,6 +51,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  enforcement?: EnforcementRepository;
   reporting: ReportingRepository;
   policyReview?: PolicyReviewController;
   pictureFiles?: {read(file:File,signal?:AbortSignal):Promise<string>};

@@ -22,7 +22,10 @@ import (
 
 func main() {
 	registrations := generated.Registrations(generated.Dependencies{})
-	registrations = append(registrations, func(api huma.API) { moderationroutes.Register(api, moderationapp.New(moderationapp.Dependencies{})) })
+	registrations = append(registrations, func(api huma.API) {
+		moderationroutes.Register(api, moderationapp.New(moderationapp.Dependencies{}))
+		moderationroutes.RegisterEnforcements(api, moderationapp.NewEnforcements(moderationapp.EnforcementDependencies{}))
+	})
 	registrations = append(registrations, func(api huma.API) {
 		activityroutes.RegisterGoalReminderPreferences(api, activityapp.New(activityapp.Dependencies{}))
 	})

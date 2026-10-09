@@ -83,6 +83,13 @@ export default function Settings() {
       />
       <SettingsSeparator />
       <SettingsNavigationRow
+        accessibilityLabel={i18n.t('enforcement.heading')}
+        icon={<SettingsIcon systemName="hand.raised" />}
+        label={i18n.t('enforcement.heading')}
+        onPress={() => router.push('/settings/enforcement')}
+      />
+      <SettingsSeparator />
+      <SettingsNavigationRow
         accessibilityLabel={i18n.t('blocking.settingsOpenLabel')}
         icon={<SettingsIcon systemName="hand.raised" />}
         label={i18n.t('blocking.settingsHeading')}

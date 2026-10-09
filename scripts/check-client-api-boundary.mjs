@@ -147,6 +147,7 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/app/settings/interactions.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/time-zone.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/week-start.tsx', new Set(['router'])],
+  ['apps/mobile/app/settings/enforcement.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/notifications.tsx', new Set(['router'])],
   ['apps/mobile/app/notifications.tsx', new Set(['router', 'useFocusEffect'])],
   ['apps/mobile/app/invitations.tsx', new Set(['router'])],

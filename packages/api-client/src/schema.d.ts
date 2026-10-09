@@ -106,6 +106,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/enforcement-notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List your private enforcement notices */
+        get: operations["list-enforcement-notices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enforcement-notices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read your private enforcement notice */
+        get: operations["get-enforcement-notice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/enforcement-notices/{id}/appeal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Appeal your enforcement decision */
+        post: operations["submit-enforcement-appeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/follow-requests": {
         parameters: {
             query?: never;
@@ -2099,6 +2150,24 @@ export interface components {
             data: components["schemas"]["ActivityRevision"][];
             meta: components["schemas"]["MetaStruct"];
         };
+        AppealInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AppealInputBody.json
+             */
+            readonly $schema?: string;
+            explanation: string;
+        };
+        AppealOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AppealOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["EnforcementAppealData"];
+        };
         AppearanceOutputBody: {
             /**
              * Format: uri
@@ -2291,6 +2360,44 @@ export interface components {
             count: number;
             emoji: string;
             reacted: boolean;
+        };
+        EnforcementAppealData: {
+            /** Format: date-time */
+            decidedAt?: string;
+            decisionReason?: string;
+            explanation: string;
+            id: string;
+            outcome?: string;
+            /** Format: date-time */
+            submittedAt: string;
+        };
+        EnforcementNoticeData: {
+            action: string;
+            appeal?: components["schemas"]["EnforcementAppealData"];
+            /** Format: date-time */
+            appealDeadline: string;
+            id: string;
+            /** Format: date-time */
+            issuedAt: string;
+            policyReason: string;
+            /** Format: date-time */
+            until?: string;
+        };
+        EnforcementNoticeListBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/EnforcementNoticeListBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["EnforcementNoticeListData"];
+            meta: components["schemas"]["EnforcementNoticeListMeta"];
+        };
+        EnforcementNoticeListData: {
+            items: components["schemas"]["EnforcementNoticeData"][] | null;
+        };
+        EnforcementNoticeListMeta: {
+            nextCursor?: string;
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */
@@ -2660,6 +2767,15 @@ export interface components {
         };
         MetaStruct: {
             nextCursor?: string;
+        };
+        NoticeOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/NoticeOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["EnforcementNoticeData"];
         };
         NotificationChannelOutputBody: {
             /**
@@ -4341,6 +4457,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlockMutationOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-enforcement-notices": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnforcementNoticeListBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-enforcement-notice": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoticeOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "submit-enforcement-appeal": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppealInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppealOutputBody"];
                 };
             };
             /** @description Error */

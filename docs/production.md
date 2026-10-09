@@ -96,9 +96,26 @@ Use `moderation_set_case_state(case_id, expected_state, next_state, reason)` to
 move an open case to `reviewing`, or an open/reviewing case to `dismissed` with a
 nonempty decision reason. A stale expected state fails instead of overwriting
 another review. The functions retain the reviewer and decision history. The
-reporter receives no review/outcome notification. These capabilities do not
-perform content removal or account enforcement; those remaining moderation
-workflows must provide the required affected-user notice and appeal.
+reporter receives no review/outcome notification.
+
+A separately authorized reviewer can issue a warning with
+`moderation_warn_user(case_id, notice_id, policy_reason)`. Grant only its exact
+`(text,text,text)` signature to that individual operator login. The function
+atomically closes the open/reviewing case and creates the subject's private
+Settings → Account notices entry. Repeating a closed-case action fails.
+
+Appeal reviewers need explicit `EXECUTE` grants on
+`moderation_list_appeals(integer)`, `moderation_read_appeal(text)`, and
+`moderation_decide_warning_appeal(text,text,text,text)`. List pending appeals,
+then read the selected notice ID and its original case in the restricted
+session. Decide with `(notice_id, 'upheld' or 'reversed', decision_reason,
+same_reviewer_reason)`. Use a different reviewer when practicable; the original
+reviewer must record why that is unavailable. Final decisions cannot be
+replaced. The subject sees the result without reviewer identity or report
+contents. Pending appeals keep their case evidence until final resolution.
+
+Content removal, suspension and ban enforcement remain separate unfinished
+work; issuing a warning does not apply those restrictions.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the

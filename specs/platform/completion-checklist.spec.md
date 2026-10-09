@@ -276,7 +276,7 @@ No acceptance area closes from this partial delivery; twelve remain.
 
 Nonblocking notification follow-up: revalidate a delayed goal-deadline push against interval expiry and subsequently recorded goal completion before provider handoff. Current delivery already rechecks preferences, active timers and access.
 
-### Reporting slice evidence (not yet released)
+### Reporting slice evidence
 
 `SAFE-REPORT-01` now has shared Studio/native reporting on profiles, Paths,
 feed events, comments, and received nudges. Real API submissions from Studio
@@ -286,11 +286,27 @@ the reports remain retained and the blocked profile becomes inaccessible.
 Fresh PostgreSQL migrations, all five target visibility checks, concurrent
 idempotent retries, immutable evidence, audit rollback, runtime account deletion,
 restricted operational review, and bounded closed-case retention pass focused
-checks. Final required CI and publication remain outstanding; emulator evidence
-is not physical-device acceptance.
+checks. PR #135 merged as `44cb21c` and release v0.47.0 was deployed through
+GitOps `f5d2598`; exact source/image readiness and Studio/API health passed.
+The subsequent v0.47.1 build 406 processed VALID with verified TestFlight notes;
+tester-group availability and physical-device acceptance still need verification.
 
 The bounded security critic found no P0/P1 blockers. Its null operational page
 limit issue is fixed with a PostgreSQL regression check. Native expired block
 reviews still require Cancel → Block to refresh; record an explicit refresh
 control as a nonblocking follow-up. Enforcement, appeals, and public-text checks
 remain separate open requirements in area 10.
+
+
+### Warning notices and appeals (review-ready)
+
+Native and Studio Settings now expose private Account notices, one immutable
+appeal within 30 days, and its final decision. Isolated QA demonstrated an
+operational warning, Studio submission and reload, audited operator review,
+and the same reversed decision with original explanation in Android Settings.
+Fresh migrations through 93 and PostgreSQL checks cover ownership, retries,
+audit rollback, restricted review grants and immutable final decisions. Native
+and Studio types, localization, transport boundary and Settings checks passed;
+the scoped security critic found no P0/P1 blockers. Final CI, merge and release
+remain pending. This does not close area 10: content removal, suspension, bans,
+restricted-account appeals and automated public-text checks remain required.
