@@ -5255,6 +5255,7 @@
   "studio.settings.enforcement": "Avisos de la cuenta",
   "enforcement.empty": "No hay avisos de la cuenta",
   "enforcement.loadFailed": "No se pudieron cargar los avisos. Inténtalo de nuevo.",
+  "enforcement.affectedComment": "Comentario publicado el {{date}} · Referencia: {{id}}",
   "enforcement.action.warning": "Advertencia",
   "enforcement.action.content_removal": "Contenido eliminado",
   "enforcement.action.suspension": "Cuenta suspendida",

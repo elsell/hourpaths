@@ -25,6 +25,11 @@ export function enforcementNoticeFromAPI(value: unknown): EnforcementNotice {
   if (!result.policyReason.trim() || Date.parse(result.appealDeadline) <= Date.parse(result.issuedAt)) throw new EnforcementFailure();
   if (action === 'suspension') { result.until = date(row.until); if (Date.parse(result.until) <= Date.parse(result.issuedAt)) throw new EnforcementFailure(); }
   else if (row.until !== undefined) throw new EnforcementFailure();
+  if (row.affectedComment !== undefined) {
+    const comment = object(row.affectedComment), id = text(comment.id);
+    if (action !== 'content_removal' || !id || id.trim() !== id) throw new EnforcementFailure();
+    result.affectedComment = { id, createdAt: date(comment.createdAt) };
+  }
   if (row.appeal !== undefined) result.appeal = enforcementAppealFromAPI(row.appeal);
   return result;
 }

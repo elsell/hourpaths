@@ -20,10 +20,25 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Native online history convergence (area 2) is the sole active implementation
-slice: an open online Path must show a newly stopped session without navigation,
-while preserving other participants, newer server revisions and loaded pages.
-Android acceptance found stale recent rows alongside correctly updated totals.
+Comment removal and appeal enforcement ([issue #154](https://github.com/elsell/hourpaths/issues/154), area 10) is the sole active
+implementation slice. An operational removal must hide the comment across
+social reads and deliveries and expose the existing private notice/appeal flow.
+Draft [PR #155](https://github.com/elsell/hourpaths/pull/155) implements removal,
+private notices and appeal reversal. Real PostgreSQL checks cover hidden reads,
+counts/retries, competing edit and push transactions, and ordinary deletion.
+Studio acceptance verifies the affected-comment reference, appeal submission
+and persisted reload at desktop and narrow widths. Android at 160% font size
+shows the same notice and appeal, then the final reversal after Refresh. Final
+merge gates, release availability and signed physical-device acceptance remain
+outstanding.
+
+Draft PR #153 (bundled goal reminders and quiet periods) is paused for the
+outstanding equal-start/end quiet-period decision. It is not released.
+
+Online history convergence and time-zone selection have subsequently shipped.
+The latest verified availability is TestFlight 0.49.8 (442), source `92477b5`,
+VALID and IN_BETA_TESTING with internal-group assignment. This does not close
+physical-device acceptance or the remaining areas below.
 
 Offline-banner persistence, Android screen-listener lifetime, and native
 synchronization feedback merged in PRs #144–#146 through their five-check gates.

@@ -36,6 +36,7 @@ function Notice({ notice, dependencies: d }: { notice: EnforcementNotice; depend
   }
   const date = (value: string) => d.i18n.date(Date.parse(value), { dateStyle: 'medium', timeStyle: 'short' });
   return <section className="studio-settings-card"><h3>{d.i18n.t(`enforcement.action.${notice.action}`)}</h3>
+    {notice.affectedComment && <p>{d.i18n.t('enforcement.affectedComment', { date: date(notice.affectedComment.createdAt), id: notice.affectedComment.id })}</p>}
     <time dateTime={notice.issuedAt}>{date(notice.issuedAt)}</time><p>{notice.policyReason}</p>
     {notice.until && <p>{d.i18n.t('enforcement.until', { date: date(notice.until) })}</p>}
     {receipt ? <><p role="status">{d.i18n.t(receipt.outcome ? `enforcement.${receipt.outcome}` : 'enforcement.pending')}</p>{receipt.explanation && <p>{receipt.explanation}</p>}{receipt.decisionReason && <p>{receipt.decisionReason}</p>}</> : <>

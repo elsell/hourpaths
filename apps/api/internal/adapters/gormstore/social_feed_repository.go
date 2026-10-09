@@ -87,6 +87,7 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
     SELECT COUNT(*) FROM social_practice_comment_models visible_comment
     JOIN user_models comment_author ON comment_author.id = visible_comment.author_user_id AND comment_author.status = 'active' AND comment_author.username IS NOT NULL
     WHERE visible_comment.social_feed_event_id = event.id
+      AND NOT EXISTS (SELECT 1 FROM moderation_removed_comment_models removed WHERE removed.comment_id = visible_comment.id)
       AND NOT EXISTS (SELECT 1 FROM block_models comment_count_block
         WHERE (comment_count_block.blocker_user_id = ? AND comment_count_block.blocked_user_id = visible_comment.author_user_id)
            OR (comment_count_block.blocker_user_id = visible_comment.author_user_id AND comment_count_block.blocked_user_id = ?))

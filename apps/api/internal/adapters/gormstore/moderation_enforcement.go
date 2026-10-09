@@ -15,6 +15,8 @@ import (
 
 type enforcementModel struct {
 	ID, SubjectUserID, Action, PolicyReason string
+	AffectedCommentID                       string
+	AffectedCommentCreatedAt                *time.Time
 	IssuedAt                                time.Time
 	UntilAt                                 *time.Time
 }
@@ -41,6 +43,10 @@ func readEnforcement(tx *gorm.DB, owner, id string) (app.Notice, error) {
 		return app.Notice{}, reportPersistenceError(err)
 	}
 	n := app.Notice{Decision: domain.Enforcement{ID: e.ID, SubjectUserID: e.SubjectUserID, Action: domain.EnforcementAction(e.Action), PolicyReason: e.PolicyReason, IssuedAt: e.IssuedAt}}
+	if e.AffectedCommentID != "" && e.AffectedCommentCreatedAt != nil {
+		n.Decision.AffectedCommentID = e.AffectedCommentID
+		n.Decision.AffectedCommentCreatedAt = *e.AffectedCommentCreatedAt
+	}
 	if e.UntilAt != nil {
 		n.Decision.Until = *e.UntilAt
 	}

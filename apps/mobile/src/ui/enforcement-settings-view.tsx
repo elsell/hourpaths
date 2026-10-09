@@ -51,6 +51,7 @@ function Notice({ notice, i18n, repository, update }: { notice: EnforcementNotic
   }
   const date = (value: string) => i18n.date(Date.parse(value), { dateStyle: 'medium', timeStyle: 'short' });
   return <SettingsSection title={i18n.t(`enforcement.action.${notice.action}`)}><View style={styles.content}>
+    {notice.affectedComment && <Text>{i18n.t('enforcement.affectedComment', { date: date(notice.affectedComment.createdAt), id: notice.affectedComment.id })}</Text>}
     <Text>{date(notice.issuedAt)}</Text><Text>{notice.policyReason}</Text>
     {notice.until && <Text>{i18n.t('enforcement.until', { date: date(notice.until) })}</Text>}
     {notice.appeal ? <>

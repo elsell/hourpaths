@@ -2371,8 +2371,14 @@ export interface components {
             /** Format: date-time */
             submittedAt: string;
         };
+        EnforcementCommentData: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+        };
         EnforcementNoticeData: {
             action: string;
+            affectedComment?: components["schemas"]["EnforcementCommentData"];
             appeal?: components["schemas"]["EnforcementAppealData"];
             /** Format: date-time */
             appealDeadline: string;

@@ -38,3 +38,14 @@ test('API notice mapper rejects incomplete final decisions and drops private fie
   assert.throws(() => enforcementNoticeFromAPI({ ...source, appeal: { ...source.appeal, outcome: 'reversed' } }));
   assert.throws(() => enforcementNoticeFromAPI({ ...source, action: 'suspension' }));
 });
+
+test('removed-comment notice copies only the subject reference and rejects malformed targets', async () => {
+  const { enforcementNoticeFromAPI } = await import('./adapters/api-enforcement');
+  const source = { id: 'notice', action: 'content_removal', policyReason: 'Policy', issuedAt: '2026-10-09T12:00:00Z', appealDeadline: '2026-11-08T12:00:00Z', affectedComment: { id: 'comment', createdAt: '2026-10-08T12:00:00Z', reporter: 'private', evidence: 'private' } };
+  const result = enforcementNoticeFromAPI(source);
+  assert.deepEqual(result.affectedComment, { id: 'comment', createdAt: '2026-10-08T12:00:00Z' });
+  source.affectedComment.id = 'changed';
+  assert.equal(result.affectedComment?.id, 'comment');
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedComment: { id: 'comment', createdAt: 'invalid' } }));
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, action: 'warning' }));
+});

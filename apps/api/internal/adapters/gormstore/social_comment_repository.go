@@ -112,7 +112,7 @@ func (repository *SocialFeedRepository) ListPracticeComments(ctx context.Context
 		HeartedByViewer                           bool
 	}
 	var rows []commentRow
-	query := db.Table("social_practice_comment_models AS comment_row").Select(fmt.Sprintf(`comment_row.id, comment_row.social_feed_event_id, comment_row.author_user_id, comment_row.body, comment_row.version, comment_row.created_at, comment_row.updated_at,
+	query := db.Table("social_practice_comment_models AS comment_row").Where("NOT EXISTS (SELECT 1 FROM moderation_removed_comment_models removed WHERE removed.comment_id = comment_row.id)").Select(fmt.Sprintf(`comment_row.id, comment_row.social_feed_event_id, comment_row.author_user_id, comment_row.body, comment_row.version, comment_row.created_at, comment_row.updated_at,
 u.id AS profile_id, u.username, u.display_name, COALESCE(u.profile_picture_url, '') AS profile_picture_url,
 COALESCE(u.description, '') AS description, %s, %s,
 (SELECT COUNT(*) FROM social_practice_comment_heart_models heart_count
@@ -372,6 +372,7 @@ func resolvePracticeComment(tx *gorm.DB, viewer, eventID, commentID string) (soc
 	}
 	var model socialCommentModel
 	err = tx.Table("social_practice_comment_models AS comment_row").Select("comment_row.*").
+		Where("NOT EXISTS (SELECT 1 FROM moderation_removed_comment_models removed WHERE removed.comment_id = comment_row.id)").
 		Joins("JOIN user_models author ON author.id = comment_row.author_user_id AND author.status = 'active'").
 		Where("comment_row.id = ? AND comment_row.social_feed_event_id = ?", commentID, eventID).
 		Where(`NOT EXISTS (SELECT 1 FROM block_models comment_block
@@ -398,6 +399,9 @@ func readSocialCommentReplay(tx *gorm.DB, idempotency ports.Idempotency) (social
 	}
 	if !bytes.Equal(replay.RequestHash, idempotency.RequestHash) {
 		return replay, false, ports.ErrIdempotencyConflict
+	}
+	if err := rejectRemovedComment(tx, replay.CommentID); err != nil {
+		return replay, false, err
 	}
 	return replay, true, nil
 }
@@ -531,4 +535,16 @@ func classifySocialCommentError(err error) error {
 	default:
 		return fmt.Errorf("social comment persistence: %w: %v", ports.ErrUnavailable, err)
 	}
+}
+
+// Removed text must not escape via an old successful mutation receipt.
+func rejectRemovedComment(tx *gorm.DB, commentID string) error {
+	var count int64
+	if err := tx.Table("moderation_removed_comment_models").Where("comment_id = ?", commentID).Count(&count).Error; err != nil {
+		return err
+	}
+	if count != 0 {
+		return ports.ErrNotFound
+	}
+	return nil
 }
