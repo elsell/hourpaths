@@ -16,23 +16,22 @@ export function ProfileConnectionsView({ i18n, repository, viewerId, username, d
   canRemove: boolean; onOpen(username: string): void; onChanged(): void;
 }) {
   const repo = useRef(repository); repo.current = repository;
-  const current = useRef(true), generation = useRef(0), controller = useRef<AbortController | null>(null), loading = useRef(false);
+  const current = useRef(true), generation = useRef(0), loading = useRef(false);
   const [owner] = useState(() => createFollowerRemovalOwner(viewerId, Crypto.randomUUID));
   const [people, setPeople] = useState<ConnectionPerson[]>([]), [next, setNext] = useState<string | null>(null);
   const [busy, setBusy] = useState(false), [removing, setRemoving] = useState<string | null>(null), [error, setError] = useState<'hidden' | 'unavailable' | null>(null), [removeError, setRemoveError] = useState(false);
   const admitted = useRef(false);
   const removeAllowed = useRef(canRemove); removeAllowed.current = canRemove;
-  useEffect(() => () => { current.current = false; generation.current++; controller.current?.abort(); owner.cancel(); }, [owner]);
+  useEffect(() => () => { current.current = false; generation.current++; owner.cancel(); }, [owner]);
   const load = useCallback(async (cursor?: string) => {
     if (!current.current || (cursor && loading.current)) return;
-    controller.current?.abort(); const request = new AbortController(); controller.current = request;
     const ticket = ++generation.current; loading.current = true; setBusy(true); setError(null);
     try {
-      const page = await repo.current.list(username, direction, cursor, request.signal);
+      const page = await repo.current.list(username, direction, cursor);
       if (!current.current || ticket !== generation.current) return;
       setPeople(previous => [...new Map([...(cursor ? previous : []), ...page.items].map(person => [person.id, person])).values()]); setNext(page.next);
     } catch (cause) {
-      if (!current.current || ticket !== generation.current || request.signal.aborted) return;
+      if (!current.current || ticket !== generation.current) return;
       setPeople([]); setNext(null); setError(cause instanceof ProfileConnectionsFailure && (cause.kind === 'hidden' || cause.kind === 'rejected') ? 'hidden' : 'unavailable');
     } finally { if (current.current && ticket === generation.current) { loading.current = false; setBusy(false); } }
   }, [username, direction]);
