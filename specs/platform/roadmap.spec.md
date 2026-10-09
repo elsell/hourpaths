@@ -2,30 +2,31 @@
 
 ## Current focus
 
-Merged PRs #92–#94 are published in v0.25.0: Studio encouragement/audience
-controls, voluntary Path leaving, and the devalue security release fix. Both
-leave outcomes and encouragement delivery passed real-account verification;
-required PR and main gates passed. GitOps `a08886b` deploys web revision
-`ad40d8b`; Flux is Ready/Healthy, the exact published image is running, and
-public Studio is available. TestFlight 0.25.0 (245) is VALID, IN_BETA_TESTING,
-and assigned to the internal group (status run `36905986943`).
-Physical-device encouragement acceptance remains open.
-
 The [ordered completion checklist](completion-checklist.spec.md) retains the
-entire approved audit scope in **12 remaining acceptance areas**. It identifies
-the two remaining Studio legacy-journey groups and the explicit web cutover gate,
-and schedules offline, account lifecycle, notification delivery, and native timer
-work before further Studio-only expansion. Only one product slice is active;
-a demonstrated P0/P1 release blocker is the only additional infrastructure work.
-Path visibility (#96) is available in v0.26.0 on web and TestFlight (249).
-Studio account entry (#97) and release blockers (#98–#99) are merged with
-required gates passing. API/web revision `f006028` is deployed through GitOps
-`8e4457a`; exact images, completed rollouts, Ready/Healthy Flux and public Studio
-availability are verified. TestFlight 0.27.0 (259) is VALID, IN_BETA_TESTING and
-assigned to the internal group (status run `36956130006`). Area 1 is closed;
-physical-device acceptance remains in area 13. The sole active implementation slice is
-restart-safe offline tracking under area 2, with the prior release monitored
-independently. No further Studio-only expansion is in progress.
+full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
+legacy journeys and the Studio cutover are closed; new cross-client behavior and
+physical-device acceptance remain in their owning areas. Widgets remain excluded.
+
+Comment-removal enforcement and private appeals merged in PR #155 as `d2bd82c`.
+Release v0.50.0 is verified in production through GitOps `12e991b`, with exact
+API/web images, Ready/Healthy Flux and public readiness. TestFlight 0.50.0 (450)
+is VALID, IN_BETA_TESTING and assigned to internal testers; its release notes
+were read back. Google Play internal version code 420 was committed by workflow
+`38002647767` after signed-bundle verification. Physical-device acceptance is
+still required; publication does not close the wider moderation area.
+
+Draft PR #153 contains bundled goal reminders and unavailable periods. Its local
+integration preserves moderation migration 94 and assigns the unpublished
+reminder migrations 95–96. Focused database and client integration checks pass.
+It remains paused for the explicit decision on equal quiet-period endpoints.
+The richer Live Activity proposal and public-text processing location also await
+owner decisions. These unresolved decisions do not authorize inferred behavior.
+
+Only one product implementation slice may be active. Preserve completed
+implementation and use the checklist's concrete acceptance criteria to select
+independent work; do not restart delivered Studio journeys or repeat release
+verification without a changed risk. Physical-iPhone encouragement selection and
+the UI-28 acceptance matrix remain open.
 
 ## Gap-closure scope and evidence
 
@@ -35,7 +36,7 @@ coverage alone must not mark an item complete.
 
 | Area | Outstanding delivery scope |
 | --- | --- |
-| Studio replacement | Path lifecycle; activity CRUD/history; sharing, invitations, membership and ownership; notification history; blocking and nudges; account entry; calendar summaries; shared design-system/application boundaries; legacy cutover and GitOps deployment |
+| Studio replacement | Closed under areas 1 and 12; calendar correctness and new cross-client features remain in their respective areas |
 | Offline | Durable timers and activity edits, retained history, causal synchronization, conflicts, and offline authentication lifecycle |
 | Account lifecycle | Permanent deletion, retention/restore verification, provider linking/unlinking and duplicate-account recovery |
 | Profiles and preferences | Editing and safe image uploads, privacy changes, follower lists/removal, editable week start, unavailable periods and policy reacceptance |
@@ -108,8 +109,10 @@ delay the active successful-account-creation slice.
 - The verified-email duplicate-account check does not define correspondence and
   normalization rules. Email must remain non-authoritative and must not disclose
   or establish ownership of an existing account.
-- ACCT-01's duplicate-prevention handoff and ACCT-03A's dual-provider recovery
-  boundary must be explicit before recovery behavior expands.
+- The duplicate-prevention and dual-provider recovery boundary is now specified
+  in [Account Authentication](../accounts/authentication.spec.md#duplicate-account-prevention-and-recovery)
+  and implemented by PR #116. Real-provider and physical-device acceptance
+  remain required; the boundary itself is no longer an undecided product choice.
 
 ## Required evidence
 
