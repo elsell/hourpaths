@@ -81,17 +81,17 @@ func TestPostgresProfileEditingAtomicRetryAndConflicts(t *testing.T) {
 		t.Fatalf("other=%+v err=%v", untouched, err)
 	}
 	// Runtime cannot tamper with saved replay evidence; deleting the account removes it.
-	if err := runtime.DB.Exec("UPDATE user_profile_mutation_models SET display_name = ? WHERE user_id = ?", "tampered", owner).Error; err == nil {
+	if err := runtime.DB.Model(&profileMutationModel{}).Where("user_id = ?", owner).Update("display_name", "tampered").Error; err == nil {
 		t.Fatal("runtime can alter replay evidence")
 	}
-	if err := runtime.DB.Exec("DELETE FROM user_profile_mutation_models WHERE user_id = ?", owner).Error; err == nil {
+	if err := runtime.DB.Where("user_id = ?", owner).Delete(&profileMutationModel{}).Error; err == nil {
 		t.Fatal("runtime can delete replay evidence")
 	}
 	var count int64
 	if err := migration.DB.Table("audit_event_models").Where("owner_user_id = ? AND target_type = 'user'", owner).Count(&count).Error; err != nil || count != 1 {
 		t.Fatalf("audit count=%d err=%v", count, err)
 	}
-	if err := migration.DB.Exec("DELETE FROM user_models WHERE id = ?", owner).Error; err != nil {
+	if err := migration.DB.Where("id = ?", owner).Delete(&userModel{}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := migration.DB.Table("user_profile_mutation_models").Where("user_id = ?", owner).Count(&count).Error; err != nil || count != 0 {
