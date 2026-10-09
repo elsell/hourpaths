@@ -86,7 +86,7 @@ func TestPostgresPictureAtomicReplacementRemovalAndCleanup(t *testing.T) {
 	if _, err = runtime.ReadPublicPicture(ctx, replacement.AssetID); !errors.Is(err, ports.ErrNotFound) {
 		t.Fatal("removed media accessible")
 	}
-	if err = runtime.DB.Exec("UPDATE user_profile_picture_mutation_models SET revision = 99 WHERE user_id = ?", owner).Error; err == nil {
+	if err = runtime.DB.Model(&profilePictureMutationModel{}).Where("user_id = ?", owner).Update("revision", 99).Error; err == nil {
 		t.Fatal("runtime mutated replay")
 	}
 	restore := replacement
