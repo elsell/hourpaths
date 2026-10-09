@@ -318,9 +318,9 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 	var ticket ports.PushTicket
 	handedOff := false
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var notice struct{ RecipientUserID, ActorUserID, PathID, Kind string }
+		var notice struct{ RecipientUserID, ActorUserID, PathID, Kind, CommentID string }
 		err := tx.Table("notification_push_delivery_models AS delivery").
-			Select("notice.recipient_user_id, notice.actor_user_id, notice.path_id, notice.kind").
+			Select("notice.recipient_user_id, notice.actor_user_id, notice.path_id, notice.kind, COALESCE(notice.comment_id, '') AS comment_id").
 			Joins("JOIN notification_models notice ON notice.id = delivery.notification_id").
 			Where("delivery.notification_id = ? AND delivery.installation_id = ? AND delivery.locked_by = ? AND delivery.locked_until > CURRENT_TIMESTAMP", notificationID, installationID, worker).
 			Where("delivery.delivered_at IS NULL AND delivery.suppressed_at IS NULL AND delivery.permanently_failed_at IS NULL").
@@ -355,6 +355,11 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 				if errors.Is(err, ports.ErrNotFound) {
 					return nil
 				}
+				return err
+			}
+		}
+		if notice.CommentID != "" {
+			if err := lockSocialCommentTarget(tx, notice.CommentID); err != nil {
 				return err
 			}
 		}

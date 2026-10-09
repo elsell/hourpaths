@@ -83,7 +83,7 @@ func enforcementHandler(f *enforcementStore) http.Handler {
 }
 func TestEnforcementHTTPAccountBoundaryAndPrivateAppeal(t *testing.T) {
 	f := &enforcementStore{}
-	f.notice = app.Notice{Decision: domain.Enforcement{ID: "notice", SubjectUserID: "subject", Action: domain.Warning, PolicyReason: "Harassment policy", IssuedAt: f.Now().Add(-time.Hour)}}
+	f.notice = app.Notice{Decision: domain.Enforcement{ID: "notice", SubjectUserID: "subject", Action: domain.ContentRemoval, AffectedCommentID: "removed-comment", AffectedCommentCreatedAt: f.Now().Add(-2 * time.Hour), PolicyReason: "Harassment policy", IssuedAt: f.Now().Add(-time.Hour)}}
 	h := enforcementHandler(f)
 	request := func(method, path, token, body string) *httptest.ResponseRecorder {
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
@@ -130,7 +130,7 @@ func TestEnforcementHTTPAccountBoundaryAndPrivateAppeal(t *testing.T) {
 	f.notice.Appeal.DecidedAt = f.Now()
 	for _, path := range []string{"/v1/enforcement-notices", "/v1/enforcement-notices/notice"} {
 		w := request("GET", path, "Bearer subject", "")
-		if w.Code != 200 || !strings.Contains(w.Body.String(), "Policy applies") || strings.Contains(w.Body.String(), "secret-reviewer") || strings.Contains(w.Body.String(), "subjectUserId") {
+		if w.Code != 200 || !strings.Contains(w.Body.String(), "Policy applies") || !strings.Contains(w.Body.String(), `"affectedComment":{"id":"removed-comment"`) || strings.Contains(w.Body.String(), "secret-reviewer") || strings.Contains(w.Body.String(), "subjectUserId") {
 			t.Fatal(w.Code, w.Body)
 		}
 	}
