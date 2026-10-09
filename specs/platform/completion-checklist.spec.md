@@ -20,18 +20,26 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Native online history convergence (area 2) is the sole active implementation
-slice: an open online Path must show a newly stopped session without navigation,
-while preserving other participants, newer server revisions and loaded pages.
-Android acceptance found stale recent rows alongside correctly updated totals.
+Ordinary goal reminders with saved quiet hours (areas 8–9) are the sole active
+slice, in [draft PR #153](https://github.com/elsell/hourpaths/pull/153). Scheduling,
+bundles, immediate online/offline Stop recalculation, account-scoped quiet-hour
+settings and final push suppression are implemented. Studio and Android at 160%
+text verify settings save and cross-client readback. Database checks cover
+atomic receipts/audit, access revocation, quiet-hour updates, DST boundaries and
+delayed handoff. Equal start/end semantics still require the owner's decision;
+final candidate gates, checked merge and release remain outstanding.
 
-Offline-banner persistence, Android screen-listener lifetime, and native
-synchronization feedback merged in PRs #144–#146 through their five-check gates.
-Combined source `f27cd1f` is awaiting main CI and release availability; separate
-intermediate deployments are not required. Android acceptance covers 20 offline
-cold launches, edit/deletion and archival conflicts, membership removal, and a
-newer Studio timer superseding an older native timer with one saved result and
-notification cleanup. These checks do not close signed-device acceptance.
+Online history convergence merged in PR #147. Its TestFlight 0.49.6 (436) is
+available; combined PRs #144–#146 are available in 0.49.5 (434). Native expiry
+recovery (PR #149) is available in 0.49.7 (438), and the time-zone catalog fix
+(PR #152) is available in 0.49.8 (442), confirmed VALID, IN_BETA_TESTING and
+assigned to the internal group by Apple status run `37992233224`. Exact-source
+API/web deployments are verified. Physical-device acceptance remains open.
+
+Android acceptance covers 20 offline cold launches, edit/deletion and archival
+conflicts, membership removal, and a newer Studio timer superseding an older
+native timer with one saved result and notification cleanup. These checks do not
+close signed-device acceptance.
 
 Native route recovery merged in [PR #143](https://github.com/elsell/hourpaths/pull/143)
 as `048c331` after all five candidate gates passed. Android acceptance covers
@@ -397,13 +405,13 @@ This slice remains in progress; the following evidence does not close area 9.
 | Remaining delivery step | Current evidence or acceptance needed |
 | --- | --- |
 | Scheduling and delivery | Implemented: participant-scoped five-minute bundles, atomic receipts/audit/push admission, and immediate online/offline-stop recalculation. Real worker delivered two QA Paths as one notice; online Stop produced its eligible notice within 95 ms and offline Stop synchronization within 98 ms. Final handoff rejects expired actionability, completed/removed goals, and changed canonical goal/time-zone intervals; focused PostgreSQL checks pass. |
-| Client experience | Studio and Android at 160% font display both destinations and open each selected Path. A shared native sheet and localized chooser title are implemented. A persistent native appearance-refresh warning remains unclassified. |
+| Client experience | Studio and Android at 160% font display both destinations and open each selected Path. A shared native sheet and localized chooser title are implemented. The integrated quiet-hours flow also passes Android at 160% text, native system time selection, save confirmation, and independent Studio/API readback. A persistent Path appearance-refresh warning remains unclassified. |
 | Visibility and compatibility | Focused HTTP and PostgreSQL checks cover old-client filtering, cross-account access, partial Path revocation, unavailable authorization, preference changes, running timers and completed/removed goals. |
 | Quiet-period integration | Integrated recurring unavailable periods across native/Studio preferences, reminder planning, and final push handoff. PostgreSQL verifies earlier effective deadlines, atomic preference changes and suppressed push with retained in-app notices; local-time/DST checks pass. The equal-start/end product decision remains open, so release remains held. |
 | Final candidate | Bounded P0/P1 review completed; its delayed-handoff finding is fixed with a red/green PostgreSQL regression. Applicable merge checks and checked merge remain pending on `codex/actionable-goal-reminders`. |
 | Release and availability | Pending release notes, API/web GitOps deployment, native publication, availability evidence and physical-device acceptance. |
 
-The prior reminder-only warm acceptance uses the version-94 API on Paul at port 28093. The three private
+Integrated warm acceptance uses the version-95 API on Paul at port 28093. The three private
 reminder QA Paths created for delivery and navigation checks were archived after
 verification. The source worktree is `/home/john/code/hourpaths-native-route-recovery`;
 acceptance scripts and receipts are recorded in the local goal evidence ledger.
