@@ -1,6 +1,7 @@
 export type NotificationTarget = { readonly kind: 'invitations' | 'people' } | { readonly kind: 'ownership' | 'path'; readonly pathId: string } | { readonly kind: 'profile'; readonly username: string };
 export interface Notification {
   readonly id: string;
+  readonly reportTarget?: { readonly kind: 'nudge'; readonly id: string };
   readonly message: string;
   readonly createdAt: number;
   readonly read: boolean;

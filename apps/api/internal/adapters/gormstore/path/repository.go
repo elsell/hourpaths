@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/pathaccess"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
@@ -242,23 +243,7 @@ func (r *Repository) Get(ctx context.Context, owner string, id domain.ID) (domai
 		return domain.Entity{}, ports.ErrInvalidArgument
 	}
 	var row model
-	err := r.DB.WithContext(ctx).
-		Table("path_models").
-		Select("path_models.*").
-		Joins("LEFT JOIN path_membership_models ON path_membership_models.path_id = path_models.id AND path_membership_models.user_id = ?", owner).
-		Where(`path_models.id = ? AND (
-path_models.owner_user_id = ? OR path_membership_models.user_id = ? OR (
-  NOT EXISTS (SELECT 1 FROM block_models path_block
-    WHERE (path_block.blocker_user_id = ? AND path_block.blocked_user_id = path_models.owner_user_id)
-       OR (path_block.blocker_user_id = path_models.owner_user_id AND path_block.blocked_user_id = ?))
-  AND (path_models.visibility = 'public' OR (
-    path_models.visibility = 'followers' AND EXISTS (
-      SELECT 1 FROM follow_models path_follow
-      WHERE path_follow.follower_user_id = ? AND path_follow.following_user_id = path_models.owner_user_id
-    )
-  ))
-))`, id, owner, owner, owner, owner, owner).
-		First(&row).Error
+	err := pathaccess.Query(r.DB.WithContext(ctx), owner, string(id)).First(&row).Error
 	if err == gorm.ErrRecordNotFound {
 		return domain.Entity{}, ports.ErrNotFound
 	}

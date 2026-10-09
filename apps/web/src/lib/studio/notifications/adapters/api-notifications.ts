@@ -53,7 +53,7 @@ export function apiNotifications(baseURL: string, token: () => string | null, re
       const value = owner.snapshot();
       if (value !== previous) {
         previous = value;
-        snapshot = { items: value.history.items.map(item => ({ id: item.id, createdAt: Date.parse(item.createdAt), read: item.read, presentation: item.presentation, target: target(item), message: i18n.t(notificationPresentationMessageKey(item), {
+        snapshot = { items: value.history.items.map(item => ({ id: item.id, ...(item.type === 'nudge_received' ? { reportTarget: { kind: 'nudge' as const, id: item.id } } : {}), createdAt: Date.parse(item.createdAt), read: item.read, presentation: item.presentation, target: target(item), message: i18n.t(notificationPresentationMessageKey(item), {
           displayName: item.actor.displayName, username: item.actor.username, pathName: 'pathName' in item ? item.pathName : '', emoji: item.type === 'practice_reaction' ? item.reaction : '',
           pathVisibility: item.type === 'path_visibility_changed' ? i18n.t(`pathVisibility.option.${item.pathVisibility}`) : '',
         }) })), unreadCount: value.history.unreadCount, nextCursor: value.history.nextCursor, loaded: value.loaded, loading: value.loading, mutating: value.mutating, error: value.error };

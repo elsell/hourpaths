@@ -250,7 +250,7 @@ test('mobile routes are hosted by a localized native stack with iOS back gesture
   assert.match(pathRoute, /useNativeRoutePresentation\(pathID\)/);
   assert.match(pathRoute, /dismissNativeRoute\(pathID\)/);
   assert.match(pathRoute, /<Stack\.Screen options=\{\{ title: activePresentation\.title \}\}>/);
-  assert.match(pathRoute, /<PathHeaderMenu[\s\S]*actions=\{activePresentation\.actions\}[\s\S]*\/>/);
+  assert.match(pathRoute, /<PathHeaderMenu[\s\S]*actions=\{\[\.\.\.activePresentation\.actions, report\.action\]\}[\s\S]*\/>/);
   assert.doesNotMatch(pathRoute, /headerRight/);
   assert.doesNotMatch(pathRoute, /unstable_headerRightItems/);
   assert.match(pathHeaderMenu, /<Stack\.Toolbar placement="right">/);

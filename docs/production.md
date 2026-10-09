@@ -73,3 +73,37 @@ Required preparation:
 
 Scalar documentation can be disabled. Do so unless interactive production API
 documentation is intentional and its public OIDC client is registered.
+
+
+## Restricted report review
+
+Reports are private moderation cases, not ordinary account or Path records.
+Application and retention credentials cannot call the review capabilities or
+read case evidence. Use a separately authenticated operational database login;
+a database owner can grant that login only `EXECUTE` on
+`moderation_list_cases(integer)`, `moderation_read_case(text)`, and
+`moderation_set_case_state(text,text,text,text)`. Never grant these capabilities
+to `app`, `app_audit_retention`, or a product user. Each read and decision records
+the login's database `session_user`; use individual logins for attribution.
+
+Review the oldest open cases with `SELECT moderation_list_cases(20)`. Open a
+specific case with a bound `case_id` argument to `moderation_read_case`; the
+result includes the report-time text and, for a profile photo, `pictureBase64`.
+Keep this evidence in the restricted operator session rather than general logs,
+issue trackers, or messages to the reported user.
+
+Use `moderation_set_case_state(case_id, expected_state, next_state, reason)` to
+move an open case to `reviewing`, or an open/reviewing case to `dismissed` with a
+nonempty decision reason. A stale expected state fails instead of overwriting
+another review. The functions retain the reviewer and decision history. The
+reporter receives no review/outcome notification. These capabilities do not
+perform content removal or account enforcement; those remaining moderation
+workflows must provide the required affected-user notice and appeal.
+
+The existing hourly deleted-account retention job also drains closed-case
+expiry in bounded batches. It starts cleanup 89 days after closure, within the
+90-day maximum; each immutable run summary includes `moderation_deleted_count`.
+Open cases and recently closed cases are ineligible. Investigate failed runs
+before the deadline. Case expiry removes its evidence/photo and case-specific
+review history; an account-owned receipt contains only the accepted report ID
+and retry hash, and is removed when that reporter deletes their account.

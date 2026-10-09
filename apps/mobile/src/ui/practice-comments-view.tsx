@@ -1,3 +1,4 @@
+import { useReportAction } from './report-composer';
 import type { PracticeComment } from '@hourpaths/client-core';
 import type { Translator } from '@hourpaths/i18n';
 import { useEffect, useRef, useState } from 'react';
@@ -43,11 +44,12 @@ function CommentRow({ comment, i18n, presentation }: {
   i18n: Translator;
   presentation: PracticeCommentsRoutePresentation;
 }) {
+  const report = useReportAction({ kind: 'comment', id: comment.id }, i18n);
   const editDraft = usePracticeCommentEditDraft(presentation.eventID, comment.id, comment.text);
   const canEdit = comment.authorUserId === presentation.viewerID && !comment.pending;
   const canDelete = (canEdit || presentation.eventOwnerID === presentation.viewerID) && !comment.pending;
   const history = presentation.history?.commentID === comment.id ? presentation.history : undefined;
-  const actions: CommentAction[] = [];
+  const actions: CommentAction[] = comment.pending ? [] : [report.action];
   if (canEdit) actions.push({
     label: i18n.t('social.commentsEdit'),
     onPress: () => beginPracticeCommentEdit(presentation.eventID, comment.id, comment.text),
@@ -121,6 +123,7 @@ function CommentRow({ comment, i18n, presentation }: {
       </View> : null}
     </View>
     {actions.length > 0 ? <CommentActionMenu accessibilityLabel={i18n.t('social.commentsActions')} actions={actions} /> : null}
+    {report.sheet}
     <CommentEditSheet
       admittedBusy={presentation.busy}
       baseline={comment.text}

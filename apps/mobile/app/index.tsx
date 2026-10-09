@@ -1,3 +1,4 @@
+import { reportReceiptFromAPI, type ReportDraft, type ReportReceipt } from '@hourpaths/client-core';
 import { GoalReminderControl } from '../src/ui/goal-reminder-control';
 import { goalReminderFromAPI, type GoalReminderSubject, type GoalReminderPreference } from '@hourpaths/client-core';
 import { nativeAccountExportJSON, clearNativeAccountExportCache } from '../src/account-export-native';
@@ -4568,6 +4569,24 @@ export function HomeScreen() {
     }
   }
 
+  async function reportRequest(draft: ReportDraft, key: string): Promise<ReportReceipt> {
+    if (!session || destination?.kind !== 'home') throw new Error('report_unavailable');
+    const currentSession = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === currentSession.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    const api = createSessionApiClient(apiURL, () => currentSession.token);
+    try {
+      const response = generatedResponse(await api.submitReport({ targetKind: draft.target.kind, targetId: draft.target.id, reason: draft.reason, explanation: draft.explanation }, key));
+      if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+      const envelope = await response.json();
+      if (!current()) throw new Error('report_superseded');
+      return reportReceiptFromAPI(envelope?.data);
+    } catch (cause) {
+      await handleNotificationOperationFailure(cause, currentSession, current);
+      throw cause;
+    }
+  }
+
   async function goalReminderRequest(subject: GoalReminderSubject, value?: GoalReminderPreference, key?: string): Promise<GoalReminderPreference> {
     if (!session || destination?.kind !== 'home') throw new Error('goal_reminder_unavailable');
     const currentSession = session;
@@ -8594,6 +8613,7 @@ export function HomeScreen() {
       profilePrivacy={{ read: () => profilePrivacyRequest(), save: (value, visibility, key) => profilePrivacyRequest(value, visibility, key) }}
       profileEditing={{ read: () => profileEditingRequest(), save: (value, key) => profileEditingRequest(value, key) }}
       profileOperationId={() => Crypto.randomUUID()}
+      reporting={{ submit: reportRequest }}
       goalReminders={{ get: subject => goalReminderRequest(subject), update: (subject, value, key) => goalReminderRequest(subject, value, key) }}
       timerSubscriptions={{ get: subject => timerSubscriptionRequest(subject), update: (subject, value, key) => timerSubscriptionRequest(subject, value, key) }}
       providers={providerSettings}

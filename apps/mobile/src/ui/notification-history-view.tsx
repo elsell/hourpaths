@@ -1,3 +1,4 @@
+import { useReportAction } from './report-composer';
 import type {
   NotificationHistoryState,
   PathInvitationNotification,
@@ -24,6 +25,7 @@ function NotificationRow({
   onDelete: () => void;
   onOpen?: () => void;
 }) {
+  const report = useReportAction({ kind: 'nudge', id: item.id }, i18n);
   const message = i18n.t(notificationPresentationMessageKey(item), {
     emoji: item.type === 'practice_reaction' ? item.reaction : '',
     displayName: item.actor.displayName,
@@ -59,13 +61,14 @@ function NotificationRow({
     </Pressable>
     <NativeActionMenu
       accessibilityLabel={i18n.t('notification.actionsLabel')}
-      actions={[{
+      actions={[...(item.type === 'nudge_received' ? [report.action] : []), {
         disabled: busy,
         label: i18n.t('notification.delete'),
         onPress: onDelete,
         systemImage: 'trash',
       }]}
     />
+    {report.sheet}
   </View>;
 }
 

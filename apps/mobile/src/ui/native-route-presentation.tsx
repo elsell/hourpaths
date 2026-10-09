@@ -16,7 +16,7 @@ export type NativeRouteAction = {
   disabled?: boolean;
   label: string;
   onPress: () => void;
-  systemImage: 'archivebox' | 'archivebox.fill' | 'clock.arrow.circlepath' | 'hand.raised' | 'hand.wave' | 'person.2' | 'person.badge.plus' | 'paintpalette' | 'pencil' | 'pin' | 'pin.slash' | 'rectangle.portrait.and.arrow.right' | 'slider.horizontal.3' | 'trash';
+  systemImage: 'flag' | 'archivebox' | 'archivebox.fill' | 'clock.arrow.circlepath' | 'hand.raised' | 'hand.wave' | 'person.2' | 'person.badge.plus' | 'paintpalette' | 'pencil' | 'pin' | 'pin.slash' | 'rectangle.portrait.and.arrow.right' | 'slider.horizontal.3' | 'trash';
 };
 
 type PublishedNativeRoute = NativeRoutePresentation & {

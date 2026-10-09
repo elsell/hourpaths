@@ -1,3 +1,4 @@
+import { ReportAction } from './report-composer';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Navigate } from '@tanstack/react-router';
 import type { Notification, NotificationTarget } from '../notifications/domain/notification';
@@ -37,7 +38,7 @@ export function NotificationsPage({ dependencies: d }: { dependencies: StudioDep
       const items = state.items.filter(item => item.presentation === section).sort((a, b) => b.createdAt - a.createdAt);
       return items.length ? <section key={section} className="studio-notification-section"><h2>{d.i18n.t(section === 'actionable' ? 'notification.actionableHeading' : 'notification.informationalHeading')}</h2><ul className="studio-notification-list">{items.map(item => <li key={item.id} data-unread={!item.read}>
         <button className="studio-notification-open" disabled={busy} onClick={() => void open(item)} aria-label={d.i18n.t('notification.rowAccessibility', { message: item.message, state: d.i18n.t(item.read ? 'notification.read' : 'notification.unread'), date: d.i18n.date(item.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) })}><span className="studio-notification-message">{!item.read && <span className="studio-unread-dot" aria-hidden="true" />}{item.message}</span><time dateTime={new Date(item.createdAt).toISOString()}>{d.i18n.date(item.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}</time></button>
-        <button disabled={busy} onClick={() => setDeleting(item)}>{d.i18n.t('notification.delete')}</button>
+        {item.reportTarget && <ReportAction menu target={item.reportTarget} dependencies={d} />}<button disabled={busy} onClick={() => setDeleting(item)}>{d.i18n.t('notification.delete')}</button>
       </li>)}</ul></section> : null;
     })}
     {state.nextCursor && <button disabled={busy} onClick={() => void service.loadMore()}>{d.i18n.t('notification.loadMore')}</button>}

@@ -310,6 +310,10 @@ audit, focused web tests and type checking, and a production web build.
 The structural gate rejects oversized handwritten Go files, mocks, ad hoc print
 calls, direct SQL helpers, environment reads outside configuration/bootstrap,
 floating CI action references, and container images without immutable digests.
+Restricted moderation persistence may use the exact reviewed parameterized case
+INSERT to avoid granting runtime SELECT/RETURNING privileges. Operational-review
+and retention PostgreSQL fixtures may use exact reviewed setup and privilege
+checks; the direct-SQL guard must continue rejecting altered or additional calls.
 It also rejects raw `/v1` requests in web and mobile presentation code. Generated
 client and shared transport adapters are the only client-side locations permitted
 to construct application API requests; public provider discovery and authorization
@@ -567,3 +571,11 @@ and clean symbol/package vulnerability scans. Required image and acceptance
 gates remain in force. The required minimum module graph includes `x/text` v0.42.0, `x/sync`
 v0.23.0, and `x/sys` v0.48.0; their exact age exceptions use the same checks.
 No unrelated dependency upgrades belong in this fix.
+
+### Reporting persistence dependency isolation
+
+Reporting snapshot reads and ordinary Path reads must share the same actor-scoped
+Path visibility query. The shared query must remain independent of repositories
+that depend on the root persistence adapter, so all persistence test packages
+remain independently compilable. This extraction must not change membership,
+follow, block, or SpiceDB authorization behavior.

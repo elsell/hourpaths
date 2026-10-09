@@ -1,3 +1,4 @@
+import type { ReportingRepository } from '@hourpaths/client-core';
 import type { GoalRemindersRepository } from '@hourpaths/client-core';
 import type { WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import type { ProfilePictureRepository } from '@hourpaths/client-core';
@@ -26,6 +27,7 @@ export type SettingsPresentation = {
   profileOperationId?: () => string;
   timerSubscriptions: TimerSubscriptionsRepository;
   goalReminders: GoalRemindersRepository;
+  reporting: ReportingRepository;
   providers?: ProviderSettingsService;
   deleteAccount?: () => void;
   displayName: string;
@@ -54,6 +56,7 @@ export function SettingsPresentationSource({
   weekStart,
   timerSubscriptions,
   goalReminders,
+  reporting,
   profilePrivacy,
   profileEditing,
   profilePicture,
@@ -82,6 +85,7 @@ export function SettingsPresentationSource({
   profilePictureRef.current = profilePicture;
   const profileEditingRef = useRef(profileEditing);
   profileEditingRef.current = profileEditing;
+  const reportingRef = useRef(reporting); reportingRef.current = reporting;
   const goalRemindersRef = useRef(goalReminders);
   goalRemindersRef.current = goalReminders;
   const timerSubscriptionsRef = useRef(timerSubscriptions);
@@ -138,6 +142,7 @@ export function SettingsPresentationSource({
         read: async () => { assertActive(); const value = await profileEditingRef.current!.read(); assertProfileOwner(); return value; },
         save: async (value, key) => { assertActive(); const saved = await profileEditingRef.current!.save(value, key); assertProfileOwner(); return saved; },
       } : undefined,
+      reporting: { submit: async (draft, key, signal) => { assertActive(); const receipt = await reportingRef.current.submit(draft, key, signal); assertActive(); return receipt; } },
       goalReminders: {
         get: subject => { assertActive(); return goalRemindersRef.current.get(subject); },
         update: (subject, value, key) => { assertActive(); return goalRemindersRef.current.update(subject, value, key); },

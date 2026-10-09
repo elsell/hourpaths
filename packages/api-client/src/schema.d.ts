@@ -1561,6 +1561,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a private report for currently accessible content */
+        post: operations["submit-report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/session": {
         parameters: {
             query?: never;
@@ -3855,6 +3872,38 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["RelationshipData"];
+        };
+        ReportBlockIdentityData: {
+            displayName: string;
+            userId: string;
+            username: string;
+        };
+        ReportInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReportInputBody.json
+             */
+            readonly $schema?: string;
+            explanation?: string;
+            /** @enum {string} */
+            reason: "spam_or_scam" | "harassment_or_bullying" | "hate_or_abusive_content" | "sexual_or_inappropriate_content" | "impersonation" | "privacy_or_personal_information" | "dangerous_or_self_harm_content" | "something_else";
+            targetId: string;
+            /** @enum {string} */
+            targetKind: "profile" | "path" | "feed_event" | "comment" | "nudge";
+        };
+        ReportOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReportOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["ReportReceiptData"];
+        };
+        ReportReceiptData: {
+            blockTarget?: components["schemas"]["ReportBlockIdentityData"];
+            id: string;
         };
         ReviewData: {
             /** @enum {string} */
@@ -8246,6 +8295,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "submit-report": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportOutputBody"];
+                };
             };
             /** @description Error */
             default: {

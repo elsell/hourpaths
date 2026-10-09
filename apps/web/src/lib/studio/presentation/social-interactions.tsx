@@ -1,3 +1,4 @@
+import { ReportAction } from './report-composer';
 import { useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -45,7 +46,7 @@ function CommentRow({ comment, event, viewerId, dependencies: d }: { comment: Co
     onSuccess: async () => { setEdit(null); setDeleting(false); await client.invalidateQueries({ queryKey: [d.accountScope, 'social'] }); } });
   return <li><Link to="/profile/$username" params={{ username: comment.author.username }} className="studio-comment-author"><Avatar person={comment.author} /><strong>{comment.author.name}</strong></Link>
     <p className="studio-comment-text">{comment.text}</p>
-    <div className="studio-interactions"><time dateTime={new Date(comment.createdAt).toISOString()}>{d.i18n.date(comment.createdAt, { month: 'short', day: 'numeric' })}</time>
+    <div className="studio-interactions"><ReportAction menu target={{ kind: 'comment', id: comment.id }} dependencies={d} /><time dateTime={new Date(comment.createdAt).toISOString()}>{d.i18n.date(comment.createdAt, { month: 'short', day: 'numeric' })}</time>
       <button disabled={mutation.isPending} aria-pressed={comment.hearted} onClick={() => mutation.mutate('heart')}>{d.i18n.t('studio.social.heart')}</button><button onClick={() => setRoster(!roster)}>{d.i18n.number(comment.hearts)}</button>
       {comment.edited && <button onClick={() => setHistory(!history)}>{d.i18n.t('studio.social.edited')}</button>}
       {viewerId === comment.author.id && <><button disabled={mutation.isPending} onClick={() => setEdit({ original: comment, text: comment.text })}>{d.i18n.t('studio.social.edit')}</button><button disabled={mutation.isPending} onClick={() => setDeleting(true)}>{d.i18n.t('studio.social.delete')}</button></>}
