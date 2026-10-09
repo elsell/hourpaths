@@ -22,3 +22,13 @@ func longTimerNotificationRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(longTimerRepresentationKey{}).(bool)
 	return enabled
 }
+
+type goalDeadlineRepresentationKey struct{}
+
+func WithGoalDeadlineNotificationRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, goalDeadlineRepresentationKey{}, enabled)
+}
+func goalDeadlineNotificationRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(goalDeadlineRepresentationKey{}).(bool)
+	return enabled
+}

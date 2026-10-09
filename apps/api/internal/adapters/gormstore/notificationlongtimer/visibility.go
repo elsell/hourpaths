@@ -1,6 +1,6 @@
 package notificationlongtimer
 
-const VisiblePredicate = `(notification_models.kind <> 'long_timer_running' OR (
+const VisiblePredicate = `(notification_models.kind NOT IN ('long_timer_running', 'goal_no_longer_achievable') OR (
  notification_models.recipient_user_id = notification_models.actor_user_id
  AND path_models.id IS NOT NULL
  AND EXISTS (SELECT 1 FROM user_models recipient WHERE recipient.id = notification_models.recipient_user_id AND recipient.status = 'active')

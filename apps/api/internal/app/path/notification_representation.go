@@ -48,3 +48,14 @@ func notificationLongTimerRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(notificationLongTimerRepresentationKey{}).(bool)
 	return enabled
 }
+
+// Goal-deadline vocabulary is independently negotiated for older clients.
+type notificationGoalDeadlineRepresentationKey struct{}
+
+func WithNotificationGoalDeadlineRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, notificationGoalDeadlineRepresentationKey{}, enabled)
+}
+func notificationGoalDeadlineRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(notificationGoalDeadlineRepresentationKey{}).(bool)
+	return enabled
+}

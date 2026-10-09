@@ -36,7 +36,7 @@ func (service *InvitationService) ListNotifications(
 	if !service.AuditRateLimiter.Allow(principal.UserID, now) {
 		return nil, "", 0, platformapp.ErrRateLimited
 	}
-	request := NotificationPageRequest{LongTimers: notificationLongTimerRepresentation(ctx), Achievements: notificationAchievementRepresentation(ctx), Limit: limit, Snapshot: now, TimerStarts: notificationTimerRepresentation(ctx), EmojiReactions: notificationEmojiRepresentation(ctx)}
+	request := NotificationPageRequest{GoalDeadlines: notificationGoalDeadlineRepresentation(ctx), LongTimers: notificationLongTimerRepresentation(ctx), Achievements: notificationAchievementRepresentation(ctx), Limit: limit, Snapshot: now, TimerStarts: notificationTimerRepresentation(ctx), EmojiReactions: notificationEmojiRepresentation(ctx)}
 	cursorDomain := "path-notification"
 	if request.EmojiReactions {
 		cursorDomain = "path-notification-emoji"
@@ -49,6 +49,9 @@ func (service *InvitationService) ListNotifications(
 	}
 	if request.LongTimers {
 		cursorDomain += "-long-timers"
+	}
+	if request.GoalDeadlines {
+		cursorDomain += "-goal-deadlines"
 	}
 	if cursor != "" {
 		payload, decodeErr := shared.DecodeCursor(service.CursorSigningKey, cursor)

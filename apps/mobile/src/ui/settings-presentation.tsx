@@ -1,3 +1,4 @@
+import type { GoalRemindersRepository } from '@hourpaths/client-core';
 import type { WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import type { ProfilePictureRepository } from '@hourpaths/client-core';
 import { providerSettingsLifetime } from '@hourpaths/client-core';
@@ -24,6 +25,7 @@ export type SettingsPresentation = {
   pickProfilePicture?: () => Promise<string | null>;
   profileOperationId?: () => string;
   timerSubscriptions: TimerSubscriptionsRepository;
+  goalReminders: GoalRemindersRepository;
   providers?: ProviderSettingsService;
   deleteAccount?: () => void;
   displayName: string;
@@ -51,6 +53,7 @@ function emitChange() {
 export function SettingsPresentationSource({
   weekStart,
   timerSubscriptions,
+  goalReminders,
   profilePrivacy,
   profileEditing,
   profilePicture,
@@ -79,6 +82,8 @@ export function SettingsPresentationSource({
   profilePictureRef.current = profilePicture;
   const profileEditingRef = useRef(profileEditing);
   profileEditingRef.current = profileEditing;
+  const goalRemindersRef = useRef(goalReminders);
+  goalRemindersRef.current = goalReminders;
   const timerSubscriptionsRef = useRef(timerSubscriptions);
   timerSubscriptionsRef.current = timerSubscriptions;
   const providersRef = useRef(providers);
@@ -133,6 +138,10 @@ export function SettingsPresentationSource({
         read: async () => { assertActive(); const value = await profileEditingRef.current!.read(); assertProfileOwner(); return value; },
         save: async (value, key) => { assertActive(); const saved = await profileEditingRef.current!.save(value, key); assertProfileOwner(); return saved; },
       } : undefined,
+      goalReminders: {
+        get: subject => { assertActive(); return goalRemindersRef.current.get(subject); },
+        update: (subject, value, key) => { assertActive(); return goalRemindersRef.current.update(subject, value, key); },
+      },
       timerSubscriptions: {
         get: subject => { assertActive(); return timerSubscriptionsRef.current.get(subject); },
         update: (subject, value, key) => { assertActive(); return timerSubscriptionsRef.current.update(subject, value, key); },

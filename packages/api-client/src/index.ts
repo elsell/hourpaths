@@ -247,9 +247,11 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { query: { cursor, limit: 25 } },
     }),
     notifications: (cursor?: string) => authenticatedClient.GET('/v1/notifications', {
-      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true, achievements: true, longTimers: true } },
+      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
     }),
     notificationChannels: () => authenticatedClient.GET('/v1/me/notification-channels'),
+    goalReminder: (pathId: string) => authenticatedClient.GET('/v1/me/path-reminders/{pathId}', { params: { path: { pathId } } }),
+    updateGoalReminder: (pathId: string, body: { enabled: boolean; expectedRevision: number }, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/path-reminders/{pathId}', { params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
     timerSubscription: (scope: TimerSubscriptionScope, subjectId: string) => authenticatedClient.GET('/v1/me/timer-subscriptions/{scope}/{subjectId}', { params: { path: { scope, subjectId } } }),
     updateTimerSubscription: (scope: TimerSubscriptionScope, subjectId: string, body: TimerSubscriptionUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/timer-subscriptions/{scope}/{subjectId}', { params: { path: { scope, subjectId }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
     updateNotificationChannel: (channel: NotificationChannel, body: NotificationChannelUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/notification-channels/{channel}', { params: { path: { channel }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
@@ -378,15 +380,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { requestId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     getNotification: (notificationId: string) => authenticatedClient.GET('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
     }),
     markNotificationRead: (notificationId: string) => authenticatedClient.PATCH('/v1/notifications/{notificationId}/read', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
     }),
     deleteNotification: (notificationId: string) => authenticatedClient.DELETE('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
     }),
-    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true } } }),
+    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } } }),
     ownershipTransferCandidates: (pathId: string, cursor?: string) => authenticatedClient.GET('/v1/paths/{pathId}/ownership-transfer-candidates', {
       params: { path: { pathId }, query: { cursor, limit: 25 } },
     }),
@@ -490,7 +492,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       body,
     }),
     deleteActivity: (pathId: string, activityId: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/paths/{pathId}/activities/{activityId}', {
-      params: { query: { achievements: true, longTimers: true }, path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
+      params: { query: { achievements: true, longTimers: true, goalDeadlines: true }, path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     activity: (pathId: string, activityId: string) => authenticatedClient.GET('/v1/paths/{pathId}/activities/{activityId}', {
       params: { path: { pathId, activityId } },

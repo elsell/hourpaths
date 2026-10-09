@@ -94,7 +94,7 @@ type AchievementNotification = PathNotificationBase & Readonly<{
 }>;
 
 type TimerStartedNotification = PathNotificationBase & Readonly<{
-  type: 'timer_started' | 'long_timer_running';
+  type: 'timer_started' | 'long_timer_running' | 'goal_no_longer_achievable';
   presentation: 'informational';
   pathId: string;
 }>;
@@ -194,6 +194,7 @@ export type NotificationPresentationMessageKey =
   | 'notification.pathVisibilityChanged'
   | 'notification.timerStarted'
   | 'notification.longTimerRunning'
+  | 'notification.goalNoLongerAchievable'
   | 'notification.intervalGoalAchieved'
   | 'notification.overallTargetAchieved'
   | 'notification.newFollower'
@@ -351,7 +352,7 @@ function validatedNotification(value: unknown): PathInvitationNotification | und
     return Object.freeze({ id: record.id, type: record.type, presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName, socialFeedEventId: record.socialFeedEventId });
   }
 
-  if (record.type === 'timer_started' || record.type === 'long_timer_running') {
+  if (record.type === 'timer_started' || record.type === 'long_timer_running' || record.type === 'goal_no_longer_achievable') {
     if (record.presentation !== 'informational' || !hasExactKeys(record, timerStartedNotificationKeys)) return undefined;
     return Object.freeze({ id: record.id, type: record.type, presentation: 'informational', read: record.read, createdAt: record.createdAt, actor, pathId: record.pathId, pathName: record.pathName });
   }
@@ -561,6 +562,8 @@ export function notificationPresentationMessageKey(
     return 'notification.overallTargetAchieved';
   case 'timer_started':
     return 'notification.timerStarted';
+  case 'goal_no_longer_achievable':
+    return 'notification.goalNoLongerAchievable';
   case 'long_timer_running':
     return 'notification.longTimerRunning';
   case 'new_follower':

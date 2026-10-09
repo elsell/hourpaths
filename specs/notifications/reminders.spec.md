@@ -170,3 +170,24 @@ minute later than the 8:05 PM reminder. The bundle must be delivered at 8:00 PM.
   Path during each interval.
 - This notice must respect the participant's global practice-reminder channel
   and per-Path reminder preference.
+
+### No-longer-achievable acceptance (`REM-01`)
+
+1. A participant needs 40 minutes and the actual interval ends at midnight. At
+   23:20 the goal is still achievable; immediately afterward it is impossible.
+   The notice uses the actual interval end, not the earlier unavailable-period
+   deadline or the ordinary reminder's 30-minute safety buffer.
+2. Recorded progress that completes the goal prevents the notice. An active
+   timer on this Path suppresses it without consuming its once-per-interval
+   allowance. After stopping, evaluation uses the newly recorded progress.
+3. Disabling this Path's reminder preference or the global goal-reminder
+   channel prevents both surfaces for newly evaluated notices. Another Path's
+   enabled preference does not override this choice.
+4. Competing workers and repeated evaluations produce one underlying notice
+   for the participant, Path and interval. Dismissing that notice does not make
+   the same interval eligible again.
+5. The participant can change their own reminder preference in native and
+   Studio Path notification settings; the saved choice is visible in the other
+   client. Another participant or administrator cannot change it on their behalf.
+6. Opening the notice in native or Studio resolves the current Path through
+   ordinary authorization. Lost access must not expose its name or progress.

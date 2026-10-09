@@ -479,6 +479,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/path-reminders/{pathId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the participant's goal reminder preference */
+        get: operations["get-goal-reminder-preference"];
+        /** Update the participant's goal reminder preference */
+        put: operations["update-goal-reminder-preference"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/policies": {
         parameters: {
             query?: never;
@@ -2307,6 +2325,31 @@ export interface components {
             /** Format: int64 */
             targetSeconds: number;
         };
+        GoalReminderPreferenceData: {
+            enabled: boolean;
+            /** Format: int64 */
+            revision: number;
+        };
+        GoalReminderPreferenceOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GoalReminderPreferenceOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["GoalReminderPreferenceData"];
+        };
+        GoalReminderPreferenceUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/GoalReminderPreferenceUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** Format: int64 */
+            expectedRevision: number;
+        };
         HomeOrganization: {
             /** @enum {string} */
             classification: "solo" | "shared" | "supporting";
@@ -3268,7 +3311,7 @@ export interface components {
             read: boolean;
             socialFeedEventId?: string;
             /** @enum {string} */
-            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started" | "long_timer_running" | "interval_goal_achieved" | "overall_target_achieved";
+            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started" | "long_timer_running" | "goal_no_longer_achievable" | "interval_goal_achieved" | "overall_target_achieved";
         };
         PathInvitationOutputBody: {
             /**
@@ -5171,6 +5214,77 @@ export interface operations {
             };
         };
     };
+    "get-goal-reminder-preference": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                pathId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalReminderPreferenceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-goal-reminder-preference": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path: {
+                pathId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalReminderPreferenceUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalReminderPreferenceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "review-current-policies": {
         parameters: {
             query?: never;
@@ -5722,6 +5836,7 @@ export interface operations {
                 timerStarts?: boolean;
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalDeadlines?: boolean;
                 cursor?: string;
                 limit?: number;
             };
@@ -5760,6 +5875,7 @@ export interface operations {
                 timerStarts?: boolean;
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalDeadlines?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -5796,6 +5912,7 @@ export interface operations {
                 timerStarts?: boolean;
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalDeadlines?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -5834,6 +5951,7 @@ export interface operations {
                 timerStarts?: boolean;
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalDeadlines?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -5872,6 +5990,7 @@ export interface operations {
                 timerStarts?: boolean;
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalDeadlines?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -6637,6 +6756,7 @@ export interface operations {
             query?: {
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalDeadlines?: boolean;
             };
             header: {
                 Authorization?: string;

@@ -14,7 +14,7 @@ func visibleUnreadNotificationCount(
 ) (int64, error) {
 	var count int64
 	err := joinNotificationSubjects(tx.Table("notification_models")).
-		Where(notificationRepresentationPredicate(len(emojiReactions) > 0 && emojiReactions[0], len(emojiReactions) > 1 && emojiReactions[1], len(emojiReactions) > 2 && emojiReactions[2], len(emojiReactions) > 3 && emojiReactions[3])).
+		Where(notificationRepresentationPredicate(len(emojiReactions) > 0 && emojiReactions[0], len(emojiReactions) > 1 && emojiReactions[1], len(emojiReactions) > 2 && emojiReactions[2], len(emojiReactions) > 3 && emojiReactions[3], len(emojiReactions) > 4 && emojiReactions[4])).
 		Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND notification_models.read_at IS NULL AND "+visibleNotificationPredicate,
 			recipientUserID, snapshot).
 		Count(&count).Error
@@ -25,6 +25,9 @@ func notificationRepresentationPredicate(emojiReactions bool, timerStarts ...boo
 	reaction := "TRUE"
 	if !emojiReactions {
 		reaction = "(notification_models.kind <> 'practice_reaction' OR notification_models.reaction_type IN ('heart', 'applause', 'fire', 'strong', 'celebrate'))"
+	}
+	if len(timerStarts) < 4 || !timerStarts[3] {
+		reaction = "(" + reaction + ") AND notification_models.kind <> 'goal_no_longer_achievable'"
 	}
 	if len(timerStarts) < 3 || !timerStarts[2] {
 		reaction = "(" + reaction + ") AND notification_models.kind <> 'long_timer_running'"

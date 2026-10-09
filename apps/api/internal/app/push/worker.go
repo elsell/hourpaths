@@ -82,10 +82,10 @@ func (w PushDeliveryWorker) process(ctx context.Context, delivery ports.PushDeli
 		}
 		return err
 	}
-	if (projection.Kind.IsAchievement() || projection.Kind == pathapp.NotificationLongTimerRunning) && projection.Actor.UserID != delivery.RecipientUserID {
+	if (projection.Kind.IsAchievement() || projection.Kind == pathapp.NotificationLongTimerRunning || projection.Kind == pathapp.NotificationGoalNoLongerAchievable) && projection.Actor.UserID != delivery.RecipientUserID {
 		return w.terminal(ctx, delivery, ports.PushDeliverySuppressed, "notification_ineligible")
 	}
-	if projection.Kind == pathapp.NotificationTimerStarted || projection.Kind == pathapp.NotificationLongTimerRunning || projection.Kind.IsAchievement() {
+	if projection.Kind == pathapp.NotificationTimerStarted || projection.Kind == pathapp.NotificationLongTimerRunning || projection.Kind == pathapp.NotificationGoalNoLongerAchievable || projection.Kind.IsAchievement() {
 		if w.Authorizer == nil {
 			return errPushDeliveryProcessing
 		}
@@ -302,6 +302,17 @@ func localizedPushMessage(
 			} else {
 				message.Body = fmt.Sprintf("You reached your overall target on %s.", projection.PathName)
 			}
+		} else {
+			return ports.PushMessage{}, false
+		}
+	case projection.Kind == pathapp.NotificationGoalNoLongerAchievable && projection.Presentation == pathapp.NotificationInformational:
+		message.Presentation = ports.PushInformational
+		if delivery.Locale == "es" {
+			message.Title = "Actualización de la meta"
+			message.Body = fmt.Sprintf("Ya no queda tiempo suficiente para alcanzar tu meta actual en %s. Cada momento de práctica cuenta.", projection.PathName)
+		} else if delivery.Locale == "en" {
+			message.Title = "Goal update"
+			message.Body = fmt.Sprintf("There isn’t enough time left to reach your current goal on %s. Every bit of practice still counts.", projection.PathName)
 		} else {
 			return ports.PushMessage{}, false
 		}
@@ -560,7 +571,7 @@ func validPushNotificationSubject(projection pathapp.InvitationNotificationProje
 	nudge := projection.Kind == pathapp.NotificationNudgeReceived && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.NudgeContent.Valid() && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == "" &&
 		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == ""
-	timer := (projection.Kind == pathapp.NotificationTimerStarted || projection.Kind == pathapp.NotificationLongTimerRunning) && projection.Presentation == pathapp.NotificationInformational &&
+	timer := (projection.Kind == pathapp.NotificationTimerStarted || projection.Kind == pathapp.NotificationLongTimerRunning || projection.Kind == pathapp.NotificationGoalNoLongerAchievable) && projection.Presentation == pathapp.NotificationInformational &&
 		pathIDPresent && projection.InvitationID == "" && projection.OfferedRole == "" && projection.OwnershipTransferID == "" &&
 		projection.FollowRequestID == "" && projection.SocialFeedEventID == "" && projection.CommentID == "" && projection.Reaction == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""
 	achievement := projection.Kind.IsAchievement() && projection.Presentation == pathapp.NotificationInformational && pathIDPresent && projection.SocialFeedEventID != "" && strings.TrimSpace(projection.SocialFeedEventID) == projection.SocialFeedEventID && projection.CommentID == "" && projection.Reaction == "" && projection.InvitationID == "" && projection.OwnershipTransferID == "" && projection.OfferedRole == "" && projection.FollowRequestID == "" && projection.InteractionDisabled == "" && projection.PathVisibility == ""
