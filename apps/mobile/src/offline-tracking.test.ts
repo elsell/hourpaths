@@ -260,3 +260,32 @@ test('native manual create and edit survive restart and update totals without a 
   await assert.rejects(restored.saveActivity('guitar', saved.id, { startedAt: '2026-10-01T11:57:00Z', durationSeconds: 100, note: 'wrong-account' }), /superseded/);
   restored.dispose();
 });
+
+test('a delayed retained read cannot replace a newer native account context', async () => {
+  const { mobileOfflineHome } = await import('./offline/mobile-offline-home');
+  const env = fixture();
+  const homes = new Map<string, import('./offline/mobile-home-cache').RetainedMobileHome>();
+  let release: () => void = () => {};
+  let delayed = false, current = true;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const service = mobileOfflineHome({
+    store: env.store, home: {
+      readHome: async owner => { if (delayed && owner === 'alice') await gate; return homes.get(owner) ?? null; },
+      saveHome: async value => { homes.set(value.owner, value); },
+    },
+    now: () => Date.parse('2026-10-01T12:00:00Z'), newId: () => 'recovery-id', schedule: () => () => {},
+    owner: async credential => credential.ownerId!, bind: async () => {},
+    remote: async credential => ({ ...home, id: credential.ownerId! }), timeZone: async () => utcTimeZone,
+    sync: () => ({ send: async () => { throw new TypeError('network'); } }), publish: () => {},
+  });
+  const credential = { token: 'alice-session', ownerId: 'alice', expiresAt: '2026-10-02T12:00:00Z', nextAction: 'home' as const };
+  await service.load(credential, () => true);
+  delayed = true;
+  const recovery = service.restoreRetained('alice', () => current);
+  await service.load({ ...credential, token: 'bob-session', ownerId: 'bob' }, () => true);
+  current = false;
+  release();
+  await assert.rejects(recovery, /session_superseded/);
+  assert.equal((await service.retained())?.profile.id, 'bob');
+  service.dispose();
+});

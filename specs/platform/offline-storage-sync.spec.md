@@ -139,16 +139,34 @@ shortcut. Native Home metadata must remain separate from credentials and the
 non-evictable timer ledger. Personal Path appearances must be retained in an
 account-partitioned cache and restored before remote reads complete. Older
 read responses must not overwrite a newer saved appearance revision.
-Confirmed revocation pauses replay and new starts while keeping an existing
-timer stoppable and preserving its pending result. The existing session storage
-must atomically replace rejected credentials with a credential-free retained
-account reference. Restoring this reference permits only local Stop and sign-in
-recovery; it must not restore server-dependent or administrative surfaces.
+Confirmed revocation or absolute session expiry pauses replay and new starts
+while keeping an existing timer stoppable and preserving its pending result.
+Native cold entry and foreground expiry must use the same restricted recovery
+semantics. Before exposing recovery, the existing serialized session store must
+atomically replace the matching rejected or expired credential with a
+credential-free retained account reference. Only its previously verified owner
+binding may identify that account; unreadable or unbound credentials must not
+create a reference. A superseding sign-in or explicit sign-out must win over a
+late recovery attempt.
+
+Cold expiry must load the retained account directly from its local partition;
+it must not require a Home context that has already been activated online.
+Restoring the reference permits only local Stop and sign-in recovery; it must
+not restore server-dependent or administrative surfaces. Stopping a retained
+timer must preserve its original start instant and persist the stop before
+reporting success. Restart must keep that pending result available for later
+same-account synchronization.
 Explicit sign-out clears this reference. Successful account replacement must
 hide the previous retained account before exposing the replacement account. Sign-out timer resolution
 must commit local stops before credential removal, or retain running timers
 hidden until the same account returns. Network failure must not force a local
 save to wait for server acknowledgement.
+
+Native acceptance must cover cold and foreground expiry with a running offline
+timer, local Stop with the service unavailable, restart, and one successful
+same-account replay. A different account must neither display nor synchronize
+the retained work. Delayed recovery must not replace a newer credential or
+restore an explicitly signed-out account.
 
 ## Presentation and verification
 
