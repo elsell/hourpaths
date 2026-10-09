@@ -69,7 +69,7 @@ type PathInvitationPublicIdentity struct {
 
 type PathInvitationNotification struct {
 	ID                  string                       `json:"id" required:"true"`
-	Type                string                       `json:"type" required:"true" enum:"path_invitation_received,path_invitation_accepted,path_ownership_transfer_received,path_ownership_transfer_accepted,path_ownership_transfer_declined,path_ownership_transfer_canceled,path_deleted,path_member_left,path_member_removed,path_member_role_changed,path_visibility_changed,new_follower,follow_request_received,follow_request_accepted,practice_reaction,practice_comment,comment_heart,nudge_received,timer_started,long_timer_running,interval_goal_achieved,overall_target_achieved"`
+	Type                string                       `json:"type" required:"true" enum:"path_invitation_received,path_invitation_accepted,path_ownership_transfer_received,path_ownership_transfer_accepted,path_ownership_transfer_declined,path_ownership_transfer_canceled,path_deleted,path_member_left,path_member_removed,path_member_role_changed,path_visibility_changed,new_follower,follow_request_received,follow_request_accepted,practice_reaction,practice_comment,comment_heart,nudge_received,timer_started,long_timer_running,goal_no_longer_achievable,interval_goal_achieved,overall_target_achieved"`
 	Presentation        string                       `json:"presentation" required:"true" enum:"actionable,informational"`
 	Read                bool                         `json:"read" required:"true"`
 	CreatedAt           time.Time                    `json:"createdAt" required:"true"`

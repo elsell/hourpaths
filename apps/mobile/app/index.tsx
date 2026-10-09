@@ -1,3 +1,5 @@
+import { GoalReminderControl } from '../src/ui/goal-reminder-control';
+import { goalReminderFromAPI, type GoalReminderSubject, type GoalReminderPreference } from '@hourpaths/client-core';
 import { nativeAccountExportJSON, clearNativeAccountExportCache } from '../src/account-export-native';
 import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
 import { NativePolicyReviewSource } from '../src/ui/policy-review-presentation';
@@ -4566,6 +4568,28 @@ export function HomeScreen() {
     }
   }
 
+  async function goalReminderRequest(subject: GoalReminderSubject, value?: GoalReminderPreference, key?: string): Promise<GoalReminderPreference> {
+    if (!session || destination?.kind !== 'home') throw new Error('goal_reminder_unavailable');
+    const currentSession = session;
+    const owner = destination.profile.id;
+    const generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === currentSession.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    const api = createSessionApiClient(apiURL, () => currentSession.token);
+    try {
+      const response = generatedResponse(await (value
+        ? api.updateGoalReminder(subject.id, { enabled: value.enabled, expectedRevision: value.revision }, key!)
+        : api.goalReminder(subject.id)));
+      if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+      const envelope = await response.json();
+      if (!current()) throw new Error('goal_reminder_superseded');
+      return goalReminderFromAPI(envelope?.data);
+    } catch (cause) {
+      await handleNotificationOperationFailure(cause, currentSession, current);
+      throw cause;
+    }
+  }
+
   async function getNotificationChannels(): Promise<NotificationChannelPreference[]> {
     if (!session || destination?.kind !== 'home') throw new Error('nudge_channel_unavailable');
     const currentSession = session;
@@ -8570,6 +8594,7 @@ export function HomeScreen() {
       profilePrivacy={{ read: () => profilePrivacyRequest(), save: (value, visibility, key) => profilePrivacyRequest(value, visibility, key) }}
       profileEditing={{ read: () => profileEditingRequest(), save: (value, key) => profileEditingRequest(value, key) }}
       profileOperationId={() => Crypto.randomUUID()}
+      goalReminders={{ get: subject => goalReminderRequest(subject), update: (subject, value, key) => goalReminderRequest(subject, value, key) }}
       timerSubscriptions={{ get: subject => timerSubscriptionRequest(subject), update: (subject, value, key) => timerSubscriptionRequest(subject, value, key) }}
       providers={providerSettings}
       displayName={ownedHomeDestination.profile.displayName}
@@ -8744,6 +8769,7 @@ export function HomeScreen() {
           } satisfies PathMemberListState}
         /> : undefined}
       />
+      {selectedCapabilities.trackTime && !selectedPath.archivedAt ? <GoalReminderControl key={['goal-reminders', socialPresentationKey, selectedPath.id].join(':')} subject={{ id: selectedPath.id }} i18n={i18n} /> : null}
       {selectedCapabilities.trackTime && !selectedPath.archivedAt ? <TimerSubscriptionControl key={[socialPresentationKey, selectedPath.id].join(':')} subject={{ scope: 'path', id: selectedPath.id }} i18n={i18n} /> : null}
       {pathLeaveBusy ? <StatusBanner text={i18n.t('pathLeave.leaving')} /> : null}
       {pathLeaveErrorKey ? <StatusBanner text={i18n.t(pathLeaveErrorKey)} tone="error" /> : null}

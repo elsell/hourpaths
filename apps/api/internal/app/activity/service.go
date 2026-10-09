@@ -20,15 +20,16 @@ import (
 var errInvalidDependencies = errors.New("activity service dependencies are invalid")
 
 type Dependencies struct {
-	Auth             ports.Authenticator
-	Profiles         ProfileReader
-	Authorizer       ports.Authorizer
-	Repository       Repository
-	Audits           ports.Audits
-	AuditRateLimiter ports.AuditRateLimiter
-	Clock            ports.Clock
-	NewID            func() string
-	CursorSigningKey []byte
+	ReminderPreferences GoalReminderPreferenceRepository
+	Auth                ports.Authenticator
+	Profiles            ProfileReader
+	Authorizer          ports.Authorizer
+	Repository          Repository
+	Audits              ports.Audits
+	AuditRateLimiter    ports.AuditRateLimiter
+	Clock               ports.Clock
+	NewID               func() string
+	CursorSigningKey    []byte
 }
 
 type Service struct{ Dependencies }
@@ -371,6 +372,7 @@ func (s *Service) DeleteActivity(ctx context.Context, authorization, pathID, act
 	event.TargetType = "activity"
 	achievements := achievementNotificationRepresentation(ctx)
 	longTimers := longTimerNotificationRepresentation(ctx)
+	goalDeadlines := goalDeadlineNotificationRepresentation(ctx)
 	hash := requestHash(DeleteActivityOperation, pathID, activityID)
 	if achievements {
 		hash = requestHash(DeleteActivityOperation, pathID, activityID, "achievements")
@@ -381,8 +383,11 @@ func (s *Service) DeleteActivity(ctx context.Context, authorization, pathID, act
 			hash = requestHash(DeleteActivityOperation, pathID, activityID, "achievements", "long-timers")
 		}
 	}
+	if goalDeadlines {
+		hash = requestHash(DeleteActivityOperation, pathID, activityID, string(hash), "goal-deadlines")
+	}
 	result, err := s.Repository.DeleteActivity(ctx, DeleteActivityCommand{
-		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements, LongTimers: longTimers,
+		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements, LongTimers: longTimers, GoalDeadlines: goalDeadlines,
 		Idempotency: ports.Idempotency{
 			PrincipalID: principal.UserID, Operation: DeleteActivityOperation, Key: idempotencyKey,
 			RequestHash: hash,

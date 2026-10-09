@@ -96,6 +96,7 @@ type NotificationListInput struct {
 	TimerStarts    bool   `query:"timerStarts" default:"false"`
 	Achievements   bool   `query:"achievements" default:"false"`
 	LongTimers     bool   `query:"longTimers" default:"false"`
+	GoalDeadlines  bool   `query:"goalDeadlines" default:"false"`
 	Authorization  string `header:"Authorization"`
 	Cursor         string `query:"cursor"`
 	Limit          int    `query:"limit" default:"25" minimum:"1" maximum:"100"`
@@ -106,6 +107,7 @@ type NotificationMutationInput struct {
 	TimerStarts    bool   `query:"timerStarts" default:"false"`
 	Achievements   bool   `query:"achievements" default:"false"`
 	LongTimers     bool   `query:"longTimers" default:"false"`
+	GoalDeadlines  bool   `query:"goalDeadlines" default:"false"`
 	Authorization  string `header:"Authorization"`
 	NotificationID string `path:"notificationId"`
 }
@@ -115,6 +117,7 @@ type NotificationMarkAllInput struct {
 	TimerStarts    bool   `query:"timerStarts" default:"false"`
 	Achievements   bool   `query:"achievements" default:"false"`
 	LongTimers     bool   `query:"longTimers" default:"false"`
+	GoalDeadlines  bool   `query:"goalDeadlines" default:"false"`
 	Authorization  string `header:"Authorization"`
 }
 
@@ -264,7 +267,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationListInput) (*NotificationListOutput, error) {
 		notifications, nextCursor, unreadCount, err := service.ListNotifications(
-			pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(ctx, input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.Cursor, input.Limit,
+			pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(pathapp.WithNotificationGoalDeadlineRepresentation(ctx, input.GoalDeadlines), input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.Cursor, input.Limit,
 		)
 		if err != nil {
 			return nil, shared.MapError(err, false)
@@ -286,7 +289,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMutationInput) (*NotificationOutput, error) {
 		notification, err := service.GetNotification(
-			pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(ctx, input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.NotificationID,
+			pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(pathapp.WithNotificationGoalDeadlineRepresentation(ctx, input.GoalDeadlines), input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.NotificationID,
 		)
 		if err != nil {
 			return nil, shared.MapError(err, true)
@@ -301,7 +304,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Path:        "/v1/notifications/{notificationId}/read",
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMutationInput) (*NotificationMutationOutput, error) {
-		result, err := service.MarkNotificationRead(pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(ctx, input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.NotificationID)
+		result, err := service.MarkNotificationRead(pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(pathapp.WithNotificationGoalDeadlineRepresentation(ctx, input.GoalDeadlines), input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.NotificationID)
 		if err != nil {
 			return nil, shared.MapError(err, false)
 		}
@@ -315,7 +318,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Path:        "/v1/notifications/{notificationId}",
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMutationInput) (*NotificationMutationOutput, error) {
-		result, err := service.DeleteNotification(pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(ctx, input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.NotificationID)
+		result, err := service.DeleteNotification(pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(pathapp.WithNotificationGoalDeadlineRepresentation(ctx, input.GoalDeadlines), input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization, input.NotificationID)
 		if err != nil {
 			return nil, shared.MapError(err, false)
 		}
@@ -329,7 +332,7 @@ func RegisterInvitations(api huma.API, service InvitationService) {
 		Path:        "/v1/notifications/read-all",
 		Security:    security,
 	}, func(ctx context.Context, input *NotificationMarkAllInput) (*NotificationMutationOutput, error) {
-		result, err := service.MarkAllNotificationsRead(pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(ctx, input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization)
+		result, err := service.MarkAllNotificationsRead(pathapp.WithNotificationEmojiRepresentation(pathapp.WithNotificationTimerRepresentation(pathapp.WithNotificationAchievementRepresentation(pathapp.WithNotificationLongTimerRepresentation(pathapp.WithNotificationGoalDeadlineRepresentation(ctx, input.GoalDeadlines), input.LongTimers), input.Achievements), input.TimerStarts), input.EmojiReactions), input.Authorization)
 		if err != nil {
 			return nil, shared.MapError(err, false)
 		}

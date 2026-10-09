@@ -1,3 +1,4 @@
+import type { GoalReminderSubject, GoalReminderPreference } from '../domain/preferences';
 import type { TimerSubscriptionSubject, TimerSubscriptionPreference } from '../domain/preferences';
 import type { NotificationChannelPreference, AccountIdentity, TimeZonePreference, TimeZoneChange, Interactions, NudgePreference, BlockedPerson } from '../domain/preferences';
 export interface PreferencesRepository {
@@ -10,6 +11,8 @@ export interface PreferencesRepository {
   saveProfilePrivacy(value: import('../domain/preferences').ProfilePrivacy, visibility: "public" | "private", key: string, signal?: AbortSignal): Promise<import('../domain/preferences').ProfilePrivacy>;
   editableProfile(owner: string, signal?: AbortSignal): Promise<import('../domain/preferences').EditableProfile>;
   saveProfile(value: import('../domain/preferences').EditableProfile, key: string, signal?: AbortSignal): Promise<import('../domain/preferences').EditableProfile>;
+  goalReminder(subject: GoalReminderSubject, signal?: AbortSignal): Promise<GoalReminderPreference>;
+  saveGoalReminder(subject: GoalReminderSubject, value: GoalReminderPreference, operationId: string, signal?: AbortSignal): Promise<GoalReminderPreference>;
   timerSubscription(subject: TimerSubscriptionSubject, signal?: AbortSignal): Promise<TimerSubscriptionPreference>;
   saveTimerSubscription(subject: TimerSubscriptionSubject, value: TimerSubscriptionPreference, operationId: string, signal?: AbortSignal): Promise<TimerSubscriptionPreference>;
   notificationChannels(signal?: AbortSignal): Promise<NotificationChannelPreference[]>;

@@ -219,12 +219,12 @@ func (r *Repository) ListNotifications(
 	}
 	var result application.NotificationPage
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		count, err := visibleUnreadNotificationCount(tx, recipientUserID, page.Snapshot, page.EmojiReactions, page.TimerStarts, page.Achievements, page.LongTimers)
+		count, err := visibleUnreadNotificationCount(tx, recipientUserID, page.Snapshot, page.EmojiReactions, page.TimerStarts, page.Achievements, page.LongTimers, page.GoalDeadlines)
 		if err != nil {
 			return err
 		}
 		query := notificationProjectionQuery(tx).
-			Where(notificationRepresentationPredicate(page.EmojiReactions, page.TimerStarts, page.Achievements, page.LongTimers)).
+			Where(notificationRepresentationPredicate(page.EmojiReactions, page.TimerStarts, page.Achievements, page.LongTimers, page.GoalDeadlines)).
 			Where("notification_models.recipient_user_id = ? AND notification_models.created_at <= ? AND "+visibleNotificationPredicate,
 				recipientUserID, page.Snapshot)
 		if page.AfterID != "" {
@@ -338,6 +338,7 @@ func invitationNotificationFromRow(
 		row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.OfferedRole == ""
 	achievementSemantics := kind.IsAchievement() && presentation == application.NotificationInformational && row.Channel == "achievements" && row.RecipientUserID == row.ActorUserID && row.EventOwnerID == row.RecipientUserID && row.SocialFeedEventID != "" && row.PathID != "" && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.ReactionType == "" && row.CommentID == "" && row.NudgeID == "" && row.OfferedRole == "" && row.PathVisibility == "" && row.TimerID == nil
 	timerSemantics := (kind == application.NotificationTimerStarted || kind == application.NotificationLongTimerRunning) && presentation == application.NotificationInformational && ((kind == application.NotificationTimerStarted && row.Channel == "tracking_activity" && row.RecipientUserID != row.ActorUserID) || (kind == application.NotificationLongTimerRunning && row.Channel == "timer_health" && row.RecipientUserID == row.ActorUserID)) && row.TimerID != nil && strings.TrimSpace(*row.TimerID) != "" && row.PathID != "" && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.SocialFeedEventID == "" && row.CommentID == "" && row.ReactionType == "" && row.NudgeID == "" && row.OfferedRole == "" && row.PathVisibility == ""
+	deadlineSemantics := kind == application.NotificationGoalNoLongerAchievable && presentation == application.NotificationInformational && row.Channel == "goal_reminders" && row.RecipientUserID == row.ActorUserID && row.PathID != "" && row.TimerID == nil && row.GoalIntervalStartedAt != nil && row.GoalIntervalEndedAt != nil && row.GoalIntervalStartedAt.Before(*row.GoalIntervalEndedAt) && !row.CreatedAt.Before(*row.GoalIntervalStartedAt) && row.CreatedAt.Before(*row.GoalIntervalEndedAt) && row.PathInvitationID == "" && row.PathOwnershipTransferID == "" && row.FollowRequestID == "" && row.FollowSubjectUserID == "" && row.SocialFeedEventID == "" && row.CommentID == "" && row.ReactionType == "" && row.NudgeID == "" && row.OfferedRole == "" && row.PathVisibility == ""
 	nudgeContent := socialdomain.NudgeContent{Kind: socialdomain.NudgeContentKind(row.NudgeContentKind), Preset: socialdomain.NudgePreset(row.NudgePreset)}
 	nudgeSemantics := kind == application.NotificationNudgeReceived && presentation == application.NotificationInformational &&
 		row.Channel == "nudges" && row.NudgeID != "" && row.NudgeID == row.NudgeRecordID && nudgeContent.Valid() &&
@@ -360,8 +361,8 @@ func invitationNotificationFromRow(
 		!row.CreatedAt.Before(*row.InvitationCreatedAt)) ||
 		(transferSemantics && row.PathID == row.TransferPathID && row.PathInvitationID == "" &&
 			row.PathOwnershipTransferID != "" && row.OfferedRole == "" && !row.CreatedAt.Before(*row.TransferCreatedAt)) || deletionSemantics || socialSemantics || achievementSemantics || reactionSemantics || commentSemantics || heartSemantics
-	subjectValid := ((((ordinarySubjectValid || leaveSemantics || memberAccessSemantics || visibilitySemantics) && row.NudgeID == "") || nudgeSemantics) && row.TimerID == nil) || timerSemantics
-	pathSemantics := (!socialSemantics && row.Channel == "path_access" || reactionSemantics || commentSemantics || heartSemantics || nudgeSemantics || timerSemantics || achievementSemantics) && strings.TrimSpace(row.PathName) != "" &&
+	subjectValid := ((((ordinarySubjectValid || leaveSemantics || memberAccessSemantics || visibilitySemantics) && row.NudgeID == "") || nudgeSemantics) && row.TimerID == nil) || timerSemantics || deadlineSemantics
+	pathSemantics := (!socialSemantics && row.Channel == "path_access" || reactionSemantics || commentSemantics || heartSemantics || nudgeSemantics || timerSemantics || deadlineSemantics || achievementSemantics) && strings.TrimSpace(row.PathName) != "" &&
 		strings.TrimSpace(row.PathName) == row.PathName
 	actorID, actorUsername, actorName := row.ActorID, row.ActorUsername, row.ActorName
 	if deletionSemantics {

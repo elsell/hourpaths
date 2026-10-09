@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	activityroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/activity/routes"
 	statsroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/stats"
+	activityapp "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	statsapp "github.com/elsell/hour-paths/apps/api/internal/app/stats"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -18,6 +20,9 @@ import (
 
 func main() {
 	registrations := generated.Registrations(generated.Dependencies{})
+	registrations = append(registrations, func(api huma.API) {
+		activityroutes.RegisterGoalReminderPreferences(api, activityapp.New(activityapp.Dependencies{}))
+	})
 	registrations = append(registrations, func(api huma.API) { statsroutes.Register(api, &statsapp.Service{}) })
 	registrations = append(registrations, func(api huma.API) {
 		socialroutes.Register(api, socialapp.New(socialapp.Dependencies{}))

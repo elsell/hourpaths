@@ -114,6 +114,7 @@ type UpdateActivityResult struct {
 
 type DeleteActivityCommand struct {
 	LongTimers                        bool
+	GoalDeadlines                     bool
 	Achievements                      bool
 	ActivityID, PathID, ParticipantID string
 	Idempotency                       ports.Idempotency

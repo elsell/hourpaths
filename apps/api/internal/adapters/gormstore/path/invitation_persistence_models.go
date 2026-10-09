@@ -47,6 +47,8 @@ type notificationModel struct {
 	ReactionType              string
 	CommentID                 string
 	TimerID                   *string
+	GoalIntervalStartedAt     *time.Time
+	GoalIntervalEndedAt       *time.Time
 	NudgeID                   string
 	PathVisibility            string
 	Kind                      string

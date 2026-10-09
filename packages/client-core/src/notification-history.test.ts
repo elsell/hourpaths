@@ -616,7 +616,7 @@ test('notification mutations fail closed on malformed results and unknown local 
 });
 
 test('timer notices map readable Path targets and reject unrelated subjects', () => {
-  for (const [type, key] of [['timer_started', 'notification.timerStarted'], ['long_timer_running', 'notification.longTimerRunning']]) {
+  for (const [type, key] of [['timer_started', 'notification.timerStarted'], ['long_timer_running', 'notification.longTimerRunning'], ['goal_no_longer_achievable', 'notification.goalNoLongerAchievable']]) {
     const timer = { id: 'timer-notice', type, presentation: 'informational', read: false, createdAt: received.createdAt, actor: received.actor, pathId: received.pathId, pathName: received.pathName };
     const state = mergeNotificationHistoryPage({ items: [], nextCursor: '', unreadCount: 0 }, { items: [timer], nextCursor: '', unreadCount: 1 }, '');
     assert.equal(state.items[0]?.type, type);

@@ -331,12 +331,12 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 		if err != nil {
 			return err
 		}
-		if notice.Kind == "timer_started" || notice.Kind == "long_timer_running" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
+		if notice.Kind == "timer_started" || notice.Kind == "long_timer_running" || notice.Kind == "goal_no_longer_achievable" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
 			if err := timerstore.Lock(tx, notice.PathID); err != nil {
 				return err
 			}
 		}
-		if notice.Kind == "long_timer_running" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
+		if notice.Kind == "long_timer_running" || notice.Kind == "goal_no_longer_achievable" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
 			var owner string
 			if err := tx.Table("path_models").Select("owner_user_id").Where("id = ?", notice.PathID).Take(&owner).Error; err != nil {
 				return err
@@ -398,6 +398,18 @@ WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_bl
 	}
 	if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() && notice.ProviderTicket == "" {
 		return achievementstore.Eligible(tx, notificationID, notice.RecipientUserID)
+	}
+	if notice.Kind == "goal_no_longer_achievable" && notice.ProviderTicket == "" {
+		var eligible int64
+		err := tx.Table("notification_models notice").
+			Joins("JOIN user_models recipient ON recipient.id = notice.recipient_user_id AND recipient.status = 'active'").
+			Joins("JOIN path_models path ON path.id = notice.path_id AND path.archived_at IS NULL").
+			Where("notice.id = ? AND notice.deleted_at IS NULL AND notice.recipient_user_id = notice.actor_user_id", notificationID).
+			Where("EXISTS (SELECT 1 FROM path_membership_models member WHERE member.path_id = path.id AND member.user_id = recipient.id AND member.role IN ('participant','administrator'))").
+			Where("NOT EXISTS (SELECT 1 FROM goal_reminder_preference_models preference WHERE preference.path_id = path.id AND preference.participant_id = recipient.id AND NOT preference.enabled)").
+			Where("NOT EXISTS (SELECT 1 FROM running_timer_models timer WHERE timer.path_id = path.id AND timer.participant_id = recipient.id)").
+			Where("NOT EXISTS (SELECT 1 FROM block_models b WHERE (b.blocker_user_id = recipient.id AND b.blocked_user_id = path.owner_user_id) OR (b.blocked_user_id = recipient.id AND b.blocker_user_id = path.owner_user_id))").Count(&eligible).Error
+		return eligible == 1, err
 	}
 	if notice.Kind == "long_timer_running" && notice.ProviderTicket == "" {
 		var active int64

@@ -38,6 +38,8 @@ func notificationProjectionQuery(tx *gorm.DB) *gorm.DB {
       notification_models.recipient_user_id,
       notification_models.actor_user_id,
       notification_models.timer_id,
+ notification_models.goal_interval_started_at,
+ notification_models.goal_interval_ended_at,
       notification_models.path_id,
       COALESCE(notification_models.path_invitation_id, '') AS path_invitation_id,
       COALESCE(notification_models.path_ownership_transfer_id, '') AS path_ownership_transfer_id,

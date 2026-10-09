@@ -1,4 +1,4 @@
-import { apiWeekStartPreference, apiProfilePicture, apiProfilePrivacy, apiProfileEditing, apiTimerSubscriptions, apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
+import { apiWeekStartPreference, apiProfilePicture, apiProfilePrivacy, apiProfileEditing, apiTimerSubscriptions, apiGoalReminders, apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
 import { createSessionApiClient, type GeneratedOperationResult } from '@hourpaths/api-client';
 import { PreferenceFailure } from '../domain/preferences';
 import type { PreferencesRepository } from '../ports/preferences-repository';
@@ -42,6 +42,8 @@ export function apiPreferencesRepository(baseURL: string, token: () => string | 
     saveProfilePrivacy: (value, visibility, key, signal) => apiProfilePrivacy(baseURL, token(), value.userId, rejected, signal).save(value, visibility, key),
     editableProfile: (owner, signal) => apiProfileEditing(baseURL, token(), owner, rejected, signal).read(),
     saveProfile: (value, key, signal) => apiProfileEditing(baseURL, token(), value.userId, rejected, signal).save(value, key),
+    goalReminder: (subject, signal) => apiGoalReminders(baseURL, token(), rejected, signal).get(subject),
+    saveGoalReminder: (subject, value, key, signal) => apiGoalReminders(baseURL, token(), rejected, signal).update(subject, value, key),
     timerSubscription: (subject, signal) => apiTimerSubscriptions(baseURL, token(), rejected, signal).get(subject),
     saveTimerSubscription: (subject, value, key, signal) => apiTimerSubscriptions(baseURL, token(), rejected, signal).update(subject, value, key),
     notificationChannels: signal => channels(() => apiNotificationChannels(baseURL, token(), rejected, signal).list()),

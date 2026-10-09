@@ -905,3 +905,6 @@ export { PolicyTimersController, retainedPolicyTimers, type PolicyTimer, type Po
 export { apiPolicyTimers } from './adapters/api-policy-timers';
 export { AccountExportController, AccountExportFailure, collectAccountExport, type AccountExportDocument, type AccountExportRepository, type AccountExportSink } from './account-export';
 export { apiAccountExport } from './adapters/api-account-export';
+
+export { createGoalReminderOperationOwner, GoalReminderFailure, type GoalReminderSubject, type GoalReminderPreference, type GoalRemindersRepository } from './goal-reminders';
+export { apiGoalReminders, goalReminderFromAPI } from './adapters/api-goal-reminders';

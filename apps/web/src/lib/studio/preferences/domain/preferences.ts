@@ -23,3 +23,6 @@ export interface PictureChange {userId:string;revision:number;image:string;crop?
 
 export interface WeekStartPreference { userId: string; firstDayOfWeek: number }
 export interface WeekStartChange { userId: string; reviewedFirstDayOfWeek: number; proposedFirstDayOfWeek: number }
+
+export interface GoalReminderSubject { id: string }
+export interface GoalReminderPreference { enabled: boolean; revision: number }

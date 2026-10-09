@@ -75,6 +75,7 @@ func (service *InvitationService) mutateNotification(
 		TimerStarts:     notificationTimerRepresentation(ctx),
 		Achievements:    notificationAchievementRepresentation(ctx),
 		LongTimers:      notificationLongTimerRepresentation(ctx),
+		GoalDeadlines:   notificationGoalDeadlineRepresentation(ctx),
 		RecipientUserID: principal.UserID,
 		NotificationID:  targetID,
 		ChangedAt:       now,

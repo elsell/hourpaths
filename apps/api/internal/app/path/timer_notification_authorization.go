@@ -8,10 +8,10 @@ import (
 )
 
 func (s *InvitationService) authorizeTimerNotification(ctx context.Context, recipient string, notice InvitationNotificationProjection) error {
-	if notice.Kind != NotificationTimerStarted && notice.Kind != NotificationLongTimerRunning && !notice.Kind.IsAchievement() {
+	if notice.Kind != NotificationTimerStarted && notice.Kind != NotificationLongTimerRunning && notice.Kind != NotificationGoalNoLongerAchievable && !notice.Kind.IsAchievement() {
 		return nil
 	}
-	if notice.Kind == NotificationLongTimerRunning && notice.Actor.UserID != recipient {
+	if (notice.Kind == NotificationLongTimerRunning || notice.Kind == NotificationGoalNoLongerAchievable) && notice.Actor.UserID != recipient {
 		return ports.ErrNotFound
 	}
 	if s.Authorizer == nil {

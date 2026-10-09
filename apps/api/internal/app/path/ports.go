@@ -321,6 +321,7 @@ const (
 	NotificationNudgeReceived                 InvitationNotificationKind = "nudge_received"
 	NotificationTimerStarted                  InvitationNotificationKind = "timer_started"
 	NotificationLongTimerRunning              InvitationNotificationKind = "long_timer_running"
+	NotificationGoalNoLongerAchievable        InvitationNotificationKind = "goal_no_longer_achievable"
 	NotificationIntervalGoalAchieved          InvitationNotificationKind = "interval_goal_achieved"
 	NotificationOverallTargetAchieved         InvitationNotificationKind = "overall_target_achieved"
 )
@@ -366,6 +367,7 @@ type InvitationNotificationProjection struct {
 
 type NotificationPageRequest struct {
 	LongTimers     bool
+	GoalDeadlines  bool
 	Achievements   bool
 	TimerStarts    bool
 	EmojiReactions bool
@@ -383,6 +385,7 @@ type NotificationPage struct {
 
 type NotificationMutationCommand struct {
 	LongTimers      bool
+	GoalDeadlines   bool
 	Achievements    bool
 	TimerStarts     bool
 	EmojiReactions  bool
