@@ -5142,5 +5142,18 @@
   "nativeTimers.running_one": "{{count}} temporizador en curso",
   "nativeTimers.running_other": "{{count}} temporizadores en curso",
   "nativeTimers.remaining_one": "{{count}} ruta más",
-  "nativeTimers.remaining_other": "{{count}} rutas más"
+  "nativeTimers.remaining_other": "{{count}} rutas más",
+  "profile.edit.heading": "Editar perfil",
+  "profile.edit.name": "Nombre",
+  "profile.edit.username": "Nombre de usuario",
+  "profile.edit.description": "Acerca de ti",
+  "profile.edit.hint": "Tu nombre, nombre de usuario y descripción aparecen en tu perfil.",
+  "profile.edit.invalid": "Usa un nombre de 1–100 caracteres, un nombre de usuario de 3–64 letras, números, guiones bajos o puntos y una descripción de hasta 500 caracteres.",
+  "profile.edit.username_unavailable": "Ese nombre de usuario ya está en uso. Elige otro.",
+  "profile.edit.conflict": "Tu perfil cambió en otro lugar. Carga la versión más reciente antes de guardar. Tus cambios permanecerán aquí para revisarlos.",
+  "profile.edit.rejected": "Tu sesión ya no está disponible. Vuelve a iniciar sesión para editar tu perfil.",
+  "profile.edit.unavailable": "No se pudo guardar tu perfil. Tus cambios siguen aquí. Inténtalo de nuevo.",
+  "profile.edit.loadFailed": "No se pudo cargar tu perfil. Inténtalo de nuevo.",
+  "profile.edit.reload": "Cargar el perfil más reciente",
+  "profile.edit.review": "Versión más reciente cargada. Revisa tus cambios y guarda, o cancela para usar el perfil más reciente."
 }

@@ -1,6 +1,8 @@
 import type { TimerSubscriptionSubject, TimerSubscriptionPreference } from '../domain/preferences';
 import type { NotificationChannelPreference, AccountIdentity, TimeZonePreference, TimeZoneChange, Interactions, NudgePreference, BlockedPerson } from '../domain/preferences';
 export interface PreferencesRepository {
+  editableProfile(owner: string, signal?: AbortSignal): Promise<import('../domain/preferences').EditableProfile>;
+  saveProfile(value: import('../domain/preferences').EditableProfile, key: string, signal?: AbortSignal): Promise<import('../domain/preferences').EditableProfile>;
   timerSubscription(subject: TimerSubscriptionSubject, signal?: AbortSignal): Promise<TimerSubscriptionPreference>;
   saveTimerSubscription(subject: TimerSubscriptionSubject, value: TimerSubscriptionPreference, operationId: string, signal?: AbortSignal): Promise<TimerSubscriptionPreference>;
   notificationChannels(signal?: AbortSignal): Promise<NotificationChannelPreference[]>;

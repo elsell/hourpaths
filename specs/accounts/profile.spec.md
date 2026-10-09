@@ -26,6 +26,46 @@ their paths or activity.
 - Changes to required or unique fields must satisfy the same validation rules as
   initial profile setup before they are saved.
 
+## Editing authorization and outcomes
+
+- Profile editing is an authenticated account-owner operation. The saved account
+  must be selected from the active application session, never from a submitted
+  owner identifier. A provisional, expired, revoked, or replacement account
+  session must not modify another account's profile.
+- Mobile and Studio account settings must expose editing of the application name,
+  username, and optional description. Picture upload and removal remain required
+  by the picture requirements below; delivery of text editing does not complete
+  those requirements.
+- A successful save must persist the submitted text fields together and make them
+  available to subsequent own-profile and authorized public-profile reads.
+- Validation failure, an unavailable username, or persistence failure must leave
+  the saved profile unchanged. The editor must retain the submitted values so the
+  user can correct or retry them.
+- A save based on an older profile revision must not silently overwrite a newer
+  edit. The client must retain the draft and offer recovery from the conflict.
+- Retrying the same save after a lost response must not repeat the mutation or
+  its audit event. Reusing a retry key for different input must be rejected.
+- Profile changes must preserve the immutable account ID, provider identities,
+  provider emails, memberships, recorded activity, and existing privacy rules.
+- A later provider sign-in must retain the edited application profile, as required
+  above. Public-text safety requirements remain governed by
+  [Moderation](../safety/moderation.spec.md).
+
+### Editing acceptance scenarios
+
+1. An account owner edits their name, username, and description in either client;
+   reopening the editor and viewing that profile in the other client shows the
+   saved values on the same account.
+2. A username differing only in case from another account's username is rejected;
+   none of the submitted fields is saved and the editor retains the draft.
+3. Clearing the optional description saves no description; an empty name or an
+   invalid username cannot be saved.
+4. An unauthenticated request, an onboarding-only session, or a forged owner
+   identifier cannot alter a saved profile. Authorization dependency failures
+   must fail closed.
+5. Signing out during a save and entering another account cannot apply the old
+   account's result or draft to the replacement account.
+
 ## Always-public information
 
 - A user's username must be visible to everyone who can discover or access the

@@ -22,6 +22,7 @@ type userModel struct {
 	Email, DisplayName    string
 	ProviderEmailVerified bool
 	Username              *string
+	ProfileRevision       int64 `gorm:"not null;default:1"`
 	ProfileVisibility     *identity.ProfileVisibility
 	Description           *string
 	ProfilePictureURL     *string
