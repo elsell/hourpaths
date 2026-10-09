@@ -10,6 +10,9 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/mobile/src/account-export-native.ts",
+    "apps/web/src/lib/studio/account/adapters/browser-account-export.ts",
+    "packages/api-client/src/policy-requirement.ts",
     "apps/mobile/src/profile-picture-picker.ts",
     "apps/web/src/lib/studio/presentation/picture-crop.tsx",
     "apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts",
