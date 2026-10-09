@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { PathRecurrence } from '@hourpaths/api-client';
 import type { PathVisibility } from '@hourpaths/client-core';
 import type { MessageKey, Translator } from '@hourpaths/i18n';
-import { AccessibilityInfo, InputAccessoryView, Keyboard, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { AccessibilityInfo, InputAccessoryView, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import type { PathGoalForm } from '../path-goals';
 import { pathRecurrences } from '../path-goals';
 import type { DurationUnit } from './duration-input';
@@ -20,6 +20,7 @@ import {
   ThemedTextInput as TextInput,
 } from './primitives';
 import { mobileTheme } from './tokens';
+import { SettingsSwitchRow } from './settings-list';
 
 const recurrenceKeys: Record<PathRecurrence, MessageKey> = {
   hourly: 'pathCreate.recurrence.hourly',
@@ -201,11 +202,13 @@ export function PathGoalFields({
 
   return <>
     <GoalFieldSection compact={compact}>
-      <GoalSwitchRow
-        busy={busy}
+      <SettingsSwitchRow
+        disabled={busy}
+        accessibilityLabel={i18n.t('pathCreate.intervalEnabled')}
         label={i18n.t('pathCreate.intervalEnabled')}
-        onChange={(intervalEnabled) => onUpdate({ intervalEnabled })}
+        onValueChange={(intervalEnabled) => onUpdate({ intervalEnabled })}
         value={form.intervalEnabled}
+        valueLabel={i18n.t(form.intervalEnabled ? 'settings.interactions.on' : 'settings.interactions.off')}
       />
       {form.intervalEnabled ? <View style={[styles.revealed, compact ? styles.compactRevealed : null]}>
         <HumanDurationEditor
@@ -230,11 +233,13 @@ export function PathGoalFields({
           onChange={changeRecurrence}
           value={form.recurrence}
         />
-        <GoalSwitchRow
-          busy={busy}
+        <SettingsSwitchRow
+          disabled={busy}
+          accessibilityLabel={i18n.t('pathCreate.alignment.customize')}
           label={i18n.t('pathCreate.alignment.customize')}
-          onChange={changeAlignmentCustomization}
+          onValueChange={changeAlignmentCustomization}
           value={customizeAlignment}
+          valueLabel={i18n.t(customizeAlignment ? 'settings.interactions.on' : 'settings.interactions.off')}
         />
         {!customizeAlignment
           ? <Text style={styles.secondary}>{i18n.t('pathCreate.alignment.default')}</Text>
@@ -250,11 +255,13 @@ export function PathGoalFields({
     </GoalFieldSection>
 
     <GoalFieldSection compact={compact}>
-      <GoalSwitchRow
-        busy={busy}
+      <SettingsSwitchRow
+        disabled={busy}
+        accessibilityLabel={i18n.t('pathCreate.overallEnabled')}
         label={i18n.t('pathCreate.overallEnabled')}
-        onChange={(overallEnabled) => onUpdate({ overallEnabled })}
+        onValueChange={(overallEnabled) => onUpdate({ overallEnabled })}
         value={form.overallEnabled}
+        valueLabel={i18n.t(form.overallEnabled ? 'settings.interactions.on' : 'settings.interactions.off')}
       />
       {form.overallEnabled ? <View style={[styles.revealed, compact ? styles.compactRevealed : null]}>
         <HumanDurationEditor
@@ -286,36 +293,6 @@ function GoalFieldSection({
   return compact
     ? <View style={styles.compactSection}>{children}</View>
     : <Surface>{children}</Surface>;
-}
-
-function GoalSwitchRow({
-  busy,
-  label,
-  onChange,
-  value,
-}: {
-  busy: boolean;
-  label: string;
-  onChange: (value: boolean) => void;
-  value: boolean;
-}) {
-  return <Pressable
-    accessibilityLabel={label}
-    accessibilityRole="switch"
-    accessibilityState={{ checked: value, disabled: busy }}
-    disabled={busy}
-    onPress={() => onChange(!value)}
-    style={({ pressed }) => [styles.switchRow, pressed ? styles.pressed : null]}
-  >
-    <Text style={styles.switchLabel}>{label}</Text>
-    <View pointerEvents="none"><Switch
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      trackColor={{ false: mobileTheme.colors.border, true: mobileTheme.colors.accentPressed }}
-      thumbColor={value ? mobileTheme.colors.accent : mobileTheme.colors.textMuted}
-      value={value}
-    /></View>
-  </Pressable>;
 }
 
 function AlignmentFields({
@@ -481,16 +458,5 @@ const styles = StyleSheet.create({
   },
   secondary: {
     color: mobileTheme.colors.textMuted,
-  },
-  switchLabel: {
-    flex: 1,
-    ...mobileTheme.typography.body,
-  },
-  switchRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: mobileTheme.spacing.md,
-    justifyContent: 'space-between',
-    minHeight: mobileTheme.sizes.minimumTouchTarget,
   },
 });

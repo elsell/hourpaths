@@ -227,7 +227,7 @@ test('Create Path is an extracted native, progressively disclosed form', () => {
   assert.match(pathCreateForm, /<NativeSheet/);
   assert.match(pathCreateForm, /<HumanDurationEditor/);
   assert.match(pathCreateForm, /<NativeChoicePicker/);
-  assert.match(pathCreateForm, /accessibilityRole="switch"/);
+  assert.match(pathCreateForm, /<SettingsSwitchRow/);
   assert.match(pathCreateForm, /busy=\{busy\}/);
   assert.match(humanDurationEditor, /keyboardType="number-pad"/);
 });

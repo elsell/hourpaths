@@ -393,7 +393,7 @@ result = check({
 assert.equal(result.status, 0, `reviewed-native-onboarding-presentation: ${result.stderr}`);
 
 result = check({
-  'apps/mobile/src/ui/path-create-form.tsx': "import { AccessibilityInfo, InputAccessoryView, Keyboard, Pressable, StyleSheet, Switch, View } from 'react-native'; export const PathCreateForm = () => <Pressable><View><Switch value={false} /></View></Pressable>; void AccessibilityInfo; void InputAccessoryView; void Keyboard;",
+  'apps/mobile/src/ui/path-create-form.tsx': "import { AccessibilityInfo, InputAccessoryView, Keyboard, Pressable, StyleSheet, View } from 'react-native'; export const PathCreateForm = () => <Pressable><View /></Pressable>; void AccessibilityInfo; void InputAccessoryView; void Keyboard;",
   'apps/mobile/src/ui/native-segmented-control.tsx': "import SegmentedControl from '@expo/ui/community/segmented-control'; export const Unit = () => <SegmentedControl values={['Minutes', 'Hours']} />;",
   'apps/mobile/src/ui/native-choice-picker.ios.tsx': "import { Picker, Text } from '@expo/ui/swift-ui'; import { accessibilityLabel, disabled, environment, pickerStyle, tag, tint } from '@expo/ui/swift-ui/modifiers'; export const Choice = () => <><Picker modifiers={[accessibilityLabel('Repeat'), disabled(false), environment('colorScheme', 'dark'), pickerStyle('menu'), tint('#FFD84D')]}><Text modifiers={[tag('daily')]}>Daily</Text></Picker></>;",
 });
