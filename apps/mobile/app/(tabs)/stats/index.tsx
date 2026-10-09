@@ -18,11 +18,11 @@ export default function StatsScreen() {
     return () => { focused.current = false; };
   }, []));
   useEffect(() => subscribeNativeAppActive(() => { if (focused.current) latest.current?.onRefresh(); }), []);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (presentation) return;
     const bootstrap = setTimeout(() => { if (!latest.current) router.replace('/(tabs)/home'); }, 200);
     return () => clearTimeout(bootstrap);
-  }, [Boolean(presentation)]);
+  }, [Boolean(presentation)]));
   useEffect(() => { if (presentation?.state.status === 'idle') presentation.onRefresh(); }, [presentation]);
   return presentation ? <StatsView state={presentation.state} i18n={i18n} onSelect={presentation.onSelect} onRefresh={presentation.onRefresh} appearance={presentation.appearance} /> : null;
 }

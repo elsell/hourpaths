@@ -36,13 +36,13 @@ export default function FollowingScreen() {
   const appStateRef = useRef(AppState.currentState);
 
   presentationRef.current = presentation;
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (presentation || recovery) return;
     return scheduleSocialRouteBootstrap(
       { kind: 'following', routeKey: 'social:following' },
       () => router.replace('/(tabs)/home'),
     );
-  }, [presentation, recovery]);
+  }, [presentation, recovery]));
 
   useEffect(() => {
     if (presentation?.feed.status === 'idle') presentation.loadFeed();
