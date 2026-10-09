@@ -1,3 +1,4 @@
+import { timeZoneChoices } from '@hourpaths/client-core';
 import { EnforcementSettings } from './enforcement-settings';
 import { WeekStartSettings } from './week-start-settings';
 import { PictureSettings } from './picture-settings';
@@ -9,7 +10,7 @@ import { AccountDeletionSettings } from './account-deletion';
 import { useOwnedOperation } from './use-owned-operation';
 import { SessionSettings } from './session-settings';
 import { UnsavedChanges } from './unsaved-changes';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
@@ -74,7 +75,7 @@ function TimeZoneForm({ initial, dependencies: d, reload }: { initial: TimeZoneP
     void client.invalidateQueries({ queryKey: [d.accountScope, 'statistics'] });
   } });
   useEffect(() => { setSaved(initial); }, [initial]);
-  const choices = Array.from(new Set([saved.zone, ...Intl.supportedValuesOf('timeZone')])).sort();
+  const choices = useMemo(() => timeZoneChoices(saved.zone), [saved.zone]);
   return <form className="studio-settings-form" onSubmit={event => { event.preventDefault(); mutation.reset(); setReview({ reviewed: saved.zone, proposed: draft }); }}>
     <UnsavedChanges dirty={draft !== saved.zone || mutation.isPending} i18n={d.i18n} />
     <fieldset disabled={mutation.isPending || !!review}><label>{d.i18n.t('settings.timeZone.heading')}<select aria-label={d.i18n.t('settings.timeZone.heading')} value={draft} onChange={event => { setDraft(event.target.value); mutation.reset(); }}>{choices.map(value => <option key={value} value={value}>{value}</option>)}</select></label><button className="studio-primary" disabled={draft === saved.zone}>{d.i18n.t('common.save')}</button></fieldset>
