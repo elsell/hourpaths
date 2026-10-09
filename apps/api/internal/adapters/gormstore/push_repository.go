@@ -331,6 +331,11 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 		if err != nil {
 			return err
 		}
+		if notice.Kind == "goal_practice_reminder" {
+			if err := lockGoalReminderPaths(tx, notificationID, notice.RecipientUserID); err != nil {
+				return err
+			}
+		}
 		if notice.Kind == "timer_started" || notice.Kind == "long_timer_running" || notice.Kind == "goal_no_longer_achievable" || pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() {
 			if err := timerstore.Lock(tx, notice.PathID); err != nil {
 				return err
@@ -360,6 +365,11 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 		}
 		if err := lockSocialInteractionOwner(tx, socialLockKey("notification-channel", notice.RecipientUserID)); err != nil {
 			return err
+		}
+		if notice.Kind == "goal_practice_reminder" {
+			if err := lockGoalReminderTimeZone(tx, notice.RecipientUserID); err != nil {
+				return err
+			}
 		}
 		eligible, err := pushDeliveryEligible(tx, worker, notificationID, installationID)
 		if err != nil || !eligible {
@@ -398,6 +408,9 @@ WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_bl
 	}
 	if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() && notice.ProviderTicket == "" {
 		return achievementstore.Eligible(tx, notificationID, notice.RecipientUserID)
+	}
+	if notice.Kind == "goal_practice_reminder" && notice.ProviderTicket == "" {
+		return goalReminderPushEligible(tx, notificationID)
 	}
 	if notice.Kind == "goal_no_longer_achievable" && notice.ProviderTicket == "" {
 		var eligible int64

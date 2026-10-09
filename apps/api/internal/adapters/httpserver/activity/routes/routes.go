@@ -75,6 +75,7 @@ type activityInput struct {
 type activityDeletionInput struct {
 	Achievements   bool   `query:"achievements" default:"false"`
 	LongTimers     bool   `query:"longTimers" default:"false"`
+	GoalReminders  bool   `query:"goalReminders" default:"false"`
 	GoalDeadlines  bool   `query:"goalDeadlines" default:"false"`
 	Authorization  string `header:"Authorization"`
 	IdempotencyKey string `header:"Idempotency-Key" required:"true" minLength:"16" maxLength:"128"`
@@ -206,7 +207,7 @@ func Register(api huma.API, service Service) {
 		return out, nil
 	})
 	huma.Register(api, huma.Operation{OperationID: "delete-activity", Method: http.MethodDelete, Path: activityPath, Security: security}, func(ctx context.Context, input *activityDeletionInput) (*activityDeletionOutput, error) {
-		result, err := service.DeleteActivity(application.WithAchievementNotificationRepresentation(application.WithLongTimerNotificationRepresentation(application.WithGoalDeadlineNotificationRepresentation(ctx, input.GoalDeadlines), input.LongTimers), input.Achievements), input.Authorization, input.PathID, input.ActivityID, input.IdempotencyKey)
+		result, err := service.DeleteActivity(application.WithAchievementNotificationRepresentation(application.WithLongTimerNotificationRepresentation(application.WithGoalDeadlineNotificationRepresentation(application.WithGoalReminderNotificationRepresentation(ctx, input.GoalReminders), input.GoalDeadlines), input.LongTimers), input.Achievements), input.Authorization, input.PathID, input.ActivityID, input.IdempotencyKey)
 		if err != nil {
 			return nil, shared.MapError(err, true)
 		}

@@ -882,6 +882,8 @@
   "goalReminder.path": "Goal reminders",
   "goalReminder.channelHint": "Reminders for your goals on this Path. Also requires Goal reminders in notification settings.",
   "goalReminder.failed": "Couldn’t save your reminder preference. Try again.",
+  "notification.goalReminderChooserTitle": "Choose a Path",
+  "notification.goalPracticeReminder": "Time to make progress toward your goals. Choose a Path to get started.",
   "notification.goalNoLongerAchievable": "There isn’t enough time left to reach your current goal on {{pathName}}. Every bit of practice still counts.",
   "notification.longTimerRunning": "Your timer on {{pathName}} is still running. Is it time to stop?",
   "notification.timerStarted": "{{displayName}} started tracking on {{pathName}}.",

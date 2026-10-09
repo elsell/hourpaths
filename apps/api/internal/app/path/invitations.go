@@ -427,6 +427,7 @@ func validNotificationPage(page NotificationPage, limit int, snapshot time.Time)
 			item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) &&
 			item.NudgeContent.Valid() && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" &&
 			item.FollowRequestID == "" && noInteractionSubject && item.InteractionDisabled == ""
+		reminderSubject := item.Kind == NotificationGoalPracticeReminder && validGoalReminderPaths(item.Reminder) && item.Presentation == NotificationInformational && item.PathID == "" && item.PathName == "" && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" && item.FollowRequestID == "" && noInteractionSubject && item.InteractionDisabled == ""
 		timerSubject := (item.Kind == NotificationTimerStarted || item.Kind == NotificationLongTimerRunning || item.Kind == NotificationGoalNoLongerAchievable) && item.Presentation == NotificationInformational && item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" && item.FollowRequestID == "" && noInteractionSubject && item.InteractionDisabled == ""
 		achievementSubject := item.Kind.IsAchievement() && item.Presentation == NotificationInformational && item.PathID != "" && strings.TrimSpace(item.PathName) != "" && item.PathName == strings.TrimSpace(item.PathName) && item.SocialFeedEventID != "" && strings.TrimSpace(item.SocialFeedEventID) == item.SocialFeedEventID && item.CommentID == "" && item.Reaction == "" && item.InvitationID == "" && item.OfferedRole == "" && item.OwnershipTransferID == "" && item.FollowRequestID == "" && item.InteractionDisabled == ""
 		noNudgeSubject := item.NudgeContent == (socialdomain.NudgeContent{})
@@ -450,8 +451,8 @@ func validNotificationPage(page NotificationPage, limit int, snapshot time.Time)
 			item.Actor.Username != strings.TrimSpace(item.Actor.Username) ||
 			strings.TrimSpace(item.Actor.DisplayName) == "" ||
 			item.Actor.DisplayName != strings.TrimSpace(item.Actor.DisplayName) ||
-			!visibilityPayloadValid ||
-			(!nudgeSubject && (!noNudgeSubject || (!pathSubject && !socialSubject && !deletionSubject && !reactionSubject && !commentSubject && !heartSubject && !timerSubject && !achievementSubject && !disabledInteractionSubject))) {
+			!visibilityPayloadValid || (item.Kind != NotificationGoalPracticeReminder && item.Reminder != nil) ||
+			(!nudgeSubject && (!noNudgeSubject || (!pathSubject && !socialSubject && !deletionSubject && !reactionSubject && !commentSubject && !heartSubject && !timerSubject && !reminderSubject && !achievementSubject && !disabledInteractionSubject))) {
 			return false
 		}
 		if index > 0 && (item.CreatedAt.After(previous.CreatedAt) ||

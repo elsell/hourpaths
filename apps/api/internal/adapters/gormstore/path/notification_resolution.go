@@ -34,6 +34,9 @@ func (r *Repository) GetNotification(
 	if err != nil {
 		return application.InvitationNotificationProjection{}, errInvalidPersistedInvitation
 	}
+	if err := loadGoalReminderPaths(r.DB.WithContext(ctx), recipientUserID, &item); err != nil {
+		return application.InvitationNotificationProjection{}, err
+	}
 	return item, nil
 }
 

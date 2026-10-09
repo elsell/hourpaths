@@ -11,6 +11,7 @@ function required<T>(result: { response: Response; data?: { data: T } }): T {
 }
 function target(item: NotificationHistoryItem): Notification['target'] {
   switch (item.type) {
+    case 'goal_practice_reminder': return { kind: 'reminder', paths: item.reminder.paths };
     case 'path_deleted': case 'path_member_removed': return null;
     case 'path_invitation_received': return { kind: 'invitations' };
     case 'follow_request_received': return { kind: 'people' };

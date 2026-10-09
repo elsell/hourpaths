@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationlongtimer"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationreminder"
 	"slices"
 	"sort"
 	"strings"
@@ -112,7 +113,7 @@ func (r *Repository) DeleteActivity(ctx context.Context, command application.Del
 		if err := tx.Model(&activityModel{}).Where("participant_id = ? AND path_id = ?", command.ParticipantID, command.PathID).Count(&sessionCount).Error; err != nil {
 			return err
 		}
-		unreadNotificationCount, err := activityDeletionVisibleUnreadNotificationCount(tx, command.ParticipantID, command.Audit.OccurredAt, command.Achievements, command.LongTimers, command.GoalDeadlines)
+		unreadNotificationCount, err := activityDeletionVisibleUnreadNotificationCount(tx, command.ParticipantID, command.Audit.OccurredAt, command.Achievements, command.LongTimers, command.GoalDeadlines, command.GoalReminders)
 		if err != nil {
 			return err
 		}
@@ -178,6 +179,11 @@ func activityDeletionVisibleUnreadNotificationCount(tx *gorm.DB, recipientUserID
 	}
 	if len(achievements) < 2 || !achievements[1] {
 		query = query.Where("notification_models.kind <> 'long_timer_running'")
+	}
+	if len(achievements) < 4 || !achievements[3] {
+		query = query.Where("notification_models.kind <> 'goal_practice_reminder'")
+	} else {
+		query = query.Where(notificationreminder.VisiblePredicate)
 	}
 	if len(achievements) < 3 || !achievements[2] {
 		query = query.Where("notification_models.kind <> 'goal_no_longer_achievable'")

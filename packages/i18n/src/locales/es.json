@@ -882,6 +882,8 @@
   "goalReminder.path": "Recordatorios de metas",
   "goalReminder.channelHint": "Recordatorios de tus metas en este Path. También requiere activar Recordatorios de metas en los ajustes de notificaciones.",
   "goalReminder.failed": "No se pudo guardar tu preferencia de recordatorios. Inténtalo de nuevo.",
+  "notification.goalReminderChooserTitle": "Elige un Path",
+  "notification.goalPracticeReminder": "Es hora de avanzar hacia tus metas. Elige un Path para empezar.",
   "notification.goalNoLongerAchievable": "Ya no queda tiempo suficiente para alcanzar tu meta actual en {{pathName}}. Cada momento de práctica cuenta.",
   "notification.longTimerRunning": "Tu temporizador en {{pathName}} sigue en marcha. ¿Es hora de detenerlo?",
   "notification.timerStarted": "{{displayName}} empezó a registrar tiempo en {{pathName}}.",

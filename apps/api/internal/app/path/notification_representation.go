@@ -59,3 +59,14 @@ func notificationGoalDeadlineRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(notificationGoalDeadlineRepresentationKey{}).(bool)
 	return enabled
 }
+
+// Ordinary reminder bundles have a separate vocabulary capability.
+type notificationGoalReminderRepresentationKey struct{}
+
+func WithNotificationGoalReminderRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, notificationGoalReminderRepresentationKey{}, enabled)
+}
+func notificationGoalReminderRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(notificationGoalReminderRepresentationKey{}).(bool)
+	return enabled
+}

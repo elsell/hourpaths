@@ -635,3 +635,27 @@ test('achievement history distinguishes goals and rejects unrelated payloads', (
     assert.throws(() => page({ ...notice, presentation: 'actionable' }));
   }
 });
+
+test('bundled reminders preserve all destinations and reject malformed nested subjects', () => {
+  const reminder = {
+    id: 'reminder-1', type: 'goal_practice_reminder', presentation: 'informational',
+    read: false, createdAt: '2026-10-09T20:00:00Z', actor: received.actor,
+    reminder: { paths: [{ id: 'guitar', name: 'Guitar' }, { id: 'reading', name: 'Reading' }] },
+  };
+  const parse = (item: unknown) => mergeNotificationHistoryPage(
+    { items: [], nextCursor: '', unreadCount: 0 },
+    { items: [item], nextCursor: '', unreadCount: 1 }, '',
+  ).items[0]!;
+  const parsed = parse(reminder);
+  assert.deepEqual(parsed, reminder);
+  assert.equal(notificationPresentationMessageKey(parsed), 'notification.goalPracticeReminder');
+  reminder.reminder.paths[0]!.name = 'Changed after parsing';
+  assert.equal('reminder' in parsed && parsed.reminder.paths[0]!.name, 'Guitar');
+  for (const nested of [
+    { paths: [] }, { paths: [{ id: 'guitar', name: '' }] },
+    { paths: [{ id: 'guitar', name: 'Guitar', secret: 'unexpected' }] },
+    { paths: [{ id: 'guitar', name: 'Guitar' }, { id: 'guitar', name: 'Duplicate' }] },
+    { paths: [{ id: 'guitar', name: 'Guitar' }], extra: true },
+  ]) assert.throws(() => parse({ ...reminder, reminder: nested }), /invalid notification/);
+  assert.throws(() => parse({ ...reminder, pathId: 'foreign' }), /invalid notification/);
+});

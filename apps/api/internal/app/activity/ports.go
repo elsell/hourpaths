@@ -113,6 +113,7 @@ type UpdateActivityResult struct {
 }
 
 type DeleteActivityCommand struct {
+	GoalReminders                     bool
 	LongTimers                        bool
 	GoalDeadlines                     bool
 	Achievements                      bool

@@ -193,6 +193,7 @@ test('tap resolves only the opaque notification id before marking read and navig
         if (destination.kind === 'path') events.push(`navigate:path:${destination.pathID}`);
         else if (destination.kind === 'invitation') events.push(`navigate:invitation:${destination.invitationID}`);
         else if (destination.kind === 'follow-request') events.push(`navigate:follow-request:${destination.requestID}`);
+        else if (destination.kind === 'reminder') events.push(`navigate:reminder:${destination.notificationID}`);
         else if (destination.kind === 'profile') events.push(`navigate:profile:${destination.username}`);
         else events.push(`navigate:comments:${destination.eventID}`);
       },

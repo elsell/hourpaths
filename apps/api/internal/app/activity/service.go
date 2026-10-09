@@ -373,6 +373,7 @@ func (s *Service) DeleteActivity(ctx context.Context, authorization, pathID, act
 	achievements := achievementNotificationRepresentation(ctx)
 	longTimers := longTimerNotificationRepresentation(ctx)
 	goalDeadlines := goalDeadlineNotificationRepresentation(ctx)
+	goalReminders := goalReminderNotificationRepresentation(ctx)
 	hash := requestHash(DeleteActivityOperation, pathID, activityID)
 	if achievements {
 		hash = requestHash(DeleteActivityOperation, pathID, activityID, "achievements")
@@ -386,8 +387,12 @@ func (s *Service) DeleteActivity(ctx context.Context, authorization, pathID, act
 	if goalDeadlines {
 		hash = requestHash(DeleteActivityOperation, pathID, activityID, string(hash), "goal-deadlines")
 	}
+	if goalReminders {
+		hash = requestHash(DeleteActivityOperation, pathID, activityID, string(hash), "goal-reminders")
+	}
 	result, err := s.Repository.DeleteActivity(ctx, DeleteActivityCommand{
-		ActivityID: activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements, LongTimers: longTimers, GoalDeadlines: goalDeadlines,
+		GoalReminders: goalReminders,
+		ActivityID:    activityID, PathID: pathID, ParticipantID: principal.UserID, Achievements: achievements, LongTimers: longTimers, GoalDeadlines: goalDeadlines,
 		Idempotency: ports.Idempotency{
 			PrincipalID: principal.UserID, Operation: DeleteActivityOperation, Key: idempotencyKey,
 			RequestHash: hash,
@@ -460,6 +465,7 @@ func (s *Service) StopTimer(ctx context.Context, authorization, pathID, timerID,
 	if result.AccumulatedSeconds < 0 || !validStopResult(result, principal.UserID, pathID, timerID, now) || !validIntervalProgress(intervalProgress, result.IntervalProgress) {
 		return StopTimerResult{}, errInvalidDependencies
 	}
+	s.reconcileStoppedGoalReminders(ctx, principal.UserID)
 	return result, nil
 }
 
