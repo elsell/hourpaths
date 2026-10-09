@@ -103,7 +103,7 @@ type docsLimiter struct{}
 
 func (docsLimiter) Allow(string, time.Time) bool { return true }
 func TestCORSAllowsConfiguredOrigin(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
 	request := httptest.NewRequest(http.MethodOptions, "/v1/examples", nil)
 	request.Header.Set("Origin", "https://app.example")
 	response := httptest.NewRecorder()
@@ -116,7 +116,7 @@ func TestCORSAllowsConfiguredOrigin(t *testing.T) {
 	}
 }
 func TestCORSPreflightAllowsGeneratedPatchRoutes(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
 	request := httptest.NewRequest(http.MethodOptions, "/v1/notifications/notification-1", nil)
 	request.Header.Set("Origin", "https://app.example")
 	request.Header.Set("Access-Control-Request-Method", http.MethodPatch)
@@ -130,7 +130,7 @@ func TestCORSPreflightAllowsGeneratedPatchRoutes(t *testing.T) {
 	}
 }
 func TestRateLimitedResponsesKeepSecurityAndCorrelationMiddleware(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{RequestRateLimiter: denyLimiter{}, Clock: docsClock{now: time.Now()}})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{RequestRateLimiter: denyLimiter{}, Clock: docsClock{now: time.Now()}})
 	request := httptest.NewRequest(http.MethodGet, "/v1/examples", nil)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
@@ -139,7 +139,7 @@ func TestRateLimitedResponsesKeepSecurityAndCorrelationMiddleware(t *testing.T) 
 	}
 }
 func TestDocsRelayUsesSharedRequestLimiter(t *testing.T) {
-	handler, _ := New(app.App{}, nil, Options{RequestRateLimiter: denyLimiter{}, Clock: docsClock{now: time.Now()}})
+	handler, _ := newHTTPTestServer(app.App{}, nil, Options{RequestRateLimiter: denyLimiter{}, Clock: docsClock{now: time.Now()}})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/oidc/token", nil))
 	if response.Code != http.StatusTooManyRequests || response.Header().Get("Content-Type") != "application/json" || !strings.Contains(response.Body.String(), `"error":"rate_limited"`) || !strings.Contains(response.Body.String(), `"code":"rate_limited"`) {
@@ -157,7 +157,7 @@ func TestForwardedSourceRequiresExplicitTrustedProxy(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			limiter := &sourceLimiter{}
-			handler, _ := New(app.App{}, nil, Options{RequestRateLimiter: limiter, Clock: docsClock{now: time.Now()}, TrustedProxyCIDRs: test.trusted})
+			handler, _ := newHTTPTestServer(app.App{}, nil, Options{RequestRateLimiter: limiter, Clock: docsClock{now: time.Now()}, TrustedProxyCIDRs: test.trusted})
 			request := httptest.NewRequest(http.MethodGet, "/v1/unknown", nil)
 			request.RemoteAddr = test.remote
 			request.Header.Set("X-Forwarded-For", "198.51.100.20")
@@ -186,7 +186,7 @@ func TestDocsExchangeErrorsPreserveSecurityClassification(t *testing.T) {
 func TestPublicSessionExchangeUsesGeneratedStableErrorContract(t *testing.T) {
 	application := docsApp()
 	application.IdentityVerifier = rejectedIdentityVerifier{}
-	handler, _ := New(application, nil, Options{DisableDocs: true})
+	handler, _ := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 	request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(`{"identityToken":"rejected"}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -221,7 +221,7 @@ func TestSessionExchangeExposesNonDisclosingRecoveryContinuation(t *testing.T) {
 	}}
 	application.Users = recoveryUsers{}
 	application.DuplicateAccountHints = staticRecoveryHints(true)
-	handler, _ := New(application, nil, Options{DisableDocs: true})
+	handler, _ := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 	request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(`{"identityToken":"verified-new-provider-token"}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -263,7 +263,7 @@ func TestSessionExchangeNextActionMatchesIdentityLifecycle(t *testing.T) {
 			application.IdentityVerifier = fixedClaimsVerifier{claims: ports.Claims{Issuer: "issuer", Subject: test.name, Email: test.name + "@example.com", EmailVerified: true}}
 			application.Users = test.users
 			application.DuplicateAccountHints = staticRecoveryHints(false)
-			handler, _ := New(application, nil, Options{DisableDocs: true})
+			handler, _ := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 			request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(`{"identityToken":"verified-provider-token"}`))
 			request.Header.Set("Content-Type", "application/json")
 			response := httptest.NewRecorder()
@@ -285,7 +285,7 @@ func TestEmptyResourceListEncodesAsArray(t *testing.T) {
 	}
 }
 func TestCORSRejectsUnknownOrigin(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", CORSAllowedOrigins: []string{"https://app.example"}})
 	request := httptest.NewRequest(http.MethodOptions, "/v1/examples", nil)
 	request.Header.Set("Origin", "https://evil.example")
 	response := httptest.NewRecorder()
@@ -295,7 +295,7 @@ func TestCORSRejectsUnknownOrigin(t *testing.T) {
 	}
 }
 func TestOpenAPIUsesConfiguredOIDCPKCE(t *testing.T) {
-	_, api := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCAuthorizationURL: "https://login.example/authorize", OIDCTokenURL: "https://login.example/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	_, api := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCAuthorizationURL: "https://login.example/authorize", OIDCTokenURL: "https://login.example/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
 	scheme := api.OpenAPI().Components.SecuritySchemes["oidc"]
 	flow := scheme.Flows.AuthorizationCode
 	if scheme.Type != "oauth2" || flow.AuthorizationURL != "https://login.example/authorize" || flow.TokenURL != "https://api.example/oidc/token" {
@@ -306,7 +306,7 @@ func TestOpenAPIUsesConfiguredOIDCPKCE(t *testing.T) {
 	}
 }
 func TestOpenAPICollectionAndIdempotencyContractsAreStrict(t *testing.T) {
-	_, api := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	_, api := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
 	for _, name := range []string{"ResourceListOutputBody", "AuditListOutputBody", "AuthorizationDeadLetterListOutputBody"} {
 		schema := api.OpenAPI().Components.Schemas.Map()[name]
 		data := schema.Properties["data"]
@@ -329,7 +329,7 @@ func TestOpenAPICollectionAndIdempotencyContractsAreStrict(t *testing.T) {
 	}
 }
 func TestDocsCSPRestrictsOIDCToSameOriginRelay(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/docs", nil))
 	csp := response.Header().Get("Content-Security-Policy")
@@ -344,7 +344,7 @@ func TestDocsCSPRestrictsOIDCToSameOriginRelay(t *testing.T) {
 	}
 }
 func TestDocsSelfHostsPinnedScalarRuntime(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example/dex", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
 
 	docs := httptest.NewRecorder()
 	handler.ServeHTTP(docs, httptest.NewRequest(http.MethodGet, "/docs", nil))
@@ -398,7 +398,7 @@ func TestDocsOIDCRelayRewritesOnlyTokenEndpoint(t *testing.T) {
 		http.NotFound(w, r)
 	}))
 	defer upstream.Close()
-	handler, _ := New(docsApp(), []string{"example"}, Options{OIDCIssuer: "http://localhost:5556/dex", OIDCDiscoveryURL: upstream.URL + "/dex", OIDCAuthorizationURL: "https://login.example/auth", OIDCTokenURL: upstream.URL + "/dex/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	handler, _ := newHTTPTestServer(docsApp(), []string{"example"}, Options{OIDCIssuer: "http://localhost:5556/dex", OIDCDiscoveryURL: upstream.URL + "/dex", OIDCAuthorizationURL: "https://login.example/auth", OIDCTokenURL: upstream.URL + "/dex/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
 	discovery := httptest.NewRecorder()
 	handler.ServeHTTP(discovery, httptest.NewRequest(http.MethodGet, "/oidc/.well-known/openid-configuration", nil))
 	var document map[string]any
@@ -436,7 +436,7 @@ func TestDocsOIDCRelaysNeverFollowUpstreamRedirects(t *testing.T) {
 		http.Redirect(w, r, attacker.URL+"/capture", http.StatusTemporaryRedirect)
 	}))
 	defer upstream.Close()
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: upstream.URL, OIDCTokenURL: upstream.URL + "/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: upstream.URL, OIDCTokenURL: upstream.URL + "/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
 
 	for _, request := range []*http.Request{
 		httptest.NewRequest(http.MethodGet, "/oidc/.well-known/openid-configuration", nil),
@@ -458,7 +458,7 @@ func TestDocsOIDCRelaysNeverFollowUpstreamRedirects(t *testing.T) {
 	}
 }
 func TestDocsOIDCTokenRelayRejectsNonPKCEAndAlternateGrants(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCTokenURL: "https://id.example/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCTokenURL: "https://id.example/token", OIDCDocsClientID: "app-docs", OIDCDocsRedirectURI: "https://api.example/docs", PublicBaseURL: "https://api.example"})
 	for _, form := range []string{
 		"grant_type=refresh_token&refresh_token=secret",
 		"grant_type=authorization_code&code=secret",
@@ -547,7 +547,7 @@ func TestErrorsExposeStableMachineReadableCodes(t *testing.T) {
 	}
 }
 func TestHumaValidationErrorsExposeCodeInWireContract(t *testing.T) {
-	handler, api := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	handler, api := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
 	request := httptest.NewRequest(http.MethodPost, "/v1/examples", strings.NewReader(`{"name":""}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -589,14 +589,14 @@ func TestAuxiliaryHTTPFailuresExposeStableCodes(t *testing.T) {
 		status  int
 		code    string
 	}{
-		{"health", mustHandler(New(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodGet, "/healthz", nil), http.StatusServiceUnavailable, "unavailable"},
-		{"unknown route", mustHandler(New(app.App{}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodGet, "/does-not-exist", nil), http.StatusNotFound, "not_found"},
-		{"CORS preflight", mustHandler(New(app.App{}, []string{"example"}, Options{CORSAllowedOrigins: []string{"https://app.example"}})), func() *http.Request {
+		{"health", mustHandler(newHTTPTestServer(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodGet, "/healthz", nil), http.StatusServiceUnavailable, "unavailable"},
+		{"unknown route", mustHandler(newHTTPTestServer(app.App{}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodGet, "/does-not-exist", nil), http.StatusNotFound, "not_found"},
+		{"CORS preflight", mustHandler(newHTTPTestServer(app.App{}, []string{"example"}, Options{CORSAllowedOrigins: []string{"https://app.example"}})), func() *http.Request {
 			request := httptest.NewRequest(http.MethodOptions, "/v1/examples", nil)
 			request.Header.Set("Origin", "https://evil.example")
 			return request
 		}(), http.StatusForbidden, "forbidden"},
-		{"OIDC token relay", mustHandler(New(app.App{}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodPost, "/oidc/token", nil), http.StatusBadRequest, "invalid_token_exchange"},
+		{"OIDC token relay", mustHandler(newHTTPTestServer(app.App{}, []string{"example"}, Options{})), httptest.NewRequest(http.MethodPost, "/oidc/token", nil), http.StatusBadRequest, "invalid_token_exchange"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -613,7 +613,7 @@ func TestAuxiliaryHTTPFailuresExposeStableCodes(t *testing.T) {
 }
 func mustHandler(handler http.Handler, _ huma.API) http.Handler { return handler }
 func TestSecurityHeadersAreApplied(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	for key, want := range map[string]string{"X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"} {
@@ -623,7 +623,7 @@ func TestSecurityHeadersAreApplied(t *testing.T) {
 	}
 }
 func TestHealthFailsWhenSecurityDependencyIsUnavailable(t *testing.T) {
-	handler, _ := New(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	handler, _ := newHTTPTestServer(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if response.Code != http.StatusServiceUnavailable {
@@ -631,7 +631,7 @@ func TestHealthFailsWhenSecurityDependencyIsUnavailable(t *testing.T) {
 	}
 }
 func TestLivenessDoesNotDependOnExternalServicesAndReadinessDoes(t *testing.T) {
-	handler, _ := New(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{})
+	handler, _ := newHTTPTestServer(app.App{Dependencies: []ports.HealthChecker{failingHealth{}}}, []string{"example"}, Options{})
 	for path, want := range map[string]int{"/livez": http.StatusNoContent, "/readyz": http.StatusServiceUnavailable} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
@@ -641,7 +641,7 @@ func TestLivenessDoesNotDependOnExternalServicesAndReadinessDoes(t *testing.T) {
 	}
 }
 func TestScalarDocumentationCanBeDisabled(t *testing.T) {
-	handler, _ := New(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", DisableDocs: true})
+	handler, _ := newHTTPTestServer(app.App{}, []string{"example"}, Options{OIDCIssuer: "https://id.example", DisableDocs: true})
 	for _, path := range []string{"/docs", scalarBrowserRuntimePath, scalarLicensePath, "/oidc/.well-known/openid-configuration", "/oidc/token"} {
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
@@ -653,7 +653,7 @@ func TestScalarDocumentationCanBeDisabled(t *testing.T) {
 func TestHealthBoundsDependencyChecks(t *testing.T) {
 	dependency := &deadlineHealth{}
 	before := time.Now()
-	handler, _ := New(app.App{Dependencies: []ports.HealthChecker{dependency}}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
+	handler, _ := newHTTPTestServer(app.App{Dependencies: []ports.HealthChecker{dependency}}, []string{"example"}, Options{OIDCIssuer: "https://id.example"})
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if response.Code != http.StatusNoContent || dependency.deadline.IsZero() || dependency.deadline.After(before.Add(3*time.Second)) {
@@ -680,7 +680,7 @@ func TestSessionExchangeNegotiatesLongDeadlineWithoutChangingAuthentication(t *t
 			if test.rejected {
 				application.IdentityVerifier = rejectedIdentityVerifier{}
 			}
-			handler, _ := New(application, nil, Options{DisableDocs: true})
+			handler, _ := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 			request := httptest.NewRequest(http.MethodPost, "/v1/sessions", strings.NewReader(test.body))
 			request.Header.Set("Content-Type", "application/json")
 			response := httptest.NewRecorder()

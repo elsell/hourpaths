@@ -1,3 +1,4 @@
+import { NativePolicyReviewProvider } from '../src/ui/policy-review-presentation';
 import { NativeToastProvider } from '../src/ui/native-toast';
 import { ThemeProvider } from '@react-navigation/native';
 import { getLocales } from 'expo-localization';
@@ -11,7 +12,7 @@ const i18n = createDeviceTranslator(getLocales);
 
 export default function RootLayout() {
   const notificationPresentation = useNotificationRoutePresentation();
-  return <ThemeProvider value={navigationTheme}><NativeToastProvider><Stack
+  return <ThemeProvider value={navigationTheme}><NativeToastProvider><NativePolicyReviewProvider><Stack
     screenOptions={nativeStackOptions}
   >
     <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -49,5 +50,5 @@ export default function RootLayout() {
     <Stack.Screen name="path/[pathID]/nudge-settings" options={{ headerLargeTitle: false, title: i18n.t('nudge.audience.heading') }} />
     <Stack.Screen name="path/[pathID]/history/index" options={{ headerLargeTitle: false, title: i18n.t('pathDetails.history') }} />
     <Stack.Screen name="path/[pathID]/history/[activityID]" options={{ headerLargeTitle: false, title: i18n.t('pathDetails.activityHeading') }} />
-  </Stack></NativeToastProvider></ThemeProvider>;
+  </Stack></NativePolicyReviewProvider></NativeToastProvider></ThemeProvider>;
 }

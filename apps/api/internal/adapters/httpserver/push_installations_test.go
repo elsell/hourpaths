@@ -55,7 +55,7 @@ func (pushRouteLimiter) Allow(string, time.Time) bool { return true }
 func TestPushInstallationRoutesRegisterAndDeleteWithoutCredentialDisclosure(t *testing.T) {
 	now := time.Date(2026, 7, 24, 0, 45, 0, 0, time.UTC)
 	repository := &pushRouteRepository{}
-	handler, api := New(app.App{
+	handler, api := newHTTPTestServer(app.App{
 		Auth: pushRouteAuthenticator{}, PushInstallations: repository,
 		AuditRateLimiter: pushRouteLimiter{},
 		Clock:            pushRouteClock{now: now},
@@ -108,7 +108,7 @@ func TestPushInstallationRoutesRegisterAndDeleteWithoutCredentialDisclosure(t *t
 
 func TestPushInstallationRouteRejectsUnsupportedProviderBeforePersistence(t *testing.T) {
 	repository := &pushRouteRepository{}
-	handler, _ := New(app.App{
+	handler, _ := newHTTPTestServer(app.App{
 		Auth: pushRouteAuthenticator{}, PushInstallations: repository,
 		AuditRateLimiter: pushRouteLimiter{},
 		Clock:            pushRouteClock{now: time.Date(2026, 7, 24, 0, 46, 0, 0, time.UTC)},

@@ -60,7 +60,7 @@ func TestNudgeNotificationChannelUpdateRequiresRevisionAndIdempotency(t *testing
 }
 
 func TestNudgeNotificationChannelOpenAPIIsAuthenticatedAndExact(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	path := api.OpenAPI().Paths["/v1/me/notification-channels/nudges"]
 	if path == nil || path.Get == nil || path.Put == nil || len(path.Get.Security) == 0 || len(path.Put.Security) == 0 {
 		t.Fatalf("nudge notification channel contract=%+v", path)

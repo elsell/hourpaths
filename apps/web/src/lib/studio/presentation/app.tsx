@@ -1,3 +1,5 @@
+import { PolicyReviewBoundary } from './policy-review';
+import type { PolicyReviewController } from '@hourpaths/client-core';
 import { ProfileConnectionsPage } from './profile-connections';
 import { TimerSubscription } from './timer-subscription';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
@@ -46,6 +48,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  policyReview?: PolicyReviewController;
   pictureFiles?: {read(file:File,signal?:AbortSignal):Promise<string>};
   providers?: ProviderSettingsService;
   deletion?: AccountDeletionService;
@@ -70,7 +73,7 @@ export interface StudioDependencies {
 export function StudioApp({ dependencies: d }: { dependencies: StudioDependencies }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { networkMode: 'always', retry: false, staleTime: 30_000, refetchOnWindowFocus: false }, mutations: { networkMode: 'always' } } }));
   const [router] = useState(() => {
-    const root = createRootRoute({ component: Outlet });
+    const root = createRootRoute({ component: () => <PolicyReviewBoundary dependencies={d}><Outlet /></PolicyReviewBoundary> });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ pathLeft: search.pathLeft === true, activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
     const ownership = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/ownership', component: () => <OwnershipPage dependencies={d} /> });
     const notifications = createRoute({ getParentRoute: () => root, path: '/notifications', component: () => <NotificationsPage dependencies={d} /> });

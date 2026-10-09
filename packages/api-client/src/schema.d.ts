@@ -224,6 +224,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/export/paths": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export accessible active or archived Paths with their goals */
+        get: operations["export-own-paths"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/export/paths/{pathId}/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export only the current account's recorded activity on an accessible Path */
+        get: operations["export-own-activities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/export/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export the authenticated account's profile and calendar preferences */
+        get: operations["export-own-profile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/followers/{userId}": {
         parameters: {
             query?: never;
@@ -395,6 +446,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/notifications/{notificationId}/ownership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify recipient ownership for account deletion cleanup without exposing notification content */
+        get: operations["check-notification-ownership"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/path-appearances/{pathID}": {
         parameters: {
             query?: never;
@@ -405,6 +473,24 @@ export interface paths {
         get: operations["read-path-appearance"];
         put: operations["save-path-appearance"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Review policies and acceptance required for the current account */
+        get: operations["review-current-policies"];
+        put?: never;
+        /** Accept the reviewed policy versions for the current account */
+        post: operations["accept-current-policies"];
         delete?: never;
         options?: never;
         head?: never;
@@ -475,6 +561,23 @@ export interface paths {
         get: operations["get-own-profile-privacy"];
         /** Confirm the signed-in account's profile privacy change */
         put: operations["update-own-profile-privacy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/running-timers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List only the current account's running timers for stop controls */
+        get: operations["list-own-running-timers"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -1715,7 +1818,7 @@ export interface components {
              * @description Stable machine-readable error code
              * @enum {string}
              */
-            code: "bad_request" | "unauthenticated" | "invalid_credential" | "forbidden" | "not_found" | "conflict" | "username_unavailable" | "policy_set_changed" | "idempotency_conflict" | "invitation_warning_required" | "block_review_required" | "validation_failed" | "rate_limited" | "authorization_pending" | "authorization_dead_lettered" | "authorization_policy_not_configured" | "unavailable" | "internal_error" | "request_failed" | "oidc_discovery_unavailable";
+            code: "bad_request" | "unauthenticated" | "invalid_credential" | "forbidden" | "not_found" | "conflict" | "username_unavailable" | "policy_set_changed" | "policy_acceptance_required" | "idempotency_conflict" | "invitation_warning_required" | "block_review_required" | "validation_failed" | "rate_limited" | "authorization_pending" | "authorization_dead_lettered" | "authorization_policy_not_configured" | "unavailable" | "internal_error" | "request_failed" | "oidc_discovery_unavailable";
             detail?: string;
             errors?: components["schemas"]["ErrorDetail"][] | null;
             /** @description Operation that classified this failure, when needed for safe replay */
@@ -1749,6 +1852,47 @@ export interface components {
             readonly $schema?: string;
             receiptSecret: string;
             userId: string;
+        };
+        AccountExportPathDTO: {
+            /** Format: date-time */
+            createdAt: string;
+            path: components["schemas"]["PathItem"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AccountExportPathsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountExportPathsOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["AccountExportPathDTO"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        AccountExportProfileDTO: {
+            /** Format: date-time */
+            createdAt: string;
+            description: string;
+            displayName: string;
+            email: string;
+            /** Format: int64 */
+            firstDayOfWeek: number;
+            timeZone: string;
+            /** Format: date-time */
+            updatedAt: string;
+            userId: string;
+            username: string;
+            visibility: string;
+        };
+        AccountExportProfileOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountExportProfileOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["AccountExportProfileDTO"];
         };
         ActiveFollowingData: {
             items: components["schemas"]["ActiveFollowingItem"][];
@@ -2530,6 +2674,18 @@ export interface components {
             readonly $schema?: string;
             data: components["schemas"]["PathInvitationNotification"];
         };
+        NotificationOwnershipDTO: {
+            owned: boolean;
+        };
+        NotificationOwnershipOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/NotificationOwnershipOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["NotificationOwnershipDTO"];
+        };
         Nudge: {
             content: components["schemas"]["NudgeContent"];
             id: string;
@@ -2819,6 +2975,23 @@ export interface components {
             /** Format: int64 */
             expectedRevision: number;
             username: string;
+        };
+        OwnRunningTimerDTO: {
+            id: string;
+            pathId: string;
+            pathName: string;
+            /** Format: date-time */
+            startedAt: string;
+        };
+        OwnRunningTimersOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OwnRunningTimersOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OwnRunningTimerDTO"][];
+            meta: components["schemas"]["PaginationMeta"];
         };
         OwnershipTransfer: {
             /** Format: date-time */
@@ -3332,6 +3505,48 @@ export interface components {
             expectedRevision: number;
             image: string;
             remove: boolean;
+        };
+        PolicyRenewalDTO: {
+            /** Format: date-time */
+            acceptedAt: string;
+            communityGuidelinesVersion: string;
+            privacyPolicyVersion: string;
+            termsVersion: string;
+        };
+        PolicyRenewalInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PolicyRenewalInputBody.json
+             */
+            readonly $schema?: string;
+            communityGuidelinesAccepted: boolean;
+            privacyAcknowledged: boolean;
+            reviewToken: string;
+            termsAccepted: boolean;
+        };
+        PolicyRenewalOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PolicyRenewalOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["PolicyRenewalDTO"];
+        };
+        PolicyRenewalReviewDTO: {
+            policies: components["schemas"]["OnboardingPolicySetDTO"];
+            required: boolean;
+            reviewToken: string;
+        };
+        PolicyRenewalReviewOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PolicyRenewalReviewOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["PolicyRenewalReviewDTO"];
         };
         PracticeComment: {
             authorUserId: string;
@@ -4343,6 +4558,108 @@ export interface operations {
             };
         };
     };
+    "export-own-paths": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                archived?: boolean;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountExportPathsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "export-own-activities": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                pathId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityListOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "export-own-profile": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountExportProfileOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "remove-profile-follower": {
         parameters: {
             query?: never;
@@ -4750,6 +5067,39 @@ export interface operations {
             };
         };
     };
+    "check-notification-ownership": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOwnershipOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "read-path-appearance": {
         parameters: {
             query?: never;
@@ -4808,6 +5158,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppearanceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "review-current-policies": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyRenewalReviewOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "accept-current-policies": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyRenewalInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PolicyRenewalOutputBody"];
                 };
             };
             /** @description Error */
@@ -5044,6 +5461,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnProfilePrivacyOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-own-running-timers": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnRunningTimersOutputBody"];
                 };
             };
             /** @description Error */

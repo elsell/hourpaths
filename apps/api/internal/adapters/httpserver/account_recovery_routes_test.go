@@ -48,7 +48,7 @@ func (r *recoveryHTTPState) CompleteAccountRecovery(_ context.Context, _ string,
 func TestAccountRecoveryRoutesRequireOnboardingSessionAndKeepRejectedProofSeparate(t *testing.T) {
 	r := &recoveryHTTPState{}
 	a := app.App{Auth: recoveryHTTPAuth{}, IdentityVerifier: recoveryHTTPVerifier{}, Users: onboardingHTTPUsers{provisional: identity.User{ID: "enrollment", Status: identity.StatusProvisional}}, Audits: onboardingHTTPAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Now().UTC()}, SessionTTL: 30 * 24 * time.Hour, AccountRecoveryAdmissions: r, AccountRecoveryCompleter: r}
-	handler, _ := New(a, nil, Options{})
+	handler, _ := newHTTPTestServer(a, nil, Options{})
 	call := func(path, credential, body string) *httptest.ResponseRecorder {
 		request := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
 		request.Header.Set("Authorization", credential)
@@ -83,7 +83,7 @@ func TestAccountRecoveryRoutesRequireOnboardingSessionAndKeepRejectedProofSepara
 		t.Fatalf("completed recovery did not enter home: %d %s", response.Code, response.Body.String())
 	}
 	a.AccountRecoveryCompleter = nil
-	handler, _ = New(a, nil, Options{})
+	handler, _ = newHTTPTestServer(a, nil, Options{})
 	response = call(complete, "Bearer enrollment", `{"challengeId":"challenge","identityToken":"valid-target-proof"}`)
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("missing completion dependency accepted: %d", response.Code)

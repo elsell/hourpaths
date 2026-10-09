@@ -177,6 +177,7 @@ type NotificationOutput struct {
 }
 
 func RegisterInvitations(api huma.API, service InvitationService) {
+	registerNotificationOwnership(api, service)
 	security := []map[string][]string{{"oidc": {}}}
 	huma.Register(api, huma.Operation{
 		OperationID: "review-path-invitation-recipient",

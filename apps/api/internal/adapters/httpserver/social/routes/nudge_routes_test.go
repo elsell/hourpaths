@@ -158,7 +158,7 @@ func TestNudgeRoutesUseSharedOpaqueErrorMapping(t *testing.T) {
 }
 
 func TestNudgeOpenAPIContractHasExactEnumsAndCreatedStatus(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	paths := api.OpenAPI().Paths
 	preference := paths["/v1/paths/{pathId}/nudge-preference"]
 	eligibility := paths["/v1/paths/{pathId}/members/{userId}/nudge-eligibility"]

@@ -28,7 +28,7 @@ func (pathAuthenticator) Authenticate(_ context.Context, authorization string) (
 }
 
 func TestGeneratedDomainRoutes_path(t *testing.T) {
-	handler, _ := httpserver.New(app.App{}, nil, httpserver.Options{
+	handler, _ := newPolicyAcceptedHTTPTestServer(app.App{}, nil, httpserver.Options{
 		DomainRegistrations: generated.Registrations(generated.Dependencies{Auth: pathAuthenticator{}}),
 	})
 	operations := []struct{ name, method, path, body string }{
@@ -75,7 +75,7 @@ func TestGeneratedDomainRoutes_path(t *testing.T) {
 }
 
 func TestGeneratedPathRegistrationIncludesFailClosedInvitationRoutes(t *testing.T) {
-	handler, api := httpserver.New(app.App{}, nil, httpserver.Options{
+	handler, api := newPolicyAcceptedHTTPTestServer(app.App{}, nil, httpserver.Options{
 		DomainRegistrations: generated.Registrations(generated.Dependencies{Auth: pathAuthenticator{}}),
 	})
 	operations := []struct {

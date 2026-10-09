@@ -38,7 +38,7 @@ func TestPracticeCommentMutationsRequireIdempotencyAndPositiveExpectedVersion(t 
 }
 
 func TestPracticeCommentContractRegistersDedicatedAuthenticatedRoutes(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	paths := api.OpenAPI().Paths
 	operations := []*huma.Operation{
 		paths["/v1/social/feed/{eventId}/comments"].Get,

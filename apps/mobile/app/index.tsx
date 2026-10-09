@@ -1,3 +1,7 @@
+import { nativeAccountExportJSON, clearNativeAccountExportCache } from '../src/account-export-native';
+import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
+import { NativePolicyReviewSource } from '../src/ui/policy-review-presentation';
+import { apiPolicyRenewal, PolicyReviewController, apiPolicyTimers, PolicyTimersController, retainedPolicyTimers } from '@hourpaths/client-core';
 import { apiWeekStartPreference, WeekStartFailure, type WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import { apiProfileConnections } from '@hourpaths/client-core';
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
@@ -634,6 +638,8 @@ export function HomeScreen() {
   const foregroundTargetKey = useRef<string | null>(null);
   foregroundTargetKey.current = foregroundNotificationTargetKey(pathname, routeParameters);
   const [session, setSession] = useState<Session | null>(null);
+  const [policyHandle, setPolicyHandle] = useState<{ controller: PolicyReviewController; credential: Session } | null>(null);
+  const policyResume = useRef<() => void>(() => {});
   const userBlockingPort = useMemo(() => {
     const admittedToken = session?.token ?? null;
     return createUserBlockingGeneratedPort(() =>
@@ -2021,9 +2027,9 @@ export function HomeScreen() {
       const credential = notificationLifecycleState.current.session ?? deletionCredential.current;
       if (!credential || credential.ownerId !== owner) throw new Error('account_changed');
       return captureDeletionNotifications(async notificationID => {
-        const result = await createSessionApiClient(apiURL, () => credential.token).getNotification(notificationID);
+        const result = await createSessionApiClient(apiURL, () => credential.token).notificationOwnership(notificationID);
         if (result.response.status === 404) return false;
-        if (!result.response.ok) throw new Error('deletion_notification_ownership_unavailable');
+        if (!result.response.ok || result.data?.data.owned !== true) throw new Error('deletion_notification_ownership_unavailable');
         return true;
       });
     },
@@ -2041,6 +2047,7 @@ export function HomeScreen() {
       setAccountDeletionReview(current => current?.owner === owner ? { ...current, recovery: true } : current);
     },
     clearSurfaces: async (owner, identifiers) => {
+      await clearNativeAccountExportCache();
       if (!notificationLifecycleState.current.session || notificationLifecycleState.current.session?.ownerId === owner) {
         if (!await timerSurfaces.clear()) throw new Error('deletion_timer_surface_cleanup_unavailable');
       }
@@ -2151,6 +2158,53 @@ export function HomeScreen() {
   }
 
   useEffect(() => () => { nativeOfflineGeneration.current++; nativeOffline.current?.dispose(); }, []);
+
+  useEffect(() => { void clearNativeAccountExportCache().catch(() => undefined); }, []);
+  policyResume.current = () => { nativeOffline.current?.wake(); void retryAuthenticatedHome(); };
+  useEffect(() => {
+    if (!session || (session.nextAction ?? 'home') !== 'home') { setPolicyHandle(null); return; }
+    const credential = session;
+    const current = () => notificationLifecycleState.current.session === credential;
+    const timers = new PolicyTimersController(
+      apiPolicyTimers(apiURL, () => current() ? credential.token : null,
+        rejected => { if (current() && rejected === credential.token) void handleSessionFailure({ kind: 'http', status: 401 }, credential); }),
+      () => Crypto.randomUUID(),
+      retainedPolicyTimers(async () => (await openNativeOfflineStorage()).tracking, () => controller.state.review?.userId ?? null, current, () => Date.now(), () => Crypto.randomUUID()),
+    );
+    const accountExport = new AccountExportController({
+      owner: () => controller.state.review?.userId ?? null, current,
+      repository: apiAccountExport(apiURL, () => current() ? credential.token : null,
+        rejected => { if (current() && rejected === credential.token) void handleSessionFailure({ kind: 'http', status: 401 }, credential); }),
+      now: () => Date.now(), device: async owner => (await openNativeOfflineStorage()).tracking.read(owner), sink: nativeAccountExportJSON,
+    });
+    const controller: PolicyReviewController = new PolicyReviewController(apiPolicyRenewal(apiURL, () => current() ? credential.token : null, credential.ownerId,
+      rejected => { if (current() && rejected === credential.token) void handleSessionFailure({ kind: 'http', status: 401 }, credential); }),
+      () => Crypto.randomUUID(), url => openNativePolicyLink(url, () => { throw new Error('policy_link_unavailable'); }), timers, accountExport);
+    let previouslyRequired = false;
+    const stop = controller.subscribe(() => {
+      if (!current()) return;
+      if (!controller.state.required && previouslyRequired) policyResume.current();
+      previouslyRequired = controller.state.required;
+    });
+    setPolicyHandle({ controller, credential });
+    void controller.refresh();
+    const stopForeground = subscribeNativeAppActive(() => { if (current()) void controller.refresh(); });
+    return () => { stop(); stopForeground(); controller.dispose(); };
+  }, [session]);
+
+  async function bindPolicyReviewOwner() {
+    const handle = policyHandle;
+    if (!handle || notificationLifecycleState.current.session !== handle.credential) throw new Error('policy_session_changed');
+    const review = handle.controller.state.review;
+    if (!review) throw new Error('policy_review_unavailable');
+    const profile = await validateSessionCredential<{ id: string }>(handle.credential, async current => generatedResponse(await createSessionApiClient(apiURL, () => current.token).profile()));
+    if (profile.id !== review.userId || notificationLifecycleState.current.session !== handle.credential) throw new Error('policy_session_changed');
+    await serializedSessionStorage.persist({ ...handle.credential, ownerId: profile.id }, () => notificationLifecycleState.current.session === handle.credential);
+    if (notificationLifecycleState.current.session !== handle.credential) throw new Error('policy_session_changed');
+    handle.credential.ownerId = profile.id;
+    return profile.id;
+  }
+
 
   useEffect(() => {
     if (!session) void timerSurfaces.clear();
@@ -2318,6 +2372,7 @@ export function HomeScreen() {
     void setNativeNotificationBadge(0).catch(() => false);
     resetSocialProfileDiscovery();
     await clearedSurfaces;
+    await clearNativeAccountExportCache().catch(() => undefined);
     if (expected
       ? !ownsSignOutResolution(expected.ownerID, expected.session)
       : notificationLifecycleState.current.session !== disposedSession) return false;
@@ -8437,6 +8492,9 @@ export function HomeScreen() {
     edges={destination ? ['left', 'right'] : ['top', 'left', 'right', 'bottom']}
     style={[styles.screen, ownedHomeDestination ? { paddingTop: 0 } : null]}
   >
+    {policyHandle && <NativePolicyReviewSource controller={policyHandle.controller} i18n={i18n}
+      signOut={async () => { await bindPolicyReviewOwner(); if (notificationLifecycleState.current.session !== policyHandle.credential) return; if (await clearSession()) router.navigate('/(tabs)/home'); }}
+      deleteAccount={async () => { const owner = await bindPolicyReviewOwner(); if (notificationLifecycleState.current.session !== policyHandle.credential) return; setAccountDeletionReview({ owner, recovery: false }); router.navigate('/(tabs)/home'); }} />}
     {ownedHomeDestination && !selectedPath ? <HomeHeaderActions
       activeLabel={i18n.t('home.activePaths')}
       archivedLabel={i18n.t('home.archivedPaths')}

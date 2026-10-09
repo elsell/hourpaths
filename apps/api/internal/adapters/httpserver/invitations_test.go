@@ -57,7 +57,7 @@ func (invitationAudits) ListAuditEvents(context.Context, string, ports.PageReque
 }
 
 func invitationHandler(auth ports.Authenticator, user identity.User, invitations ports.Invitations) http.Handler {
-	handler, _ := New(app.App{
+	handler, _ := newHTTPTestServer(app.App{
 		Auth:             auth,
 		Users:            invitationUsers{user: user},
 		Invitations:      invitations,

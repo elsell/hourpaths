@@ -680,6 +680,9 @@ func TestActivityServiceRequiresExactUserScopeBeforeDependencies(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			service := New(Dependencies{Auth: testAuth{principal: principal}})
+			if _, _, err := service.ListOwnRunningTimers(context.Background(), "Bearer valid", "", 50); !errors.Is(err, platformapp.ErrUnauthenticated) {
+				t.Fatalf("ListOwnRunningTimers() error = %v", err)
+			}
 			if _, err := service.StartTimer(context.Background(), "Bearer valid", "path-1", "start-request-0001"); !errors.Is(err, platformapp.ErrUnauthenticated) {
 				t.Fatalf("StartTimer() error = %v", err)
 			}

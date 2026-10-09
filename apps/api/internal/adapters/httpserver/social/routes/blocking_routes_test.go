@@ -59,7 +59,7 @@ func TestBlockingRoutesUseSafeReviewMutationAndPagedListEnvelopes(t *testing.T) 
 }
 
 func TestBlockingContractRegistersAuthenticatedIdempotentMutations(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, &controlledService{}) }}})
 	paths := api.OpenAPI().Paths
 	operations := []*huma.Operation{paths["/v1/profiles/{username}/block-review"].Get, paths["/v1/profiles/{username}/block"].Post, paths["/v1/blocked-accounts"].Get, paths["/v1/blocked-accounts/{userId}"].Delete}
 	for index, operation := range operations {
