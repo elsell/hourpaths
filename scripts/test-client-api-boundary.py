@@ -10,6 +10,9 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/mobile/src/profile-picture-picker.ts",
+    "apps/web/src/lib/studio/presentation/picture-crop.tsx",
+    "apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts",
     "apps/mobile/modules/hourpaths-timers/android/build.gradle",
     "apps/mobile/modules/hourpaths-timers/android/src/main/AndroidManifest.xml",
     "apps/mobile/modules/hourpaths-timers/android/src/main/java/com/hourpaths/timers/HourPathsTimersModule.kt",
@@ -100,6 +103,17 @@ class ClientApiBoundaryTest(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
+
+    def test_picture_capabilities_remain_in_reviewed_adapters(self) -> None:
+        for package in ("expo-image-picker", "expo-file-system/legacy"):
+            source = "apps/mobile/src/unreviewed-picture.ts"
+            result = self.run_checker({source: f"import * as Images from '{package}';"})
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(source, result.stderr)
+        source = "apps/web/src/lib/studio/presentation/picture-crop.tsx"
+        result = self.run_checker({source: (REPOSITORY / source).read_text() + "\nfetch('/unreviewed');"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(source, result.stderr)
 
     def test_account_entry_hosts_reject_unreviewed_changes(self) -> None:
         for route in ("onboarding", "account-recovery", "callback"):

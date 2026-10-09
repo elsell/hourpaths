@@ -1,5 +1,5 @@
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
-import { pickProfilePicture } from '../src/profile-picture-picker';
+import { clearProfilePictureCache, pickProfilePicture } from '../src/profile-picture-picker';
 import { apiProfilePrivacy, ProfilePrivacyFailure, type ProfilePrivacy, type ProfileVisibility } from '@hourpaths/client-core';
 import { timerSubscriptionFromAPI, type TimerSubscriptionSubject, type TimerSubscriptionPreference } from '@hourpaths/client-core';
 import { TimerSubscriptionControl } from '../src/ui/timer-subscription-control';
@@ -1263,6 +1263,7 @@ export function HomeScreen() {
   }
 
   function resetSocialProfileDiscovery() {
+    void clearProfilePictureCache().catch(() => undefined);
     statsRequest.current += 1;
     statsSelection.current = initialStatsSelection();
     setStatsState({ status: 'idle', selection: statsSelection.current, refreshing: false });

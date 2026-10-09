@@ -38,8 +38,8 @@ The [profile specification](../accounts/profile.spec.md) owns user behavior.
   replay, audit rollback and account-deletion cleanup.
 - Native selection must use the system photo picker with square crop editing,
   without requesting camera, microphone or broad photo-library access. Any
-  app-cache file returned by the picker must be removed after its bytes are
-  read; cancellation and account changes must not retain upload drafts.
+  app-cache source or crop file created by the picker must be removed after
+  selection finishes; cancellation and account changes must not retain upload drafts.
 - Development clients may resolve recognized application-picture identifiers
   against their explicitly configured development API origin. Production media
   transport must remain HTTPS.
