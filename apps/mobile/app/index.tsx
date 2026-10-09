@@ -621,6 +621,7 @@ export default function IndexRedirect() {
 }
 
 export function HomeScreen() {
+  useEffect(() => { void clearProfilePictureCache().catch(() => undefined); }, []);
   const pathname = usePathname();
   const rootNavigation = useNavigation('/');
   const routeParameters = useGlobalSearchParams<Record<string, string | string[]>>();

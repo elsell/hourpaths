@@ -12,6 +12,7 @@ export async function clearProfilePictureCache(): Promise<void> {
 export async function pickProfilePicture(): Promise<string | null> {
   if (picking) throw new PictureFailure();
   picking = true;
+  let selectedURI: string | undefined;
   try {
     await clearProfilePictureCache();
     const result = await launchImageLibraryAsync({
@@ -20,10 +21,18 @@ export async function pickProfilePicture(): Promise<string | null> {
     });
     if (result.canceled) return null;
     const asset = result.assets[0];
+    selectedURI = asset?.uri;
     if (!asset?.base64) throw new PictureFailure('invalid');
     return validatePictureBytes(asset.base64);
   } finally {
-    try { await clearProfilePictureCache(); }
-    finally { picking = false; }
+    try {
+      // Some iOS versions return a file directly in Caches, outside ImagePicker.
+      if (selectedURI && cacheDirectory && selectedURI.startsWith(cacheDirectory)) {
+        await deleteAsync(selectedURI, { idempotent: true });
+      }
+    } finally {
+      try { await clearProfilePictureCache(); }
+      finally { picking = false; }
+    }
   }
 }
