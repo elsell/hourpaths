@@ -56,3 +56,11 @@ history. Authorization and publication order remain authoritative in
 - A session spanning a weekly boundary adds only its current-week overlap to
   this week's recorded progress. At the next boundary a refreshed projection is
   required; the old goal must not keep increasing as if still current.
+
+### Inactive tab recovery
+
+A mounted but unfocused native tab must not navigate or enqueue route recovery
+when its presentation is temporarily unavailable. Recovery must belong to the
+focused route and cancel on blur. Returning from Following or Stats to Home and
+opening Settings must remain on Settings during account-presentation refresh or
+a device text-size change; an inactive tab must not steal that navigation.
