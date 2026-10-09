@@ -41,6 +41,20 @@ recurring consistency and long-term progress.
   configuration, but a failed creation attempt must preserve the complete local
   draft so retry does not require the user to reconstruct either goal.
 
+### Native goal controls
+
+- Creating and editing a Path must use the shared native Settings switch for
+  interval goals, overall targets, and custom interval alignment. The native
+  control itself must handle value changes and expose its current checked and
+  disabled state to accessibility services.
+- Enabling or disabling a goal must immediately reveal or hide its fields;
+  reenabling it must retain the unsaved duration and recurrence. Saving must
+  retain the existing review and server confirmation behavior.
+- Acceptance: on iOS and Android, operate each switch directly in creation and
+  editing; verify independent fields, retained drafts, and persisted goals after
+  review, save, and reopening. Physical iOS evidence is required to close an
+  iOS-specific interaction regression.
+
 ## Interval goal behavior
 
 - An interval goal must define both a target duration and a recurring interval.
