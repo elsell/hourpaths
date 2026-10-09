@@ -1,3 +1,4 @@
+import { providerSettingsLifetime } from '@hourpaths/client-core';
 import type { ProfilePrivacyRepository } from '@hourpaths/client-core';
 import type { ProfileEditingRepository } from '@hourpaths/client-core';
 import type { TimerSubscriptionsRepository } from '@hourpaths/client-core';
@@ -115,12 +116,10 @@ export function SettingsPresentationSource({
         get: subject => { assertActive(); return timerSubscriptionsRef.current.get(subject); },
         update: (subject, value, key) => { assertActive(); return timerSubscriptionsRef.current.update(subject, value, key); },
       },
-      providers: providers ? {
-        owner: () => { assertActive(); return providersRef.current!.owner(); },
-        list: () => { assertActive(); return providersRef.current!.list(); },
-        link: (provider: 'google' | 'apple') => { assertActive(); return providersRef.current!.link(provider); },
-        unlink: (provider: 'google' | 'apple', owner: string) => { assertActive(); return providersRef.current!.unlink(provider, owner); },
-      } : undefined,
+      providers: providers ? providerSettingsLifetime(
+        () => providersRef.current!,
+        () => active && isCurrentRef.current(),
+      ) : undefined,
       deleteAccount: () => { assertActive(); deleteAccountRef.current?.(); },
       displayName,
       email,

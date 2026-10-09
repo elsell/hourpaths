@@ -882,3 +882,5 @@ export { apiProfileEditing } from './adapters/api-profile-editing';
 
 export { createProfilePrivacyOperationOwner, ProfilePrivacyFailure, type ProfilePrivacy, type ProfilePrivacyRepository } from "./profile-privacy";
 export { apiProfilePrivacy } from "./adapters/api-profile-privacy";
+
+export { providerSettingsLifetime } from './provider-settings-lifetime';
