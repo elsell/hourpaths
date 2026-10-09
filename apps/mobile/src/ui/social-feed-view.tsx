@@ -1,3 +1,4 @@
+import { ReportMenu } from './report-composer';
 import { EmojiPicker } from './emoji-picker';
 import { ReactionPeopleSheet, type ReactionPeopleLoader } from './reaction-people-sheet';
 import { SegmentedAvatarRing } from './segmented-avatar-ring';
@@ -195,6 +196,7 @@ export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments,
     ? i18n.t('social.post.practice', { path: event.path.name, duration })
     : i18n.t(event.achievement.kind === 'interval' ? 'social.post.intervalAchievement' : 'social.post.overallAchievement');
   return <View style={styles.post}>
+    <View style={styles.authorGroup}>
     <Pressable accessibilityRole="button" accessibilityLabel={i18n.t('social.post.openProfile', { name: event.participant.displayName })}
       onPress={() => onOpenProfile(event.participant.username)} style={({ pressed }) => [styles.author, pressed ? styles.pressed : null]}>
       <SocialProfileAvatar accessibilityLabel={i18n.t('social.neutralAvatarLabel')} profilePictureURL={event.participant.profilePictureURL} size={40} />
@@ -202,7 +204,7 @@ export function SocialPost({ event, i18n, onOpen, onOpenProfile, onOpenComments,
         <Text style={styles.summary}>{event.participant.displayName}</Text>
         <Text style={styles.secondary}>{i18n.t('social.post.metadata', { username: event.participant.username, date, time })}</Text>
       </View>
-    </Pressable>
+    </Pressable><ReportMenu target={{ kind: 'feed_event', id: event.id }} i18n={i18n} /></View>
     <Text style={styles.postSummary}>{summary}</Text>
     <Pressable accessibilityRole={event.type === 'practice_session' ? 'button' : undefined}
       accessibilityLabel={summary} disabled={event.type !== 'practice_session'}
@@ -332,7 +334,8 @@ const styles = StyleSheet.create({
   storyList: { gap: mobileTheme.spacing.sm, paddingVertical: mobileTheme.spacing.xs },
   storyName: { ...mobileTheme.typography.caption, color: mobileTheme.colors.text, textAlign: 'center' },
   post: { padding: mobileTheme.spacing.md, gap: mobileTheme.spacing.sm },
-  author: { flexDirection: 'row', alignItems: 'center', gap: mobileTheme.spacing.sm, minHeight: mobileTheme.sizes.minimumTouchTarget },
+  authorGroup: { flexDirection: 'row', alignItems: 'center' },
+  author: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: mobileTheme.spacing.sm, minHeight: mobileTheme.sizes.minimumTouchTarget },
   postSummary: { ...mobileTheme.typography.body, color: mobileTheme.colors.text },
   attachment: { flexDirection: 'row', alignItems: 'center', gap: mobileTheme.spacing.sm, borderRadius: mobileTheme.radii.lg, borderCurve: 'continuous', padding: mobileTheme.spacing.sm },
   pathEmoji: { fontSize: 32 },

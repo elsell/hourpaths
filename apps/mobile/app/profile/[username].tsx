@@ -1,3 +1,4 @@
+import { useReportAction } from '../../src/ui/report-composer';
 import { TimerSubscriptionControl } from '../../src/ui/timer-subscription-control';
 import * as Crypto from 'expo-crypto';
 import { getLocales } from 'expo-localization';
@@ -25,6 +26,7 @@ const i18n = createDeviceTranslator(getLocales);
 export default function SocialProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const social = useSocialProfileRoutePresentation();
+  const report = useReportAction({ kind: 'profile', id: social?.profile.username === username ? social?.profile.profile?.userId ?? '' : '' }, i18n);
   const [liveTimerID, setLiveTimerID] = useState<string | null>(null);
   const livePages = livePagesFromActivePeople(social?.profile.username === username && social.profile.activePaths ? [social.profile.activePaths] : [], i18n);
   useEffect(() => { setLiveTimerID(null); }, [username]);
@@ -145,16 +147,17 @@ export default function SocialProfileScreen() {
     ? profile.profile
     : undefined;
   return <>
-    {actionProfile ? <PathHeaderMenu
-      accessibilityLabel={i18n.t('blocking.profileActions', { username: actionProfile.username })}
-      actions={[{
+    {profile.profile && profile.status === 'ready' ? <PathHeaderMenu
+      accessibilityLabel={i18n.t('blocking.profileActions', { username: profile.profile.username })}
+      actions={[report.action, ...(actionProfile ? [{
         destructive: true,
         disabled: blockingStatus === 'reviewing' || blockingStatus === 'blocking',
         label: i18n.t('blocking.blockActionLabel', { username: actionProfile.username }),
         onPress: () => void prepareBlock(),
-        systemImage: 'hand.raised',
-      }]}
+        systemImage: 'hand.raised' as const,
+      }] : [])]}
     /> : <Stack.Screen options={{ headerRight: undefined }} />}
+    {report.sheet}
     <NativeRouteScreen
       onRefresh={social.refreshProfile}
       refreshing={profile.refreshing}

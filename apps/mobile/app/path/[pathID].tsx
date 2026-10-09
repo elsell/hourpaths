@@ -1,3 +1,4 @@
+import { useReportAction } from '../../src/ui/report-composer';
 import { getLocales } from 'expo-localization';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
@@ -12,6 +13,7 @@ const i18n = createDeviceTranslator(getLocales);
 export default function PathDetails() {
   const { pathID = '' } = useLocalSearchParams<{ pathID: string }>();
   const presentation = useNativeRoutePresentation(pathID);
+  const report = useReportAction({ kind: 'path', id: pathID }, i18n);
   usePathRouteAncestry({ kind: 'path', pathID, routeKey: `path:${pathID}` });
   useEffect(() => () => dismissNativeRoute(pathID), [pathID]);
 
@@ -27,11 +29,12 @@ export default function PathDetails() {
     <Stack.Screen options={{ title: activePresentation.title }}>
       <PathHeaderMenu
         accessibilityLabel={i18n.t('pathDetails.moreActions')}
-        actions={activePresentation.actions}
+        actions={[...activePresentation.actions, report.action]}
       />
     </Stack.Screen>
     <NativeRouteScreen>
       {activePresentation.content}
+      {report.sheet}
     </NativeRouteScreen>
   </>;
 }

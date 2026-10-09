@@ -1,3 +1,4 @@
+import { ReportAction } from './report-composer';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,7 +38,7 @@ function EventCard({ event, dependencies: d }: { event: SocialEvent; dependencie
     <div className="studio-event-body"><header><Link to="/profile/$username" params={{ username: event.author.username }}><strong>{event.author.name}</strong> <span>@{event.author.username}</span></Link><time dateTime={new Date(event.publishedAt).toISOString()}>{d.i18n.time(event.publishedAt, { hour: 'numeric', minute: '2-digit' })}</time></header>
       <p>{d.i18n.t(event.kind === 'practice_session' ? 'studio.social.practiced' : 'studio.social.achieved', { path: event.pathName, time: duration(d.i18n, event.seconds) })}{event.edited && <small> · {d.i18n.t('studio.social.edited')}</small>}</p>
       <div className="studio-social-path" data-color={appearance.data?.color ?? 'lavender'}><span className="studio-emoji" aria-hidden="true">{appearance.data?.emoji ?? '✨'}</span><strong>{event.pathName}</strong><div><strong>{duration(d.i18n, event.seconds)}</strong><small>{d.i18n.t(event.kind === 'practice_session' ? 'studio.social.practice' : 'studio.social.achievement')}</small></div></div>
-      <div className="studio-interactions"><button aria-expanded={comments} onClick={() => setComments(!comments)}>{d.i18n.t('studio.social.comments', { count: event.comments })}</button>
+      <div className="studio-interactions"><ReportAction menu target={{ kind: 'feed_event', id: event.id }} dependencies={d} /><button aria-expanded={comments} onClick={() => setComments(!comments)}>{d.i18n.t('studio.social.comments', { count: event.comments })}</button>
         {event.reactions.map(value => <span className="studio-reaction" key={value.emoji} data-selected={value.selected}>
           <button disabled={!event.canReact || react.isPending} aria-pressed={value.selected} aria-label={d.i18n.t('studio.social.react', { emoji: value.emoji })} onClick={() => react.mutate(value.emoji)}>{value.emoji}</button>
           <button aria-label={d.i18n.t('studio.social.reactionPeople', { emoji: value.emoji, count: value.count })} onClick={() => setRoster(value.emoji)}>{d.i18n.number(value.count)}</button>

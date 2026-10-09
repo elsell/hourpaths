@@ -250,6 +250,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
     }),
     notificationChannels: () => authenticatedClient.GET('/v1/me/notification-channels'),
+    submitReport: (body: paths['/v1/reports']['post']['requestBody']['content']['application/json'], idempotencyKey: string) => authenticatedClient.POST('/v1/reports', { params: { header: { 'Idempotency-Key': idempotencyKey } }, body }),
     goalReminder: (pathId: string) => authenticatedClient.GET('/v1/me/path-reminders/{pathId}', { params: { path: { pathId } } }),
     updateGoalReminder: (pathId: string, body: { enabled: boolean; expectedRevision: number }, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/path-reminders/{pathId}', { params: { path: { pathId }, header: { 'Idempotency-Key': idempotencyKey } }, body }),
     timerSubscription: (scope: TimerSubscriptionScope, subjectId: string) => authenticatedClient.GET('/v1/me/timer-subscriptions/{scope}/{subjectId}', { params: { path: { scope, subjectId } } }),

@@ -908,3 +908,6 @@ export { apiAccountExport } from './adapters/api-account-export';
 
 export { createGoalReminderOperationOwner, GoalReminderFailure, type GoalReminderSubject, type GoalReminderPreference, type GoalRemindersRepository } from './goal-reminders';
 export { apiGoalReminders, goalReminderFromAPI } from './adapters/api-goal-reminders';
+
+export { reportReasons, normalizeReportDraft, createReportSubmissionOwner, ReportFailure, type ReportReason, type ReportTarget, type ReportDraft, type ReportReceipt, type ReportBlockIdentity, type ReportingRepository } from './reporting';
+export { apiReporting, reportReceiptFromAPI } from './adapters/api-reporting';

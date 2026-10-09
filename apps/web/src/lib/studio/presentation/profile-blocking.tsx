@@ -7,11 +7,12 @@ import type { Profile } from '../social/domain/activity';
 import type { StudioDependencies } from './app';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useOwnedOperation } from './use-owned-operation';
-export function ProfileBlocking({ profile, dependencies: d }: { profile: Profile; dependencies: StudioDependencies }) {
+export function ProfileBlocking({ profile, dependencies: d, onBusyChange }: { profile: Pick<Profile, 'id' | 'username' | 'name' | 'relationship'>; dependencies: StudioDependencies; onBusyChange?: (busy: boolean) => void }) {
   const client = useQueryClient(), operation = useOwnedOperation(d);
   const [commands] = useState(() => blockingCommands(d.blocking, d.operationId));
   const [selected, setSelected] = useState<BlockReview | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(false), [stale, setStale] = useState(false), [completed, setCompleted] = useState(false);
+  useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
   const admitted = useRef(false);
   useEffect(() => () => commands.dispose(), [commands]);
   useBlocker({ shouldBlockFn: () => admitted.current, enableBeforeUnload: busy });

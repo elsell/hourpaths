@@ -155,6 +155,32 @@ users or content for review.
   content.
 - Declining to block the user must not cancel or withdraw the submitted report.
 
+### Reporting acceptance (`SAFE-REPORT-01`)
+
+1. Native and Studio overflow menus on an accessible profile, Path, feed event,
+   comment, and nudge open the same reporting flow: one required catalog reason
+   and an optional explanation. A submitted report receives an acknowledgment
+   and offers the existing block flow without hiding or deleting the target.
+2. An explanation containing 1,000 Unicode characters after trimming is accepted;
+   1,001 is rejected with editable input retained. Whitespace alone is absent.
+3. An authenticated reporter cannot submit a report for a target they cannot
+   currently access. Invalid sessions, access loss, and unavailable authorization
+   fail closed without revealing the target's existence or content.
+4. Retrying one submission after a lost response creates one restricted case,
+   one evidence snapshot, and one successful mutation audit. Reusing that
+   submission identity for different content does not overwrite the case.
+5. The case preserves the reason, normalized explanation, target and report-time
+   evidence. Editing the original content afterward does not rewrite evidence.
+   Ordinary users, including Path administrators and the reported user, cannot
+   retrieve cases or reporter identity through product APIs.
+6. Declining the post-report block offer leaves the accepted report intact.
+   Accepting it uses the existing reviewed block behavior and shared-Path warning.
+   Signing out or changing accounts clears pending reporting and block state.
+7. Restricted operational review can locate accepted cases; reporter-facing UI
+   remains acknowledgment-only. Evidence retention and account deletion follow
+   [Account Deletion](../accounts/deletion.spec.md), including its minimum-evidence
+   exception and expiry deadline.
+
 ## Internal report workflow
 
 - Every accepted report must create a restricted moderation case with an

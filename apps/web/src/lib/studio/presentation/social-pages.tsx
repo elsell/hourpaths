@@ -1,3 +1,4 @@
+import { ReportAction } from './report-composer';
 import { TimerSubscription } from './timer-subscription';
 import { ProfileBlocking } from './profile-blocking';
 import { useCallback, useState } from 'react';
@@ -56,7 +57,7 @@ function ProfileContent({ username, dependencies: d }: { username: string; depen
         <div><dt>{d.i18n.t('studio.social.followers')}</dt><dd>{profile.relationship === 'self' || profile.relationship === 'following' ? <Link to="/profile/$username/followers" params={{ username }} aria-label={d.i18n.t('social.profileCountLabel', { count: profile.followers, label: d.i18n.t('social.profileFollowers') })}>{d.i18n.number(profile.followers)}</Link> : d.i18n.number(profile.followers)}</dd></div>
         <div><dt>{d.i18n.t('studio.social.following')}</dt><dd>{profile.relationship === 'self' || profile.relationship === 'following' ? <Link to="/profile/$username/following" params={{ username }} aria-label={d.i18n.t('social.profileCountLabel', { count: profile.following, label: d.i18n.t('social.profileFollowing') })}>{d.i18n.number(profile.following)}</Link> : d.i18n.number(profile.following)}</dd></div>
       </dl></div></div>
-      {profile.description && <p className="studio-profile-description">{profile.description}</p>}<FollowButton profile={profile} dependencies={d} /><ProfileBlocking profile={profile} dependencies={d} />
+      {profile.description && <p className="studio-profile-description">{profile.description}</p>}<FollowButton profile={profile} dependencies={d} /><ProfileBlocking profile={profile} dependencies={d} /><ReportAction menu target={{ kind: 'profile', id: profile.id }} dependencies={d} />
       {profile.relationship === 'following' && <TimerSubscription key={profile.id} subject={{ scope: 'person', id: profile.id }} dependencies={d} />}
       {paths.isError && <p role="alert">{d.i18n.t('studio.loadFailed')} <button onClick={refresh}>{d.i18n.t('common.retry')}</button></p>}
     </section><SocialFeed dependencies={d} username={username} /></>}
