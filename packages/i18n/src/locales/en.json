@@ -5273,5 +5273,18 @@
   "enforcement.closed": "The appeal period has ended.",
   "enforcement.failed": "Your appeal couldn’t be confirmed. Try again.",
   "enforcement.conflict": "This notice has changed or the appeal period has ended. Refresh to see its current status.",
-  "enforcement.emptyDescription": "Warnings and moderation decisions will appear here."
+  "enforcement.emptyDescription": "Warnings and moderation decisions will appear here.",
+  "settings.quietHours.heading": "Quiet hours",
+  "settings.quietHours.explanation": "Pause push notifications every day during these hours. Notifications remain available in the app.",
+  "settings.quietHours.enabled": "Enable quiet hours",
+  "settings.quietHours.start": "From",
+  "settings.quietHours.end": "Until",
+  "settings.quietHours.zone": "Time zone: {{zone}}",
+  "settings.quietHours.loadFailed": "Quiet hours couldn’t load.",
+  "settings.quietHours.saving": "Saving…",
+  "settings.quietHours.conflict": "Quiet hours changed elsewhere. Refresh before saving.",
+  "settings.quietHours.saveFailed": "Quiet hours couldn’t be saved. Try again.",
+  "settings.quietHours.saved": "Quiet hours saved.",
+  "settings.quietHours.on": "On",
+  "settings.quietHours.off": "Off"
 }

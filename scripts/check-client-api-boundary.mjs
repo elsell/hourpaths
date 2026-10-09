@@ -146,6 +146,7 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/app/settings/index.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/interactions.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/time-zone.tsx', new Set(['router'])],
+  ['apps/mobile/app/settings/quiet-hours.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/week-start.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/enforcement.tsx', new Set(['router'])],
   ['apps/mobile/app/settings/notifications.tsx', new Set(['router'])],
@@ -172,6 +173,9 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/src/ui/following-header-actions.ios.tsx', new Set(['Stack'])],
 ]);
 const approvedPlatformUIImports = new Map([
+  ['apps/mobile/src/ui/native-time-field.android.tsx', new Map([
+    ['@expo/ui/jetpack-compose', new Set(['Host', 'TimePickerDialog'])],
+  ])],
   ['apps/mobile/src/ui/native-toast.tsx', new Map([
     ['react-native-screens', new Set(['FullWindowOverlay'])],
   ])],
@@ -198,6 +202,10 @@ const approvedNativeTabsImports = new Map([
   ['apps/mobile/app/(tabs)/_layout.tsx', new Set(['NativeTabs'])],
 ]);
 const approvedExpoUIImports = new Map([
+  ['apps/mobile/src/ui/native-time-field.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['DatePicker'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['datePickerStyle', 'disabled', 'environment', 'tint'])],
+  ])],
   ['apps/mobile/src/timers/ios-timer-layout.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['HStack', 'Spacer', 'Text', 'VStack'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['font', 'lineLimit', 'padding'])],

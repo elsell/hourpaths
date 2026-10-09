@@ -81,7 +81,10 @@ Status: Approved for implementation
 - A push suppressed because of an active unavailable period must be discarded,
   not queued for later delivery.
 - Ending or disabling the unavailable period must not cause catch-up push
-  delivery for notifications that occurred while it was active.
+  delivery for notifications that occurred while it was active. A social
+  interaction's five-second eligibility delay must not move its occurrence out
+  of quiet hours; both occurrence and eligibility instants must respect the
+  configured period.
 - The corresponding in-application notifications must remain available under
   their ordinary retention, visibility, and channel rules.
 - The period's profile behavior and time-zone interpretation are defined in

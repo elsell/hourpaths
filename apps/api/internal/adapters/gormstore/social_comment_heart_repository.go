@@ -210,7 +210,7 @@ func createCommentHeartNotification(tx *gorm.DB, command socialapp.CommentHeartC
 	if err := tx.Table("notification_models").Create(row).Error; err != nil {
 		return err
 	}
-	return createSocialInteractionPush(tx, notificationID, command.Comment.AuthorID, command.NotificationEligibleAt)
+	return channelstore.QueuePushAvailable(tx, notificationID, command.Comment.AuthorID, command.OccurredAt, command.NotificationEligibleAt)
 }
 
 func validCommentHeartCommand(repository *SocialFeedRepository, command socialapp.CommentHeartCommand, hearted bool) bool {

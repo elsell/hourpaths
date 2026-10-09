@@ -5273,5 +5273,18 @@
   "enforcement.closed": "El plazo de apelación ha finalizado.",
   "enforcement.failed": "No se pudo confirmar tu apelación. Inténtalo de nuevo.",
   "enforcement.conflict": "Este aviso ha cambiado o el plazo ha finalizado. Actualiza para ver el estado actual.",
-  "enforcement.emptyDescription": "Las advertencias y las decisiones de moderación aparecerán aquí."
+  "enforcement.emptyDescription": "Las advertencias y las decisiones de moderación aparecerán aquí.",
+  "settings.quietHours.heading": "Horario de silencio",
+  "settings.quietHours.explanation": "Pausa las notificaciones push cada día durante estas horas. Las notificaciones siguen disponibles en la aplicación.",
+  "settings.quietHours.enabled": "Activar horario de silencio",
+  "settings.quietHours.start": "Desde",
+  "settings.quietHours.end": "Hasta",
+  "settings.quietHours.zone": "Zona horaria: {{zone}}",
+  "settings.quietHours.loadFailed": "No se pudo cargar el horario de silencio.",
+  "settings.quietHours.saving": "Guardando…",
+  "settings.quietHours.conflict": "El horario de silencio cambió en otro lugar. Actualiza antes de guardar.",
+  "settings.quietHours.saveFailed": "No se pudo guardar el horario de silencio. Inténtalo de nuevo.",
+  "settings.quietHours.saved": "Horario de silencio guardado.",
+  "settings.quietHours.on": "Activado",
+  "settings.quietHours.off": "Desactivado"
 }

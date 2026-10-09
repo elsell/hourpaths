@@ -1,5 +1,6 @@
 import { timeZoneChoices } from '@hourpaths/client-core';
 import { EnforcementSettings } from './enforcement-settings';
+import { UnavailablePeriodSettings } from './unavailable-period-settings';
 import { WeekStartSettings } from './week-start-settings';
 import { PictureSettings } from './picture-settings';
 import { ProfilePrivacySettings } from './profile-privacy';
@@ -59,6 +60,7 @@ function AccountSettings({ dependencies: d }: { dependencies: StudioDependencies
     {identity.data && <ProfilePrivacySettings key={privacyKey} owner={identity.data.id} dependencies={d} />}
     {identity.data && <PictureSettings key={[identity.data.id,'picture'].join(':')} owner={identity.data.id} dependencies={d} />}
     {identity.data && <ProfileSettings key={identity.data.id} owner={identity.data.id} dependencies={d} />}
+    {identity.data && <UnavailablePeriodSettings key={identity.data.id} owner={identity.data.id} dependencies={d} />}
     {identity.data && <WeekStartSettings key={identity.data.id} owner={identity.data.id} dependencies={d} />}
     {d.providers && <ProviderSettings service={d.providers} i18n={d.i18n} />}<section className="studio-settings-card"><h3>{d.i18n.t('studio.settings.preferences')}</h3><p>{d.i18n.t('studio.settings.locale')}</p><Status pending={zone.isPending} error={zone.isError} retry={() => void zone.refetch()} dependencies={d} />{zone.data && <TimeZoneForm initial={zone.data} dependencies={d} reload={() => zone.refetch()} />}</section><SessionSettings dependencies={d} name={identity.data?.name ?? ''} />{d.deletion && <AccountDeletionSettings service={d.deletion} i18n={d.i18n} />}</>;
 }

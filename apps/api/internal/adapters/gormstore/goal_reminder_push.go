@@ -1,6 +1,7 @@
 package gormstore
 
 import (
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/progresslock"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/activity"
@@ -37,6 +38,8 @@ func lockGoalReminderPaths(tx *gorm.DB, notificationID, recipient string) error 
 
 func goalReminderPushEligible(tx *gorm.DB, notificationID string) (bool, error) {
 	var rows []struct {
+		ParticipantID                     string
+		RemainingSeconds                  int64
 		StartedAt, EndedAt, Now           time.Time
 		TargetSeconds                     int64
 		Recurrence, TimeZone              string
@@ -63,6 +66,7 @@ func goalReminderPushEligible(tx *gorm.DB, notificationID string) (bool, error) 
 		Where("NOT EXISTS (SELECT 1 FROM goal_reminder_preference_models preference WHERE preference.path_id = path.id AND preference.participant_id = recipient.id AND NOT preference.enabled)").
 		Where("NOT EXISTS (SELECT 1 FROM running_timer_models timer WHERE timer.path_id = path.id AND timer.participant_id = recipient.id)").
 		Where("NOT EXISTS (SELECT 1 FROM block_models b WHERE (b.blocker_user_id = recipient.id AND b.blocked_user_id = path.owner_user_id) OR (b.blocked_user_id = recipient.id AND b.blocker_user_id = path.owner_user_id))").Select(`receipt.interval_started_at AS started_at, receipt.interval_ended_at AS ended_at, CURRENT_TIMESTAMP AS now,
+ receipt.participant_id, (path.interval_goal_target_seconds-progress.seconds)::bigint AS remaining_seconds,
  path.interval_goal_target_seconds AS target_seconds, path.interval_goal_recurrence AS recurrence, preference.current_time_zone AS time_zone,
  COALESCE(path.interval_goal_start_minute,0) AS minute, COALESCE(path.interval_goal_start_hour,0) AS hour,
  COALESCE(path.interval_goal_start_weekday,0) AS weekday, COALESCE(path.interval_goal_start_day,0) AS day,
@@ -77,7 +81,17 @@ func goalReminderPushEligible(tx *gorm.DB, notificationID string) (bool, error) 
 			return false, err
 		}
 		if window.StartedAt.Equal(row.StartedAt) && window.EndedAt.Equal(row.EndedAt) {
-			return true, nil
+			deadline := row.EndedAt
+			quietStart, err := channelstore.NextUnavailableStart(tx, row.ParticipantID, row.Now)
+			if err != nil {
+				return false, err
+			}
+			if !quietStart.IsZero() && quietStart.Before(deadline) {
+				deadline = quietStart
+			}
+			if row.RemainingSeconds <= int64(deadline.Sub(row.Now)/time.Second) {
+				return true, nil
+			}
 		}
 	}
 	return false, nil

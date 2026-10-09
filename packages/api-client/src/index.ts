@@ -196,6 +196,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     ownRunningTimers: (cursor = '') => authenticatedClient.GET('/v1/me/running-timers', { params: { query: { cursor, limit: 50 } } }),
     reviewCurrentPolicies: () => authenticatedClient.GET('/v1/me/policies'),
     acceptCurrentPolicies: (body: Omit<components['schemas']['PolicyRenewalInputBody'], '$schema'>, key: string) => authenticatedClient.POST('/v1/me/policies', { body, params: { header: { 'Idempotency-Key': key } } }),
+    unavailablePeriod: () => authenticatedClient.GET('/v1/me/unavailable-period'),
+    updateUnavailablePeriod: (body: { expectedRevision: number; reviewedTimeZone: string; enabled: boolean; startMinute: number; endMinute: number }, key: string) => authenticatedClient.PUT('/v1/me/unavailable-period', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredWeekStart: () => authenticatedClient.GET('/v1/me/week-start'),
     updateConfiguredWeekStart: (body: { reviewedFirstDayOfWeek: number; proposedFirstDayOfWeek: number }, key: string) => authenticatedClient.PUT('/v1/me/week-start', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredTimeZone: () => authenticatedClient.GET('/v1/me/time-zone'),

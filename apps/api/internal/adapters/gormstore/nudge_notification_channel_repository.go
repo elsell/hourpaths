@@ -198,7 +198,14 @@ var _ socialapp.NotificationChannelRepository = (*NudgeNotificationChannelReposi
 // The preference, queue retirement and audit commit together. Notifications stay
 // visible in history, and enabling later cannot resurrect retired deliveries.
 func suppressChannelPushDeliveries(tx *gorm.DB, recipient, channel string, at time.Time) error {
-	notices := tx.Table("notification_models").Select("id").Where("recipient_user_id = ? AND channel = ?", recipient, channel)
+	return suppressPendingPushDeliveries(tx, recipient, channel, "channel_disabled", at)
+}
+
+func suppressPendingPushDeliveries(tx *gorm.DB, recipient, channel, reason string, at time.Time) error {
+	notices := tx.Table("notification_models").Select("id").Where("recipient_user_id = ?", recipient)
+	if channel != "" {
+		notices = notices.Where("channel = ?", channel)
+	}
 	var ids []string
 	if err := tx.Table("notification_push_delivery_models").Distinct("notification_id").Where("notification_id IN (?)", notices).Where("delivered_at IS NULL AND suppressed_at IS NULL AND permanently_failed_at IS NULL AND provider_ticket = ''").Pluck("notification_id", &ids).Error; err != nil {
 		return err
@@ -207,7 +214,7 @@ func suppressChannelPushDeliveries(tx *gorm.DB, recipient, channel string, at ti
 		return nil
 	}
 	if err := tx.Table("notification_push_delivery_models").Where("notification_id IN ?", ids).Where("delivered_at IS NULL AND suppressed_at IS NULL AND permanently_failed_at IS NULL AND provider_ticket = ''").Updates(map[string]any{
-		"suppressed_at": at, "failure_code": "channel_disabled", "locked_by": nil, "locked_until": nil,
+		"suppressed_at": at, "failure_code": reason, "locked_by": nil, "locked_until": nil,
 		"token_ciphertext": nil, "token_nonce": nil, "token_hash": nil,
 	}).Error; err != nil {
 		return err

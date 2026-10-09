@@ -13,6 +13,7 @@ import (
 	"time"
 
 	achievementstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationachievement"
+	channelstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationchannel"
 	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/progresslock"
 	pathapp "github.com/elsell/hour-paths/apps/api/internal/app/path"
@@ -23,6 +24,7 @@ import (
 )
 
 type PushRepository struct {
+	clock     ports.Clock
 	db        *gorm.DB
 	aead      cipher.AEAD
 	lookupKey [32]byte
@@ -49,8 +51,8 @@ type pushDeliveryClaimRow struct {
 
 // NewPushRepository creates the isolated push persistence adapter. key must be
 // application secret material and is deliberately not read from database config.
-func NewPushRepository(db *gorm.DB, key []byte) (*PushRepository, error) {
-	if db == nil || len(key) < 32 {
+func NewPushRepository(db *gorm.DB, key []byte, clock ports.Clock) (*PushRepository, error) {
+	if db == nil || len(key) < 32 || clock == nil {
 		return nil, ports.ErrInvalidArgument
 	}
 	encryptionKey := derivePushKey(key, "hourpaths/push-token/encryption/v1")
@@ -63,7 +65,7 @@ func NewPushRepository(db *gorm.DB, key []byte) (*PushRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PushRepository{db: db, aead: aead, lookupKey: lookupKey}, nil
+	return &PushRepository{db: db, aead: aead, lookupKey: lookupKey, clock: clock}, nil
 }
 
 func derivePushKey(key []byte, purpose string) [32]byte {
@@ -198,7 +200,7 @@ func (r *PushRepository) DeletePushInstallation(ctx context.Context, ownerUserID
 }
 
 func (r *PushRepository) ClaimPushDeliveries(ctx context.Context, worker string, lease time.Duration, limit int) ([]ports.PushDelivery, error) {
-	if r == nil || r.db == nil || strings.TrimSpace(worker) == "" || lease <= 0 || limit < 1 || limit > 100 {
+	if r == nil || r.db == nil || r.clock == nil || strings.TrimSpace(worker) == "" || lease <= 0 || limit < 1 || limit > 100 {
 		return nil, ports.ErrInvalidArgument
 	}
 	var deliveries []ports.PushDelivery
@@ -305,14 +307,14 @@ WHERE (delivery_block.blocker_user_id = notification.recipient_user_id AND
 }
 
 func (r *PushRepository) PushDeliveryEligible(ctx context.Context, worker, notificationID, installationID string) (bool, error) {
-	if r == nil || r.db == nil || strings.TrimSpace(worker) == "" || strings.TrimSpace(notificationID) == "" || strings.TrimSpace(installationID) == "" {
+	if r == nil || r.db == nil || r.clock == nil || strings.TrimSpace(worker) == "" || strings.TrimSpace(notificationID) == "" || strings.TrimSpace(installationID) == "" {
 		return false, ports.ErrInvalidArgument
 	}
-	return pushDeliveryEligible(r.db.WithContext(ctx), worker, notificationID, installationID)
+	return pushDeliveryEligible(r.db.WithContext(ctx), worker, notificationID, installationID, r.clock)
 }
 
 func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notificationID, installationID string, send func() ports.PushTicket) (ports.PushTicket, bool, error) {
-	if r == nil || r.db == nil || strings.TrimSpace(worker) == "" || strings.TrimSpace(notificationID) == "" || strings.TrimSpace(installationID) == "" || send == nil {
+	if r == nil || r.db == nil || r.clock == nil || strings.TrimSpace(worker) == "" || strings.TrimSpace(notificationID) == "" || strings.TrimSpace(installationID) == "" || send == nil {
 		return ports.PushTicket{}, false, ports.ErrInvalidArgument
 	}
 	var ticket ports.PushTicket
@@ -371,7 +373,7 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 				return err
 			}
 		}
-		eligible, err := pushDeliveryEligible(tx, worker, notificationID, installationID)
+		eligible, err := pushDeliveryEligible(tx, worker, notificationID, installationID, r.clock)
 		if err != nil || !eligible {
 			return err
 		}
@@ -385,7 +387,7 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 	return ticket, handedOff, nil
 }
 
-func pushDeliveryEligible(tx *gorm.DB, worker, notificationID, installationID string) (bool, error) {
+func pushDeliveryEligible(tx *gorm.DB, worker, notificationID, installationID string, clock ports.Clock) (bool, error) {
 	var count int64
 	err := tx.Table("notification_push_delivery_models AS delivery").
 		Joins("JOIN notification_models notice ON notice.id = delivery.notification_id").
@@ -405,6 +407,12 @@ WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_bl
 		Joins("JOIN notification_push_delivery_models delivery ON delivery.notification_id = notice.id").
 		Where("notice.id = ? AND delivery.installation_id = ?", notificationID, installationID).Take(&notice).Error; err != nil {
 		return false, err
+	}
+	if notice.ProviderTicket == "" {
+		quiet, err := channelstore.QuietAt(tx, notice.RecipientUserID, clock.Now())
+		if err != nil || quiet {
+			return false, err
+		}
 	}
 	if pathapp.InvitationNotificationKind(notice.Kind).IsAchievement() && notice.ProviderTicket == "" {
 		return achievementstore.Eligible(tx, notificationID, notice.RecipientUserID)
@@ -443,7 +451,7 @@ WHERE (delivery_block.blocker_user_id = notice.recipient_user_id AND delivery_bl
 }
 
 func (r *PushRepository) TransitionPushDelivery(ctx context.Context, worker string, transition ports.PushDeliveryTransition, event audit.Event) error {
-	if r == nil || r.db == nil || strings.TrimSpace(worker) == "" ||
+	if r == nil || r.db == nil || r.clock == nil || strings.TrimSpace(worker) == "" ||
 		transition.NotificationID == "" || transition.InstallationID == "" || transition.OccurredAt.IsZero() {
 		return ports.ErrInvalidArgument
 	}

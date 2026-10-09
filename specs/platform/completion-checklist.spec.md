@@ -399,11 +399,11 @@ This slice remains in progress; the following evidence does not close area 9.
 | Scheduling and delivery | Implemented: participant-scoped five-minute bundles, atomic receipts/audit/push admission, and immediate online/offline-stop recalculation. Real worker delivered two QA Paths as one notice; online Stop produced its eligible notice within 95 ms and offline Stop synchronization within 98 ms. Final handoff rejects expired actionability, completed/removed goals, and changed canonical goal/time-zone intervals; focused PostgreSQL checks pass. |
 | Client experience | Studio and Android at 160% font display both destinations and open each selected Path. A shared native sheet and localized chooser title are implemented. A persistent native appearance-refresh warning remains unclassified. |
 | Visibility and compatibility | Focused HTTP and PostgreSQL checks cover old-client filtering, cross-account access, partial Path revocation, unavailable authorization, preference changes, running timers and completed/removed goals. |
-| Quiet-period integration | Pending integration with recurring unavailable periods. The equal-start/end decision remains open in the paused preferences slice; neither an all-day interpretation nor permanent rejection has been approved. |
+| Quiet-period integration | Integrated recurring unavailable periods across native/Studio preferences, reminder planning, and final push handoff. PostgreSQL verifies earlier effective deadlines, atomic preference changes and suppressed push with retained in-app notices; local-time/DST checks pass. The equal-start/end product decision remains open, so release remains held. |
 | Final candidate | Bounded P0/P1 review completed; its delayed-handoff finding is fixed with a red/green PostgreSQL regression. Applicable merge checks and checked merge remain pending on `codex/actionable-goal-reminders`. |
 | Release and availability | Pending release notes, API/web GitOps deployment, native publication, availability evidence and physical-device acceptance. |
 
-Warm acceptance uses the version-94 API on Paul at port 28093. The three private
+The prior reminder-only warm acceptance uses the version-94 API on Paul at port 28093. The three private
 reminder QA Paths created for delivery and navigation checks were archived after
 verification. The source worktree is `/home/john/code/hourpaths-native-route-recovery`;
 acceptance scripts and receipts are recorded in the local goal evidence ledger.

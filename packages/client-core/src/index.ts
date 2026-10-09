@@ -915,3 +915,5 @@ export { reportReasons, normalizeReportDraft, createReportSubmissionOwner, Repor
 export { apiReporting, reportReceiptFromAPI } from './adapters/api-reporting';
 export { appealAvailable, createAppealSubmissionOwner, EnforcementFailure, type EnforcementAction, type EnforcementAppeal, type EnforcementNotice, type EnforcementRepository } from './enforcement';
 export { apiEnforcement } from './adapters/api-enforcement';
+export * from './unavailable-period';
+export { apiUnavailablePeriod } from './adapters/api-unavailable-period';

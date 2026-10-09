@@ -172,7 +172,8 @@ minute later than the 8:05 PM reminder. The bundle must be delivered at 8:00 PM.
    must not consume any included Path's once-per-interval eligibility.
 4. A queued ordinary reminder must recheck actionability before push handoff.
    If a goal still needs 60 minutes but only 15 minutes remain, the provider
-   must not receive that reminder.
+   must not receive that reminder. A newly saved earlier unavailable-period
+   start must also be honored at final handoff.
 5. Native and Studio show every currently accessible included Path. A revoked
    Path must not expose its name or progress through a stale bundle.
 

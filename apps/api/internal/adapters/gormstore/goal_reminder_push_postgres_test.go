@@ -15,7 +15,7 @@ func TestPostgresGoalReminderPushRechecksPreferencesTimerAndAccessAtHandoff(t *t
 	at := time.Now().UTC().Truncate(time.Microsecond)
 	recipient := f.recipient.ID
 	installationID, id := "deadline-install-"+newTestID(), "deadline-push-"+newTestID()
-	repository, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x63}, 32))
+	repository, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x63}, 32), pushTestClock{at})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +50,24 @@ func TestPostgresGoalReminderPushRechecksPreferencesTimerAndAccessAtHandoff(t *t
 		t.Fatal(err)
 	}
 	if err := f.migration.DB.Exec("INSERT INTO user_preference_models (user_id, first_day_of_week, current_time_zone, created_at, updated_at) VALUES (?,1,'UTC',?,?) ON CONFLICT (user_id) DO UPDATE SET current_time_zone='UTC'", recipient, at, at).Error; err != nil {
+		t.Fatal(err)
+	}
+	check(true)
+	// A new quiet period can make a queued reminder no longer actionable before
+	// quiet hours are active. The provider must not receive it in that gap.
+	quietStart := at.Add(2 * time.Minute)
+	quietMinute := quietStart.Hour()*60 + quietStart.Minute()
+	if err := f.migration.DB.Table("user_unavailable_period_models").Create(map[string]any{"user_id": recipient, "enabled": true, "start_minute": quietMinute, "end_minute": (quietMinute + 60) % 1440, "revision": 1, "updated_at": at}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := f.migration.DB.Table("path_models").Where("id = ?", f.pathID).UpdateColumn("interval_goal_target_seconds", 180).Error; err != nil {
+		t.Fatal(err)
+	}
+	check(false)
+	if err := f.migration.DB.Table("user_unavailable_period_models").Where("user_id = ?", recipient).Delete(map[string]any{}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := f.migration.DB.Table("path_models").Where("id = ?", f.pathID).UpdateColumn("interval_goal_target_seconds", 60).Error; err != nil {
 		t.Fatal(err)
 	}
 	check(true)

@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"fmt"
+	application "github.com/elsell/hour-paths/apps/api/internal/app"
 	socialapp "github.com/elsell/hour-paths/apps/api/internal/app/social"
+	"github.com/elsell/hour-paths/apps/api/internal/domain/preferences"
+	"gorm.io/gorm/clause"
 	"testing"
 	"time"
 
@@ -37,7 +41,7 @@ func TestPostgresPushClaimSuppressesBlockedActorRecipientDeliveryPermanently(t *
 		migrationStore.DB.Table("push_installation_models").Where("id = ?", installationID).Delete(map[string]any{})
 		migrationStore.DB.Table("user_models").Where("id IN ?", []string{recipient.ID, actor.ID}).Delete(&struct{ ID string }{})
 	})
-	repository, err := NewPushRepository(runtimeStore.DB, bytes.Repeat([]byte{0x62}, 32))
+	repository, err := NewPushRepository(runtimeStore.DB, bytes.Repeat([]byte{0x62}, 32), pushTestClock{now})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,12 +113,18 @@ func TestPostgresPushClaimSuppressesBlockedActorRecipientDeliveryPermanently(t *
 }
 
 func TestPostgresPushHandoffWaitsForPairLockAndSkipsProviderWhenBlockCommitsFirst(t *testing.T) {
-	testPostgresPushHandoffWaitsForNotificationGate(t, false)
+	testPostgresPushHandoffWaitsForNotificationGate(t, 0)
 }
 func TestPostgresPushHandoffSkipsProviderWhenChannelDisableCommitsFirst(t *testing.T) {
-	testPostgresPushHandoffWaitsForNotificationGate(t, true)
+	testPostgresPushHandoffWaitsForNotificationGate(t, 1)
 }
-func testPostgresPushHandoffWaitsForNotificationGate(t *testing.T, channelDisabled bool) {
+func TestPostgresPushHandoffSkipsProviderWhenQuietPeriodCommitsFirst(t *testing.T) {
+	testPostgresPushHandoffWaitsForNotificationGate(t, 2)
+}
+func TestPostgresPushHandoffRetiresBacklogWhenTimeZoneEntersQuietPeriod(t *testing.T) {
+	testPostgresPushHandoffWaitsForNotificationGate(t, 3)
+}
+func testPostgresPushHandoffWaitsForNotificationGate(t *testing.T, gate int) {
 	if *postgresTestDSN == "" || *migrationPostgresTestDSN == "" {
 		t.Skip("PostgreSQL DSNs required")
 	}
@@ -138,7 +148,7 @@ func testPostgresPushHandoffWaitsForNotificationGate(t *testing.T, channelDisabl
 		migrationStore.DB.Table("push_installation_models").Where("id = ?", installationID).Delete(map[string]any{})
 		migrationStore.DB.Table("user_models").Where("id IN ?", []string{recipient.ID, actor.ID}).Delete(&struct{ ID string }{})
 	})
-	repository, err := NewPushRepository(runtimeStore.DB, bytes.Repeat([]byte{0x63}, 32))
+	repository, err := NewPushRepository(runtimeStore.DB, bytes.Repeat([]byte{0x63}, 32), pushTestClock{now})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,11 +190,38 @@ func testPostgresPushHandoffWaitsForNotificationGate(t *testing.T, channelDisabl
 		t.Fatal(blockTx.Error)
 	}
 	defer blockTx.Rollback()
-	if channelDisabled {
+	if gate == 1 {
 		command := socialapp.NotificationChannelCommand{Channel: "following", NudgeNotificationChannelCommand: nudgeNotificationChannelTestCommand(recipient.ID, "push-channel-disable", 0, false, now.Add(time.Second))}
 		command.Audit.TargetID = "following"
 		if _, err := NewNudgeNotificationChannelRepository(blockTx).UpdateNotificationChannel(context.Background(), command); err != nil {
 			t.Fatal(err)
+		}
+	} else if gate == 2 || gate == 3 {
+		if err := lockSocialInteractionOwner(blockTx, recipient.ID); err != nil {
+			t.Fatal(err)
+		}
+		if err := lockSocialInteractionOwner(blockTx, socialLockKey("notification-channel", recipient.ID)); err != nil {
+			t.Fatal(err)
+		}
+		if err := blockTx.Table("user_preference_models").Clauses(clause.OnConflict{DoNothing: true}).Create(map[string]any{"user_id": recipient.ID, "first_day_of_week": 1, "current_time_zone": "Etc/UTC", "created_at": now, "updated_at": now}).Error; err != nil {
+			t.Fatal(err)
+		}
+		if gate == 2 {
+			if _, err := (&Store{DB: blockTx}).UpdateUnavailablePeriod(context.Background(), quietPreferenceTestCommand(recipient.ID, 0, true, now)); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			minute := (now.Hour()*60 + now.Minute() + 60) % 1440
+			if err := blockTx.Create(&unavailablePeriodModel{UserID: recipient.ID, Enabled: true, StartMinute: minute, EndMinute: (minute + 60) % 1440, Revision: 1, UpdatedAt: now}).Error; err != nil {
+				t.Fatal(err)
+			}
+			if err := blockTx.Create(&userTimeZoneHistoryModel{UserID: recipient.ID, TimeZone: "Etc/UTC", EffectiveAt: now.Add(-time.Hour)}).Error; err != nil {
+				t.Fatal(err)
+			}
+			command := timeZonePreferenceCommand(recipient.ID, "Etc/UTC", "Etc/GMT-1", now, "quiet-zone-gate-01", newTestID())
+			if _, err := (&Store{DB: blockTx}).UpdateTimeZonePreference(context.Background(), command); err != nil {
+				t.Fatal(err)
+			}
 		}
 	} else {
 		if err := lockSocialPair(blockTx, actor.ID, recipient.ID); err != nil {
@@ -251,12 +288,23 @@ func testPostgresPushHandoffWaitsForNotificationGate(t *testing.T, channelDisabl
 	if result.err != nil || result.handedOff || result.ticket != (ports.PushTicket{}) || len(providerCalled) != 0 {
 		t.Fatalf("handoff after block commit=%+v provider_called=%v", result, len(providerCalled) != 0)
 	}
-	if channelDisabled {
+	if gate == 1 {
 		command := socialapp.NotificationChannelCommand{Channel: "following", NudgeNotificationChannelCommand: nudgeNotificationChannelTestCommand(recipient.ID, "push-channel-enable", 1, true, now.Add(2*time.Second))}
 		command.Audit.TargetID = "following"
 		if _, err := NewNudgeNotificationChannelRepository(runtimeStore.DB).UpdateNotificationChannel(context.Background(), command); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if gate == 2 || gate == 3 {
+		command := quietPreferenceTestCommand(recipient.ID, 1, false, now.Add(2*time.Second))
+		if gate == 3 {
+			command.ReviewedTimeZone = "Etc/GMT-1"
+		}
+		if _, err := runtimeStore.UpdateUnavailablePeriod(context.Background(), command); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if gate == 1 || gate == 2 || gate == 3 {
 		var pending, history int64
 		if err := runtimeStore.DB.Table("notification_push_delivery_models").Where("notification_id = ? AND suppressed_at IS NULL", notificationID).Count(&pending).Error; err != nil {
 			t.Fatal(err)
@@ -297,7 +345,7 @@ func TestPushRepositoryPersistsEncryptedSnapshotClaimsAndSuppressesOnDelete(t *t
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	repository, err := NewPushRepository(tx, bytes.Repeat([]byte{0x61}, 32))
+	repository, err := NewPushRepository(tx, bytes.Repeat([]byte{0x61}, 32), pushTestClock{now})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -518,4 +566,12 @@ func TestPushRepositoryPersistsEncryptedSnapshotClaimsAndSuppressesOnDelete(t *t
 	if permanentlyFailedAt == nil {
 		t.Fatal("device-not-registered transition did not permanently fail pending installation deliveries")
 	}
+}
+
+func quietPreferenceTestCommand(owner string, revision int64, enabled bool, at time.Time) application.UnavailablePeriodCommand {
+	minute := at.Hour()*60 + at.Minute()
+	hash := sha256.Sum256([]byte(fmt.Sprintf("%d:%t", revision, enabled)))
+	return application.UnavailablePeriodCommand{ActorUserID: owner, ExpectedRevision: revision, ReviewedTimeZone: "Etc/UTC", Period: preferences.UnavailablePeriod{Enabled: enabled, StartMinute: minute, EndMinute: (minute + 60) % 1440}, ChangedAt: at,
+		Idempotency: ports.Idempotency{PrincipalID: owner, Operation: application.UpdateUnavailablePeriodOperation, Key: fmt.Sprintf("quiet-gate-change-%d", revision), RequestHash: hash[:]},
+		Audit:       audit.Event{ID: newTestID(), OwnerUserID: owner, ActorUserID: owner, Action: audit.ResourceUpdated, TargetType: "unavailable_period", TargetID: owner, Outcome: audit.Succeeded, CorrelationID: newTestID(), OccurredAt: at}}
 }

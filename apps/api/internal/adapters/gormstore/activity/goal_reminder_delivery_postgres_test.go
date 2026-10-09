@@ -55,3 +55,27 @@ func TestPostgresGoalReminderBundleRollsBackReceiptsWithAuditAndDoesNotChain(t *
 		t.Fatalf("nonchained third path %d %v", n, err)
 	}
 }
+
+func TestPostgresGoalReminderUsesSavedUnavailablePeriodDeadline(t *testing.T) {
+	db := postgresDB(t, false)
+	at := time.Date(2026, 10, 9, 20, 50, 0, 0, time.UTC)
+	owner, path := "quiet-reminder-owner", "quiet-reminder-path"
+	seedParticipantAndPath(t, db, owner, path, at.Add(-time.Hour))
+	if err := db.Table("user_preference_models").Create(map[string]any{"user_id": owner, "first_day_of_week": 1, "current_time_zone": "UTC", "created_at": at, "updated_at": at}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Table("path_models").Where("id = ?", path).Updates(map[string]any{"interval_goal_target_seconds": 2400, "interval_goal_recurrence": "daily", "interval_goal_start_hour": 0}).Error; err != nil {
+		t.Fatal(err)
+	}
+	before, eligible, err := reminderPlan(db, owner, path, at)
+	if err != nil || !eligible || !before.Plan.ScheduledAt.Equal(at.Add(2*time.Hour)) {
+		t.Fatalf("ordinary deadline: %+v %v %v", before, eligible, err)
+	}
+	if err := db.Table("user_unavailable_period_models").Create(map[string]any{"user_id": owner, "enabled": true, "start_minute": 1320, "end_minute": 480, "revision": 1, "updated_at": at}).Error; err != nil {
+		t.Fatal(err)
+	}
+	after, eligible, err := reminderPlan(db, owner, path, at)
+	if err != nil || !eligible || !after.Plan.ScheduledAt.Equal(at) {
+		t.Fatalf("quiet deadline: %+v %v %v", after, eligible, err)
+	}
+}

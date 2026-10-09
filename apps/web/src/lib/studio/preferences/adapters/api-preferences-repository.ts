@@ -1,4 +1,4 @@
-import { apiWeekStartPreference, apiProfilePicture, apiProfilePrivacy, apiProfileEditing, apiTimerSubscriptions, apiGoalReminders, apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
+import { apiUnavailablePeriod, apiWeekStartPreference, apiProfilePicture, apiProfilePrivacy, apiProfileEditing, apiTimerSubscriptions, apiGoalReminders, apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
 import { createSessionApiClient, type GeneratedOperationResult } from '@hourpaths/api-client';
 import { PreferenceFailure } from '../domain/preferences';
 import type { PreferencesRepository } from '../ports/preferences-repository';
@@ -33,6 +33,8 @@ export function apiPreferencesRepository(baseURL: string, token: () => string | 
     catch (error) { if (error instanceof NotificationChannelFailure) throw new PreferenceFailure(error.kind); throw error; }
   }
   return {
+    unavailablePeriod: (owner, signal) => apiUnavailablePeriod(baseURL, token(), owner, rejected).read(signal),
+    saveUnavailablePeriod: (value, key, signal) => apiUnavailablePeriod(baseURL, token(), value.userId, rejected).save(value, key, signal),
     weekStart: (owner, signal) => apiWeekStartPreference(baseURL, token(), owner, rejected).read(signal),
     saveWeekStart: (value, key, signal) => apiWeekStartPreference(baseURL, token(), value.userId, rejected).save(value, key, signal),
     profilePicture:(owner,signal)=>apiProfilePicture(baseURL,token(),owner,rejected,signal).read(),

@@ -41,6 +41,7 @@ export default function RootLayout() {
     <Stack.Screen name="settings/account" options={{ headerLargeTitle: false, title: i18n.t('settings.account') }} />
     <Stack.Screen name="settings/notifications" options={{ headerLargeTitle: false, title: i18n.t('notification.settings.heading') }} />
     <Stack.Screen name="settings/enforcement" options={{ headerLargeTitle: false, title: i18n.t('enforcement.heading') }} />
+    <Stack.Screen name="settings/quiet-hours" options={{ headerLargeTitle: false, title: i18n.t('settings.quietHours.heading') }} />
     <Stack.Screen name="settings/week-start" options={{ headerLargeTitle: false, title: i18n.t('settings.weekStart.heading') }} />
     <Stack.Screen name="settings/time-zone" options={{ headerLargeTitle: false, title: i18n.t('settings.timeZone.heading') }} />
     <Stack.Screen name="settings/interactions" options={{ headerLargeTitle: false, title: i18n.t('settings.interactions.heading') }} />

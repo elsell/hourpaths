@@ -7,6 +7,7 @@ import { AccountExportController, apiAccountExport } from '@hourpaths/client-cor
 import { NativePolicyReviewSource } from '../src/ui/policy-review-presentation';
 import { apiPolicyRenewal, PolicyReviewController, apiPolicyTimers, PolicyTimersController, retainedPolicyTimers } from '@hourpaths/client-core';
 import { apiEnforcement, EnforcementFailure, type EnforcementRepository } from '@hourpaths/client-core';
+import { apiUnavailablePeriod, UnavailablePeriodFailure, type UnavailablePeriodRepository } from '@hourpaths/client-core';
 import { apiWeekStartPreference, WeekStartFailure, type WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import { apiProfileConnections } from '@hourpaths/client-core';
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
@@ -4517,6 +4518,22 @@ export function HomeScreen() {
     }
   }
 
+  async function unavailablePeriodRequest<T>(request: (repository: UnavailablePeriodRepository) => Promise<T>): Promise<T> {
+    if (!session || destination?.kind !== 'home') throw new UnavailablePeriodFailure('rejected');
+    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    try {
+      const result = await request(apiUnavailablePeriod(apiURL, credential.token, owner));
+      if (!current()) throw new Error('unavailable_period_superseded');
+      return result;
+    } catch (cause) {
+      if (cause instanceof UnavailablePeriodFailure && cause.kind === 'rejected') await handleNotificationOperationFailure(sessionFailureFromResponse(401), credential, current);
+      throw cause;
+    }
+  }
+
+
   async function enforcementRequest<T>(request: (repository: EnforcementRepository) => Promise<T>): Promise<T> {
     if (!session || destination?.kind !== 'home') throw new EnforcementFailure('rejected');
     const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
@@ -8665,6 +8682,7 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      unavailablePeriod={{ read: signal => unavailablePeriodRequest(repository => repository.read(signal)), save: (value, key, signal) => unavailablePeriodRequest(repository => repository.save(value, key, signal)) }}
       weekStart={{ read: signal => weekStartRequest(repository => repository.read(signal)), save: (value, key, signal) => weekStartRequest(repository => repository.save(value, key, signal)) }}
       pickProfilePicture={pickProfilePicture}
       profilePicture={{ read: () => profilePictureRequest(repo => repo.read()), preview: image => profilePictureRequest(repo => repo.preview(image)), save: (value, key) => profilePictureRequest(repo => repo.save(value, key)) }}

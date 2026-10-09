@@ -690,6 +690,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/unavailable-period": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the account daily unavailable period */
+        get: operations["get-unavailable-period"];
+        /** Update the account daily unavailable period */
+        put: operations["update-unavailable-period"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/week-start": {
         parameters: {
             query?: never;
@@ -4229,6 +4247,41 @@ export interface components {
             /** Format: int64 */
             expectedRevision: number;
         };
+        UnavailablePeriodDTO: {
+            enabled: boolean;
+            /** Format: int64 */
+            endMinute: number;
+            /** Format: int64 */
+            revision: number;
+            /** Format: int64 */
+            startMinute: number;
+            timeZone: string;
+        };
+        UnavailablePeriodInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnavailablePeriodInputBody.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** Format: int64 */
+            endMinute: number;
+            /** Format: int64 */
+            expectedRevision: number;
+            reviewedTimeZone: string;
+            /** Format: int64 */
+            startMinute: number;
+        };
+        UnavailablePeriodOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnavailablePeriodOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["UnavailablePeriodDTO"];
+        };
         UnlinkIdentityInputBody: {
             /**
              * Format: uri
@@ -6027,6 +6080,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimerSubscriptionOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-unavailable-period": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnavailablePeriodOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-unavailable-period": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnavailablePeriodInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnavailablePeriodOutputBody"];
                 };
             };
             /** @description Error */

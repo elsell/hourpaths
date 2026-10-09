@@ -61,6 +61,9 @@ func (s *Store) UpdateTimeZonePreference(ctx context.Context, command applicatio
 	}
 	var result application.TimeZonePreferenceResult
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := lockSocialInteractionOwner(tx, command.ActorUserID); err != nil {
+			return err
+		}
 		var owner struct{ ID string }
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Table("user_models").Select("id").
 			Where("id = ? AND status = ?", command.ActorUserID, identity.StatusActive).Take(&owner).Error
@@ -71,6 +74,9 @@ func (s *Store) UpdateTimeZonePreference(ctx context.Context, command applicatio
 			return err
 		}
 
+		if err := lockSocialInteractionOwner(tx, socialLockKey("notification-channel", command.ActorUserID)); err != nil {
+			return err
+		}
 		var replay timeZonePreferenceMutationModel
 		err = tx.Where("user_id = ? AND operation = ? AND idempotency_key = ?", command.ActorUserID, command.Idempotency.Operation, command.Idempotency.Key).Take(&replay).Error
 		if err == nil {
@@ -127,6 +133,11 @@ func (s *Store) UpdateTimeZonePreference(ctx context.Context, command applicatio
 				return ports.ErrConflict
 			}
 			if err := tx.Create(&userTimeZoneHistoryModel{UserID: command.ActorUserID, EffectiveAt: effectiveAt, TimeZone: command.ProposedTimeZone}).Error; err != nil {
+				return err
+			}
+		}
+		if changed {
+			if err := suppressQuietPeriodPush(tx, command.ActorUserID, command.ChangedAt); err != nil {
 				return err
 			}
 		}

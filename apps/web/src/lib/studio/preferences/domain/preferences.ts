@@ -26,3 +26,5 @@ export interface WeekStartChange { userId: string; reviewedFirstDayOfWeek: numbe
 
 export interface GoalReminderSubject { id: string }
 export interface GoalReminderPreference { enabled: boolean; revision: number }
+export interface UnavailablePeriodPreference { userId: string; enabled: boolean; startMinute: number; endMinute: number; revision: number; timeZone: string; }
+export interface UnavailablePeriodChange { userId: string; enabled: boolean; startMinute: number; endMinute: number; expectedRevision: number; reviewedTimeZone: string; }

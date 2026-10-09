@@ -57,7 +57,11 @@ func reminderPlan(tx *gorm.DB, owner, path string, at time.Time) (reminderProjec
 	if err := tx.Model(&timerModel{}).Where("participant_id = ? AND path_id = ?", owner, path).Count(&running).Error; err != nil {
 		return reminderProjection{}, false, err
 	}
-	state := domain.GoalReminderState{IntervalStartedAt: window.StartedAt, IntervalEndedAt: window.EndedAt, TargetSeconds: goal.TargetSeconds, RecordedSeconds: recorded, Running: running > 0}
+	nextUnavailable, err := channelstore.NextUnavailableStart(tx, owner, at)
+	if err != nil {
+		return reminderProjection{}, false, err
+	}
+	state := domain.GoalReminderState{NextUnavailableStart: nextUnavailable, IntervalStartedAt: window.StartedAt, IntervalEndedAt: window.EndedAt, TargetSeconds: goal.TargetSeconds, RecordedSeconds: recorded, Running: running > 0}
 	scheduled, eligible, err := state.Schedule()
 	if err != nil || !eligible {
 		return reminderProjection{}, false, err

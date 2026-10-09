@@ -19,7 +19,7 @@ import (
 
 func TestPostgresTimerStartNotificationDeduplicatesAndRechecksDisabledChannel(t *testing.T) {
 	f := newNudgeFixture(t, "timerproducer", false)
-	push, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x61}, 32))
+	push, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x61}, 32), pushTestClock{f.now})
 	if err != nil {
 		t.Fatal(err)
 	}
