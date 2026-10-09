@@ -42,6 +42,8 @@ is an authorized recorded activity; a running session is not a completed event.
   unmistakable, named actions. Color alone must not communicate state.
 - Text and control contrast must meet WCAG AA. Keyboard operation, visible
   focus, semantic labels, reduced motion, and translated copy remain required.
+- Dismissing a shared confirmation dialog must restore focus to its connected
+  triggering control. Native modal cleanup must occur before the dialog is removed.
 - Narrow layouts must reflow controls and collapse navigation without losing
   destinations. Secondary panels move below primary content; tables must not
   make primary actions inaccessible. Browser zoom must not truncate controls.

@@ -33,7 +33,7 @@ try {
   if (!Array.isArray(body?.data) || body.data.length !== 0) {
     throw new Error(`new active account did not have an empty server-backed Path collection: ${JSON.stringify(body)}`)
   }
-  await page.waitForURL(url => url.pathname === '/studio')
+  await page.waitForURL(url => ['/studio', '/studio/'].includes(url.pathname))
   await page.getByRole('heading', { name: spanish['studio.paths'], exact: true }).waitFor()
   await page.getByText(spanish['studio.empty'], { exact: true }).waitFor()
   await page.getByRole('button', { name: 'Crear ruta', exact: true }).click()

@@ -56,7 +56,7 @@ async function completeDexLogin(page, expectedResponse, openInvitations = false)
   if (openInvitations) {
     // Exercise the default entry and the dedicated Studio inbox.
     await page.getByRole('button', { name: 'Login', exact: true }).click()
-    await page.waitForURL(url => url.pathname === '/studio', { waitUntil: 'domcontentloaded' })
+    await page.waitForURL(url => ['/studio', '/studio/'].includes(url.pathname), { waitUntil: 'domcontentloaded' })
     const responsePromise = page.waitForResponse(expectedResponse)
     await page.getByRole('link', { name: spanish['pathInvitation.pendingHeading'], exact: true }).click()
     return responsePromise
@@ -95,7 +95,7 @@ async function acceptInvitationWithVisibilityWarning(page) {
   await page.getByRole('heading', { name: spanish['pathInvitation.pendingHeading'], exact: true }).waitFor()
   const invitation = page.locator('li').filter({ has: page.getByRole('heading', { name: invitationPathName, exact: true }) })
   await invitation.waitFor({ state: 'visible' })
-  await invitation.getByText(invitationPathName, { exact: false }).waitFor()
+  await invitation.getByRole('heading', { name: invitationPathName, exact: true }).waitFor()
 
   const acceptInvitation = invitation.getByRole('button', { name: 'Aceptar invitación', exact: true })
   await acceptInvitation.click()
@@ -140,7 +140,7 @@ async function acceptInvitationWithVisibilityWarning(page) {
   await invitation.waitFor({ state: 'detached' })
   if (await invitation.count() !== 0) throw new Error('accepted invitation remained on Home')
   await page.getByRole('link', { name: spanish['studio.openPath'].replace('{{name}}', invitationPathName), exact: true }).click()
-  await page.getByRole('heading', { name: invitationPathName, exact: true }).waitFor()
+  await page.getByRole('heading', { name: invitationPathName, exact: true, level: 1 }).waitFor()
   console.log('browser Dex invitation visibility warning, cancel, confirmation, and Path projection acceptance passed')
 }
 
