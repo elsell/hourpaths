@@ -852,7 +852,7 @@ export { liveTimerProgress, createTimerPeriodRefresher } from './live-timer-prog
 export { durationParts, secondsFromDurationParts, type DurationParts } from './duration-parts';
 
 export { createNotificationHistoryOwner, type NotificationHistoryPort, type NotificationHistorySnapshot } from "./notification-history-owner";
-export { OfflineTracking } from './offline-tracking';
+export { OfflineTracking, projectTrackingHistory } from './offline-tracking';
 export type { RetainedTrackingPath, RetainedActivity, TrackingSummary, LocalTrackingView, LocalTimer, TrackingOperation, TrackingSnapshot, TrackingStore, TrackingSync, TrackingOutcome, TrackingNotice, TrackingRejection } from './offline-tracking';
 export { TrackingReplayWorker, type TrackingSchedule } from './tracking-replay-worker';
 
