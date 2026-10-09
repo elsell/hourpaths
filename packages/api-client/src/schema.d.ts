@@ -394,6 +394,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the signed-in account's editable profile */
+        get: operations["get-own-profile"];
+        /** Save the signed-in account's profile text */
+        put: operations["update-own-profile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/time-zone": {
         parameters: {
             query?: never;
@@ -2611,6 +2629,36 @@ export interface components {
             /** Format: int64 */
             targetSeconds: number;
         };
+        OwnProfileDTO: {
+            description: string;
+            displayName: string;
+            /** Format: int64 */
+            revision: number;
+            userId: string;
+            username: string;
+        };
+        OwnProfileOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OwnProfileOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OwnProfileDTO"];
+        };
+        OwnProfileUpdateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OwnProfileUpdateInputBody.json
+             */
+            readonly $schema?: string;
+            description: string;
+            displayName: string;
+            /** Format: int64 */
+            expectedRevision: number;
+            username: string;
+        };
         OwnershipTransfer: {
             /** Format: date-time */
             acceptedAt?: string;
@@ -4471,6 +4519,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppearanceOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-own-profile": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnProfileOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-own-profile": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnProfileUpdateInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnProfileOutputBody"];
                 };
             };
             /** @description Error */

@@ -877,3 +877,5 @@ export { createTimerSubscriptionOperationOwner, TimerSubscriptionFailure, type T
 export { apiTimerSubscriptions, timerSubscriptionFromAPI } from './adapters/api-timer-subscriptions';
 
 export * from "./native-timer-surface";
+export { createProfileEditOperationOwner, normalizeEditableProfile, ProfileEditFailure, type EditableProfile, type ProfileEditingRepository } from './profile-editing';
+export { apiProfileEditing } from './adapters/api-profile-editing';

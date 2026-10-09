@@ -64,6 +64,8 @@ export type PublicProfile = components['schemas']['PublicProfile'];
 export type FollowRequest = components['schemas']['FollowRequest'];
 export type PracticeFeedItem = components['schemas']['PracticeFeedItem'];
 export type InteractionSettings = Omit<components['schemas']['InteractionSettings'], '$schema'>;
+export type OwnProfile = components['schemas']['OwnProfileDTO'];
+export type OwnProfileUpdate = Omit<components['schemas']['OwnProfileUpdateInputBody'], '$schema'>;
 export type ConfiguredTimeZone = components['schemas']['TimeZonePreferenceDTO'];
 export type ConfiguredTimeZoneUpdate =
   Omit<components['schemas']['TimeZonePreferenceInputBody'], '$schema' | 'confirmed'> & { confirmed: true };
@@ -171,6 +173,10 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     unlinkProvider: (provider: 'google' | 'apple', reviewedUserId: string) => authenticatedClient.DELETE('/v1/me/identities/{provider}', { params: { path: { provider } }, body: { reviewedUserId } }),
     deleteAccount: (body: AccountDeletionInput) => authenticatedClient.POST('/v1/me/deletion', { body }),
     confirmAccountDeletion: (body: AccountDeletionReceiptInput) => publicClient.POST('/v1/account-deletion/receipt', { body }),
+    ownProfile: () => authenticatedClient.GET('/v1/me/profile'),
+    updateOwnProfile: (body: OwnProfileUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile', {
+      params: { header: { 'Idempotency-Key': idempotencyKey } }, body,
+    }),
     configuredTimeZone: () => authenticatedClient.GET('/v1/me/time-zone'),
     updateConfiguredTimeZone: (body: ConfiguredTimeZoneUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/time-zone', {
       params: { header: { 'Idempotency-Key': idempotencyKey } },

@@ -177,6 +177,7 @@ import { OnboardingForm } from '../src/ui/onboarding-form';
 import { SignedOutScreen } from '../src/ui/signed-out-screen';
 import { ActionButton, mobileShellStyles as styles, NativeSheet, SectionHeading, StatusBanner, ThemedText as Text } from '../src/ui/primitives';
 import { TimerControl } from '../src/ui/timer-control';
+import { apiProfileEditing, ProfileEditFailure, type EditableProfile } from '@hourpaths/client-core';
 import { SettingsPresentationSource, type SignOutPresentationResult, type SignOutTimerChoice } from '../src/ui/settings-presentation';
 import { NativeRouteSource, type NativeRouteAction } from '../src/ui/native-route-presentation';
 import { NativeRouteRecoveryView } from '../src/ui/native-route-recovery-view';
@@ -4405,6 +4406,27 @@ export function HomeScreen() {
     }
   }
 
+  async function profileEditingRequest(value?: EditableProfile, key?: string): Promise<EditableProfile> {
+    if (!session || destination?.kind !== 'home') throw new ProfileEditFailure('rejected');
+    const currentSession = session, owner = destination.profile.id;
+    const generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === currentSession.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    const repository = apiProfileEditing(apiURL, currentSession.token, owner);
+    try {
+      const profile = value ? await repository.save(value, key!) : await repository.read();
+      if (!current()) throw new ProfileEditFailure('rejected');
+      if (value) setDestination(previous => current() && previous?.kind === 'home' && previous.profile.id === owner
+        ? { ...previous, profile: { ...previous.profile, displayName: profile.displayName } } : previous);
+      return profile;
+    } catch (cause) {
+      if (cause instanceof ProfileEditFailure && cause.kind === 'rejected') {
+        await handleNotificationOperationFailure(sessionFailureFromResponse(401), currentSession, current);
+      }
+      throw cause;
+    }
+  }
+
   async function timerSubscriptionRequest(subject: TimerSubscriptionSubject, value?: TimerSubscriptionPreference, key?: string): Promise<TimerSubscriptionPreference> {
     if (!session || destination?.kind !== 'home') throw new Error('timer_subscription_unavailable');
     const currentSession = session;
@@ -8422,6 +8444,8 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      profileEditing={{ read: () => profileEditingRequest(), save: (value, key) => profileEditingRequest(value, key) }}
+      profileOperationId={() => Crypto.randomUUID()}
       timerSubscriptions={{ get: subject => timerSubscriptionRequest(subject), update: (subject, value, key) => timerSubscriptionRequest(subject, value, key) }}
       providers={providerSettings}
       displayName={ownedHomeDestination.profile.displayName}

@@ -5142,5 +5142,18 @@
   "nativeTimers.running_one": "{{count}} running timer",
   "nativeTimers.running_other": "{{count}} running timers",
   "nativeTimers.remaining_one": "{{count}} more Path",
-  "nativeTimers.remaining_other": "{{count}} more Paths"
+  "nativeTimers.remaining_other": "{{count}} more Paths",
+  "profile.edit.heading": "Edit profile",
+  "profile.edit.name": "Name",
+  "profile.edit.username": "Username",
+  "profile.edit.description": "About you",
+  "profile.edit.hint": "Your name, username and description appear on your profile.",
+  "profile.edit.invalid": "Use a name of 1–100 characters, a username of 3–64 letters, numbers, underscores or periods, and a description of up to 500 characters.",
+  "profile.edit.username_unavailable": "That username is already taken. Choose another.",
+  "profile.edit.conflict": "Your profile changed elsewhere. Load the latest version before saving. Your edits will stay here for review.",
+  "profile.edit.rejected": "Your session is no longer available. Sign in again to edit your profile.",
+  "profile.edit.unavailable": "Couldn’t save your profile. Your edits are still here. Try again.",
+  "profile.edit.loadFailed": "Couldn’t load your profile. Try again.",
+  "profile.edit.reload": "Load latest profile",
+  "profile.edit.review": "Latest version loaded. Review your edits, then save or cancel to use the latest profile."
 }

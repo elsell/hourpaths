@@ -290,6 +290,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	})
 	registerAuditRoutes(api, application)
 	registerAccountDeletionRoutes(api, application)
+	registerProfileRoutes(api, application)
 	registerProviderIdentityRoutes(api, application)
 	registerAuthorizationRecoveryRoutes(api, application)
 	registerInvitationRoutes(api, application)

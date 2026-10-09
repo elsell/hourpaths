@@ -1,3 +1,4 @@
+import { ProfileSettings } from '../../src/ui/profile-settings';
 import { ProviderSettings } from '../../src/ui/provider-settings';
 import { getLocales } from 'expo-localization';
 import { router } from 'expo-router';
@@ -63,6 +64,7 @@ export default function AccountSettings() {
   const ownedWorking = ownsState && working;
   const ownedFailureKey = ownsState ? failureKey : null;
   const name = activePresentation.displayName || activePresentation.email;
+  const profileEditorKey = [activePresentation.sessionKey, 'profile'].join(':');
 
   async function signOut(resolution: SignOutTimerChoice) {
     if (admission.current) return;
@@ -124,6 +126,7 @@ export default function AccountSettings() {
       <SettingsSeparator />
       <SettingsValueRow label={i18n.t('settings.account.email')} value={activePresentation.email} />
     </SettingsSection>
+    {activePresentation.profileEditing && activePresentation.profileOperationId ? <ProfileSettings key={profileEditorKey} repository={activePresentation.profileEditing} operationId={activePresentation.profileOperationId} isCurrent={activePresentation.isCurrent} i18n={i18n} /> : null}
     {activePresentation.providers ? <ProviderSettings key={activePresentation.sessionKey} service={activePresentation.providers} i18n={i18n} confirmUnlink={(provider, confirmed) => Alert.alert(i18n.t('identity.unlink'), i18n.t('identity.unlinkConfirm', { provider: i18n.t(provider === 'google' ? 'identity.google' : 'identity.apple') }), [
       { text: i18n.t('common.cancel'), style: 'cancel' },
       { text: i18n.t('identity.unlink'), style: 'destructive', onPress: confirmed },

@@ -1,3 +1,4 @@
+import type { ProfileEditingRepository } from '@hourpaths/client-core';
 import type { TimerSubscriptionsRepository } from '@hourpaths/client-core';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
@@ -12,6 +13,8 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  profileEditing?: ProfileEditingRepository;
+  profileOperationId?: () => string;
   timerSubscriptions: TimerSubscriptionsRepository;
   providers?: ProviderSettingsService;
   deleteAccount?: () => void;
@@ -39,6 +42,8 @@ function emitChange() {
 
 export function SettingsPresentationSource({
   timerSubscriptions,
+  profileEditing,
+  profileOperationId,
   providers,
   deleteAccount,
   displayName,
@@ -55,6 +60,8 @@ export function SettingsPresentationSource({
   updateNotificationChannel,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const profileEditingRef = useRef(profileEditing);
+  profileEditingRef.current = profileEditing;
   const timerSubscriptionsRef = useRef(timerSubscriptions);
   timerSubscriptionsRef.current = timerSubscriptions;
   const providersRef = useRef(providers);
@@ -84,7 +91,17 @@ export function SettingsPresentationSource({
     const assertActive = () => {
       if (!active || !isCurrentRef.current()) throw new Error('settings_presentation_superseded');
     };
+    const assertProfileOwner = () => {
+      // A timer count or name refresh republishes the same account presentation.
+      // Reject only loss/replacement of its owning settings journey.
+      if (currentPresentation?.sessionKey !== sessionKey || !currentPresentation.isCurrent()) throw new Error('settings_presentation_superseded');
+    };
     const presentation: SettingsPresentation = {
+      profileOperationId,
+      profileEditing: profileEditing ? {
+        read: async () => { assertActive(); const value = await profileEditingRef.current!.read(); assertProfileOwner(); return value; },
+        save: async (value, key) => { assertActive(); const saved = await profileEditingRef.current!.save(value, key); assertProfileOwner(); return saved; },
+      } : undefined,
       timerSubscriptions: {
         get: subject => { assertActive(); return timerSubscriptionsRef.current.get(subject); },
         update: (subject, value, key) => { assertActive(); return timerSubscriptionsRef.current.update(subject, value, key); },
