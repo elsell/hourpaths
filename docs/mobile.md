@@ -116,18 +116,28 @@ hosted macOS runner; signing credentials remain outside the repository.
 
 ### TestFlight workflow inputs
 
-The workflow is manual and uses the GitHub `testflight` environment. Add these
+The workflow supports release automation and manual runs, and uses the GitHub `testflight` environment. Add these
 environment secrets/variables before running it:
 
-- secrets: `APPLE_DISTRIBUTION_P12_BASE64`, `APPLE_DISTRIBUTION_P12_PASSWORD`,
-  `APPLE_PROVISIONING_PROFILE_BASE64`, `ASC_API_KEY_P8_BASE64`
+- secrets: `BUILD_CERTIFICATE_BASE64`, `P12_PASSWORD`,
+  `BUILD_PROVISION_PROFILE_BASE64`, `BUILD_WIDGET_PROVISION_PROFILE_BASE64`,
+  `APP_STORE_CONNECT_API_KEY_BASE64`, `APP_STORE_CONNECT_KEY_ID`,
+  `APP_STORE_CONNECT_ISSUER_ID`
 - variables: `APPLE_TEAM_ID`, `APPLE_PROVISIONING_PROFILE_NAME`,
-  `ASC_API_KEY_ID`, and `ASC_API_ISSUER_ID`
+  `APPLE_WIDGET_PROVISIONING_PROFILE_NAME`
 
 The App Store Connect key must be an active App Store Connect API key, not a
 Sign in with Apple key. The provisioning profile must target
 `com.hourpaths.mobile` and the distribution certificate's private key must be
-included in the `.p12`. The workflow uses the production endpoints
+included in the `.p12`. The Live Activity extension requires a separate App Store
+profile for `com.hourpaths.mobile.ExpoWidgetsTarget`. Both profiles must include
+the App Group `group.com.hourpaths.mobile`; regenerate the app profile after
+enabling that capability. Store the extension profile's base64 bytes in
+`BUILD_WIDGET_PROVISION_PROFILE_BASE64` and its exact profile name in
+`APPLE_WIDGET_PROVISIONING_PROFILE_NAME`. Profiles are validated for bundle,
+team, group, distribution type and expiry before per-target signing.
+
+The workflow uses the production endpoints
 `https://api.hourpaths.com` and `https://login.hourpaths.com/oidc` and the
 broker-assigned public Logto App ID `ctdb003l6t7f3d5hidfm7`. The Logto
 application name `hourpaths-mobile` is only a display name and must not be sent

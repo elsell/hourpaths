@@ -10,6 +10,13 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/mobile/modules/hourpaths-timers/android/build.gradle",
+    "apps/mobile/modules/hourpaths-timers/android/src/main/AndroidManifest.xml",
+    "apps/mobile/modules/hourpaths-timers/android/src/main/java/com/hourpaths/timers/HourPathsTimersModule.kt",
+    "apps/mobile/modules/hourpaths-timers/expo-module.config.json",
+    "apps/mobile/src/timers/timer-surface.android.ts",
+    "apps/mobile/src/timers/timer-surface.ios.tsx",
+    "apps/mobile/src/timers/timer-surface-types.ts",
     "apps/web/src/lib/studio/session/domain/session.ts",
     "apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts",
     "apps/web/src/lib/studio/account/ports/account-deletion.ts",

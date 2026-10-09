@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.hourpaths.timers'
+version = '1.0.0'
+
+android {
+  namespace 'com.hourpaths.timers'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}

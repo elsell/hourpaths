@@ -5137,5 +5137,10 @@
   "notification.channels.loading": "Cargando ajustes de notificaciones…",
   "notification.channels.loadError": "No se pudieron cargar los ajustes de notificaciones. Inténtalo de nuevo.",
   "notification.channels.saving": "Guardando ajuste de notificaciones…",
-  "notification.channels.saveError": "No se pudo actualizar este ajuste de notificaciones. Se sigue mostrando el ajuste anterior; inténtalo de nuevo."
+  "notification.channels.saveError": "No se pudo actualizar este ajuste de notificaciones. Se sigue mostrando el ajuste anterior; inténtalo de nuevo.",
+  "nativeTimers.channel": "Temporizadores en curso",
+  "nativeTimers.running_one": "{{count}} temporizador en curso",
+  "nativeTimers.running_other": "{{count}} temporizadores en curso",
+  "nativeTimers.remaining_one": "{{count}} ruta más",
+  "nativeTimers.remaining_other": "{{count}} rutas más"
 }

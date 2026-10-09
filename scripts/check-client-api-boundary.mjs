@@ -36,6 +36,7 @@ const approvedWorkspacePackages = new Map([
   ['packages/i18n/package.json', { name: '@hourpaths/i18n', exports: './src/index.ts' }],
 ]);
 const approvedExternalImports = new Set([
+  'expo', 'expo-widgets',
   '@sveltejs/kit', 'expo-auth-session', 'expo-constants', 'expo-crypto',
   'expo-image', 'expo-linking', 'expo-localization', 'expo-notifications', 'expo-router/unstable-native-tabs', 'expo-secure-store', 'expo-sqlite', 'expo-web-browser',
   '@expo/ui/community/segmented-control', '@expo/ui/swift-ui', '@expo/ui/swift-ui/modifiers',
@@ -45,6 +46,8 @@ const approvedExternalImports = new Set([
   ...[...approvedWorkspacePackages.values()].map((workspacePackage) => workspacePackage.name),
 ]);
 const providerImports = new Map([
+  ['apps/mobile/src/timers/timer-surface.ios.tsx', new Set(['expo-widgets'])],
+  ['apps/mobile/src/timers/timer-surface.android.ts', new Set(['expo'])],
   ['apps/mobile/src/offline/native-tracking-store.ts', new Set(['expo-sqlite'])],
   ['apps/mobile/src/provider-auth.ts', new Set(['expo-auth-session', 'expo-web-browser'])],
   ['apps/mobile/src/provider-identity-settings.ts', new Set(['expo-auth-session'])],
@@ -63,6 +66,12 @@ const browserGlobalReferences = new Set([
 ]);
 const windowProxyMembers = new Set(['contentWindow', 'defaultView', 'view']);
 const protectedProviderAdapters = new Set([
+  'apps/mobile/src/timers/timer-surface.ios.tsx',
+  'apps/mobile/src/timers/timer-surface.android.ts',
+  'apps/mobile/modules/hourpaths-timers/expo-module.config.json',
+  'apps/mobile/modules/hourpaths-timers/android/build.gradle',
+  'apps/mobile/modules/hourpaths-timers/android/src/main/AndroidManifest.xml',
+  'apps/mobile/modules/hourpaths-timers/android/src/main/java/com/hourpaths/timers/HourPathsTimersModule.kt',
   'apps/mobile/src/provider-identity-settings.ts',
   'apps/mobile/src/provider-auth.ts',
   'apps/mobile/src/provider-auth-state.ts',
@@ -175,6 +184,10 @@ const approvedNativeTabsImports = new Map([
   ['apps/mobile/app/(tabs)/_layout.tsx', new Set(['NativeTabs'])],
 ]);
 const approvedExpoUIImports = new Map([
+  ['apps/mobile/src/timers/timer-surface.ios.tsx', new Map([
+    ['@expo/ui/swift-ui', new Set(['HStack', 'Spacer', 'Text', 'VStack'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['font', 'lineLimit', 'padding'])],
+  ])],
   ['apps/mobile/src/ui/comment-heart-icon.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Image'])],
   ])],
@@ -1191,6 +1204,10 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 1 &&
           !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
           clause.namedBindings.elements[0].name.text === 'Linking';
+        const exactTimerPlatformImport = relative === 'apps/mobile/src/timers/timer-surface.ios.tsx' && clause && !clause.name &&
+          clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 1 &&
+          !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
+          clause.namedBindings.elements[0].name.text === 'Platform';
         const exactPushAdapterImport = relative === 'apps/mobile/src/push-notifications-native.ts' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
           clause.namedBindings.elements.length === 2 &&
@@ -1213,7 +1230,7 @@ function inspectSource(relative, file, source, index) {
           !exactSignedOutPresentationImport &&
           !exactTrackingPresentationImport &&
           !exactTrackingFallbackImport &&
-          !exactUIPresentationImport && !exactPolicyLinkImport && !exactPushAdapterImport) violation = true;
+          !exactUIPresentationImport && !exactPolicyLinkImport && !exactPushAdapterImport && !exactTimerPlatformImport) violation = true;
       }
       if (specifier === 'expo-router') {
         const reviewedImports = approvedExpoRouterImports.get(relative);
