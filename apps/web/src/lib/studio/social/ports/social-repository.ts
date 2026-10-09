@@ -1,5 +1,8 @@
+import type { ConnectionDirection } from '@hourpaths/client-core';
 import type { ActivePerson, Comment, CommentRevision, FollowRequest, Page, Person, Profile, SocialEvent } from '../domain/activity';
 export interface SocialRepository {
+  connections(username: string, direction: ConnectionDirection, cursor?: string, signal?: AbortSignal): Promise<Page<Person>>;
+  removeFollower(userId: string, operationId: string): Promise<void>;
   feed(cursor?: string, signal?: AbortSignal): Promise<Page<SocialEvent>>;
   activity(username: string, cursor?: string, signal?: AbortSignal): Promise<Page<SocialEvent>>;
   active(cursor?: string, signal?: AbortSignal): Promise<Page<ActivePerson>>;

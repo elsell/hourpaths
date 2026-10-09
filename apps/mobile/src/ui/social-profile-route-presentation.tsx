@@ -1,3 +1,4 @@
+import { ProfileConnectionsFailure, type ProfileConnectionsRepository } from '@hourpaths/client-core';
 import type { MessageKey } from '@hourpaths/i18n';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { SocialFeedState, SocialFeedRoutePresentation } from './social-feed-route-presentation';
@@ -44,6 +45,8 @@ export type SocialFollowRequestState = {
 };
 
 export type SocialProfileRoutePresentation = {
+  viewerId?: string;
+  connections?: ProfileConnectionsRepository;
   activity: SocialFeedState;
   loadMoreActivity: () => void;
   retryActivity: () => void;
@@ -84,6 +87,19 @@ export function SocialProfileRouteSource(props: SocialProfileRoutePresentation &
 
   const publish = (): PublishedPresentation => ({
     ...props,
+    connections: props.connections ? {
+      list: async (...args) => {
+        if (!props.isCurrent() || currentPresentation?.sessionKey !== sessionKey) throw new ProfileConnectionsFailure('rejected');
+        const result = await props.connections!.list(...args);
+        if (!props.isCurrent() || currentPresentation?.sessionKey !== sessionKey) throw new ProfileConnectionsFailure('rejected');
+        return result;
+      },
+      remove: async (...args) => {
+        if (!props.isCurrent() || currentPresentation?.sessionKey !== sessionKey) throw new ProfileConnectionsFailure('rejected');
+        await props.connections!.remove(...args);
+        if (!props.isCurrent() || currentPresentation?.sessionKey !== sessionKey) throw new ProfileConnectionsFailure('rejected');
+      },
+    } : undefined,
     owner: owner.current,
     sessionKey,
     loadMoreActivity: (...arguments_) => {
@@ -137,7 +153,7 @@ export function SocialProfileRouteSource(props: SocialProfileRoutePresentation &
     currentPresentation = publish();
     emitChange();
   }, [
-    props.loadReactionPeople, props.activity, props.loadMoreActivity, props.retryActivity, props.openActivity, props.openComments, props.setReaction, props.removeReaction, props.dismissActivityNotice,
+    props.connections, props.viewerId, props.loadReactionPeople, props.activity, props.loadMoreActivity, props.retryActivity, props.openActivity, props.openComments, props.setReaction, props.removeReaction, props.dismissActivityNotice,
     props.loadMore,
     props.isCurrent,
     props.loadFollowRequests,

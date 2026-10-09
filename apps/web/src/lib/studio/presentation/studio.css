@@ -76,3 +76,4 @@
 .studio-picture-viewport img{position:absolute;max-width:none;user-select:none;pointer-events:none;}
 .studio-picture-crop label{display:grid;gap:6px;}
 .studio-picture-crop input[type=range]{width:100%;}
+.studio-profile-identity dd a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;color:inherit;text-decoration:none}.studio-profile-identity dd a:hover{text-decoration:underline}

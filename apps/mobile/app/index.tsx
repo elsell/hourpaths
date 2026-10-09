@@ -1,3 +1,4 @@
+import { apiProfileConnections } from '@hourpaths/client-core';
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
 import { clearProfilePictureCache, pickProfilePicture } from '../src/profile-picture-picker';
 import { apiProfilePrivacy, ProfilePrivacyFailure, type ProfilePrivacy, type ProfileVisibility } from '@hourpaths/client-core';
@@ -9236,6 +9237,8 @@ export function HomeScreen() {
         />
       : null}
     {ready && ownedHomeDestination ? <SocialProfileRouteSource
+      viewerId={ownedHomeDestination.profile.id}
+      connections={apiProfileConnections(apiURL, session?.token ?? null, ownedHomeDestination.profile.id)}
       activity={profileActivity}
       loadMoreActivity={() => { if (socialProfile.username && profileActivityPage.current.nextCursor && !profileActivity.loadingMore) void loadProfileActivity(socialProfile.username, profileActivityPage.current.nextCursor); }}
       retryActivity={() => { if (socialProfile.username) void loadProfileActivity(socialProfile.username); }}

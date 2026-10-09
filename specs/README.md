@@ -70,3 +70,5 @@ Delivery completion is tracked separately from specification coverage in the
 cell above does not establish implementation, release, or device acceptance.
 
 Profile-picture delivery boundaries: [safe processing, storage and cleanup](platform/profile-picture-storage.spec.md).
+
+Profile connection-list browsing and inbound follower removal acceptance is specified in [SOC-01C](social/following.spec.md#profile-connection-lists-and-follower-removal-soc-01c).

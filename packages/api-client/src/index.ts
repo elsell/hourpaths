@@ -285,6 +285,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     unfollowProfile: (username: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/profiles/{username}/follow', {
       params: { path: { username }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
+    profileFollowers: (username: string, cursor?: string) => authenticatedClient.GET('/v1/profiles/{username}/followers', {
+      params: { path: { username }, query: { cursor, limit: 25 } },
+    }),
+    profileFollowing: (username: string, cursor?: string) => authenticatedClient.GET('/v1/profiles/{username}/following', {
+      params: { path: { username }, query: { cursor, limit: 25 } },
+    }),
+    removeFollower: (userId: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/me/followers/{userId}', {
+      params: { path: { userId }, header: { 'Idempotency-Key': idempotencyKey } },
+    }),
     followRequests: (cursor?: string) => authenticatedClient.GET('/v1/follow-requests', {
       params: { query: { cursor, limit: 25 } },
     }),

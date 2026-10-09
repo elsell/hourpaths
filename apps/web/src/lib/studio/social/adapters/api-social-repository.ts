@@ -64,6 +64,12 @@ export function apiSocialRepository(baseURL: string, token: () => string | null,
     return { items: data.items.map(map), next: result.data!.meta.nextCursor || null };
   };
   return {
+    async connections(username, direction, cursor, signal) {
+      const api = client(signal);
+      const result = await (direction === 'followers' ? api.profileFollowers(username, cursor) : api.profileFollowing(username, cursor));
+      return { items: accepted(result).map(profileFromAPI), next: result.data!.meta.nextCursor || null };
+    },
+    async removeFollower(userId, key) { changed(await client().removeFollower(userId, key)); },
     async viewer(signal) { return accepted(await client(signal).profile()).id; },
     async feed(cursor, signal) { return page(await client(signal).socialFeed(cursor), eventFromAPI); },
     async activity(username, cursor, signal) { return page(await client(signal).profileActivity(username, cursor), eventFromAPI); },

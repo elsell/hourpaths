@@ -16,6 +16,7 @@ export function SocialProfileDetailView({
   activePathCount = 0,
   pathCount,
   onOpenActive,
+  onOpenConnections,
   onRelationshipAction,
   state,
 }: {
@@ -23,6 +24,7 @@ export function SocialProfileDetailView({
   activePathCount?: number;
   pathCount?: number;
   onOpenActive?: () => void;
+  onOpenConnections?: (direction: 'followers' | 'following') => void;
   blockingStatus?: 'reviewing' | 'blocking' | 'error';
   onRetry: () => void;
   onRelationshipAction: (action: 'follow' | 'cancel-request' | 'unfollow') => void;
@@ -66,11 +68,14 @@ export function SocialProfileDetailView({
             ['social.profilePaths', pathCount],
             ['social.profileFollowers', profile.followerCount],
             ['social.profileFollowing', profile.followingCount],
-          ] as const).map(([label, value]) => <View key={label} accessible
+          ] as const).map(([label, value]) => <Pressable key={label} accessible
+            accessibilityRole={label !== 'social.profilePaths' && onOpenConnections && (profile.relationship === 'self' || profile.relationship === 'following') ? 'button' : undefined}
+            disabled={label === 'social.profilePaths' || !onOpenConnections || (profile.relationship !== 'self' && profile.relationship !== 'following')}
+            onPress={() => onOpenConnections?.(label === 'social.profileFollowers' ? 'followers' : 'following')}
             accessibilityLabel={value === undefined ? i18n.t(label) : i18n.t('social.profileCountLabel', { count: value, label: i18n.t(label) })} style={styles.count}>
             <Text style={styles.countValue}>{value === undefined ? i18n.t('social.profileCountUnavailable') : i18n.number(value)}</Text>
             <Text style={styles.countLabel}>{i18n.t(label)}</Text>
-          </View>)}
+          </Pressable>)}
         </View>
       </View>
       <View style={styles.names}>

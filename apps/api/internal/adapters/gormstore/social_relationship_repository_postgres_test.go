@@ -233,7 +233,7 @@ func socialRelationshipTestCommand(actor, operation, username, key string, now t
 	action, targetType := audit.ResourceCreated, "profile_follow"
 	if operation == socialapp.CancelFollowRequestOperation {
 		action, targetType = audit.ResourceDeleted, "follow_request"
-	} else if operation == socialapp.UnfollowOperation {
+	} else if operation == socialapp.UnfollowOperation || operation == socialapp.RemoveFollowerOperation {
 		action = audit.ResourceDeleted
 	}
 	return socialapp.RelationshipCommand{

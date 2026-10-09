@@ -5189,5 +5189,15 @@
   "picture.reload": "Reload picture",
   "picture.review": "The latest picture is loaded. Review your selection before saving.",
   "picture.saved": "Profile picture saved.",
-  "picture.removed": "Profile picture removed."
+  "picture.removed": "Profile picture removed.",
+  "connections.hidden": "Only this person and their followers can view these lists.",
+  "connections.loadFailed": "This list couldn’t be loaded.",
+  "connections.noFollowers": "No followers yet.",
+  "connections.noFollowing": "Not following anyone yet.",
+  "connections.remove": "Remove",
+  "connections.removeLabel": "Remove {name} as a follower",
+  "connections.removing": "Removing…",
+  "connections.confirmTitle": "Remove {name}?",
+  "connections.confirmDescription": "They won’t be notified. They’ll lose follower-only access, but any shared Path membership stays. They can follow or request to follow you again.",
+  "connections.removeFailed": "The removal couldn’t be confirmed. Try again safely."
 }
