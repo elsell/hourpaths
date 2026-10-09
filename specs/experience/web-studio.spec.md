@@ -59,6 +59,13 @@ is an authorized recorded activity; a running session is not a completed event.
   heading must not mislabel daily or hourly goals.
 - The dominant time must consistently represent accumulated goal-period time;
   a Path without a goal shows total time with an explicit total label.
+- Interval and overall targets must retain separate, labeled progress when both
+  are configured. Overall-only Paths must show their target alongside total time.
+  Progress accessibility labels must identify the current amount, target, and
+  completion state; removing a goal must remove its progress indicator.
+- Goal-change review must explain that current and historical progress is
+  recalculated for every participant while recorded activity stays unchanged,
+  as required by [Time goals](../goals/time-goals.spec.md).
 - An active timer must update period and lifetime totals live. Its Stop control
   contains elapsed session time. Start/stop must not reorder the Path.
 - Personal color, emoji, pinning, and manual ordering must use persisted
@@ -432,6 +439,24 @@ is an authorized recorded activity; a running session is not a completed event.
 Only one implementation slice is active at a time. Each slice must be usable,
 verified, and merged; temporary compatibility entry points must be removed at
 final cutover. A styled demo or a partial feature set is not completion.
+
+## Default web entry and legacy cutover
+
+- The root URL must enter Studio without rendering the legacy authenticated UI.
+  Existing `/studio` pages and their deep links must retain their URLs. Both
+  slash and non-slash forms must render without a normalization redirect,
+  including query-bearing returns after mutations, so the installed offline
+  shell can reload them. Account and API route handling must remain unchanged.
+- Successful account entry must land in Studio. Callback, onboarding, duplicate
+  identity recovery and the public account-deletion page must remain reachable.
+- The old root presentation, its unused Svelte views and the link offering the
+  old application must be removed after parity verification.
+- Existing opaque-session migration into the durable browser session record
+  must remain supported; cutover must not discard a valid old session or bypass
+  account-isolation, logout tombstones or session-family expiration.
+- Direct navigation, reload, Back/Forward and signed-out entry must resolve
+  correctly at desktop and narrow widths, with existing supported workflows
+  available through Studio's shared navigation.
 
 ## Open questions
 

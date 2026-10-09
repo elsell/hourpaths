@@ -148,7 +148,7 @@ export function exchangeSessionFailureMessage(failure: SessionFailure): MessageK
 }
 export function applicationDestination(nextAction: SessionNextAction): ApplicationDestination {
   switch (nextAction) {
-    case 'home': return '/';
+    case 'home': return '/studio';
     case 'onboarding': return '/onboarding';
     case 'duplicate_email_recovery': return '/account-recovery';
   }

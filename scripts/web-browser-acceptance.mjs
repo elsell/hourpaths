@@ -1,4 +1,6 @@
 import { chromium } from 'playwright'
+import { readFileSync } from 'node:fs'
+const spanish = JSON.parse(readFileSync(new URL('../packages/i18n/src/locales/es.json', import.meta.url), 'utf8'))
 import { navigateToDexLogin } from './web-browser-navigation.mjs'
 
 const webBaseURL = process.env.WEB_ACCEPTANCE_BASE_URL ?? 'http://localhost:5173'
@@ -28,10 +30,10 @@ async function openLocalizedDocument(page) {
     throw new Error(`localized web document omitted Vary: Accept-Language: ${JSON.stringify(vary)}`)
   }
 
-  await page.getByText('Tu aplicación generada está lista.', { exact: true }).waitFor()
+  await page.getByRole('heading', { name: spanish['auth.welcomeHeading'], exact: true }).waitFor()
 }
 
-async function completeDexLogin(page, expectedResponse, legacyHome = false) {
+async function completeDexLogin(page, expectedResponse, openInvitations = false) {
   const signIn = page.getByRole('button', { name: 'Iniciar sesión', exact: true })
   await navigateToDexLogin({
     now: () => Date.now(),
@@ -51,13 +53,12 @@ async function completeDexLogin(page, expectedResponse, legacyHome = false) {
   await page.locator('input[name=login]').fill(email)
   await page.locator('input[name=password]').fill(password)
 
-  if (legacyHome) {
-    // Account entry now lands in Studio. This suite still verifies the legacy
-    // invitation surface until the separately specified legacy cutover.
+  if (openInvitations) {
+    // Exercise the default entry and the dedicated Studio inbox.
     await page.getByRole('button', { name: 'Login', exact: true }).click()
     await page.waitForURL(url => url.pathname === '/studio', { waitUntil: 'domcontentloaded' })
     const responsePromise = page.waitForResponse(expectedResponse)
-    await page.goto(webBaseURL, { waitUntil: 'domcontentloaded' })
+    await page.getByRole('link', { name: spanish['pathInvitation.pendingHeading'], exact: true }).click()
     return responsePromise
   }
   const responsePromise = page.waitForResponse(expectedResponse)
@@ -91,18 +92,18 @@ async function acceptInvitationWithVisibilityWarning(page) {
   if (invitationsResponse.status() !== 200) {
     throw new Error(`authenticated invitation Home request returned ${invitationsResponse.status()}`)
   }
-  await page.getByRole('heading', { name: 'Inicio', exact: true }).waitFor()
-  const invitation = page.locator(`[id="${invitationID}"]`)
+  await page.getByRole('heading', { name: spanish['pathInvitation.pendingHeading'], exact: true }).waitFor()
+  const invitation = page.locator('li').filter({ has: page.getByRole('heading', { name: invitationPathName, exact: true }) })
   await invitation.waitFor({ state: 'visible' })
   await invitation.getByText(invitationPathName, { exact: false }).waitFor()
 
   const acceptInvitation = invitation.getByRole('button', { name: 'Aceptar invitación', exact: true })
   await acceptInvitation.click()
-  const warning = invitation.getByRole('alertdialog')
+  const warning = page.getByRole('dialog')
   await warning.getByRole('heading', { name: 'Revisa la visibilidad de esta ruta', exact: true }).waitFor()
   await warning.getByText('Visibilidad actual de la ruta: seguidores', { exact: true }).waitFor()
   const confirmAcceptance = warning.getByRole('button', { name: 'Confirmar aceptación', exact: true })
-  await expectFocused(confirmAcceptance, 'visibility warning did not move focus to confirmation')
+  await expectFocused(warning.getByRole('button', { name: 'Cancelar', exact: true }), 'visibility warning did not move focus to Cancel')
   if (acceptanceRequests.length !== 0) {
     throw new Error('opening the visibility warning issued an acceptance mutation')
   }
@@ -118,7 +119,7 @@ async function acceptInvitationWithVisibilityWarning(page) {
 
   await acceptInvitation.click()
   await warning.waitFor({ state: 'visible' })
-  await expectFocused(confirmAcceptance, 'reopened visibility warning did not focus confirmation')
+  await expectFocused(warning.getByRole('button', { name: 'Cancelar', exact: true }), 'reopened visibility warning did not focus Cancel')
   const acceptedResponsePromise = page.waitForResponse(
     (response) => new URL(response.url()).pathname === invitationPath &&
       response.request().method() === 'POST',
@@ -138,7 +139,8 @@ async function acceptInvitationWithVisibilityWarning(page) {
 
   await invitation.waitFor({ state: 'detached' })
   if (await invitation.count() !== 0) throw new Error('accepted invitation remained on Home')
-  await page.getByRole('button', { name: invitationPathName, exact: true }).waitFor()
+  await page.getByRole('link', { name: spanish['studio.openPath'].replace('{{name}}', invitationPathName), exact: true }).click()
+  await page.getByRole('heading', { name: invitationPathName, exact: true }).waitFor()
   console.log('browser Dex invitation visibility warning, cancel, confirmation, and Path projection acceptance passed')
 }
 

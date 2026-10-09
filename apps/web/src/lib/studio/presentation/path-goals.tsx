@@ -26,7 +26,7 @@ export function PathGoalsEditor({ path, dependencies: d, close }: { path: Path; 
     <header><h2>{path.name}</h2><button onClick={close} disabled={mutation.isPending}>{d.i18n.t('common.cancel')}</button></header>
     {path.canManageVisibility && !path.archived && <p>{d.i18n.t('pathVisibility.current', { visibility: d.i18n.t(`pathVisibility.option.${path.visibility}`) })} · <Link to="/paths/$pathId/visibility" params={{ pathId: path.id }}>{d.i18n.t('pathVisibility.heading')}</Link></p>}
     {!path.canManageGoals ? summary(path) : review ? <div>
-      <h3>{d.i18n.t('pathManage.reviewHeading')}</h3><p>{d.i18n.t('pathManage.reviewExplanation')}</p>
+      <h3>{d.i18n.t('pathManage.reviewHeading')}</h3><p>{d.i18n.t('pathManage.reviewExplanation')}</p><p>{d.i18n.t('pathManage.goalWarning')}</p>
       <div className="studio-form-pair"><section><h4>{d.i18n.t('pathManage.current')}</h4>{summary(path)}</section><section><h4>{d.i18n.t('pathManage.proposed')}</h4>{summary(review)}</section></div>
       <div className="studio-form-actions"><button disabled={mutation.isPending} onClick={() => setReview(null)}>{d.i18n.t('common.cancel')}</button><button className="studio-primary" disabled={mutation.isPending} onClick={() => mutation.mutate(review)}>{d.i18n.t('common.save')}</button></div>
     </div> : <form onSubmit={event => { event.preventDefault(); setReview({ goal: interval ? { targetSeconds: Number(duration), recurrence, alignment } : null, overallTarget: overall ? Number(total) : null }); }}>

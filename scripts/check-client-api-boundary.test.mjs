@@ -652,7 +652,7 @@ const reviewedProfileDiscoveryProps = `
     onReviewFollowRequest={() => {}}
   />`;
 result = check({ 'apps/web/src/routes/+page.svelte': reviewedProfileDiscoveryProps });
-assert.equal(result.status, 0, `reviewed-profile-discovery-props: ${result.stderr}`);
+assert.notEqual(result.status, 0, `retired-profile-discovery-props: ${result.stderr}`);
 
 result = check({
   'apps/web/src/routes/+page.svelte': reviewedProfileDiscoveryProps.replace('/>', 'destination={apiTarget} />'),

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import type { PendingPathInvitation, PathInvitationNotification } from '@hourpaths/client-core';
 import {
@@ -140,66 +139,4 @@ test('notification convergence signals carry no notification state and are same-
   assert.equal(notificationConvergenceOwner({ ...signal, notificationId: 'secret' }, 'user-a'), null);
   assert.equal(notificationConvergenceOwner({ type: signal.type }, 'user-a'), null);
   assert.equal(notificationConvergenceOwner(null, 'user-a'), null);
-});
-
-const page = readFileSync(new URL('../routes/+page.svelte', import.meta.url), 'utf8');
-
-test('Home notification history is session-owned, paginated, localized, and exposes unread state', () => {
-  assert.match(page, /const notificationOperations = createSessionOperationOwner\(\)/);
-  assert.match(page, /const notificationMutationOperations = createSessionOperationOwner\(\)/);
-  assert.match(page, /\.notifications\(cursor \|\| undefined\)/);
-  assert.match(page, /mergeNotificationHistoryPage\(/);
-  assert.match(page, /unreadCount: envelope\.meta\.unreadCount/);
-  assert.match(page, /notificationUnreadCount = notificationHistory\.unreadCount/);
-  assert.doesNotMatch(page, /notificationHistory\.items\.filter\(\(\{ read \}\) => !read\)\.length/);
-  assert.match(page, /session !== current \|\| profile\?\.id !== ownerID \|\| !ticket\.current\(\)/);
-  assert.match(page, /notificationPresentationMessageKey\(notification\)/);
-  assert.match(page, /notification\.actionableHeading/);
-  assert.match(page, /notification\.informationalHeading/);
-  assert.match(page, /notification\.loadMore/);
-  assert.match(page, /notification\.unreadCount/);
-  assert.match(page, /aria-live="polite"/);
-});
-
-test('opening notification marks unread state before navigation and fails closed without browser capabilities', () => {
-  assert.match(page, /notificationOperations\.invalidate\(\);\s+notificationsBusy = false;\s+if \(!notification\.read && !await mutateNotification/);
-  assert.match(page, /notificationTarget\(notification, pendingInvitations\.items, visiblePendingOwnershipTransfers, accessiblePaths\)/);
-  assert.match(page, /await mutateNotification\(\{ kind: 'read', notificationId: notification\.id \}\)/);
-  assert.doesNotMatch(page, /document\.getElementById|scrollIntoView/);
-  assert.match(page, /if \(target\.kind === 'invitation'\) \{\s+return;/);
-  assert.match(page, /target\.kind === 'ownership-transfer'/);
-  assert.match(page, /ownershipTransferFocusTarget = target\.transferId/);
-  assert.match(page, /const path = accessiblePaths\.find\(\(candidate\) => candidate\.id === target\.pathId\)/);
-  assert.match(page, /if \(!path\) return;/);
-});
-
-test('notification mutations use generated routes, global busy state, stale guards, and localized retry', () => {
-  assert.match(page, /\.markNotificationRead\(mutation\.notificationId\)/);
-  assert.match(page, /\.deleteNotification\(mutation\.notificationId\)/);
-  assert.match(page, /\.markAllNotificationsRead\(\)/);
-  assert.match(page, /applyNotificationMutation\(\s*notificationHistory,\s*mutation,\s*envelope\.data/);
-  assert.match(page, /session !== current \|\| profile\?\.id !== ownerID \|\| !ticket\.current\(\)/);
-  assert.match(page, /notificationMutationBusy/);
-  assert.match(page, /notification\.markAllRead/);
-  assert.match(page, /notification\.delete/);
-  assert.match(page, /notification\.mutationError/);
-  assert.match(page, /retryNotificationMutation/);
-  assert.match(page, /common\.retry/);
-  assert.match(page, /notificationConvergenceBrowser\?\.publish\(notificationConvergenceSignal\(ownerID\)\);\s+void notificationRefreshLatch\.request\(ownerID\);\s+return true;/);
-});
-
-test('web notification state converges from server truth across tabs, focus, and visibility', () => {
-  assert.match(page, /openNotificationConvergenceBrowser\(/);
-  assert.match(page, /notificationConvergenceOwner\(message, profile\?\.id \?\? ''\)/);
-  assert.match(page, /notificationConvergenceBrowser\?\.close\(\)/);
-  assert.match(page, /notificationRefreshLatch\.dispose\(\)/);
-});
-
-test('web notification convergence replaces page one only after success and preserves retry', () => {
-  assert.match(page, /mergeNotificationHistoryPage\(\s*replace \? \{ items: \[\], nextCursor: '', unreadCount: notificationHistory\.unreadCount \} : notificationHistory,\s*page,\s*cursor,\s*\)/);
-  assert.match(page, /if \(session !== current \|\| profile\?\.id !== ownerID \|\| !ticket\.current\(\)\) return;/);
-  assert.match(page, /notificationConvergenceBrowser\?\.publish\(notificationConvergenceSignal\(ownerID\)\)/);
-  assert.match(page, /if \(profile\) void notificationRefreshLatch\.request\(profile\.id\)/);
-  assert.match(page, /retryNotificationHistory/);
-  assert.match(page, /notificationErrorKey.*common\.retry/s);
 });

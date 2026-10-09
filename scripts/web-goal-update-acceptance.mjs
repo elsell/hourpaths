@@ -17,7 +17,6 @@ if (!Number.isInteger(alignmentWeekday) || alignmentWeekday < 1 || alignmentWeek
 
 const initialProgress = '45 of 60 seconds this interval'
 const updatedProgress = '45 of 30 seconds — interval goal completed'
-const accumulatedTotal = '45 seconds accumulated'
 const warning = 'This change recalculates current and historical progress for every participant. Recorded activity will not change.'
 const goalPathname = `/v1/paths/${pathID}/goals`
 
@@ -38,7 +37,7 @@ async function applicationContext(browser, token) {
 }
 
 async function waitForHome(page) {
-  await page.getByRole('heading', { name: 'Home', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Paths', exact: true }).waitFor()
 }
 
 function homePathCard(page) {
@@ -50,9 +49,10 @@ function homePathCard(page) {
 async function assertHomeInterval(page, label) {
   await waitForHome(page)
   const card = homePathCard(page)
+  await card.waitFor()
   assert.equal(await card.count(), 1, 'goal-update Path was missing from Home')
   await card.getByRole('progressbar', { name: label, exact: true }).waitFor()
-  await card.getByText(accumulatedTotal, { exact: true }).waitFor()
+  await card.getByText('Total 0m 45s', { exact: true }).waitFor()
 }
 
 async function openPathDetail(page) {
@@ -62,16 +62,14 @@ async function openPathDetail(page) {
 }
 
 async function backToHome(page) {
-  await page.getByRole('button', { name: 'Back to Home', exact: true }).click()
+  const editor = page.locator('.studio-path-details')
+  if (await editor.count()) await editor.locator('header').getByRole('button', { name: 'Cancel', exact: true }).click()
   await waitForHome(page)
 }
 
 async function setReviewedIntervalTarget(page, seconds) {
-  await page.getByRole('button', { name: 'Manage Path', exact: true }).click()
-  await page.getByRole('heading', { name: 'Manage Path goals', exact: true }).waitFor()
-  await page.locator('#manage-interval-hours').fill('0')
-  await page.locator('#manage-interval-minutes').fill('0')
-  await page.locator('#manage-interval-seconds').fill(String(seconds))
+  await page.getByRole('group', { name: 'Goals', exact: true }).waitFor()
+  await page.getByRole('spinbutton', { name: 'Target duration in whole seconds', exact: true }).fill(String(seconds))
   await page.getByRole('button', { name: 'Review goal changes', exact: true }).click()
   await page.getByRole('heading', { name: 'Current goals', exact: true }).waitFor()
   await page.getByRole('heading', { name: 'Proposed goals', exact: true }).waitFor()
@@ -80,7 +78,7 @@ async function setReviewedIntervalTarget(page, seconds) {
 
 async function confirmGoalUpdate(page) {
   const responsePromise = page.waitForResponse((response) => isGoalUpdate(response.request()))
-  await page.getByRole('button', { name: 'Confirm goal changes', exact: true }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   return responsePromise
 }
 
@@ -96,12 +94,12 @@ try {
   await ownerPage.goto(webBaseURL, { waitUntil: 'domcontentloaded' })
   await assertHomeInterval(ownerPage, initialProgress)
   await openPathDetail(ownerPage)
-  await ownerPage.getByRole('progressbar', { name: initialProgress, exact: true }).waitFor()
+  await homePathCard(ownerPage).getByRole('progressbar', { name: initialProgress, exact: true }).waitFor()
 
   await setReviewedIntervalTarget(ownerPage, 30)
-  await ownerPage.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await ownerPage.locator('.studio-form-actions').getByRole('button', { name: 'Cancel', exact: true }).click()
   assert.equal(ownerGoalRequests.length, 0, 'cancelled goal review issued a PUT')
-  await ownerPage.getByRole('progressbar', { name: initialProgress, exact: true }).waitFor()
+  await homePathCard(ownerPage).getByRole('progressbar', { name: initialProgress, exact: true }).waitFor()
   await backToHome(ownerPage)
   await assertHomeInterval(ownerPage, initialProgress)
   await openPathDetail(ownerPage)
@@ -134,7 +132,7 @@ try {
     accumulatedSeconds: updatedBody.data.intervalProgress.accumulatedSeconds,
     targetSeconds: updatedBody.data.intervalProgress.targetSeconds,
   }, { accumulatedSeconds: 45, targetSeconds: 30 })
-  await ownerPage.getByRole('progressbar', { name: updatedProgress, exact: true }).waitFor()
+  await homePathCard(ownerPage).getByRole('progressbar', { name: updatedProgress, exact: true }).waitFor()
   await backToHome(ownerPage)
   await assertHomeInterval(ownerPage, updatedProgress)
 
@@ -148,7 +146,7 @@ try {
   await waitForHome(participantPage)
   await openPathDetail(participantPage)
   assert.equal(
-    await participantPage.getByRole('button', { name: 'Manage Path', exact: true }).count(),
+    await participantPage.getByRole('button', { name: 'Review goal changes', exact: true }).count(),
     0,
     'participant was shown Manage Path despite manageGoals=false',
   )
@@ -158,11 +156,10 @@ try {
   await ownerPage.reload({ waitUntil: 'domcontentloaded' })
   await assertHomeInterval(ownerPage, updatedProgress)
   await openPathDetail(ownerPage)
-  await ownerPage.getByRole('progressbar', { name: updatedProgress, exact: true }).waitFor()
+  await homePathCard(ownerPage).getByRole('progressbar', { name: updatedProgress, exact: true }).waitFor()
   assert.equal(ownerGoalRequests.length, 1, 'participant view changed the owner goal projection')
 
-  await ownerPage.getByRole('button', { name: 'Manage Path', exact: true }).click()
-  await ownerPage.getByRole('heading', { name: 'Manage Path goals', exact: true }).waitFor()
+  await ownerPage.getByRole('group', { name: 'Goals', exact: true }).waitFor()
   await ownerPage.getByRole('checkbox', { name: 'Add an interval goal', exact: true }).uncheck()
   await ownerPage.getByRole('button', { name: 'Review goal changes', exact: true }).click()
   await ownerPage.getByText(warning, { exact: true }).waitFor()
@@ -183,11 +180,11 @@ try {
   assert.equal(removedBody?.data?.accumulatedSeconds, 45)
   assert.equal(removedBody?.data?.intervalProgress, undefined, 'goal removal retained interval progress')
   assert.equal(removedBody?.data?.path?.intervalGoal, undefined, 'goal removal retained the interval goal')
-  await ownerPage.getByText(accumulatedTotal, { exact: true }).waitFor()
-  assert.equal(await ownerPage.getByRole('progressbar').count(), 0, 'goal removal retained interval progress')
+  await homePathCard(ownerPage).getByText('0m 45s', { exact: true }).waitFor()
+  await homePathCard(ownerPage).getByRole('progressbar').waitFor({ state: 'detached' })
   await backToHome(ownerPage)
   const removedCard = homePathCard(ownerPage)
-  await removedCard.getByText(accumulatedTotal, { exact: true }).waitFor()
+  await removedCard.getByText('0m 45s', { exact: true }).waitFor()
   assert.equal(await removedCard.getByRole('progressbar').count(), 0, 'Home retained interval progress after removal')
 
   await ownerContext.close()

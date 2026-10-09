@@ -1,4 +1,6 @@
 import { chromium } from 'playwright'
+import { readFileSync } from 'node:fs'
+const spanish = JSON.parse(readFileSync(new URL('../packages/i18n/src/locales/es.json', import.meta.url), 'utf8'))
 
 const webBaseURL = process.env.WEB_ACCEPTANCE_BASE_URL ?? 'http://localhost:5173'
 const apiBaseURL = process.env.WEB_ACCEPTANCE_API_URL ?? 'http://localhost:8080'
@@ -31,9 +33,9 @@ try {
   if (!Array.isArray(body?.data) || body.data.length !== 0) {
     throw new Error(`new active account did not have an empty server-backed Path collection: ${JSON.stringify(body)}`)
   }
-  await page.getByRole('heading', { name: 'Inicio', exact: true }).waitFor()
-  await page.getByRole('heading', { name: 'Crea tu primera ruta', exact: true }).waitFor()
-  await page.getByText('Las rutas son donde registras el tiempo que dedicas a lo que importa.', { exact: true }).waitFor()
+  await page.waitForURL(url => url.pathname === '/studio')
+  await page.getByRole('heading', { name: spanish['studio.paths'], exact: true }).waitFor()
+  await page.getByText(spanish['studio.empty'], { exact: true }).waitFor()
   await page.getByRole('button', { name: 'Crear ruta', exact: true }).click()
   await page.getByRole('heading', { name: 'Crear una ruta', exact: true }).waitFor()
   await page.getByRole('textbox', { name: 'Nombre de la ruta', exact: true }).waitFor()

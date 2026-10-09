@@ -12,7 +12,7 @@ const runtimeConfig = {
 } as const;
 
 test('session exchange actions map only to closed application destinations', () => {
-  assert.equal(applicationDestination('home'), '/');
+  assert.equal(applicationDestination('home'), '/studio');
   assert.equal(applicationDestination('onboarding'), '/onboarding');
   assert.equal(applicationDestination('duplicate_email_recovery'), '/account-recovery');
 });
