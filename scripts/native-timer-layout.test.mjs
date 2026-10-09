@@ -44,7 +44,7 @@ function load(filename) {
   vm.runInThisContext(`(function(require,module,exports){${code}\n})`, { filename })(runtimeRequire, module, module.exports);
   return module.exports;
 }
-const { timerLayout } = load(path.join(root, 'src/timers/timer-layout.ios.tsx'));
+const { timerLayout } = load(path.join(root, 'src/timers/ios-timer-layout.tsx'));
 
 function descendants(node) {
   if (!node || typeof node !== 'object' || Array.isArray(node)) return [];

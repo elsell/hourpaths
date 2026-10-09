@@ -1,7 +1,7 @@
 import { createLiveActivity } from 'expo-widgets';
 import { Platform } from 'react-native';
 import type { CreateTimerSurface, TimerSurfacePresentation } from './timer-surface-types';
-import { timerLayout } from './timer-layout.ios';
+import { timerLayout } from './ios-timer-layout';
 
 // Lazy construction keeps unsupported/denied native presentation inside the
 // coordinator's failure boundary, separate from durable timer commands.

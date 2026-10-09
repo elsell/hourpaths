@@ -198,7 +198,7 @@ const approvedNativeTabsImports = new Map([
   ['apps/mobile/app/(tabs)/_layout.tsx', new Set(['NativeTabs'])],
 ]);
 const approvedExpoUIImports = new Map([
-  ['apps/mobile/src/timers/timer-surface.ios.tsx', new Map([
+  ['apps/mobile/src/timers/ios-timer-layout.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['HStack', 'Spacer', 'Text', 'VStack'])],
     ['@expo/ui/swift-ui/modifiers', new Set(['font', 'lineLimit', 'padding'])],
   ])],
