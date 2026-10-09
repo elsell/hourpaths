@@ -13,6 +13,8 @@ import (
 )
 
 type Service interface {
+	ExportOwnActivities(context.Context, string, string, string, int) ([]application.ActivityListRecord, string, error)
+	ListOwnRunningTimers(context.Context, string, string, int) ([]application.RunningTimerCandidate, string, error)
 	SynchronizeActivity(context.Context, string, string, string, application.OfflineActivityInput) (application.OfflineActivityResult, error)
 	SynchronizeTimer(context.Context, string, string, string, application.OfflineTimerInput) (application.OfflineTimerResult, error)
 	StartTimer(context.Context, string, string, string) (application.StartTimerResult, error)
@@ -129,6 +131,8 @@ type activityDefaultsOutput struct {
 }
 
 func Register(api huma.API, service Service) {
+	registerOwnActivityExport(api, service)
+	registerOwnRunningTimers(api, service)
 	registerOfflineTimer(api, service)
 	registerOfflineActivity(api, service)
 	path := "/v1/paths/{pathId}/timer"

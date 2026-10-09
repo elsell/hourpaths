@@ -131,7 +131,7 @@ type APIError struct {
 	Type      string              `json:"type,omitempty" format:"uri" default:"about:blank"`
 	Title     string              `json:"title,omitempty"`
 	Status    int                 `json:"status,omitempty"`
-	Code      string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
+	Code      string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,policy_acceptance_required,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
 	Detail    string              `json:"detail,omitempty"`
 	Errors    []*huma.ErrorDetail `json:"errors,omitempty"`
 }
@@ -197,6 +197,7 @@ func init() {
 }
 
 type Options struct {
+	PolicyAdmission                                                                                                        app.PolicyAdmission
 	OIDCIssuer, OIDCDiscoveryURL, OIDCAuthorizationURL, OIDCTokenURL, OIDCDocsClientID, OIDCDocsRedirectURI, PublicBaseURL string
 	CORSAllowedOrigins                                                                                                     []string
 	TrustedProxyCIDRs                                                                                                      []string
@@ -215,6 +216,11 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	docsBase := strings.TrimRight(options.PublicBaseURL, "/")
 	config.Components.SecuritySchemes = map[string]*huma.SecurityScheme{"oidc": {Type: "oauth2", Description: "OIDC authorization code with PKCE exchanged for a scoped application session.", Flows: &huma.OAuthFlows{AuthorizationCode: &huma.OAuthFlow{AuthorizationURL: options.OIDCAuthorizationURL, TokenURL: docsBase + "/oidc/token", Scopes: map[string]string{"openid": "Authenticate with OIDC", "profile": "Read profile claims", "email": "Read email claim"}, Extensions: map[string]any{"x-scalar-client-id": options.OIDCDocsClientID, "x-scalar-redirect-uri": options.OIDCDocsRedirectURI, "x-usePkce": "SHA-256"}}}, Extensions: map[string]any{"x-default-scopes": []string{"openid", "profile", "email"}, "x-openid-connect-url": docsBase + "/oidc/.well-known/openid-configuration"}}}
 	api := humago.New(mux, config)
+	admission := options.PolicyAdmission
+	if admission == nil {
+		admission = application
+	}
+	installPolicyAdmission(api, admission)
 	if !options.DisableDocs {
 		mux.HandleFunc("GET /docs", oidcDocs(options.OIDCIssuer))
 		mux.HandleFunc("GET "+scalarBrowserRuntimePath, scalarBrowserRuntimeHandler)
@@ -292,6 +298,8 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	registerAccountDeletionRoutes(api, application)
 	registerProfileRoutes(api, application)
 	registerWeekStartPreferenceRoutes(api, application)
+	registerPolicyRenewalRoutes(api, application)
+	registerAccountExportRoutes(api, application)
 	registerProviderIdentityRoutes(api, application)
 	registerAuthorizationRecoveryRoutes(api, application)
 	registerInvitationRoutes(api, application)
@@ -690,6 +698,9 @@ func mapError(err error, concealForbidden bool) error {
 	}
 	if errors.Is(err, ports.ErrConflict) {
 		return newCodedAPIError(http.StatusConflict, "conflict", "conflict")
+	}
+	if errors.Is(err, ports.ErrPolicyAcceptanceRequired) {
+		return newCodedAPIError(http.StatusPreconditionRequired, "policy_acceptance_required", "current policies must be reviewed")
 	}
 	if errors.Is(err, ports.ErrPolicySetChanged) {
 		return newCodedAPIError(http.StatusConflict, "policy_set_changed", "policy review must be refreshed")

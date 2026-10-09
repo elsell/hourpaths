@@ -186,6 +186,7 @@ type MemberListOutput struct {
 }
 
 func Register(api huma.API, service Service) {
+	registerAccountExportPaths(api, service)
 	RegisterInvitations(api, service)
 	path := "/v1/paths"
 	security := []map[string][]string{{"oidc": {}}}

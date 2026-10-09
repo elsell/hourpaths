@@ -75,7 +75,7 @@ func testTimerSubscriptionHTTP(t *testing.T, scope string) {
 	enabled := scope == "person"
 	updateBody := fmt.Sprintf(`{"enabled":%t,"expectedRevision":0}`, enabled)
 	service := socialapp.New(socialapp.Dependencies{Auth: auth, Authorizer: subscriptionAuthorizer{allowed: true}, Clock: clock, Audits: f.runtime, AuditRateLimiter: auditlimit.New(100, time.Minute, 20), TimerSubscriptions: NewTimerSubscriptionRepository(f.runtime.DB)})
-	handler, _ := httpserver.New(platformapp.App{}, nil, httpserver.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { socialroutes.Register(api, service) }}})
+	handler, _ := newPolicyAcceptedHTTPTestServer(platformapp.App{}, nil, httpserver.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { socialroutes.Register(api, service) }}})
 	request := func(method, path, authorization, body, key string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, strings.NewReader(body))
 		req.Header.Set("Authorization", authorization)

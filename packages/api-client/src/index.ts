@@ -1,3 +1,5 @@
+import { notifyPolicyRequirement } from './policy-requirement';
+export { observePolicyRequirement } from './policy-requirement';
 import createClient from 'openapi-fetch';
 import type { components, paths } from './schema';
 import type { PathCreateBody } from './path-submission';
@@ -131,6 +133,11 @@ export function createApiClient(baseUrl: string, tokenProvider: TokenProvider, s
       for (let attempt = 0; ; attempt++) {
         const response = await fetch(input, { ...requestInit, headers, ...(requestSignal ? { signal: requestSignal } : {}) });
         if (response.status === 401) rejected?.(token);
+        if (response.status === 428 && !requestSignal?.aborted) {
+          let problem: unknown;
+          try { problem = await response.clone().json(); } catch { /* Preserve malformed responses for ordinary error handling. */ }
+          if (typeof problem === 'object' && problem !== null && 'code' in problem && problem.code === 'policy_acceptance_required') await notifyPolicyRequirement(baseUrl, token);
+        }
         if (!options.retryRateLimitedReads || !token || method !== 'GET' || response.status !== 429 || attempt >= 2) return response;
         const header = response.headers.get('Retry-After');
         const seconds = header !== null && /^\d+$/.test(header) ? Number(header) : 60;
@@ -182,6 +189,13 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     updateOwnProfile: (body: OwnProfileUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile', {
       params: { header: { 'Idempotency-Key': idempotencyKey } }, body,
     }),
+    exportOwnProfile: () => authenticatedClient.GET('/v1/me/export/profile'),
+    exportOwnPaths: (cursor = '', archived = false) => authenticatedClient.GET('/v1/me/export/paths', { params: { query: { cursor, archived, limit: 100 } } }),
+    exportOwnActivities: (pathId: string, cursor = '') => authenticatedClient.GET('/v1/me/export/paths/{pathId}/activities', { params: { path: { pathId }, query: { cursor, limit: 100 } } }),
+    notificationOwnership: (notificationId: string) => authenticatedClient.GET('/v1/me/notifications/{notificationId}/ownership', { params: { path: { notificationId } } }),
+    ownRunningTimers: (cursor = '') => authenticatedClient.GET('/v1/me/running-timers', { params: { query: { cursor, limit: 50 } } }),
+    reviewCurrentPolicies: () => authenticatedClient.GET('/v1/me/policies'),
+    acceptCurrentPolicies: (body: Omit<components['schemas']['PolicyRenewalInputBody'], '$schema'>, key: string) => authenticatedClient.POST('/v1/me/policies', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredWeekStart: () => authenticatedClient.GET('/v1/me/week-start'),
     updateConfiguredWeekStart: (body: { reviewedFirstDayOfWeek: number; proposedFirstDayOfWeek: number }, key: string) => authenticatedClient.PUT('/v1/me/week-start', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredTimeZone: () => authenticatedClient.GET('/v1/me/time-zone'),

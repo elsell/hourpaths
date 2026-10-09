@@ -204,6 +204,7 @@ func (service controlledInvitationHTTPService) AcceptConfirmed(
 
 func invitationHandler(service InvitationService) (http.Handler, huma.API) {
 	return shared.New(platformapp.App{}, nil, shared.Options{
+		PolicyAdmission:     acceptedPolicyFixture{},
 		DomainRegistrations: []func(huma.API){func(api huma.API) { RegisterInvitations(api, service) }},
 	})
 }

@@ -39,7 +39,7 @@ func TestPostgresNotificationChannelsHTTPAuthenticationAndAccountIsolation(t *te
 	}
 	actor, other := issue(f.actor.ID), issue(f.other.ID)
 	service := socialapp.New(socialapp.Dependencies{Auth: auth, Clock: clock, Audits: f.runtime, AuditRateLimiter: auditlimit.New(100, time.Minute, 20), NotificationChannels: f.repository, NudgeNotificationChannels: f.repository})
-	handler, _ := httpserver.New(platformapp.App{}, nil, httpserver.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { socialroutes.Register(api, service) }}})
+	handler, _ := newPolicyAcceptedHTTPTestServer(platformapp.App{}, nil, httpserver.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { socialroutes.Register(api, service) }}})
 	request := func(method, path, authorization, body, key string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, strings.NewReader(body))
 		req.Header.Set("Authorization", authorization)

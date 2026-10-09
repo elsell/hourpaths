@@ -57,7 +57,7 @@ func TestWeekStartRoutesAuthenticateAndBindPreferencesToSessionOwner(t *testing.
 				var gets []string
 				var commands []app.WeekStartPreferenceCommand
 				application := app.App{Auth: weekStartRouteAuth{ports.Principal{UserID: "owner", Scopes: []string{tc.scope}}, tc.failure, &received}, Users: timeZoneRouteUsers{}, WeekStartPreferences: weekStartRouteStore{&gets, &commands}, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC)}}
-				handler, _ := New(application, nil, Options{})
+				handler, _ := newHTTPTestServer(application, nil, Options{})
 				request := httptest.NewRequest(method, "/v1/me/week-start?userId=someone-else", strings.NewReader(`{"reviewedFirstDayOfWeek":1,"proposedFirstDayOfWeek":7}`))
 				request.Header.Set("Authorization", tc.credential)
 				request.Header.Set("Content-Type", "application/json")

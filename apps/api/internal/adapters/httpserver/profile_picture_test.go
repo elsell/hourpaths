@@ -74,7 +74,7 @@ func TestPictureHTTPAdmissionAndOwnerIsolation(t *testing.T) {
 	state := &deletionRouteState{commands: map[string]app.AccountDeletionCommand{}}
 	store := &pictureRouteStore{rows: map[string]app.OwnPicture{"owner": {Owner: "owner", Revision: 1}, "other": {Owner: "other", Revision: 1}}, images: map[string][]byte{}}
 	application := app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, Pictures: store, PictureProcessor: pictureRouteProcessor{}, PictureRateLimiter: docsLimiter{}, NewPictureID: func() string { return "2d4874f6-c207-447b-92e7-07b23a655bea" }, PictureLocation: func(id string) string { return "https://api.example.test/v1/profile-pictures/" + id }, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}
-	handler, _ := New(application, nil, Options{})
+	handler, _ := newHTTPTestServer(application, nil, Options{})
 	var raw bytes.Buffer
 	png.Encode(&raw, image.NewRGBA(image.Rect(0, 0, 16, 16)))
 	imageBody := base64.StdEncoding.EncodeToString(raw.Bytes())
@@ -125,7 +125,7 @@ func TestPictureHTTPAdmissionAndOwnerIsolation(t *testing.T) {
 	call("PUT", "/v1/me/profile/picture", "Bearer owner", `{"image":"","expectedRevision":2,"remove":true}`, 200)
 	call("GET", "/v1/profile-pictures/2d4874f6-c207-447b-92e7-07b23a655bea", "", "", 404)
 	application.PictureProcessor = pictureRouteProcessor{after: func() { state.commands["owner"] = app.AccountDeletionCommand{} }}
-	handler, _ = New(application, nil, Options{})
+	handler, _ = newHTTPTestServer(application, nil, Options{})
 	call("PUT", "/v1/me/profile/picture", "Bearer owner", strings.Replace(update, `"expectedRevision":1`, `"expectedRevision":3`, 1), 401)
 	if store.rows["owner"].Revision != 3 {
 		t.Fatal("revoked processing session changed picture")
@@ -136,7 +136,7 @@ type unreadPictureBody struct{ read bool }
 
 func (b *unreadPictureBody) Read([]byte) (int, error) { b.read = true; return 0, io.EOF }
 func TestPictureRejectsUnauthenticatedBeforeReadingUpload(t *testing.T) {
-	handler, _ := New(app.App{Auth: timeZoneRouteAuth{err: app.ErrUnauthenticated}}, nil, Options{})
+	handler, _ := newHTTPTestServer(app.App{Auth: timeZoneRouteAuth{err: app.ErrUnauthenticated}}, nil, Options{})
 	body := &unreadPictureBody{}
 	req := httptest.NewRequest("POST", "/v1/me/profile/picture/preview", body)
 	req.Header.Set("Content-Type", "application/json")

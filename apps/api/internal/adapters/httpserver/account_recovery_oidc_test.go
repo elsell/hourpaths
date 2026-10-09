@@ -96,7 +96,7 @@ func TestAccountRecoverySignedProviderBoundary(t *testing.T) {
 			}
 			state := &recoveryHTTPState{}
 			application := app.App{Auth: recoveryHTTPAuth{}, IdentityVerifier: verifier, Users: onboardingHTTPUsers{provisional: identity.User{ID: "enrollment", Status: identity.StatusProvisional}}, Audits: onboardingHTTPAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: now}, SessionTTL: 30 * 24 * time.Hour, AccountRecoveryAdmissions: state, AccountRecoveryCompleter: state}
-			handler, _ := New(application, nil, Options{})
+			handler, _ := newHTTPTestServer(application, nil, Options{})
 			body, _ := json.Marshal(map[string]string{"challengeId": "challenge", "identityToken": proof})
 			request := httptest.NewRequest(http.MethodPost, "/v1/onboarding/duplicate-email-recovery/complete", strings.NewReader(string(body)))
 			request.Header.Set("Authorization", "Bearer enrollment")

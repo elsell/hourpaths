@@ -15,12 +15,13 @@ import (
 )
 
 const (
-	policyReviewPurpose       = "onboarding-policy-review"
-	maxPolicyReviewTokenBytes = 4096
+	policyReviewPurpose        = "onboarding-policy-review"
+	policyRenewalReviewPurpose = "active-account-policy-review"
+	maxPolicyReviewTokenBytes  = 4096
 )
 
 // PolicyReviewPayload is server-issued evidence that an authenticated
-// provisional owner was shown one exact set of policies.
+// owner was shown one exact set of policies for the verified purpose.
 type PolicyReviewPayload struct {
 	Version        int
 	Owner          string
@@ -39,6 +40,14 @@ type policyReviewClaims struct {
 }
 
 func EncodePolicyReviewToken(key []byte, owner string, policyRevision int64, policies identity.CurrentPolicyVersions) (string, error) {
+	return encodePolicyReviewToken(key, owner, policyRevision, policies, policyReviewPurpose)
+}
+
+func EncodePolicyRenewalReviewToken(key []byte, owner string, policyRevision int64, policies identity.CurrentPolicyVersions) (string, error) {
+	return encodePolicyReviewToken(key, owner, policyRevision, policies, policyRenewalReviewPurpose)
+}
+
+func encodePolicyReviewToken(key []byte, owner string, policyRevision int64, policies identity.CurrentPolicyVersions, purpose string) (string, error) {
 	if len(key) < 32 {
 		return "", errors.New("policy review signing key is required")
 	}
@@ -46,7 +55,7 @@ func EncodePolicyReviewToken(key []byte, owner string, policyRevision int64, pol
 		return "", ports.ErrInvalidArgument
 	}
 	claims := policyReviewClaims{
-		Version: 1, Purpose: policyReviewPurpose, Owner: owner, PolicyRevision: policyRevision,
+		Version: 1, Purpose: purpose, Owner: owner, PolicyRevision: policyRevision,
 		TermsOfService: policies.TermsOfService, PrivacyPolicy: policies.PrivacyPolicy, CommunityGuidelines: policies.CommunityGuidelines,
 	}
 	body, err := json.Marshal(claims)
@@ -59,6 +68,14 @@ func EncodePolicyReviewToken(key []byte, owner string, policyRevision int64, pol
 }
 
 func DecodePolicyReviewToken(key []byte, token string) (PolicyReviewPayload, error) {
+	return decodePolicyReviewToken(key, token, policyReviewPurpose)
+}
+
+func DecodePolicyRenewalReviewToken(key []byte, token string) (PolicyReviewPayload, error) {
+	return decodePolicyReviewToken(key, token, policyRenewalReviewPurpose)
+}
+
+func decodePolicyReviewToken(key []byte, token, purpose string) (PolicyReviewPayload, error) {
 	if len(key) < 32 || token == "" || len(token) > maxPolicyReviewTokenBytes {
 		return PolicyReviewPayload{}, ports.ErrInvalidArgument
 	}
@@ -83,7 +100,7 @@ func DecodePolicyReviewToken(key []byte, token string) (PolicyReviewPayload, err
 	policies := identity.CurrentPolicyVersions{
 		TermsOfService: claims.TermsOfService, PrivacyPolicy: claims.PrivacyPolicy, CommunityGuidelines: claims.CommunityGuidelines,
 	}
-	if claims.Version != 1 || claims.Purpose != policyReviewPurpose || !validPolicyReviewOwner(claims.Owner) || claims.PolicyRevision <= 0 || !validPolicyReviewSet(policies) {
+	if claims.Version != 1 || claims.Purpose != purpose || !validPolicyReviewOwner(claims.Owner) || claims.PolicyRevision <= 0 || !validPolicyReviewSet(policies) {
 		return PolicyReviewPayload{}, ports.ErrInvalidArgument
 	}
 	return PolicyReviewPayload{Version: claims.Version, Owner: claims.Owner, PolicyRevision: claims.PolicyRevision, Policies: policies}, nil

@@ -60,7 +60,7 @@ func (r timeZoneRoutePreferences) UpdateTimeZonePreference(_ context.Context, co
 func timeZoneRouteHandler(repository app.TimeZonePreferenceRepository) http.Handler {
 	now := time.Date(2026, 8, 3, 14, 30, 0, 0, time.UTC)
 	application := app.App{Auth: timeZoneRouteAuth{}, Users: timeZoneRouteUsers{}, TimeZonePreferences: repository, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: now}}
-	handler, _ := New(application, nil, Options{})
+	handler, _ := newHTTPTestServer(application, nil, Options{})
 	return handler
 }
 

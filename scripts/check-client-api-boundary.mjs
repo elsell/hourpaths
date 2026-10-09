@@ -46,6 +46,7 @@ const approvedExternalImports = new Set([
   ...[...approvedWorkspacePackages.values()].map((workspacePackage) => workspacePackage.name),
 ]);
 const providerImports = new Map([
+  ['apps/mobile/src/account-export-native.ts', new Set(['expo-file-system/legacy'])],
   ['apps/mobile/src/profile-picture-picker.ts', new Set(['expo-image-picker', 'expo-file-system/legacy'])],
   ['apps/mobile/src/timers/timer-surface.ios.tsx', new Set(['expo-widgets'])],
   ['apps/mobile/src/timers/timer-surface.android.ts', new Set(['expo'])],
@@ -67,6 +68,7 @@ const browserGlobalReferences = new Set([
 ]);
 const windowProxyMembers = new Set(['contentWindow', 'defaultView', 'view']);
 const protectedProviderAdapters = new Set([
+  'apps/mobile/src/account-export-native.ts',
   'apps/mobile/src/profile-picture-picker.ts',
   'apps/mobile/src/timers/timer-surface.ios.tsx',
   'apps/mobile/src/timers/timer-surface.android.ts',
@@ -82,7 +84,7 @@ const protectedProviderAdapters = new Set([
   'apps/web/src/lib/provider-auth.ts',
 ]);
 const protectedProviderManifest = 'scripts/protected-provider-adapters.sha256';
-const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts']);
+const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts', 'packages/api-client/src/policy-requirement.ts']);
 const protectedApiClientManifest = 'scripts/protected-api-client-adapter.sha256';
 const studioHosts = new Set([
   'apps/web/src/routes/studio/[...path]/+page.svelte',
@@ -91,6 +93,7 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/web/src/lib/studio/account/adapters/browser-account-export.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts',
   'apps/web/src/lib/browser-session-state.ts',
   'apps/web/src/service-worker.ts',
@@ -109,6 +112,7 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/notification-convergence-browser.ts',
 ]);
 const protectedClientCapabilityConstructors = new Map([
+  ['apps/web/src/lib/studio/account/adapters/browser-account-export.ts', new Set(['Blob'])],
   // Only the user-selected file; no network or persistent storage capability.
   ['apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts', new Set(['FileReader'])],
   // Fixed-size cryptographic receipt bytes; this grants no transport capability.
@@ -1219,6 +1223,10 @@ function inspectSource(relative, file, source, index) {
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 1 &&
           !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
           clause.namedBindings.elements[0].name.text === 'Platform';
+        const exactAccountExportImport = relative === 'apps/mobile/src/account-export-native.ts' && clause && !clause.name &&
+          clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 2 &&
+          clause.namedBindings.elements.every((element) =>
+            !element.isTypeOnly && !element.propertyName && ['Platform', 'Share'].includes(element.name.text));
         const exactPushAdapterImport = relative === 'apps/mobile/src/push-notifications-native.ts' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) &&
           clause.namedBindings.elements.length === 2 &&
@@ -1241,7 +1249,7 @@ function inspectSource(relative, file, source, index) {
           !exactSignedOutPresentationImport &&
           !exactTrackingPresentationImport &&
           !exactTrackingFallbackImport &&
-          !exactUIPresentationImport && !exactPolicyLinkImport && !exactPushAdapterImport && !exactTimerPlatformImport) violation = true;
+          !exactUIPresentationImport && !exactAccountExportImport && !exactPolicyLinkImport && !exactPushAdapterImport && !exactTimerPlatformImport) violation = true;
       }
       if (specifier === 'expo-router') {
         const reviewedImports = approvedExpoRouterImports.get(relative);

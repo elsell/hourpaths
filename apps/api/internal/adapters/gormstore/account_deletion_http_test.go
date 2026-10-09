@@ -65,7 +65,7 @@ func TestPostgresAccountDeletionHTTPWithPersistedSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 	app := application.App{Auth: manager, Users: store, AccountDeletion: store, DeletionJournal: journal, Clock: deletionTestClock{now}, Audits: store, AuditRateLimiter: limiter}
-	handler, _ := httpserver.New(app, nil, httpserver.Options{})
+	handler, _ := newPolicyAcceptedHTTPTestServer(app, nil, httpserver.Options{})
 	server := httptest.NewServer(handler)
 	defer server.Close()
 	call := func(method, path, token, body string, want int) {

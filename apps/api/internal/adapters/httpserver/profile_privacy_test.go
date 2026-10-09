@@ -13,7 +13,7 @@ import (
 )
 
 func TestOwnProfilePrivacyRejectsUnauthenticatedRequests(t *testing.T) {
-	handler, _ := New(app.App{Auth: timeZoneRouteAuth{err: app.ErrUnauthenticated}}, nil, Options{})
+	handler, _ := newHTTPTestServer(app.App{Auth: timeZoneRouteAuth{err: app.ErrUnauthenticated}}, nil, Options{})
 	for _, method := range []string{http.MethodGet, http.MethodPut} {
 		t.Run(method, func(t *testing.T) {
 			request := httptest.NewRequest(method, "/v1/me/profile/privacy", strings.NewReader(`{"visibility":"private","expectedRevision":1,"confirmed":true}`))
@@ -46,7 +46,7 @@ func (s privacyRouteStore) UpdateOwnProfilePrivacy(_ context.Context, _ app.Prof
 func TestOwnProfilePrivacyHTTPAccountIsolationAndAdmission(t *testing.T) {
 	state := &deletionRouteState{commands: map[string]app.AccountDeletionCommand{}}
 	repository := privacyRouteStore{profiles: map[string]app.OwnProfilePrivacy{"owner": {UserID: "owner", Visibility: identity.ProfileVisibilityPublic, Revision: 1}, "other": {UserID: "other", Visibility: identity.ProfileVisibilityPrivate, Revision: 3}}}
-	handler, _ := New(app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, ProfilePrivacy: repository, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
+	handler, _ := newHTTPTestServer(app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, ProfilePrivacy: repository, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
 	call := func(method, credential, body string, want int) string {
 		t.Helper()
 		request := httptest.NewRequest(method, "/v1/me/profile/privacy", strings.NewReader(body))

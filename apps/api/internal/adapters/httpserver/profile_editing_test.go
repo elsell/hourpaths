@@ -14,7 +14,7 @@ import (
 )
 
 func TestOwnProfileRoutesRejectUnauthenticatedRequests(t *testing.T) {
-	handler, _ := New(app.App{Auth: timeZoneRouteAuth{err: app.ErrUnauthenticated}}, nil, Options{})
+	handler, _ := newHTTPTestServer(app.App{Auth: timeZoneRouteAuth{err: app.ErrUnauthenticated}}, nil, Options{})
 	for _, method := range []string{http.MethodGet, http.MethodPut} {
 		t.Run(method, func(t *testing.T) {
 			request := httptest.NewRequest(method, "/v1/me/profile", strings.NewReader(`{"username":"new.name","displayName":"New Name","description":"About me","expectedRevision":1}`))
@@ -83,7 +83,7 @@ func TestOwnProfileHTTPKeepsIdentityOwnerAndMapsFailures(t *testing.T) {
 		"owner": {UserID: "owner", Revision: 1, Text: identity.ProfileText{Username: "owner", DisplayName: "Owner"}},
 		"other": {UserID: "other", Revision: 1, Text: identity.ProfileText{Username: "other", DisplayName: "Other"}},
 	}}
-	handler, _ := New(app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, Profiles: repository, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
+	handler, _ := newHTTPTestServer(app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, Profiles: repository, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
 	call := func(method, credential, body string, want int) string {
 		t.Helper()
 		request := httptest.NewRequest(method, "/v1/me/profile", strings.NewReader(body))

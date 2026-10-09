@@ -17,3 +17,4 @@ c13ef1a33dc079f52b465afb6a5c6a1780078b3507b5d81a301abb2f7e3194d2  apps/web/src/l
 ad260f663593fd1f60388164938563e8e74d42c82caf438eaa4fa67582a0ec9b  apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts
 f8a25f8e213007af2baa3ab8064b636be1d94e0444aee86986a2d2ceb914c6dc  apps/web/src/lib/studio/presentation/picture-crop.tsx
 30494bdbc7bc3d5c4ee4f527b94555d2a9021f54da524ba15c9fa7f1ac1ba8ea  apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts
+1b6a5e404758bbc999989e20edcb5880d45903405fe705bbecabf3527c7787b5  apps/web/src/lib/studio/account/adapters/browser-account-export.ts

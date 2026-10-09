@@ -106,7 +106,7 @@ func (s controlledService) ManualActivityDefaults(context.Context, string, strin
 }
 
 func handler(service Service) http.Handler {
-	h, _ := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	h, _ := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
 	return h
 }
 
@@ -509,4 +509,57 @@ func TestOfflineActivityRouteConcealsFailuresAndMarksReplayBoundary(t *testing.T
 			denied = response.Body.String()
 		}
 	}
+}
+
+func (s controlledService) ListOwnRunningTimers(context.Context, string, string, int) ([]application.RunningTimerCandidate, string, error) {
+	return nil, "", nil
+}
+
+// Domain-route fixtures represent an account with current policy acceptance.
+type acceptedPolicyFixture struct{}
+
+func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error { return nil }
+
+type ownTimerRouteService struct {
+	controlledService
+	authorization, cursor string
+	limit                 int
+}
+
+func (s *ownTimerRouteService) ListOwnRunningTimers(_ context.Context, authorization, cursor string, limit int) ([]application.RunningTimerCandidate, string, error) {
+	s.authorization, s.cursor, s.limit = authorization, cursor, limit
+	return []application.RunningTimerCandidate{{Timer: domain.RunningTimer{ID: "timer-1", PathID: "path-1", ParticipantID: "user-1", StartedAt: time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC)}, PathName: "Guitar"}}, "next-page", s.err
+}
+func TestOwnTimerRouteRemainsAvailableDuringPolicyReview(t *testing.T) {
+	service := &ownTimerRouteService{}
+	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	// No policy-admission dependencies: the exemption must reach the service,
+	// which still owns ordinary authentication and Path authorization.
+	req := httptest.NewRequest(http.MethodGet, "/v1/me/running-timers?cursor=page&limit=7", nil)
+	req.Header.Set("Authorization", "Bearer own-session")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusOK || service.authorization != "Bearer own-session" || service.cursor != "page" || service.limit != 7 {
+		t.Fatalf("response=%d %s service=%+v", recorder.Code, recorder.Body, service)
+	}
+	var response struct {
+		Data []ownRunningTimerDTO
+		Meta shared.PaginationMeta
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if len(response.Data) != 1 || response.Data[0].PathName != "Guitar" || response.Meta.NextCursor != "next-page" {
+		t.Fatalf("response=%+v", response)
+	}
+	service.err = ports.ErrInvalidCredential
+	recorder = httptest.NewRecorder()
+	handler.ServeHTTP(recorder, req)
+	if recorder.Code != http.StatusUnauthorized {
+		t.Fatalf("authentication failure=%d %s", recorder.Code, recorder.Body)
+	}
+}
+
+func (s controlledService) ExportOwnActivities(context.Context, string, string, string, int) ([]application.ActivityListRecord, string, error) {
+	return s.activities, "", s.err
 }

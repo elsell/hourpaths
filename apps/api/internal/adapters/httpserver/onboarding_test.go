@@ -104,7 +104,7 @@ func TestOnboardingRouteReturnsPrivateProviderSeedsToTheRestrictedSession(t *tes
 		PolicyAuthority:     onboardingHTTPPolicyAuthority{policySet: onboardingHTTPPolicySet(versions)},
 		CursorSigningKey:    []byte("0123456789abcdef0123456789abcdef"),
 	}
-	handler, api := New(application, nil, Options{DisableDocs: true})
+	handler, api := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 	request := httptest.NewRequest(http.MethodGet, "/v1/onboarding", nil)
 	request.Header.Set("Authorization", "Bearer onboarding-session")
 	response := httptest.NewRecorder()
@@ -157,7 +157,7 @@ func TestOnboardingActivationRouteUsesOnlyClientAssertionsAndReturnsTheActiveSes
 		AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: now}, SessionTTL: time.Hour,
 	}
 	body := `{"username":"reviewed.user","displayName":"Reviewed User","profileVisibility":"private","timeZone":"America/New_York","firstDayOfWeek":1,"atLeast16":true,"termsAccepted":true,"privacyAcknowledged":true,"communityGuidelinesAccepted":true,"policyReviewToken":"` + policyReviewToken + `"}`
-	handler, api := New(application, nil, Options{DisableDocs: true})
+	handler, api := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 	request := httptest.NewRequest(http.MethodPost, "/v1/onboarding/activation", strings.NewReader(body))
 	request.Header.Set("Authorization", "Bearer onboarding-session")
 	request.Header.Set("Content-Type", "application/json")
@@ -205,7 +205,7 @@ func TestOnboardingRouteRejectsNonOnboardingCredentialsWithoutLeakingProfileSeed
 				AuditRateLimiter: docsLimiter{},
 				Clock:            docsClock{now: time.Now().UTC()},
 			}
-			handler, _ := New(application, nil, Options{DisableDocs: true})
+			handler, _ := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 			request := httptest.NewRequest(http.MethodGet, "/v1/onboarding", nil)
 			request.Header.Set("Authorization", "Bearer rejected")
 			response := httptest.NewRecorder()
@@ -232,7 +232,7 @@ func TestDuplicateEmailRecoveryDeclineRouteContinuesOnboardingWithoutContent(t *
 		AuditRateLimiter:                 docsLimiter{},
 		Clock:                            docsClock{now: time.Date(2026, 7, 21, 18, 30, 0, 0, time.UTC)},
 	}
-	handler, api := New(application, nil, Options{DisableDocs: true})
+	handler, api := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 	request := httptest.NewRequest(http.MethodPost, "/v1/onboarding/duplicate-email-recovery/decline", nil)
 	request.Header.Set("Authorization", "Bearer onboarding-session")
 	response := httptest.NewRecorder()
@@ -272,7 +272,7 @@ func TestDuplicateEmailRecoveryDeclineRouteRejectsOtherCredentialsWithoutDisclos
 				AuditRateLimiter:                 docsLimiter{},
 				Clock:                            docsClock{now: time.Now().UTC()},
 			}
-			handler, _ := New(application, nil, Options{DisableDocs: true})
+			handler, _ := newHTTPTestServer(application, nil, Options{DisableDocs: true})
 			request := httptest.NewRequest(http.MethodPost, "/v1/onboarding/duplicate-email-recovery/decline", nil)
 			request.Header.Set("Authorization", "Bearer rejected")
 			response := httptest.NewRecorder()

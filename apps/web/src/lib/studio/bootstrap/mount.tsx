@@ -1,3 +1,8 @@
+import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
+import { browserAccountExportJSON } from '../account/adapters/browser-account-export';
+import { apiPolicyTimers, PolicyTimersController, retainedPolicyTimers } from '@hourpaths/client-core';
+import { openWebPolicyLink } from '../../external-policy-link';
+import { apiPolicyRenewal, PolicyReviewController } from '@hourpaths/client-core';
 import { readBrowserPictureFile } from '../preferences/adapters/browser-picture-file';
 import { browserProviderIdentities } from '../account/adapters/browser-provider-identities';
 import { browserAccountDeletion } from '../account/adapters/browser-account-deletion';
@@ -119,6 +124,17 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
   // Validate the local owner/expiry even while the user is idle.
   const deadline = setInterval(() => { void session.maintain(); }, 1000);
   const durableStore = new IndexedDBTrackingStore();
+  const policyTimers = new PolicyTimersController(
+    apiPolicyTimers(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    () => crypto.randomUUID(),
+    retainedPolicyTimers(async () => durableStore, () => policyReview.state.review?.userId ?? null, () => active && !!session.token(), () => Date.now(), () => crypto.randomUUID()),
+  );
+  const accountExport = new AccountExportController({
+    owner: () => policyReview.state.review?.userId ?? null, current: () => active && !!session.token(),
+    repository: apiAccountExport(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    now: () => Date.now(), device: owner => durableStore.read(owner), sink: browserAccountExportJSON,
+  });
+  const policyReview: PolicyReviewController = new PolicyReviewController(apiPolicyRenewal(options.apiURL, () => session.token(), initial.ownerId, credential => session.reject(credential)), () => crypto.randomUUID(), url => openWebPolicyLink(url, () => { throw new Error("policy_link_unavailable"); }), policyTimers, accountExport);
   offline = browserTrackingRuntime(options.apiURL, session, durableStore, browserConnected);
   const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential), false);
   const paths = durablePathRepository(
@@ -137,12 +153,14 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
   }, (work, delay) => { const timer = setTimeout(work, delay); return () => clearTimeout(timer); }, () => {});
   stopHistoryRefresh = () => historyRefresh.dispose();
   const wakeTracking = () => {
+    if (browserConnected()) void policyReview.refresh();
     offline?.retry();
     if (browserConnected()) void historyRefresh.wake();
   };
   if (browserConnected()) void historyRefresh.wake();
   const stopConnectivity = subscribeTrackingConnectivity(wakeTracking);
   root.render(<StudioApp dependencies={{
+    policyReview,
     providers: browserProviderIdentities(options.config),
     deletion,
     offline,
@@ -164,7 +182,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     operationId: () => crypto.randomUUID(),
     now: () => Date.now(),
   }} />);
-  return () => { active = false; clearInterval(deadline); stopConnectivity(); historyRefresh.dispose(); offline?.dispose(); stopRetained?.(); session.dispose(); root.unmount(); };
+  return () => { active = false; policyReview.dispose(); clearInterval(deadline); stopConnectivity(); historyRefresh.dispose(); offline?.dispose(); stopRetained?.(); session.dispose(); root.unmount(); };
 }
 
 export function mountAccountEntry(element: HTMLElement, options: { config: ClientRuntimeConfig; locale: SupportedLocale; callback?: boolean }) {

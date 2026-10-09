@@ -18,6 +18,7 @@ import (
 func newID() string { return uuid.NewString() }
 
 type App struct {
+	AccountExport                    AccountExportRepository
 	Auth                             ports.Authenticator
 	IdentityVerifier                 ports.IdentityTokenVerifier
 	ProviderIdentities               ProviderIdentityRepository
@@ -26,6 +27,7 @@ type App struct {
 	Sessions                         ports.Sessions
 	OnboardingActivator              ports.OnboardingActivator
 	PolicyAuthority                  ports.PolicyAuthority
+	PolicyAcceptances                PolicyAcceptanceRepository
 	SessionTTL                       time.Duration
 	SessionAbsoluteTTL               time.Duration
 	AuthorizationMaxAttempts         int

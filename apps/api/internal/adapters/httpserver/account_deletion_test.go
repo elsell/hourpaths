@@ -48,7 +48,7 @@ func (deletionRouteUsers) GetUser(_ context.Context, id string) (identity.User, 
 func TestAccountDeletionHTTPSeparatesRevokedSessionsFromDeletionReceipts(t *testing.T) {
 	state := &deletionRouteState{commands: map[string]app.AccountDeletionCommand{}}
 	application := app.App{Auth: state, Users: deletionRouteUsers{}, AccountDeletion: state, DeletionJournal: state, Clock: docsClock{now: time.Date(2026, 10, 3, 12, 0, 0, 0, time.UTC)}, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}}
-	handler, _ := New(application, nil, Options{})
+	handler, _ := newHTTPTestServer(application, nil, Options{})
 	secret := strings.Repeat("a", 64)
 	call := func(path, authorization, body string, want int) {
 		t.Helper()

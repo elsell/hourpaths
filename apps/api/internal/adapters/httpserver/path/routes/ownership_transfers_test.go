@@ -80,7 +80,7 @@ func (service controlledOwnershipTransferHTTPService) Cancel(_ context.Context, 
 }
 
 func ownershipTransferHandler(service OwnershipTransferService) (http.Handler, huma.API) {
-	return shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { RegisterOwnershipTransfers(api, service) }}})
+	return shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { RegisterOwnershipTransfers(api, service) }}})
 }
 
 func ownershipTransferRequest(method, target, body, key string) *http.Request {

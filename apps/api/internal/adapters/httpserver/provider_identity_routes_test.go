@@ -35,7 +35,7 @@ func TestRejectedLinkProofDoesNotInvalidateTheAuthenticatedSession(t *testing.T)
 	state := &deletionRouteState{commands: map[string]app.AccountDeletionCommand{}}
 	repo := &providerRouteRepository{}
 	application := app.App{Auth: state, Users: deletionRouteUsers{}, ProviderIdentities: repo, IdentityVerifier: rejectedIdentityVerifier{}, Clock: docsClock{now: time.Now()}, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}}
-	handler, _ := New(application, nil, Options{})
+	handler, _ := newHTTPTestServer(application, nil, Options{})
 	call := func(method, path, credential, body string) *httptest.ResponseRecorder {
 		request := httptest.NewRequest(method, path, strings.NewReader(body))
 		request.Header.Set("Authorization", credential)
@@ -65,7 +65,7 @@ func TestProviderRoutesRequireCurrentAccountAndFailClosed(t *testing.T) {
 	state := &deletionRouteState{commands: map[string]app.AccountDeletionCommand{}}
 	repo := &providerRouteRepository{}
 	application := app.App{Auth: state, Users: deletionRouteUsers{}, ProviderIdentities: repo, IdentityVerifier: rejectedIdentityVerifier{}, Clock: docsClock{now: time.Now()}, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}}
-	handler, _ := New(application, nil, Options{})
+	handler, _ := newHTTPTestServer(application, nil, Options{})
 	for _, route := range []struct{ method, path, body string }{
 		{http.MethodGet, "/v1/me/identities", ""},
 		{http.MethodPost, "/v1/me/identities/link", `{"provider":"apple"}`},
@@ -92,7 +92,7 @@ func TestProviderRoutesRequireCurrentAccountAndFailClosed(t *testing.T) {
 		t.Fatalf("cross-account review reached persistence: %d, mutations %d", response.Code, repo.mutations)
 	}
 	application.ProviderIdentities = nil
-	handler, _ = New(application, nil, Options{})
+	handler, _ = newHTTPTestServer(application, nil, Options{})
 	request = httptest.NewRequest(http.MethodGet, "/v1/me/identities", nil)
 	request.Header.Set("Authorization", "Bearer owner")
 	response = httptest.NewRecorder()

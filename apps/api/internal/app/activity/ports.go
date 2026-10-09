@@ -170,6 +170,7 @@ type ProfileReader interface {
 }
 
 type Repository interface {
+	ListRunningTimerCandidates(context.Context, string, RunningTimerPageRequest) ([]RunningTimerCandidate, error)
 	TimerNotificationCandidates(context.Context, string, string) ([]string, error)
 	OfflineActivityRepository
 	OfflineRepository
