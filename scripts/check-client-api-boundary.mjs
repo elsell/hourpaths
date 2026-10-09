@@ -158,6 +158,8 @@ const approvedExpoRouterImports = new Map([
   ['apps/mobile/src/use-notification-journey-route-ancestry.ts', new Set(['useFocusEffect', 'useNavigation'])],
   ['apps/mobile/src/use-settings-journey-route-ancestry.ts', new Set(['useFocusEffect', 'useNavigation'])],
   ['apps/mobile/app/profile/[username].tsx', new Set(['router', 'Stack', 'useFocusEffect', 'useLocalSearchParams'])],
+  ['apps/mobile/app/profile/[username]/connections.tsx', new Set(['router', 'Stack', 'useLocalSearchParams'])],
+  ['apps/mobile/src/ui/profile-connections-view.tsx', new Set(['useFocusEffect'])],
   ['apps/mobile/src/ui/path-header-menu.ios.tsx', new Set(['Stack'])],
   ['apps/mobile/src/ui/path-header-menu.tsx', new Set(['Stack'])],
   ['apps/mobile/src/ui/home-header-actions.ios.tsx', new Set(['Stack'])],
@@ -1056,6 +1058,7 @@ function inspectSource(relative, file, source, index) {
           for (const name of ['AccessibilityInfo', 'Animated', 'PanResponder']) uiAllowed.add(name);
         }
         if (relative === 'apps/mobile/src/ui/native-toast.tsx') uiAllowed.add('AccessibilityInfo');
+        if (relative === 'apps/mobile/src/ui/profile-connections-view.tsx') uiAllowed.add('AppState');
         if (relative === 'apps/mobile/src/ui/home-view.tsx') {
           uiAllowed.add('AccessibilityInfo');
           uiAllowed.add('findNodeHandle');

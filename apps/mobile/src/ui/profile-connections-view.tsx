@@ -39,8 +39,7 @@ export function ProfileConnectionsView({ i18n, repository, viewerId, username, d
   useFocusEffect(useCallback(() => {
     void load();
     const subscription = AppState.addEventListener('change', state => { if (state === 'active') void load(); });
-    const timer = setInterval(() => { if (AppState.currentState === 'active' && !loading.current) void load(); }, 15000);
-    return () => { clearInterval(timer); subscription.remove(); };
+    return () => subscription.remove();
   }, [load]));
   async function remove(person: ConnectionPerson) {
     if (!removeAllowed.current || !current.current || admitted.current) return;
