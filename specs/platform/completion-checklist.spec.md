@@ -375,3 +375,16 @@ and Studio types, localization, transport boundary and Settings checks passed;
 the scoped security critic found no P0/P1 blockers. Final CI, merge and release
 remain pending. This does not close area 10: content removal, suspension, bans,
 restricted-account appeals and automated public-text checks remain required.
+
+### Native expired-session timer recovery (review-ready)
+
+Cold and foreground expiry now preserve the verified account's local Stop-only
+recovery, without restoring API access, new starts, or replay. Android acceptance
+verified cold expiry, local Stop offline, restart, and same-account sign-in
+replaying exactly one activity with its original timestamps. Foreground expiry
+also exposes and completes local Stop. Emulator clock changes were restored
+before stopping; production session settings were unchanged. Focused restoration,
+owner isolation, delayed-account recovery and native tracking tests pass, along
+with mobile types, localization and client-boundary checks. Issue #148 tracks
+this slice. Final candidate gates, merge and release remain pending; area 2 is
+not closed by this evidence.

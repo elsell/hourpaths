@@ -1,3 +1,4 @@
+import { recoverRetainedSession } from '@hourpaths/client-core';
 import { reportReceiptFromAPI, type ReportDraft, type ReportReceipt } from '@hourpaths/client-core';
 import { GoalReminderControl } from '../src/ui/goal-reminder-control';
 import { goalReminderFromAPI, type GoalReminderSubject, type GoalReminderPreference } from '@hourpaths/client-core';
@@ -2416,27 +2417,37 @@ export function HomeScreen() {
     if (ticket && !ticket.current()) return;
     let failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
     let retainedRevocation = false;
-    if (classifySessionFailure(failure).discardCredential && failure.kind === 'http') {
+    if (classifySessionFailure(failure).discardCredential && (failure.kind === 'http' || failure.kind === 'expired')) {
       const active = notificationLifecycleState.current;
       if (active.session && active.session.token !== current.token || !active.session && retainedHomeRef.current) return;
-      nativeOffline.current?.pause();
-      const retained = await nativeOffline.current?.retained();
       const stillCurrent = () => ticket ? ticket.current() : notificationLifecycleState.current.session?.token === current.token;
-      if (retained && current.ownerId === retained.profile.id && stillCurrent()) {
-        try {
-          if (!await serializedSessionStorage.pause(retained.profile.id, current.token, stillCurrent)) return;
+      try {
+        const recovery = await recoverRetainedSession({ credential: current, current: stillCurrent,
+          restore: async (owner, guard) => {
+            const home = await durableMobileHome();
+            if (!guard()) return null;
+            const retained = await home.restoreRetained(owner, guard);
+            return retained ? { owner: retained.profile.id, value: retained } : null;
+          },
+          pause: serializedSessionStorage.pause,
+        });
+        if (recovery.kind === 'superseded') return;
+        if (recovery.kind === 'retained') {
           retainedRevocation = true;
-        } catch { failure = { kind: 'local_storage', reason: 'malformed' }; }
+          retainedHomeRef.current = recovery.value; setRetainedHome(recovery.value);
+        }
+      } catch {
         if (!stillCurrent()) return;
-        retainedHomeRef.current = retained; setRetainedHome(retained);
+        failure = { kind: 'local_storage', reason: 'malformed' };
       }
     }
     if (classifySessionFailure(failure).discardCredential) {
       providerSettings.invalidate();
       nativeOffline.current?.pause();
+      await deregisterPushSession(current).catch(() => undefined);
+      if (ticket ? !ticket.current() : notificationLifecycleState.current.session?.token !== current.token) return;
       sessionOperations.invalidate();
       invalidateOnboardingActivation();
-      await deregisterPushSession(current).catch(() => undefined);
       resetTimerPresentation();
       resetManualActivity();
       resetPathDetail();
@@ -2644,7 +2655,7 @@ export function HomeScreen() {
           refreshLeadMs: sessionRefreshLeadMs,
           hasLocalHome: async current => (await durableMobileHome()).cached(current),
           restoreRetained: async owner => {
-            const restored = await (await durableMobileHome()).restoreRetained(owner);
+            const restored = await (await durableMobileHome()).restoreRetained(owner, ticket.current);
             if (!ticket.current()) return;
             retainedHomeRef.current = restored; setRetainedHome(restored);
             setSession(null); setDestination(null); setAccessState('authentication_required');
@@ -2735,15 +2746,16 @@ export function HomeScreen() {
     })();
   }, [providerSignIn.identityToken, providerSignIn.failed]);
 
+  const sessionHasExpired = !!session && now >= Date.parse(session.expiresAt);
   useEffect(() => {
     if (!session) return;
     if (onboardingHomeRecovery?.status === 'loading') return;
     if (homeRecovery?.status === 'loading') return;
     const untilExpiry = Date.parse(session.expiresAt) - Date.now();
-    if (untilExpiry <= 0) { void clearSession('errors.sessionExpired'); return; }
+    if (untilExpiry <= 0) { void handleSessionFailure({ kind: 'expired' }, session, 'refresh', sessionOperations.issue()); return; }
     const delay = accessState === 'authenticated_offline' && retryAttempt > 0 ? sessionRetryDelay(retryAttempt, session.expiresAt) : sessionRenewable ? sessionRefreshDelay(session.expiresAt) : untilExpiry;
     const cancelDeadline = scheduleSessionDeadline(() => {
-      if (!sessionRenewable && (accessState !== 'authenticated_offline' || retryAttempt === 0)) { void clearSession('errors.sessionExpired'); return; }
+      if (!sessionRenewable && (accessState !== 'authenticated_offline' || retryAttempt === 0)) { void handleSessionFailure({ kind: 'expired' }, session, 'refresh', sessionOperations.issue()); return; }
       const ticket = sessionOperations.issue();
       void recoverMobileSession({
         mode: accessState === 'authenticated_offline' && retryAttempt > 0 ? retryOperation : 'refresh',
@@ -2758,7 +2770,7 @@ export function HomeScreen() {
       });
     }, Date.now() + delay);
     return cancelDeadline;
-  }, [session?.token, session?.expiresAt, sessionRenewable, accessState, retryAttempt, retryOperation, onboardingHomeRecovery?.status, homeRecovery?.status]);
+  }, [session?.token, session?.expiresAt, sessionHasExpired, sessionRenewable, accessState, retryAttempt, retryOperation, onboardingHomeRecovery?.status, homeRecovery?.status]);
 
   useEffect(() => installDeletionNotificationCleanup(
     async owner => (await openNativeOfflineStorage()).deletion.isFenced(owner),

@@ -127,14 +127,18 @@ export function mobileOfflineHome(dependencies: {
     finally { if (current.refreshing === work) current.refreshing = null; }
   }
   return {
-    async restoreRetained(owner: string): Promise<{ profile: MobileHomeProfile; state: TrackingSnapshot } | null> {
+    async restoreRetained(owner: string, guard: () => boolean = () => true): Promise<{ profile: MobileHomeProfile; state: TrackingSnapshot } | null> {
       const retained = await dependencies.home.readHome(owner);
+      if (!guard()) throw new Error('tracking_session_superseded');
       if (!retained) return null;
       const current = adopt(owner, null);
       current.paused = true;
       current.adapter.pause(); current.refreshWorker.setPaused(true); current.historyWorker.setPaused(true);
       current.profile = await project(current, retained.profile);
-      return { profile: current.profile, state: await current.tracking.snapshot() };
+      const state = await current.tracking.snapshot();
+      valid(current);
+      if (!guard()) throw new Error('tracking_session_superseded');
+      return { profile: current.profile, state };
     },
     async retained(): Promise<{ profile: MobileHomeProfile; state: TrackingSnapshot } | null> {
       if (!context?.profile) return null;
