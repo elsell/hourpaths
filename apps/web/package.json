@@ -6,7 +6,7 @@
     "dev": "vite dev --host 0.0.0.0",
     "build": "vite build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "test": "tsx --test src/lib/*.test.ts ../../scripts/test-web-session-page.mjs"
+    "test": "tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@hourpaths/api-client": "workspace:*",

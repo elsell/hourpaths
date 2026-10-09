@@ -287,36 +287,7 @@ const approvedSafeAreaImports = new Set([
   'apps/mobile/src/ui/native-sheet-frame.tsx',
   'apps/mobile/src/ui/practice-comments-view.tsx',
 ]);
-const approvedSvelteComponentProps = new Map([
-  ['apps/web/src/routes/+page.svelte', new Map([
-    ['StatsView', new Set(['state', 'i18n', 'onSelect', 'onRefresh', 'appearance'])],
-    ['PathAppearanceSurface', new Set(['apiURL', 'token', 'pathID', 'i18n'])],
-    ['SocialProfileDiscovery', new Set([
-      'blockBusy', 'blockError', 'blockedAccounts', 'blockedAccountsNextCursor', 'blockedAccountsOpen',
-      'blockedAccountsState', 'blockReview', 'busyFollowRequestID', 'followRequests', 'followRequestsNextCursor', 'followRequestsOpen',
-      'followRequestsState', 'i18n', 'loadingMore', 'nextCursor', 'onCloseFollowRequests',
-      'onCancelBlock', 'onCancelUnblock', 'onCloseBlockedAccounts', 'onCloseProfile', 'onConfirmBlock',
-      'onConfirmUnblock', 'onLoadMore', 'onLoadMoreBlockedAccounts', 'onLoadMoreFollowRequests',
-      'onOpenBlockedAccounts', 'onOpenFollowRequests', 'onQueryChange', 'onRefreshProfile',
-      'onRelationshipAction', 'onRetryBlockedAccounts', 'onRetrySearch', 'onReviewBlock',
-      'onReviewFollowRequest', 'onReviewUnblock', 'onSearch',
-      'onSelectProfile', 'profileState', 'query', 'relationshipBusy', 'relationshipError', 'results',
-      'searchState', 'selectedProfile', 'unblockReview',
-    ])],
-    ['PathMemberAccess', new Set([
-      'activities', 'activitiesFailed', 'activitiesLoading', 'activitiesNextCursor', 'archived', 'failed',
-      'i18n', 'loading', 'loadingMore', 'members', 'nextCursor', 'onBackToMembers', 'onClose',
-      'onCancelRoleChange', 'onChooseRole', 'onConfirmRoleChange', 'onLoadMore', 'onLoadMoreActivities',
-      'onOpenActivity', 'onRefresh', 'onRemove', 'onRetryReview', 'onSelect', 'onUnblock', 'pendingRole',
-      'removalBusy', 'removalError', 'review', 'reviewLoading', 'roleChangeBusy', 'roleChangeError',
-      'selected', 'unblockBusy', 'unblockError',
-    ])],
-    ['PathMemberComparison', new Set([
-      'failed', 'i18n', 'loading', 'loadingMore', 'members', 'nextCursor', 'onLoadMore', 'onRetry',
-      'onSelect',
-    ])],
-  ])],
-]);
+const approvedSvelteComponentProps = new Map();
 
 function workspaceManifestViolations() {
   const violations = [];
@@ -445,9 +416,7 @@ function inspectSvelteMarkup(source, relative) {
       expressions.push(source.slice(value.start, value.end));
       return;
     }
-    // Reviewed Stats chart styles derive only from numeric totals or the fixed Path palette.
-    const statsChartStyle = relative === 'apps/web/src/lib/StatsView.svelte' && ['background', 'height', '--intensity'].includes(value.name);
-    if (value.type === 'HtmlTag' || value.type === 'SpreadAttribute' || (value.type === 'StyleDirective' && !statsChartStyle) ||
+    if (value.type === 'HtmlTag' || value.type === 'SpreadAttribute' || value.type === 'StyleDirective' ||
       (value.type === 'BindDirective' && value.name === 'this' && !studioHosts.has(relative))) apiDestination = true;
     if (value.type === 'Attribute' && attributeParts(value)) {
       const parts = attributeParts(value);

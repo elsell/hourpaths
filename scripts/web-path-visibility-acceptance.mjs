@@ -30,17 +30,18 @@ async function applicationContext(browser, token) {
 }
 
 async function openPath(page) {
-  await page.getByRole('heading', { name: 'Home', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Paths', exact: true }).waitFor()
   const card = page.locator('li').filter({
     has: page.getByRole('button', { name: pathName, exact: true }),
   })
+  await card.waitFor()
   assert.equal(await card.count(), 1, 'visibility acceptance Path was missing from Home')
   await card.getByRole('button', { name: pathName, exact: true }).click()
   await page.getByRole('heading', { name: pathName, exact: true }).waitFor()
 }
 
 async function openVisibilityManagement(page) {
-  await page.getByRole('button', { name: 'Manage Path', exact: true }).click()
+  await page.locator('.studio-path-details').getByRole('link', { name: 'Path visibility', exact: true }).click()
   await page.getByRole('heading', { name: 'Path visibility', exact: true }).waitFor()
 }
 
@@ -63,7 +64,7 @@ try {
   await ownerPage.getByText('Current visibility: Private', { exact: true }).waitFor()
 
   await submitVisibility(ownerPage, 'Followers')
-  const confirmation = ownerPage.getByRole('alertdialog')
+  const confirmation = ownerPage.getByRole('dialog')
   await confirmation.getByRole('heading', { name: 'Share this Path more broadly?', exact: true }).waitFor()
   await confirmation.getByText(`Change ${pathName} from Private to Followers?`, { exact: true }).waitFor()
   await confirmation.getByText('Eligible historical identity, progress, and activity from this Path will become visible to the broader audience.', { exact: true }).waitFor()
@@ -97,7 +98,7 @@ try {
   await participantPage.goto(webBaseURL, { waitUntil: 'domcontentloaded' })
   await openPath(participantPage)
   assert.equal(
-    await participantPage.getByRole('button', { name: 'Manage Path', exact: true }).count(),
+    await participantPage.getByRole('link', { name: 'Path visibility', exact: true }).count(),
     0,
     'participant was shown creator-only visibility management',
   )
@@ -119,8 +120,7 @@ try {
   )
   await ownerPage.getByText('Current visibility: Private', { exact: true }).waitFor()
   await ownerPage.reload({ waitUntil: 'domcontentloaded' })
-  await openPath(ownerPage)
-  await openVisibilityManagement(ownerPage)
+  await ownerPage.getByRole('heading', { name: 'Path visibility', exact: true }).waitFor()
   await ownerPage.getByText('Current visibility: Private', { exact: true }).waitFor()
   assert.equal(requests.length, 2, 'visibility workflow issued an unexpected number of PUTs')
 

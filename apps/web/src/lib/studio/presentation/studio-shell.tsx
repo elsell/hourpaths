@@ -14,7 +14,6 @@ export function StudioShell({ children, page, i18n }: { children: ReactNode; pag
         <Link to="/invitations" aria-current={page === 'invitations' ? 'page' : undefined}>{i18n.t('pathInvitation.pendingHeading')}</Link>
         <NotificationNavigation i18n={i18n} current={page === 'notifications'} />
       </nav>
-      <a className="studio-legacy" href="/">{i18n.t('studio.currentApp')}</a>
     </aside>{children}
   </div>;
 }

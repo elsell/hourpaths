@@ -13,9 +13,9 @@ if (!invitationID) throw new Error('WEB_ACCEPTANCE_INVITATION_ID is required')
 async function openApplicationPage(context) {
   const page = await context.newPage()
   await page.goto(webBaseURL, { waitUntil: 'domcontentloaded' })
-  await page.getByRole('heading', { name: 'Home', exact: true }).waitFor()
-  await page.getByRole('button', { name: /^Notifications/ }).click()
-  const row = page.locator('#notification-history li').filter({ hasText: 'Invitation acceptance' })
+  await page.getByRole('heading', { name: 'Paths', exact: true }).waitFor()
+  await page.getByRole('link', { name: /^Notifications/ }).click()
+  const row = page.locator('.studio-notification-list li').filter({ hasText: 'Invitation acceptance' })
   await row.waitFor()
   return { page, row }
 }
@@ -44,18 +44,19 @@ try {
 
   const first = await openApplicationPage(context)
   const second = await openApplicationPage(context)
-  await second.row.getByText('Unread', { exact: true }).waitFor()
+  await second.row.locator('button.studio-notification-open[aria-label*="Unread"]').waitFor()
   await first.page.bringToFront()
-  await first.row.getByText('Unread', { exact: true }).waitFor()
+  await first.row.locator('button.studio-notification-open[aria-label*="Unread"]').waitFor()
 
-  await first.row.locator('button.notification-link').click()
-  await second.row.getByText('Unread', { exact: true }).waitFor({ state: 'detached' })
+  await first.row.locator('button.studio-notification-open').click()
+  await second.row.locator('button.studio-notification-open[aria-label*="Unread"]').waitFor({ state: 'detached' })
   assert.equal((await notificationFromServer(second.page))?.read, true)
 
-  await first.page.getByRole('button', { name: /^Notifications/ }).click()
-  const refreshedFirstRow = first.page.locator('#notification-history li').filter({ hasText: 'Invitation acceptance' })
+  await first.page.getByRole('link', { name: /^Notifications/ }).click()
+  const refreshedFirstRow = first.page.locator('.studio-notification-list li').filter({ hasText: 'Invitation acceptance' })
   await refreshedFirstRow.waitFor()
   await refreshedFirstRow.getByRole('button', { name: 'Delete notification', exact: true }).click()
+  await first.page.getByRole('dialog').getByRole('button', { name: 'Delete notification', exact: true }).click()
   await second.row.waitFor({ state: 'detached' })
   assert.equal(await notificationFromServer(second.page), null)
 
