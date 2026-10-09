@@ -73,6 +73,9 @@ paths and over time.
   and expose each date and exact duration through accessible text and selection.
 - The contribution grid must be the default calendar presentation for every date
   range; weekly, monthly, and yearly summaries remain selectable.
+- Native range and calendar-grouping selectors must use paired platform
+  foreground/background colors so selected labels retain readable contrast.
+  A brand tint must not override only the selection background.
 - Horizontally scrolling activity charts must initially show the most recent
   dates when a range or Path filter changes. Refreshes must preserve manual
   exploration of earlier dates.

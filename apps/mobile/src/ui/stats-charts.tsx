@@ -62,13 +62,16 @@ export function StatsCalendar({ values, i18n }: { values: readonly StatsChartVal
 
 export function StatsContributionGrid({ days, weekStartsOn, i18n }: { days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
   const weeks = statsContributionWeeks(days, weekStartsOn);
+  const scroll = useRef<ScrollView>(null);
+  const positioned = useRef(false);
   const maximum = Math.max(1, ...days.map(day => day.seconds));
   const [selected, setSelected] = useState<string>();
   const selectedDay = weeks.flat().find(day => day?.date === selected);
   const label = (day: { date: string; seconds: number }) => i18n.t('stats.chartValue', { label: statsDateLabel(day.date, 'day', i18n), duration: i18n.t('duration.compactSeconds', { seconds: i18n.number(day.seconds) }) });
   return <View style={styles.contribution}>
     <View style={styles.gridBody}><View style={styles.weekdays}>{Array.from({ length: 7 }, (_, index) => <Text key={index} style={styles.weekday}>{statsWeekdayLabel(index, weekStartsOn, i18n)}</Text>)}</View>
-    <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.weeks}>
+    <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.weeks}
+      onContentSizeChange={() => { if (!positioned.current) { scroll.current?.scrollToEnd({ animated: false }); positioned.current = true; } }}>
       {weeks.map((week, index) => <View key={index} style={styles.week}>
         <Text numberOfLines={1} style={styles.month}>{statsContributionMonthLabel(week, index, i18n)}</Text>
         {week.map((day, weekday) => day ? <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={label(day)} accessibilityState={{ selected: selected === day.date }} onPress={() => setSelected(day.date)} style={[styles.day, { backgroundColor: contributionColors[statsContributionLevel(day.seconds, maximum)] }, selected === day.date && styles.selectedDay]} /> : <View key={weekday} style={styles.dayPlaceholder} />)}
