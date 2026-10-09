@@ -31,6 +31,10 @@ the client implementation.
   presentation while its authoritative destination resolves. Route correctness
   must not depend on a prior in-memory visit to Home, and resolution for one
   signed-in profile must not populate a replacement profile's navigation stack.
+- Replacing or normalizing a native route must not dismiss its shared content
+  while another mounted screen still represents that route. Ordinary Back
+  navigation must release the content when the last screen leaves. Delayed
+  cleanup must not dismiss a replacement account's presentation.
 
 ## Apple-native presentation and Liquid Glass
 

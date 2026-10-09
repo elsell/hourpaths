@@ -6,7 +6,7 @@ import { createDeviceTranslator } from '../../src/i18n';
 import { usePathRouteAncestry } from '../../src/use-path-route-ancestry';
 import { PathHeaderMenu } from '../../src/ui/path-header-menu';
 import { NativeRouteRecoveryView } from '../../src/ui/native-route-recovery-view';
-import { NativeRouteScreen, dismissNativeRoute, useNativeRoutePresentation } from '../../src/ui/native-route-presentation';
+import { NativeRouteScreen, retainNativeRoute, useNativeRoutePresentation } from '../../src/ui/native-route-presentation';
 
 const i18n = createDeviceTranslator(getLocales);
 
@@ -15,7 +15,7 @@ export default function PathDetails() {
   const presentation = useNativeRoutePresentation(pathID);
   const report = useReportAction({ kind: 'path', id: pathID }, i18n);
   usePathRouteAncestry({ kind: 'path', pathID, routeKey: `path:${pathID}` });
-  useEffect(() => () => dismissNativeRoute(pathID), [pathID]);
+  useEffect(() => retainNativeRoute(pathID), [pathID]);
 
   if (!presentation) return <>
     <Stack.Screen options={{ title: i18n.t('pathDetails.genericTitle') }} />

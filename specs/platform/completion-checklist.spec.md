@@ -20,19 +20,24 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Native retained-history synchronization (area 2) is the sole active implementation
-slice. An Android offline restart/reboot/replay exercise exposed a pending badge
-that remained after server acknowledgement. Retained history and recent activity
-must consume the latest account-scoped snapshot without refresh or navigation.
-The regression and Android acceptance now verify automatic pending-to-saved
-convergence, one server activity, and unchanged prior activities. Merge and release
-remain pending; this emulator exercise does not close physical-device acceptance.
+Native route recovery (area 2/13) is the sole active implementation slice.
+Opening a History deep link from activity details reproduces a permanent loading
+screen even online. Route teardown must preserve content shared by a surviving
+screen while still releasing it on ordinary Back navigation and account change.
+
+Retained-history synchronization merged in [PR #142](https://github.com/elsell/hourpaths/pull/142)
+as `d9b2f20` after all five candidate gates passed. Android acceptance verifies
+pending-to-saved convergence, offline edit persistence across restart, and a
+Studio/native conflict preserving the later edit and both revisions. Publication
+is in progress. Separate debug startup crashes and route recovery remain open;
+this evidence does not close signed physical-device acceptance.
 
 Native Live Activity row restoration merged in [PR #141](https://github.com/elsell/hourpaths/pull/141)
 as `cfa403d` after all five candidate gates passed. The actual widget serializer
-now retains one, two, and overflow timer rows. Main CI passed; publication is in
-progress. Signed-device visual acceptance and the richer proposed design remain
-open in area 6.
+now retains one, two, and overflow timer rows. Production exact images and readiness are verified through GitOps `bc9a263`.
+TestFlight 0.49.1 (421) is VALID, nonexpired, IN_BETA_TESTING and assigned to
+the internal group (Apple status run `37969745496`). Signed-device visual
+acceptance and the richer proposed design remain open in area 6.
 
 Studio default-entry cutover merged in [PR #140](https://github.com/elsell/hourpaths/pull/140)
 as `c886c79` after all five immutable candidate gates passed. Legacy Home is

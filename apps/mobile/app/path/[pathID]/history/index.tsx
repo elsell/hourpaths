@@ -5,7 +5,7 @@ import { createDeviceTranslator } from '../../../../src/i18n';
 import { usePathRouteAncestry } from '../../../../src/use-path-route-ancestry';
 import {
   activityHistoryRouteKey,
-  dismissNativeChildRoute,
+  retainNativeChildRoute,
   useNativeChildRoutePresentation,
 } from '../../../../src/ui/native-child-route-presentation';
 import { NativeRouteScreen } from '../../../../src/ui/native-route-presentation';
@@ -18,7 +18,7 @@ export default function ActivityHistory() {
   const routeKey = activityHistoryRouteKey(pathID);
   const presentation = useNativeChildRoutePresentation(routeKey);
   usePathRouteAncestry({ kind: 'history', pathID, routeKey });
-  useEffect(() => () => dismissNativeChildRoute(routeKey), [routeKey]);
+  useEffect(() => retainNativeChildRoute(routeKey), [routeKey]);
 
   if (!presentation) return <>
     <Stack.Screen options={{ title: i18n.t('pathDetails.history') }} />

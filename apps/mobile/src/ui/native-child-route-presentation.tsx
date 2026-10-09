@@ -1,3 +1,4 @@
+import { createNativeRouteLifetime } from '../native-route-lifetime';
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 
 export type NativeChildRoutePresentation = {
@@ -16,6 +17,17 @@ type PublishedNativeChildRoute = NativeChildRoutePresentation & {
 
 const presentations: Record<string, PublishedNativeChildRoute | undefined> = Object.create(null);
 const listeners = new Set<() => void>();
+const routeScreens = createNativeRouteLifetime(routeKey => {
+  const departing = presentations[routeKey];
+  return () => {
+    if (departing && presentations[routeKey]?.owner === departing.owner) dismissNativeChildRoute(routeKey);
+  };
+});
+
+export function retainNativeChildRoute(routeKey: string) {
+  return routeScreens.mount(routeKey);
+}
+
 
 function emitChange() {
   for (const listener of listeners) listener();

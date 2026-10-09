@@ -5,7 +5,7 @@ import { createDeviceTranslator } from '../../../../src/i18n';
 import { usePathRouteAncestry } from '../../../../src/use-path-route-ancestry';
 import {
   activityDetailRouteKey,
-  dismissNativeChildRoute,
+  retainNativeChildRoute,
   useNativeChildRoutePresentation,
 } from '../../../../src/ui/native-child-route-presentation';
 import { NativeRouteScreen } from '../../../../src/ui/native-route-presentation';
@@ -19,7 +19,7 @@ export default function ActivityDetail() {
   const presentation = useNativeChildRoutePresentation(routeKey);
   const navigation = useNavigation();
   usePathRouteAncestry({ activityID, kind: 'activity', pathID, routeKey });
-  useEffect(() => () => dismissNativeChildRoute(routeKey), [routeKey]);
+  useEffect(() => retainNativeChildRoute(routeKey), [routeKey]);
   useEffect(() => navigation.addListener('beforeRemove', (event) => {
     if (presentation?.dismissible === false) event.preventDefault();
   }), [navigation, presentation?.dismissible]);

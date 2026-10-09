@@ -1,3 +1,4 @@
+import { createNativeRouteLifetime } from '../native-route-lifetime';
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +27,17 @@ type PublishedNativeRoute = NativeRoutePresentation & {
 
 let currentPresentation: PublishedNativeRoute | null = null;
 const listeners = new Set<() => void>();
+const routeScreens = createNativeRouteLifetime(pathID => {
+  const departing = currentPresentation;
+  return () => {
+    if (departing && currentPresentation?.owner === departing.owner) dismissNativeRoute(pathID);
+  };
+});
+
+export function retainNativeRoute(pathID: string) {
+  return routeScreens.mount(pathID);
+}
+
 
 function emitChange() {
   for (const listener of listeners) listener();
