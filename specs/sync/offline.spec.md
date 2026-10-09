@@ -97,6 +97,10 @@ connection and the limits of other offline surfaces.
   create another notification.
 - A user must not need to recreate an offline time entry merely because it was
   recorded without connectivity.
+- An open native activity history or recent-activity preview must reflect the
+  latest account-scoped synchronization projection. Once an entry is acknowledged,
+  its pending indicator must clear without navigating away or manually refreshing;
+  its server identity must replace its local identity without a duplicate row.
 - Synchronization must preserve the participant and path attribution of each
   offline entry.
 - Every locally created synchronization mutation must receive a stable unique

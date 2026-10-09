@@ -77,6 +77,23 @@ export interface TrackingStore {
 }
 
 /** Account-bound durable commands. UI publishes only after the commit resolves. */
+/** A single durable projection drives both cached reads and visible UI updates. */
+export function projectTrackingHistory(state: TrackingSnapshot, owner: string, pathId: string): { items: (RetainedActivity & { pending: boolean })[]; incomplete: boolean } {
+  if (state.owner !== owner) throw new Error('tracking_owner_mismatch');
+  if (state.unavailablePaths?.includes(pathId)) throw new Error('tracking_path_unavailable');
+  const saved = state.history.filter(entry => entry.pathId === pathId).map(entry => ({ ...entry, pending: false }));
+  const pending = state.operations.filter(operation => operation.pathId === pathId && operation.kind !== 'start' && operation.endedAt
+    && Date.parse(operation.endedAt) - Date.parse(operation.correctedStartedAt ?? operation.startedAt) >= 1000).map(operation => ({
+      id: operation.operationId, owner: state.owner, pathId, startedAt: operation.correctedStartedAt ?? operation.startedAt, endedAt: operation.endedAt!,
+      timeZone: operation.timeZone, pending: true,
+    }));
+  const items = new Map([...saved, ...pending].map(entry => [entry.id, entry]));
+  for (const { activity } of recordedActivityChanges(state)) {
+    if (activity.pathId === pathId) items.set(activity.id, { ...activity, pending: true });
+  }
+  return { items: [...items.values()].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.id.localeCompare(a.id)), incomplete: !state.historyRetainedAt };
+}
+
 export class OfflineTracking {
   private disposed = false;
   private periods = new Map<string, { key: string; value: ReturnType<typeof currentGoalPeriod> }>();
@@ -386,20 +403,9 @@ export class OfflineTracking {
     return [...entries.values()];
   }
   async localHistory(pathId: string): Promise<{ items: (RetainedActivity & { pending: boolean })[]; incomplete: boolean }> {
-    const state = await this.snapshot();
-    if (state.unavailablePaths?.includes(pathId)) throw new Error('tracking_path_unavailable');
-    const saved = state.history.filter(entry => entry.pathId === pathId).map(entry => ({ ...entry, pending: false }));
-    const pending = state.operations.filter(operation => operation.pathId === pathId && operation.kind !== 'start' && operation.endedAt
-      && Date.parse(operation.endedAt) - Date.parse(operation.correctedStartedAt ?? operation.startedAt) >= 1000).map(operation => ({
-        id: operation.operationId, owner: this.owner, pathId, startedAt: operation.correctedStartedAt ?? operation.startedAt, endedAt: operation.endedAt!,
-        timeZone: operation.timeZone, pending: true,
-      }));
-    const items = new Map([...saved, ...pending].map(entry => [entry.id, entry]));
-    for (const { activity } of recordedActivityChanges(state)) {
-      if (activity.pathId === pathId) items.set(activity.id, { ...activity, pending: true });
-    }
-    return { items: [...items.values()].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.id.localeCompare(a.id)), incomplete: !state.historyRetainedAt };
+    return projectTrackingHistory(await this.snapshot(), this.owner, pathId);
   }
+
   async retainPaths(paths: RetainedTrackingPath[], expectedRevision?: number): Promise<boolean> {
     for (const path of paths) this.validatePath(path);
     if (this.disposed) throw new Error('tracking_disposed');

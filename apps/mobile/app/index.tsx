@@ -21,7 +21,7 @@ import { AccountDeletionView } from '../src/ui/account-deletion-view';
 import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
-import { retainedHistoryDetails } from '../src/offline/retained-history-presentation';
+import { retainedHistoryDetails, retainedHistoryFromSnapshot } from '../src/offline/retained-history-presentation';
 import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualActivityInterval, type TrackingSnapshot } from '@hourpaths/client-core';
 import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
 import { nativeTimerSurfaces } from '../src/timers/native-timer-surfaces';
@@ -8156,6 +8156,9 @@ export function HomeScreen() {
     ownedHomeDestination?.profile.id ?? '',
     socialPresentationGeneration.current,
   ].join(':');
+  const visibleActivityHistory = activityHistoryLocal.retained && nativeTrackingState && ownedHomeDestination && selectedPathID
+    ? retainedHistoryFromSnapshot(nativeTrackingState, ownedHomeDestination.profile.id, selectedPathID)
+    : activityHistory;
   const selectedPath = ownedHomeDestination
     ? ownedHomeDestination.profile.paths.find((path) => path.id === selectedPathID)
       ?? ownedHomeDestination.profile.archivedPaths.find((path) => path.id === selectedPathID)
@@ -8776,7 +8779,7 @@ export function HomeScreen() {
         busy={manualBusy}
         recentActivity={<RecentPathActivity
           retained={activityHistoryLocal.retained} incomplete={activityHistoryLocal.incomplete}
-          activities={activityHistory}
+          activities={visibleActivityHistory}
           busy={pathDetailBusy}
           errorText={activityHistoryErrorKey ? i18n.t(activityHistoryErrorKey) : undefined}
           i18n={i18n}
@@ -9183,7 +9186,7 @@ export function HomeScreen() {
       >
         <ActivityHistoryView
           retained={activityHistoryLocal.retained} incomplete={activityHistoryLocal.incomplete}
-          activities={activityHistory}
+          activities={visibleActivityHistory}
           busy={pathDetailBusy}
           errorText={activityHistoryErrorKey ? i18n.t(activityHistoryErrorKey) : undefined}
           hasMore={Boolean(activityHistoryCursor)}

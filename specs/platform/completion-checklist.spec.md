@@ -20,12 +20,19 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Native Live Activity row restoration (area 6) is the sole active implementation
-slice. The user-provided Dynamic Island screenshot exposed a serialization defect:
-Swift drops nested arrays of timer rows, leaving only the title. Restore the
-already-specified Path names and native elapsed clocks; the richer visual design
-remains awaiting approval. Verify one, two, and overflow timers through the actual
-installed widget serializer, then the native build and signed-device surface.
+Native retained-history synchronization (area 2) is the sole active implementation
+slice. An Android offline restart/reboot/replay exercise exposed a pending badge
+that remained after server acknowledgement. Retained history and recent activity
+must consume the latest account-scoped snapshot without refresh or navigation.
+The regression and Android acceptance now verify automatic pending-to-saved
+convergence, one server activity, and unchanged prior activities. Merge and release
+remain pending; this emulator exercise does not close physical-device acceptance.
+
+Native Live Activity row restoration merged in [PR #141](https://github.com/elsell/hourpaths/pull/141)
+as `cfa403d` after all five candidate gates passed. The actual widget serializer
+now retains one, two, and overflow timer rows. Main CI passed; publication is in
+progress. Signed-device visual acceptance and the richer proposed design remain
+open in area 6.
 
 Studio default-entry cutover merged in [PR #140](https://github.com/elsell/hourpaths/pull/140)
 as `c886c79` after all five immutable candidate gates passed. Legacy Home is
