@@ -47,6 +47,9 @@ recurring consistency and long-term progress.
   interval goals, overall targets, and custom interval alignment. The native
   control itself must handle value changes and expose its current checked and
   disabled state to accessibility services.
+- The Path form must retain its existing Reduce Motion and keyboard-accessory
+  behavior. Its exact native presentation import allowlist must remove the local
+  Switch import when the shared Settings switch owns that control.
 - Enabling or disabling a goal must immediately reveal or hide its fields;
   reenabling it must retain the unsaved duration and recurrence. Saving must
   retain the existing review and server confirmation behavior.

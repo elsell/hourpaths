@@ -1070,7 +1070,7 @@ function inspectSource(relative, file, source, index) {
         }
         const onboardingPresentationAllowed = new Set(['StyleSheet', 'Switch', 'View', 'useWindowDimensions']);
         const pathCreatePresentationAllowed = new Set([
-          'AccessibilityInfo', 'InputAccessoryView', 'Keyboard', 'Pressable', 'StyleSheet', 'Switch', 'View',
+          'AccessibilityInfo', 'InputAccessoryView', 'Keyboard', 'Pressable', 'StyleSheet', 'View',
         ]);
         const manualActivityPresentationAllowed = new Set(['AccessibilityInfo', 'StyleSheet', 'View']);
         const pathSharePresentationAllowed = new Set(['AccessibilityInfo', 'StyleSheet', 'View']);
