@@ -11,12 +11,33 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Exact controlled fixtures exercise denied operational grants and immutable appeal audit.
+    'apps/api/internal/adapters/gormstore/moderation_enforcement_postgres_test.go': (
+        "\tif err = admin.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,'profile',?,'spam_or_scam','','{}',?)`, caseID, other, owner, owner, at).Error; err != nil {",
+        '\tif err = runtime.DB.Exec(`SELECT moderation_warn_user(?,?,?)`, caseID, issuedID, "Policy reason").Error; err == nil {',
+        '\tif err = admin.DB.Exec(`SELECT moderation_warn_user(?,?,?)`, caseID, issuedID, "Policy reason").Error; err != nil {',
+        '\tif err = admin.DB.Exec(`SELECT moderation_warn_user(?,?,?)`, caseID, newTestID(), "Another reason").Error; err == nil {',
+        '\tif err = runtime.DB.Exec(`SELECT moderation_list_appeals(20)`).Error; err == nil {',
+        '\tif err = runtime.DB.Exec(`SELECT moderation_read_appeal(?)`, noticeID).Error; err == nil {',
+        "\tif err = admin.DB.Raw(`SELECT count(*) FROM jsonb_array_elements(moderation_list_appeals(100)) p WHERE p->>'notice_id'=?`, noticeID).Scan(&pending).Error; err != nil || pending != 1 {",
+        '\tif err = admin.DB.Raw(`SELECT moderation_read_appeal(?)->\'appeal\'->>\'explanation\'`, noticeID).Scan(&explanation).Error; err != nil || explanation != "Context" {',
+        '\tif err = runtime.DB.Exec(`SELECT moderation_decide_warning_appeal(?,?,?,?)`, noticeID, "reversed", "Context considered", "Only available reviewer").Error; err == nil {',
+        '\tif err = admin.DB.Exec(`SELECT moderation_decide_warning_appeal(?,?,?,?)`, noticeID, "reversed", "Context considered", "").Error; err == nil {',
+        '\tif err = admin.DB.Exec(`SELECT moderation_decide_warning_appeal(?,?,?,?)`, noticeID, "reversed", "Context considered", "Only available reviewer").Error; err != nil {',
+        '\tif err = admin.DB.Exec(`SELECT moderation_decide_warning_appeal(?,?,?,?)`, noticeID, "upheld", "Changed mind", "Only available reviewer").Error; err == nil {',
+        "\tif err = admin.DB.Exec(`INSERT INTO moderation_enforcement_models(id,subject_user_id,action,policy_reason,issued_at) VALUES(?,?,'warning','Policy',?)`, secondID, owner, at).Error; err != nil {",
+        "\tif err = runtime.DB.Exec(`UPDATE moderation_appeal_models SET explanation='rewrite' WHERE enforcement_id=?`, noticeID).Error; err == nil {",
+        "\tif err = runtime.DB.Exec(`INSERT INTO moderation_enforcement_models(id,subject_user_id,action,policy_reason,issued_at) VALUES(?,?,'ban','Fake decision',?)`, newTestID(), owner, at).Error; err == nil {",
+    ),
     # Restricted case INSERT avoids runtime read grants; fixtures verify operator/retention isolation.
     'apps/api/internal/adapters/gormstore/moderation_report.go': (
         '\t\tif err = tx.Exec(`INSERT INTO moderation_case_models (id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,evidence_jpeg,created_at) VALUES (?,?,?,?,?,?,?,?::jsonb,?,?)`, c.ID, c.ReporterID, c.Access.SubjectUserID, string(c.Access.Target.Kind), c.Access.Target.ID, string(c.Reason), c.Explanation, string(snapshot.Evidence), snapshot.JPEG, c.At).Error; err != nil {',
     ),
     'apps/api/internal/adapters/auditretention/moderation_postgres_test.go': (
         "\t\tif err = admin.Exec(`INSERT INTO moderation_case_models(id,target_kind,target_id,reason,explanation,evidence,state,created_at,closed_at) VALUES (?,'profile','test-subject','something_else','','{}',?,?,?)`, tc.id, tc.state, now.Add(-100*24*time.Hour), tc.closed).Error; err != nil {",
+        "\tif err = admin.Exec(`INSERT INTO user_models(id,status,display_name,created_at,updated_at) VALUES(?,'active','Retention test',?,?)`, subject, now, now).Error; err != nil {",
+        "\tif err = admin.Exec(`INSERT INTO moderation_enforcement_models(id,case_id,subject_user_id,action,policy_reason,issued_at) VALUES(?,?,?,'warning','Policy',?)`, notice, appealed, subject, now.Add(-90*24*time.Hour)).Error; err != nil {",
+        "\tif err = admin.Exec(`INSERT INTO moderation_appeal_models(enforcement_id,id,explanation,submitted_at) VALUES(?,'retention-appeal-001','Please review',?)`, notice, now.Add(-89*24*time.Hour)).Error; err != nil {",
         '\tif err = admin.Exec("SELECT moderation_list_cases(NULL)").Error; err == nil {',
         '\tif err = retention.Raw("SELECT moderation_read_case(?)", active).Scan(&snapshot).Error; err == nil {',
         '\tif err = admin.Raw("SELECT moderation_read_case(?)", active).Scan(&snapshot).Error; err != nil {',
