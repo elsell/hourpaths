@@ -1,4 +1,4 @@
-import { apiReporting } from '@hourpaths/client-core';
+import { apiEnforcement, apiReporting } from '@hourpaths/client-core';
 import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
 import { browserAccountExportJSON } from '../account/adapters/browser-account-export';
 import { apiPolicyTimers, PolicyTimersController, retainedPolicyTimers } from '@hourpaths/client-core';
@@ -166,6 +166,11 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     deletion,
     offline,
     paths,
+    enforcement: {
+      list: cursor => apiEnforcement(options.apiURL, session.token(), credential => session.reject(credential)).list(cursor),
+      get: id => apiEnforcement(options.apiURL, session.token(), credential => session.reject(credential)).get(id),
+      appeal: (id, explanation, key) => apiEnforcement(options.apiURL, session.token(), credential => session.reject(credential)).appeal(id, explanation, key),
+    },
     reporting: { submit: (draft, key, signal) => apiReporting(options.apiURL, session.token(), credential => session.reject(credential), signal).submit(draft, key) },
     blocking: apiBlockingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     notifications: apiNotifications(options.apiURL, () => session.token(), credential => session.reject(credential), i18n),

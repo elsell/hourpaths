@@ -2056,12 +2056,33 @@ live_path_response="$(curl -fsS -X POST \
   http://localhost:8080/v1/paths)"
 live_path_id="$(printf '%s' "$live_path_response" | python3 -c 'import json,sys;d=json.load(sys.stdin)["data"];assert d["name"]=="Piano practice";print(d["id"])')"
 [[ -n "$live_path_id" ]] || { echo "name-only Path creation did not return an ID" >&2; exit 1; }
-replayed_path_response="$(curl -fsS -X POST \
-  -H "Authorization: Bearer $owner_token" \
-  -H "Idempotency-Key: $live_path_create_key" \
-  -H 'Content-Type: application/json' \
-  --data "$live_path_request" \
-  http://localhost:8080/v1/paths)"
+# A visibility outbox worker can own the replay's pending relationship after
+# the first creation succeeds. Retry only that explicit transient code, keeping
+# the original operation identity; all other failures remain fatal.
+replayed_path_body="$(mktemp)"
+for replay_attempt in $(seq 1 20); do
+  replayed_path_status="$(curl -sS -o "$replayed_path_body" -w '%{http_code}' -X POST \
+    -H "Authorization: Bearer $owner_token" \
+    -H "Idempotency-Key: $live_path_create_key" \
+    -H 'Content-Type: application/json' \
+    --data "$live_path_request" \
+    http://localhost:8080/v1/paths)"
+  if [[ "$replayed_path_status" == 201 ]]; then break; fi
+  if [[ "$replayed_path_status" != 503 ]] || ! python3 - "$replayed_path_body" <<'PATH_REPLAY_PENDING'
+import json,sys
+with open(sys.argv[1]) as response:
+    assert json.load(response).get("code") == "authorization_pending"
+PATH_REPLAY_PENDING
+  then
+    echo "Path replay failed with unexpected HTTP $replayed_path_status" >&2
+    rm -f "$replayed_path_body"
+    exit 1
+  fi
+  sleep 0.25
+done
+[[ "$replayed_path_status" == 201 ]] || { rm -f "$replayed_path_body"; echo "Path replay authorization did not converge" >&2; exit 1; }
+replayed_path_response="$(cat "$replayed_path_body")"
+rm -f "$replayed_path_body"
 [[ "$replayed_path_response" == "$live_path_response" ]] || {
   echo "duplicate name-only Path creation did not replay the original result" >&2
   exit 1

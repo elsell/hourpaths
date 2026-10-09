@@ -5,6 +5,7 @@ import { nativeAccountExportJSON, clearNativeAccountExportCache } from '../src/a
 import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
 import { NativePolicyReviewSource } from '../src/ui/policy-review-presentation';
 import { apiPolicyRenewal, PolicyReviewController, apiPolicyTimers, PolicyTimersController, retainedPolicyTimers } from '@hourpaths/client-core';
+import { apiEnforcement, EnforcementFailure, type EnforcementRepository } from '@hourpaths/client-core';
 import { apiWeekStartPreference, WeekStartFailure, type WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import { apiProfileConnections } from '@hourpaths/client-core';
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
@@ -4496,6 +4497,21 @@ export function HomeScreen() {
     }
   }
 
+  async function enforcementRequest<T>(request: (repository: EnforcementRepository) => Promise<T>): Promise<T> {
+    if (!session || destination?.kind !== 'home') throw new EnforcementFailure('rejected');
+    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    try {
+      const result = await request(apiEnforcement(apiURL, credential.token));
+      if (!current()) throw new Error('enforcement_superseded');
+      return result;
+    } catch (cause) {
+      if (cause instanceof EnforcementFailure && cause.kind === 'rejected') await handleNotificationOperationFailure(sessionFailureFromResponse(401), credential, current);
+      throw cause;
+    }
+  }
+
   async function weekStartRequest<T>(request: (repository: WeekStartPreferenceRepository) => Promise<T>): Promise<T> {
     if (!session || destination?.kind !== 'home') throw new WeekStartFailure('rejected');
     const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
@@ -8614,6 +8630,7 @@ export function HomeScreen() {
       profileEditing={{ read: () => profileEditingRequest(), save: (value, key) => profileEditingRequest(value, key) }}
       profileOperationId={() => Crypto.randomUUID()}
       reporting={{ submit: reportRequest }}
+      enforcement={{ list: cursor => enforcementRequest(repo => repo.list(cursor)), get: id => enforcementRequest(repo => repo.get(id)), appeal: (id, explanation, key) => enforcementRequest(repo => repo.appeal(id, explanation, key)) }}
       goalReminders={{ get: subject => goalReminderRequest(subject), update: (subject, value, key) => goalReminderRequest(subject, value, key) }}
       timerSubscriptions={{ get: subject => timerSubscriptionRequest(subject), update: (subject, value, key) => timerSubscriptionRequest(subject, value, key) }}
       providers={providerSettings}

@@ -1,3 +1,4 @@
+import { EnforcementSettings } from './enforcement-settings';
 import { WeekStartSettings } from './week-start-settings';
 import { PictureSettings } from './picture-settings';
 import { ProfilePrivacySettings } from './profile-privacy';
@@ -16,7 +17,7 @@ import { StudioShell } from './studio-shell';
 import { PreferenceFailure, type NotificationChannelPreference, type Interactions, type TimeZonePreference } from '../preferences/domain/preferences';
 import { PathAppearanceEditor } from './path-appearance';
 
-const sections = ['account', 'appearance', 'notifications', 'privacy', 'blocked'] as const;
+const sections = ['account', 'appearance', 'notifications', 'privacy', 'blocked', 'enforcement'] as const;
 export function SettingsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const params = useParams({ strict: false }) as { section?: string };
   const section = sections.find(value => value === params.section) ?? 'account';
@@ -25,6 +26,7 @@ export function SettingsPage({ dependencies: d }: { dependencies: StudioDependen
     <div className="studio-settings-layout"><nav aria-label={d.i18n.t('settings.heading')}>{sections.map(value => <Link key={value} to="/settings/$section" params={{ section: value }} aria-current={section === value ? 'page' : undefined}>{d.i18n.t(`studio.settings.${value}`)}</Link>)}</nav>
       <div className="studio-settings-content" key={section}>
         <h2>{d.i18n.t(`studio.settings.${section}`)}</h2>
+        {section === 'enforcement' && <EnforcementSettings key={d.accountScope} dependencies={d} />}
         {section === 'account' && <AccountSettings dependencies={d} />}
         {section === 'notifications' && <NotificationSettings dependencies={d} />}
         {section === 'privacy' && <InteractionSettings dependencies={d} />}

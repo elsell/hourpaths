@@ -218,6 +218,34 @@ users or content for review.
   already defined; moderation outcomes and appeals must not be disclosed to the
   reporter.
 
+### Enforcement and appeal acceptance (`SAFE-ENFORCEMENT-01`)
+
+These scenarios exercise the approved enforcement lifecycle above; reporting
+acknowledgments must remain unchanged.
+
+1. An authorized operational reviewer can act on a reviewed case with a policy
+   reason. The original report and evidence remain intact, and the decision
+   records the reviewer, time, affected target, and temporary duration where
+   applicable. Ordinary application and Path roles cannot perform enforcement.
+2. The affected user can read a private notice identifying the action and policy
+   reason, its temporary duration when applicable, and the appeal entry point.
+   Neither the notice nor an appeal response reveals the reporter's identity or
+   the restricted report evidence. Another user cannot read that notice.
+3. Within the specified 30-day window, the affected user can submit one appeal
+   with an explanation. Retrying a submission after a lost response must not
+   produce a second appeal or replace the original explanation. An appeal after
+   the window or by a different account is rejected without altering evidence.
+4. An authorized reviewer can decide the appeal with a reason. The original
+   enforcement decision and evidence remain preserved. The affected user sees
+   the final outcome and reason; the reporter receives no outcome notification.
+5. Content removal, warning, temporary suspension, and permanent ban must each
+   have their specified effect; recording a decision alone is not enforcement.
+   A restricted account must retain access to its own notice and appeal process
+   without regaining ordinary access prohibited by that restriction.
+6. Native and Studio Settings expose Account notices with the same notice and appeal lifecycle. Signing out or
+   replacing the account clears pending notice and appeal presentation, and late
+   completions cannot display the previous account's private information.
+
 ## Automated public-text checks
 
 - A new or edited public comment or profile description must pass an automated

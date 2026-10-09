@@ -170,7 +170,7 @@ func main() {
 	})
 	registrations = append(registrations, func(api huma.API) { socialroutes.Register(api, socialService) })
 	registrations = append(registrations, goalReminderPreferenceRegistration(store, sessions, authorizer, clock, auditLimiter))
-	registrations = append(registrations, moderationRegistration(store, sessions, authorizer, clock, auditLimiter))
+	registrations = append(registrations, moderationRegistration(store, sessions, authorizer, clock, auditLimiter, []byte(cfg.CursorSigningKey)))
 	transferService := pathapp.NewOwnershipTransferService(pathapp.OwnershipTransferDependencies{
 		Auth: sessions, Paths: pathstore.New(store.DB), Profiles: store, Authorizer: authorizer,
 		AuthorizationReconciler: application, AuthorizationWorker: authorizationWorker,

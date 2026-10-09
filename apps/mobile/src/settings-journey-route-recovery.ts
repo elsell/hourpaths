@@ -1,6 +1,7 @@
 export type SettingsJourneyIntent =
   | Readonly<{ kind: 'settings'; routeKey: 'settings:root' }>
   | Readonly<{ kind: 'account'; routeKey: 'settings:account' }>
+  | Readonly<{ kind: 'enforcement'; routeKey: 'settings:enforcement' }>
   | Readonly<{ kind: 'week-start'; routeKey: 'settings:week-start' }>
   | Readonly<{ kind: 'time-zone'; routeKey: 'settings:time-zone' }>
   | Readonly<{ kind: 'interactions'; routeKey: 'settings:interactions' }>
@@ -12,6 +13,7 @@ export function settingsJourneyIntentFromPathname(pathname: string): SettingsJou
   const normalized = `/${pathname.split('/').filter(Boolean).join('/')}`;
   if (normalized === '/settings') return { kind: 'settings', routeKey: 'settings:root' };
   if (normalized === '/settings/account') return { kind: 'account', routeKey: 'settings:account' };
+  if (normalized === '/settings/enforcement') return { kind: 'enforcement', routeKey: 'settings:enforcement' };
   if (normalized === '/settings/week-start') return { kind: 'week-start', routeKey: 'settings:week-start' };
   if (normalized === '/settings/time-zone') return { kind: 'time-zone', routeKey: 'settings:time-zone' };
   if (normalized === '/settings/interactions') return { kind: 'interactions', routeKey: 'settings:interactions' };

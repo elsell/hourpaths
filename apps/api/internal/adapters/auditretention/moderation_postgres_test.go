@@ -24,14 +24,24 @@ func TestModerationRetentionPreservesOpenAndRecentCases(t *testing.T) {
 	}
 	runner := Runner{DB: retention}
 	now := time.Now().UTC()
-	expired, recent, active := uuid.NewString(), uuid.NewString(), uuid.NewString()
+	expired, recent, active, appealed := uuid.NewString(), uuid.NewString(), uuid.NewString(), uuid.NewString()
 	for _, tc := range []struct {
 		id, state string
 		closed    any
-	}{{expired, "dismissed", now.Add(-89*24*time.Hour - time.Hour)}, {recent, "dismissed", now.Add(-88 * 24 * time.Hour)}, {active, "open", nil}} {
+	}{{expired, "dismissed", now.Add(-89*24*time.Hour - time.Hour)}, {recent, "dismissed", now.Add(-88 * 24 * time.Hour)}, {active, "open", nil}, {appealed, "actioned", now.Add(-90 * 24 * time.Hour)}} {
 		if err = admin.Exec(`INSERT INTO moderation_case_models(id,target_kind,target_id,reason,explanation,evidence,state,created_at,closed_at) VALUES (?,'profile','test-subject','something_else','','{}',?,?,?)`, tc.id, tc.state, now.Add(-100*24*time.Hour), tc.closed).Error; err != nil {
 			t.Fatal(err)
 		}
+	}
+	subject, notice := uuid.NewString(), uuid.NewString()
+	if err = admin.Exec(`INSERT INTO user_models(id,status,display_name,created_at,updated_at) VALUES(?,'active','Retention test',?,?)`, subject, now, now).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err = admin.Exec(`INSERT INTO moderation_enforcement_models(id,case_id,subject_user_id,action,policy_reason,issued_at) VALUES(?,?,?,'warning','Policy',?)`, notice, appealed, subject, now.Add(-90*24*time.Hour)).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err = admin.Exec(`INSERT INTO moderation_appeal_models(enforcement_id,id,explanation,submitted_at) VALUES(?,'retention-appeal-001','Please review',?)`, notice, now.Add(-89*24*time.Hour)).Error; err != nil {
+		t.Fatal(err)
 	}
 	if err = admin.Exec("SELECT moderation_list_cases(NULL)").Error; err == nil {
 		t.Fatal("NULL bypassed bounded case listing")
@@ -67,7 +77,7 @@ func TestModerationRetentionPreservesOpenAndRecentCases(t *testing.T) {
 			t.Fatal("retention did not converge")
 		}
 	}
-	for id, want := range map[string]int64{expired: 0, recent: 1, active: 1} {
+	for id, want := range map[string]int64{expired: 0, recent: 1, active: 1, appealed: 1} {
 		var n int64
 		if err = admin.Table("moderation_case_models").Where("id=?", id).Count(&n).Error; err != nil || n != want {
 			t.Fatalf("case %s count=%d want=%d err=%v", id, n, want, err)
