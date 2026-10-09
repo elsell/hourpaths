@@ -134,6 +134,9 @@ native builds verify this exact existing combination.
 - On supported iOS devices, running timers must be shown through one
   consolidated Live Activity,
   including the Dynamic Island where available.
+- Production iOS bundles must select the native Live Activity adapter rather
+  than the unsupported-platform fallback. A running timer started in the
+  foreground must appear on the Lock Screen when Live Activities are enabled.
 - On Android, running timers must be shown through one grouped persistent
   ongoing notification.
 - These operating-system surfaces must represent all timers currently running,
