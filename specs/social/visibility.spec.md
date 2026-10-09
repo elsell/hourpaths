@@ -85,6 +85,49 @@ its own visibility.
 - The effective visibility of a path must be clearly shown to users who can
   access and manage it.
 
+## Profile privacy controls and recovery
+
+- Mobile and Studio account settings must show the signed-in owner's current
+  profile privacy and allow an explicit confirmed change. The owner must come
+  from the authenticated session, never a submitted account identifier.
+- The public-to-private confirmation must explain that existing public Paths,
+  including archived Paths, become followers-only, current followers remain
+  approved, and private Paths and explicit roles are unchanged.
+- The private-to-public confirmation must explain that existing Path visibility
+  does not expand. Neither confirmation may submit before the owner confirms.
+- A confirmed change must carry the profile privacy revision that was reviewed.
+  An intervening privacy change must fail as a conflict without applying the
+  stale choice. Unrelated profile text edits must not invalidate this review.
+- An identical retry must replay its original result and finish outstanding
+  authorization reconciliation before reporting success. Reusing its mutation
+  identity for different input must fail as a conflict.
+- Profile state, affected Path state, durable authorization work, notification
+  retirement, and successful mutation audit must commit together. If any part
+  fails before commit, none may change. Authorization dependency failure after
+  commit must preserve retryable work and must not restore the removed audience.
+- Concurrent Path creation, visibility edits, and ownership changes must not
+  leave a public Path owned by a private profile. Narrowing must not overwrite
+  unrelated Path edits, membership, activity, or goal progress.
+- Failed or stale changes must preserve useful settings state and offer recovery.
+  Account replacement must discard the previous owner's pending presentation.
+  A successful change must refresh profile privacy and affected Path views.
+
+### Acceptance scenarios
+
+- Given a public owner with public, archived-public, followers-only and private
+  Paths, confirming private converts only the first two to followers-only. The
+  existing followers and explicit members remain; an unrelated public viewer
+  immediately loses access, even when authorization propagation needs retry.
+- Given the same owner later confirms public, all four Paths retain their last
+  visibility. No notification is generated solely by either profile change.
+- Given another client changed privacy after a confirmation was prepared, the
+  stale submission changes nothing. Reloading shows the authoritative setting.
+- Given a response was lost after commit, retrying the same confirmed mutation
+  does not duplicate its audit or work and completes pending reconciliation.
+- Given an audit write fails, neither the profile nor any affected Path changes.
+  A forged owner, rejected credential, or dependency failure cannot change a
+  different account's privacy.
+
 ## Expanding path visibility
 
 - When a path visibility change admits a broader audience, all existing eligible
@@ -187,3 +230,19 @@ its own visibility.
   must use the same opaque result.
 - An opaque access failure must not imply that requesting access is possible or
   reveal another user to contact.
+
+## Ownership acceptance by a private profile
+
+- Accepting ownership of a public Path into a private profile must atomically
+  change the Path to followers-only. The acceptance screen must explain this
+  effect before the recipient confirms; canceling must change nothing.
+- The transaction must re-read the recipient's current privacy under the same
+  serialization used for privacy changes. Concurrent acceptance and privacy
+  changes must never leave a private creator owning a public Path.
+- Followers-only visibility must use the new creator's followers. The ownership
+  authorization batch must atomically revoke the old audience and grant the new
+  audience; replay must retain that same batch. Explicit roles and activity
+  remain intact. Inaccessible notifications must be retired in the transaction.
+- Given a public Path and a private recipient, acceptance makes the recipient
+  creator, the former creator administrator, and the Path followers-only.
+  A retry must not create another transition or widen its audience.

@@ -1,3 +1,5 @@
+import { providerSettingsLifetime } from '@hourpaths/client-core';
+import type { ProfilePrivacyRepository } from '@hourpaths/client-core';
 import type { ProfileEditingRepository } from '@hourpaths/client-core';
 import type { TimerSubscriptionsRepository } from '@hourpaths/client-core';
 import type { ProviderSettingsService } from '@hourpaths/client-core';
@@ -13,6 +15,7 @@ export type SignOutPresentationResult =
   | Readonly<{ kind: 'failed' | 'signed_out' | 'superseded' }>;
 
 export type SettingsPresentation = {
+  profilePrivacy?: ProfilePrivacyRepository;
   profileEditing?: ProfileEditingRepository;
   profileOperationId?: () => string;
   timerSubscriptions: TimerSubscriptionsRepository;
@@ -42,6 +45,7 @@ function emitChange() {
 
 export function SettingsPresentationSource({
   timerSubscriptions,
+  profilePrivacy,
   profileEditing,
   profileOperationId,
   providers,
@@ -60,6 +64,8 @@ export function SettingsPresentationSource({
   updateNotificationChannel,
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
+  const profilePrivacyRef = useRef(profilePrivacy);
+  profilePrivacyRef.current = profilePrivacy;
   const profileEditingRef = useRef(profileEditing);
   profileEditingRef.current = profileEditing;
   const timerSubscriptionsRef = useRef(timerSubscriptions);
@@ -98,6 +104,10 @@ export function SettingsPresentationSource({
     };
     const presentation: SettingsPresentation = {
       profileOperationId,
+      profilePrivacy: profilePrivacy ? {
+        read: async () => { assertActive(); const value = await profilePrivacyRef.current!.read(); assertProfileOwner(); return value; },
+        save: async (value, visibility, key) => { assertActive(); const saved = await profilePrivacyRef.current!.save(value, visibility, key); assertProfileOwner(); return saved; },
+      } : undefined,
       profileEditing: profileEditing ? {
         read: async () => { assertActive(); const value = await profileEditingRef.current!.read(); assertProfileOwner(); return value; },
         save: async (value, key) => { assertActive(); const saved = await profileEditingRef.current!.save(value, key); assertProfileOwner(); return saved; },
@@ -106,12 +116,10 @@ export function SettingsPresentationSource({
         get: subject => { assertActive(); return timerSubscriptionsRef.current.get(subject); },
         update: (subject, value, key) => { assertActive(); return timerSubscriptionsRef.current.update(subject, value, key); },
       },
-      providers: providers ? {
-        owner: () => { assertActive(); return providersRef.current!.owner(); },
-        list: () => { assertActive(); return providersRef.current!.list(); },
-        link: (provider: 'google' | 'apple') => { assertActive(); return providersRef.current!.link(provider); },
-        unlink: (provider: 'google' | 'apple', owner: string) => { assertActive(); return providersRef.current!.unlink(provider, owner); },
-      } : undefined,
+      providers: providers ? providerSettingsLifetime(
+        () => providersRef.current!,
+        () => active && isCurrentRef.current(),
+      ) : undefined,
       deleteAccount: () => { assertActive(); deleteAccountRef.current?.(); },
       displayName,
       email,

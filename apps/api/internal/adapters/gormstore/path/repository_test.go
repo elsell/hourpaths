@@ -189,9 +189,10 @@ func TestPostgresGoalCreateReplayGetAndListRoundTrips(t *testing.T) {
 		ID                   string `gorm:"primaryKey"`
 		Email, DisplayName   string
 		Status               identity.Status
+		ProfileVisibility    identity.ProfileVisibility
 		CreatedAt, UpdatedAt time.Time
 	}
-	if err := tx.Table("user_models").Create(&userRow{ID: owner, Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+	if err := tx.Table("user_models").Create(&userRow{ID: owner, Status: identity.StatusActive, ProfileVisibility: identity.ProfileVisibilityPublic, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
 		t.Fatal(err)
 	}
 
@@ -442,9 +443,10 @@ func TestCreatePersistsRequiredPlatformRowsAtomically(t *testing.T) {
 		ID                   string `gorm:"primaryKey"`
 		Email, DisplayName   string
 		Status               identity.Status
+		ProfileVisibility    identity.ProfileVisibility
 		CreatedAt, UpdatedAt time.Time
 	}
-	if err := tx.Table("user_models").Create(&userRow{ID: "path-owner", Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+	if err := tx.Table("user_models").Create(&userRow{ID: "path-owner", Status: identity.StatusActive, ProfileVisibility: identity.ProfileVisibilityPublic, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
 		t.Fatal(err)
 	}
 	repository := New(tx)
@@ -514,9 +516,10 @@ func TestPostgresPublicPathCreationConvergesWithMigrationCutoverTrigger(t *testi
 		ID                   string `gorm:"primaryKey"`
 		Email, DisplayName   string
 		Status               identity.Status
+		ProfileVisibility    identity.ProfileVisibility
 		CreatedAt, UpdatedAt time.Time
 	}
-	if err := tx.Table("user_models").Create(&userRow{ID: "public-cutover-owner", Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+	if err := tx.Table("user_models").Create(&userRow{ID: "public-cutover-owner", Status: identity.StatusActive, ProfileVisibility: identity.ProfileVisibilityPublic, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
 		t.Fatal(err)
 	}
 	entity := domain.Entity{ID: "public-cutover-path", OwnerUserID: "public-cutover-owner", Attributes: domain.Attributes{Name: "Public", Visibility: "public"}, CreatedAt: now, UpdatedAt: now}
@@ -553,10 +556,11 @@ func TestCreateRollsBackPathMembershipIdempotencyAndAuditWhenOutboxInsertFails(t
 		ID                   string `gorm:"primaryKey"`
 		Email, DisplayName   string
 		Status               identity.Status
+		ProfileVisibility    identity.ProfileVisibility
 		CreatedAt, UpdatedAt time.Time
 	}
 	const owner = "path-atomic-owner"
-	if err := tx.Table("user_models").Create(&userRow{ID: owner, Status: identity.StatusActive, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
+	if err := tx.Table("user_models").Create(&userRow{ID: owner, Status: identity.StatusActive, ProfileVisibility: identity.ProfileVisibilityPublic, CreatedAt: now, UpdatedAt: now}).Error; err != nil {
 		t.Fatal(err)
 	}
 	conflict := authorizationOutboxModel{ID: "duplicate-path-outbox", ResourceType: "path", ResourceID: "existing", Relation: "creator", SubjectType: "user", SubjectID: owner, OwnerUserID: owner, ActorUserID: owner, Operation: ports.AuthorizationTouch, CreatedAt: now}

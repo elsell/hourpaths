@@ -879,3 +879,8 @@ export { apiTimerSubscriptions, timerSubscriptionFromAPI } from './adapters/api-
 export * from "./native-timer-surface";
 export { createProfileEditOperationOwner, normalizeEditableProfile, ProfileEditFailure, type EditableProfile, type ProfileEditingRepository } from './profile-editing';
 export { apiProfileEditing } from './adapters/api-profile-editing';
+
+export { createProfilePrivacyOperationOwner, ProfilePrivacyFailure, type ProfilePrivacy, type ProfilePrivacyRepository } from "./profile-privacy";
+export { apiProfilePrivacy } from "./adapters/api-profile-privacy";
+
+export { providerSettingsLifetime } from './provider-settings-lifetime';

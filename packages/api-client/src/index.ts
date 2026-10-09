@@ -173,6 +173,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     unlinkProvider: (provider: 'google' | 'apple', reviewedUserId: string) => authenticatedClient.DELETE('/v1/me/identities/{provider}', { params: { path: { provider } }, body: { reviewedUserId } }),
     deleteAccount: (body: AccountDeletionInput) => authenticatedClient.POST('/v1/me/deletion', { body }),
     confirmAccountDeletion: (body: AccountDeletionReceiptInput) => publicClient.POST('/v1/account-deletion/receipt', { body }),
+    ownProfilePrivacy: () => authenticatedClient.GET('/v1/me/profile/privacy'),
+    updateOwnProfilePrivacy: (body: Omit<components['schemas']['ProfilePrivacyUpdateInputBody'], '$schema'>, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile/privacy', { params: { header: { 'Idempotency-Key': idempotencyKey } }, body }),
     ownProfile: () => authenticatedClient.GET('/v1/me/profile'),
     updateOwnProfile: (body: OwnProfileUpdate, idempotencyKey: string) => authenticatedClient.PUT('/v1/me/profile', {
       params: { header: { 'Idempotency-Key': idempotencyKey } }, body,

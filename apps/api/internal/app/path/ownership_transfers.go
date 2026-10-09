@@ -406,8 +406,16 @@ func validOwnershipTransferAuthorizationBatch(batch ports.AuthorizationBatch, re
 
 func validOwnershipTransferRelationshipUpdates(actual []ports.RelationshipUpdate, transfer domain.OwnershipTransfer) bool {
 	expected := expectedOwnershipTransferRelationshipUpdates(transfer)
-	if len(actual) != len(expected) {
+	if len(actual) != len(expected) && len(actual) != len(expected)+2 {
 		return false
+	}
+	if len(actual) == 6 {
+		oldPublic := ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: "path", ResourceID: string(transfer.PathID), Relation: "public_viewer", SubjectType: "user", SubjectID: "*"}
+		oldFollowers := ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: "path", ResourceID: string(transfer.PathID), Relation: "followers_owner", SubjectType: "user", SubjectID: transfer.InitiatorUserID}
+		newFollowers := ports.RelationshipUpdate{Operation: ports.AuthorizationTouch, ResourceType: "path", ResourceID: string(transfer.PathID), Relation: "followers_owner", SubjectType: "user", SubjectID: transfer.RecipientUserID}
+		if (actual[4] != oldPublic && actual[4] != oldFollowers) || actual[5] != newFollowers {
+			return false
+		}
 	}
 	for index := range expected {
 		if actual[index] != expected[index] {

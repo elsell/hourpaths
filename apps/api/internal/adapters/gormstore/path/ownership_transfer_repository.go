@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
+	timerstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/notificationtimer"
 	application "github.com/elsell/hour-paths/apps/api/internal/app/path"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	domain "github.com/elsell/hour-paths/apps/api/internal/domain/path"
@@ -314,6 +316,18 @@ func (r *OwnershipTransferRepository) complete(ctx context.Context, transfer dom
 	var result application.OwnershipTransferResult
 	terminalAt := transferTerminalTime(transfer, terminalColumn)
 	err := r.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if changeOwner {
+			owners := []string{transfer.InitiatorUserID, transfer.RecipientUserID}
+			sort.Strings(owners)
+			for _, owner := range owners {
+				if err := lockProfilePaths(tx, owner); err != nil {
+					return err
+				}
+			}
+			if err := lockVisibilityNotificationWriters(tx, string(transfer.PathID)); err != nil {
+				return err
+			}
+		}
 		replayed, err := reserveTransferMutation(tx, idempotency, string(transfer.ID), terminalAt)
 		if err != nil {
 			return err
@@ -345,6 +359,7 @@ func (r *OwnershipTransferRepository) complete(ctx context.Context, transfer dom
 			return domain.ErrOwnershipTransferUnavailable
 		}
 		var pathResult domain.Entity
+		oldVisibility := pathRow.Visibility
 		if changeOwner {
 			eligible, err := eligibleOwnershipRecipient(tx, transfer.PathID, transfer.RecipientUserID)
 			if err != nil {
@@ -356,7 +371,17 @@ func (r *OwnershipTransferRepository) complete(ctx context.Context, transfer dom
 			if err := updateOwnershipMemberships(tx, transfer); err != nil {
 				return err
 			}
-			updated := tx.Model(&model{}).Where("id = ? AND owner_user_id = ? AND archived_at IS NULL", transfer.PathID, transfer.InitiatorUserID).Updates(map[string]any{"owner_user_id": transfer.RecipientUserID, "updated_at": terminalAt})
+			var recipient privacyUserModel
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ? AND status = 'active'", transfer.RecipientUserID).Take(&recipient).Error; err != nil {
+				return err
+			}
+			if recipient.ProfileVisibility != "public" && recipient.ProfileVisibility != "private" {
+				return ports.ErrUnavailable
+			}
+			if recipient.ProfileVisibility == "private" && pathRow.Visibility == "public" {
+				pathRow.Visibility = "followers"
+			}
+			updated := tx.Model(&model{}).Where("id = ? AND owner_user_id = ? AND archived_at IS NULL", transfer.PathID, transfer.InitiatorUserID).Updates(map[string]any{"owner_user_id": transfer.RecipientUserID, "visibility": pathRow.Visibility, "updated_at": terminalAt})
 			if updated.Error != nil {
 				return updated.Error
 			}
@@ -364,6 +389,24 @@ func (r *OwnershipTransferRepository) complete(ctx context.Context, transfer dom
 				return domain.ErrOwnershipTransferUnavailable
 			}
 			pathRow.OwnerUserID, pathRow.UpdatedAt = transfer.RecipientUserID, terminalAt
+			if oldVisibility == "followers" || oldVisibility != pathRow.Visibility {
+				if err := timerstore.Retire(tx, "", string(transfer.PathID), terminalAt); err != nil {
+					return err
+				}
+				if err := retireNotificationsOutsideVisibility(tx, string(transfer.PathID), transfer.RecipientUserID, pathRow.Visibility, terminalAt); err != nil {
+					return err
+				}
+			}
+			if oldVisibility != pathRow.Visibility {
+				visibilityAudit := event
+				visibilityAudit.ID += "-visibility"
+				visibilityAudit.Action = audit.PathVisibilityChanged
+				visibilityAudit.TargetType, visibilityAudit.TargetID = "path", string(transfer.PathID)
+				visibilityAudit.OwnerUserID = transfer.RecipientUserID
+				if err := tx.Create(fromAudit(visibilityAudit)).Error; err != nil {
+					return err
+				}
+			}
 			pathResult, err = toEntity(pathRow)
 			if err != nil {
 				return err
@@ -385,6 +428,13 @@ func (r *OwnershipTransferRepository) complete(ctx context.Context, transfer dom
 		result = application.OwnershipTransferResult{Transfer: transfer, Path: pathResult}
 		if changeOwner {
 			result.RelationshipUpdates = ownershipTransferRelationshipUpdates(transfer)
+			if oldVisibility == "followers" || oldVisibility != pathRow.Visibility {
+				oldRelation, oldSubject := visibilityRelation(oldVisibility, transfer.InitiatorUserID)
+				newRelation, newSubject := visibilityRelation(pathRow.Visibility, transfer.RecipientUserID)
+				result.RelationshipUpdates = append(result.RelationshipUpdates,
+					ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: "path", ResourceID: string(transfer.PathID), Relation: oldRelation, SubjectType: "user", SubjectID: oldSubject},
+					ports.RelationshipUpdate{Operation: ports.AuthorizationTouch, ResourceType: "path", ResourceID: string(transfer.PathID), Relation: newRelation, SubjectType: "user", SubjectID: newSubject})
+			}
 			batch, err := persistOwnershipTransferAuthorizationBatch(tx, transfer, result.RelationshipUpdates)
 			if err != nil {
 				return err
@@ -482,6 +532,7 @@ func transferReplayForReservation(tx *gorm.DB, actor string, transferID domain.O
 		result.RelationshipUpdates = ownershipTransferRelationshipUpdates(transfer)
 		if err == nil {
 			result.AuthorizationBatch, err = loadOwnershipTransferAuthorizationBatch(tx, transfer)
+			result.RelationshipUpdates = result.AuthorizationBatch.Updates
 		}
 		return result, err == nil, err
 	case application.DeclineOwnershipTransferOperation:
@@ -540,7 +591,7 @@ func loadOwnershipTransferAuthorizationBatch(tx *gorm.DB, transfer domain.Owners
 		return ports.AuthorizationBatch{}, err
 	}
 	var persisted []persistedOwnershipRelationshipUpdate
-	if err := json.Unmarshal(row.RelationshipUpdates, &persisted); err != nil || len(persisted) != 4 {
+	if err := json.Unmarshal(row.RelationshipUpdates, &persisted); err != nil || (len(persisted) != 4 && len(persisted) != 6) {
 		return ports.AuthorizationBatch{}, errInvalidPersistedOwnershipTransfer
 	}
 	updates := make([]ports.RelationshipUpdate, len(persisted))

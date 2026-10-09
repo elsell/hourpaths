@@ -158,3 +158,6 @@ authorization rule for managing shared goal configuration.
   user's canonical counterpart and that counterpart's role in the transfer.
 - Canceling or dismissing the confirmation must not create a transfer request or
   change any role.
+
+Ownership acceptance must apply the approved private-profile visibility ceiling
+and audience transition in [visibility](../social/visibility.spec.md#ownership-acceptance-by-a-private-profile).

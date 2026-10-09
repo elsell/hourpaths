@@ -1,3 +1,4 @@
+export interface ProfilePrivacy { userId: string; visibility: "public" | "private"; revision: number }
 export interface EditableProfile { userId: string; username: string; displayName: string; description: string; revision: number }
 export interface AccountIdentity { readonly id: string; readonly name: string; readonly email: string; readonly visibility: 'public' | 'private' }
 export interface TimeZonePreference { readonly zone: string; readonly effectiveAt: number }

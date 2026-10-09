@@ -1,4 +1,4 @@
-import { apiProfileEditing, apiTimerSubscriptions, apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
+import { apiProfilePrivacy, apiProfileEditing, apiTimerSubscriptions, apiNotificationChannels, NotificationChannelFailure } from '@hourpaths/client-core';
 import { createSessionApiClient, type GeneratedOperationResult } from '@hourpaths/api-client';
 import { PreferenceFailure } from '../domain/preferences';
 import type { PreferencesRepository } from '../ports/preferences-repository';
@@ -33,6 +33,8 @@ export function apiPreferencesRepository(baseURL: string, token: () => string | 
     catch (error) { if (error instanceof NotificationChannelFailure) throw new PreferenceFailure(error.kind); throw error; }
   }
   return {
+    profilePrivacy: (owner, signal) => apiProfilePrivacy(baseURL, token(), owner, rejected, signal).read(),
+    saveProfilePrivacy: (value, visibility, key, signal) => apiProfilePrivacy(baseURL, token(), value.userId, rejected, signal).save(value, visibility, key),
     editableProfile: (owner, signal) => apiProfileEditing(baseURL, token(), owner, rejected, signal).read(),
     saveProfile: (value, key, signal) => apiProfileEditing(baseURL, token(), value.userId, rejected, signal).save(value, key),
     timerSubscription: (subject, signal) => apiTimerSubscriptions(baseURL, token(), rejected, signal).get(subject),

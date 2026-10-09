@@ -259,3 +259,10 @@ digest. A retry with the same digest returns the original resource and does not
 repeat the mutation, authorization outbox write, or creation audit. Reusing the
 key with a different request fails with 409. Idempotency is enforced by a
 database uniqueness constraint and is safe across processes and replicas.
+
+### Superseded provider settings
+
+Provider settings from a superseded account presentation must not dispatch new
+requests or expose results from the old account. Promise-based operations must
+reject through the normal error flow rather than throw during screen effects;
+stale ownership lookup must return no owner and must not open a confirmation.

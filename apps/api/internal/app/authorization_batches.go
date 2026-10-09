@@ -84,7 +84,7 @@ func (a App) reconcileClaimedAuthorizationBatch(ctx context.Context, batch ports
 func validAuthorizationBatch(batch ports.AuthorizationBatch) bool {
 	if strings.TrimSpace(batch.ID) == "" || strings.TrimSpace(batch.TransferID) == "" ||
 		strings.TrimSpace(batch.ResourceType) == "" || strings.TrimSpace(batch.ResourceID) == "" ||
-		strings.TrimSpace(batch.OwnerUserID) == "" || strings.TrimSpace(batch.ActorUserID) == "" || len(batch.Updates) != 4 {
+		strings.TrimSpace(batch.OwnerUserID) == "" || strings.TrimSpace(batch.ActorUserID) == "" || (len(batch.Updates) != 4 && len(batch.Updates) != 6) {
 		return false
 	}
 	for _, update := range batch.Updates {
@@ -95,6 +95,15 @@ func validAuthorizationBatch(batch ports.AuthorizationBatch) bool {
 		}
 	}
 	formerCreator := batch.Updates[0].SubjectID
+	if len(batch.Updates) == 6 {
+		previous := batch.Updates[4]
+		public := ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: batch.ResourceType, ResourceID: batch.ResourceID, Relation: "public_viewer", SubjectType: "user", SubjectID: "*"}
+		followers := ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: batch.ResourceType, ResourceID: batch.ResourceID, Relation: "followers_owner", SubjectType: "user", SubjectID: formerCreator}
+		next := ports.RelationshipUpdate{Operation: ports.AuthorizationTouch, ResourceType: batch.ResourceType, ResourceID: batch.ResourceID, Relation: "followers_owner", SubjectType: "user", SubjectID: batch.OwnerUserID}
+		if (previous != public && previous != followers) || batch.Updates[5] != next {
+			return false
+		}
+	}
 	return formerCreator != batch.OwnerUserID &&
 		batch.Updates[0] == (ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: batch.ResourceType, ResourceID: batch.ResourceID, Relation: "creator", SubjectType: "user", SubjectID: formerCreator}) &&
 		batch.Updates[1] == (ports.RelationshipUpdate{Operation: ports.AuthorizationTouch, ResourceType: batch.ResourceType, ResourceID: batch.ResourceID, Relation: "creator", SubjectType: "user", SubjectID: batch.OwnerUserID}) &&

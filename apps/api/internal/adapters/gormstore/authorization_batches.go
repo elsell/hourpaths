@@ -38,7 +38,7 @@ type persistedRelationshipUpdate struct {
 }
 
 func encodeRelationshipUpdates(updates []ports.RelationshipUpdate) ([]byte, error) {
-	if len(updates) != 4 {
+	if len(updates) != 4 && len(updates) != 6 {
 		return nil, ports.ErrInvalidArgument
 	}
 	persisted := make([]persistedRelationshipUpdate, len(updates))
@@ -56,7 +56,7 @@ func encodeRelationshipUpdates(updates []ports.RelationshipUpdate) ([]byte, erro
 
 func decodeRelationshipUpdates(value []byte) ([]ports.RelationshipUpdate, error) {
 	var persisted []persistedRelationshipUpdate
-	if err := json.Unmarshal(value, &persisted); err != nil || len(persisted) != 4 {
+	if err := json.Unmarshal(value, &persisted); err != nil || (len(persisted) != 4 && len(persisted) != 6) {
 		return nil, errors.New("persisted authorization batch is invalid")
 	}
 	updates := make([]ports.RelationshipUpdate, len(persisted))
@@ -155,15 +155,15 @@ func (s *Store) AuthorizationBatchCompleted(ctx context.Context, id string) (boo
 	if strings.TrimSpace(id) == "" {
 		return false, ports.ErrInvalidArgument
 	}
-	var completedAt *time.Time
-	result := s.DB.WithContext(ctx).Model(&authorizationBatchOutboxModel{}).Select("completed_at").Where("id = ?", id).Scan(&completedAt)
+	var row struct{ CompletedAt *time.Time }
+	result := s.DB.WithContext(ctx).Model(&authorizationBatchOutboxModel{}).Select("completed_at").Where("id = ?", id).Scan(&row)
 	if result.Error != nil {
 		return false, result.Error
 	}
 	if result.RowsAffected != 1 {
 		return false, ports.ErrNotFound
 	}
-	return completedAt != nil, nil
+	return row.CompletedAt != nil, nil
 }
 
 func earlierAuthorizationWork(tx *gorm.DB, resourceType, resourceID string, createdAt time.Time, id string) (bool, error) {

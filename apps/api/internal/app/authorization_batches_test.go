@@ -158,3 +158,26 @@ func TestAuthorizationBatchRequestReplayAcceptsOnlyDurablyCompletedBatch(t *test
 		t.Fatalf("locked incomplete replay error = %v", err)
 	}
 }
+
+func TestAuthorizationBatchWorkerAudienceTransitionFailsClosed(t *testing.T) {
+	for _, invalid := range []bool{false, true} {
+		batch := validTestAuthorizationBatch()
+		batch.Updates = append(batch.Updates,
+			ports.RelationshipUpdate{Operation: ports.AuthorizationDelete, ResourceType: "path", ResourceID: "path-1", Relation: "public_viewer", SubjectType: "user", SubjectID: "*"},
+			ports.RelationshipUpdate{Operation: ports.AuthorizationTouch, ResourceType: "path", ResourceID: "path-1", Relation: "followers_owner", SubjectType: "user", SubjectID: "recipient"})
+		if invalid {
+			batch.Updates[5].SubjectID = "unrelated"
+		}
+		completed := false
+		var writes [][]ports.RelationshipUpdate
+		a := App{AuthorizationBatchOutbox: controlledBatchOutbox{batches: []ports.AuthorizationBatch{batch}, completed: &completed}, RelationshipWriter: controlledBatchWriter{batches: &writes}, AuthorizationSerializer: fakeSerializer{}, Audits: fakeAudits{}, Clock: fakeClock{now: time.Now().UTC()}}
+		err := a.ReconcileAuthorizationBatches(context.Background(), "worker", 10)
+		if invalid {
+			if err == nil || len(writes) != 0 || completed {
+				t.Fatalf("invalid audience delivered: %v %+v", err, writes)
+			}
+		} else if err != nil || len(writes) != 1 || len(writes[0]) != 6 || !completed {
+			t.Fatalf("valid audience not atomic: %v %+v", err, writes)
+		}
+	}
+}
