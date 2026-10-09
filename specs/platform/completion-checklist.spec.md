@@ -21,15 +21,19 @@ and retained. Release evidence below is historical unless identified as current.
 ## Current slice — October 9
 
 Comment removal and appeal enforcement ([issue #154](https://github.com/elsell/hourpaths/issues/154), area 10) merged in PR #155 as `d2bd82c` after all five checks.
-Its production/store release is the active delivery step. An operational removal must hide the comment across
+Production v0.50.0 is verified through GitOps `12e991b`, with exact API/web
+images, Ready/Healthy Flux and public readiness. TestFlight 0.50.0 (450) is VALID,
+IN_BETA_TESTING and internally assigned; release notes were read back. Google Play
+internal version code 420 was committed in run `38002647767`, after signed-bundle
+verification. An operational removal must hide the comment across
 social reads and deliveries and expose the existing private notice/appeal flow.
 [PR #155](https://github.com/elsell/hourpaths/pull/155) implements removal,
 private notices and appeal reversal. Real PostgreSQL checks cover hidden reads,
 counts/retries, competing edit and push transactions, and ordinary deletion.
 Studio acceptance verifies the affected-comment reference, appeal submission
 and persisted reload at desktop and narrow widths. Android at 160% font size
-shows the same notice and appeal, then the final reversal after Refresh. Final
-release availability and signed physical-device acceptance remain outstanding.
+shows the same notice and appeal, then the final reversal after Refresh.
+Signed physical-device acceptance remains outstanding.
 
 Draft PR #153 (bundled goal reminders and quiet periods) integrates the merged
 moderation behavior and reserves migrations 95–96 after moderation migration 94.
@@ -42,7 +46,7 @@ passes fresh migrations, focused PostgreSQL delivery/authorization checks, both
 client type checks, generated-contract validation and localization checks.
 
 Online history convergence and time-zone selection have subsequently shipped.
-The latest verified availability is TestFlight 0.49.8 (442), source `92477b5`,
+The latest verified availability is TestFlight 0.50.0 (450), source `d2bd82c`,
 VALID and IN_BETA_TESTING with internal-group assignment. This does not close
 physical-device acceptance or the remaining areas below.
 
