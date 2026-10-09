@@ -20,20 +20,20 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current slice — October 9
 
-Studio default-entry cutover (area 12) is the sole active product slice. Its
-remaining steps are browser acceptance through Studio, the final focused review
-and immutable merge gate, then exact-source production deployment and availability.
-The retired Svelte Home must not remain as the default entry or fallback UI.
-Existing credential migration and account-isolation behavior must be preserved.
+Native Live Activity row restoration (area 6) is the sole active implementation
+slice. The user-provided Dynamic Island screenshot exposed a serialization defect:
+Swift drops nested arrays of timer rows, leaving only the title. Restore the
+already-specified Path names and native elapsed clocks; the richer visual design
+remains awaiting approval. Verify one, two, and overflow timers through the actual
+installed widget serializer, then the native build and signed-device surface.
 
-Warm-browser acceptance now covers manual activity creation, reopening, editing,
-revision history, cancelled deletion, confirmed deletion, preserved unrelated
-activity, and reload through the installed offline shell. Studio slash and
-non-slash routes render directly, avoiding a normalization redirect on mutation
-returns. Svelte checking reports zero errors and warnings. Goal review/cancel/save/removal, participant denial, visibility confirmation/
-cancellation/contraction/reload, and cross-tab notification read/delete with
-invitation retention also pass against the real warm API. The final candidate
-gates, including isolated account-entry and empty-state fixtures, remain pending.
+Studio default-entry cutover merged in [PR #140](https://github.com/elsell/hourpaths/pull/140)
+as `c886c79` after all five immutable candidate gates passed. Legacy Home is
+removed. Real browser acceptance covers account entry, empty states, invitation
+confirmation/focus restoration, manual activity CRUD/history and offline-shell
+reload, goal review/removal, participant denial, visibility changes, and cross-tab
+notification convergence. Exact-source production release and availability remain
+pending; area 12 is not yet closed.
 
 Stats readability release 0.48.1, source `6ee7299`, is deployed through GitOps
 `16b17fd`; exact running images and public readiness are verified. TestFlight
