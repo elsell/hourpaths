@@ -416,3 +416,24 @@ test('replay distinguishes a live start from a completed offline session without
     return { kind: 'accepted' };
   } });
 });
+
+
+test('offline banner dismissal survives restart, isolates accounts, and resets on confirmed reconnection without changing queued work', async () => {
+  const store = new DurableFake();
+  const first = client(store, 'alice', '2026-10-01T12:00:00Z', 'a');
+  await first.retainPaths([path]);
+  await first.start(path.id);
+  const queued = (await first.snapshot()).operations;
+  await first.dismissOfflineBanner();
+  const restored = client(store, 'alice', '2026-10-01T12:01:00Z', 'b');
+  assert.equal((await restored.snapshot()).offlineBannerDismissed, true);
+  assert.notEqual((await client(store, 'bob', '2026-10-01T12:01:00Z', 'c').snapshot()).offlineBannerDismissed, true);
+  await assert.rejects(restored.replay({ async send() { throw new Error('offline'); } }), /offline/);
+  assert.equal((await restored.snapshot()).offlineBannerDismissed, true);
+  await restored.confirmOnline();
+  const online = await client(store, 'alice', '2026-10-01T12:02:00Z', 'd').snapshot();
+  assert.notEqual(online.offlineBannerDismissed, true);
+  assert.deepEqual(online.operations, queued);
+  await restored.confirmOnline();
+  assert.equal((await restored.snapshot()).revision, online.revision);
+});

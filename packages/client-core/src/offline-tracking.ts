@@ -40,6 +40,7 @@ export interface TrackingSync {
 }
 export interface TrackingNotice { id: string; reason: TrackingRejection | 'subsecond'; subject?: 'activity'; pathId?: string; savedSeconds?: number; discardedSeconds?: number }
 export interface TrackingSnapshot {
+  offlineBannerDismissed?: boolean;
   owner: string;
   revision: number;
   /** Contiguous revisions containing only downloaded history, never commands. */
@@ -145,6 +146,14 @@ export class OfflineTracking {
     throw new Error('tracking_concurrent_change');
   }
   dispose(): void { this.disposed = true; }
+  dismissOfflineBanner(): Promise<void> {
+    return this.change(state => { state.offlineBannerDismissed = true; });
+  }
+  async confirmOnline(): Promise<boolean> {
+    if (!(await this.snapshot()).offlineBannerDismissed) return false;
+    await this.change(state => { delete state.offlineBannerDismissed; });
+    return true;
+  }
   dismissNotice(id: string): Promise<void> {
     return this.change(state => { state.notices = state.notices.filter(notice => notice.id !== id); });
   }

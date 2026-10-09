@@ -67,6 +67,9 @@ connection and the limits of other offline surfaces.
   unsynchronized status.
 - Dismissing the banner must hide it for the remainder of the current continuous
   offline period.
+- Dismissal must survive application termination or a browser reload while the
+  same account remains offline. A retry that cannot reach the service must not
+  reset dismissal. The retained choice must not apply to another account.
 - Once connectivity returns, that dismissal must reset; if the application
   later goes offline again, the banner must appear again.
 - The banner must not cover or disable Home timer controls or manual entry.

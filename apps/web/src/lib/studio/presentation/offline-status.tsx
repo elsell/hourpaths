@@ -9,11 +9,12 @@ export function OfflineStatusPanel({ service, accountScope, i18n, now }: { servi
   const [reviewing, setReviewing] = useState<string | null>(null);
   const query = useQuery({ queryKey: [accountScope, 'offlineState'], queryFn: () => service.snapshot() });
   const dismiss = useMutation({ mutationFn: (id: string) => service.dismissNotice(id) });
+  const dismissBanner = useMutation({ mutationFn: () => service.dismissBanner() });
   const state = query.data;
   if (!state || !state.showBanner && !state.pending && !state.notices.length && !state.corrections.length) return null;
   return <section className="studio studio-sync-status" aria-label={i18n.t('offline.status')}>
     {state.showBanner && <div className="studio-sync-message"><p role="status">{i18n.t('offline.banner')}</p>
-      <button onClick={() => service.dismissBanner()}>{i18n.t('common.dismiss')}</button></div>}
+      <button disabled={dismissBanner.isPending} onClick={() => dismissBanner.mutate()}>{i18n.t('common.dismiss')}</button></div>}
     {state.pending && <div className="studio-sync-message"><p role="status">{i18n.t('offline.pending')}</p>
       <button onClick={() => service.retry()}>{i18n.t('common.retry')}</button></div>}
     {state.corrections.map(correction => <div key={correction.id}>
@@ -29,6 +30,6 @@ export function OfflineStatusPanel({ service, accountScope, i18n, now }: { servi
         })}</span>}</p>
       <button disabled={dismiss.isPending} onClick={() => dismiss.mutate(notice.id)}>{i18n.t('common.dismiss')}</button>
     </div>)}
-    {dismiss.isError && <p role="alert">{i18n.t('errors.temporarilyUnavailable')}</p>}
+    {(dismiss.isError || dismissBanner.isError) && <p role="alert">{i18n.t('errors.temporarilyUnavailable')}</p>}
   </section>;
 }

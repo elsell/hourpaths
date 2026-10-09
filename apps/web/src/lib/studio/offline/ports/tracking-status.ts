@@ -28,7 +28,7 @@ export interface TrackingChange {
 export interface OfflineStatus {
   subscribe(listener: (change?: TrackingChange) => void): () => void;
   snapshot(): Promise<TrackingStatus>;
-  dismissBanner(): void;
+  dismissBanner(): Promise<void>;
   dismissNotice(id: string): Promise<void>;
   retry(): void;
   correct(id: string, start: string, end: string): Promise<void>;

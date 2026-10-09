@@ -11,7 +11,7 @@ export interface TrackingRuntime {
   assertCurrent(): void;
   wake(): void;
   connected?(): boolean;
-  reportNetwork?(available: boolean): void;
+  reportNetwork?(available: boolean): void | Promise<void>;
   refreshTimeZone?(): Promise<string>;
 }
 
@@ -114,7 +114,7 @@ export function durablePathRepository(
           current.assertCurrent();
           await cache.saveHome(current.owner, participating, Object.fromEntries(values.map(value => [value.path.id, value.appearance])));
           current.assertCurrent();
-          current.reportNetwork?.(true);
+          await current.reportNetwork?.(true);
           for (const path of participating) {
             prefetchedTracking.add(ownedKey(current.owner, path.id));
             prefetchedAppearance.add(ownedKey(current.owner, path.id));
@@ -123,7 +123,7 @@ export function durablePathRepository(
           return paths.filter(path => !unavailable.includes(path.id));
         } catch (error) {
           if (signal?.aborted || !temporary(error)) throw error;
-          if (!remoteComplete) current.reportNetwork?.(false);
+          if (!remoteComplete) await current.reportNetwork?.(false);
           const retained = await retainedPaths();
           if (!retained) throw error;
           return retained;

@@ -114,6 +114,7 @@ export function mobileOfflineHome(dependencies: {
       if (!guard() || current.credential !== credential) throw new Error('tracking_session_superseded');
       if (profile.id !== current.owner) throw new Error('tracking_owner_mismatch');
       if (!await current.adapter.retain(profile, timeZone, revision)) throw new HydrationChanged();
+      await current.tracking.confirmOnline();
       await dependencies.home.saveHome({ owner: current.owner, timeZone, profile });
       valid(current);
       current.profile = await project(current, profile);
@@ -212,6 +213,12 @@ export function mobileOfflineHome(dependencies: {
       await current.tracking.correct(timerId, startedAt, endedAt);
       await publish(current);
       current.adapter.wake();
+    },
+    async dismissOfflineBanner(): Promise<void> {
+      if (!context) throw new Error('tracking_session_unavailable');
+      const current = context;
+      await current.tracking.dismissOfflineBanner();
+      await publish(current);
     },
     async dismissNotice(id: string): Promise<void> {
       if (!context) throw new Error('tracking_session_unavailable');
