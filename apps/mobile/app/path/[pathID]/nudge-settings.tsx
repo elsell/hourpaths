@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { createDeviceTranslator } from '../../../src/i18n';
 import { usePathRouteAncestry } from '../../../src/use-path-route-ancestry';
 import {
-  dismissNativeChildRoute,
+  retainNativeChildRoute,
   pathNudgeSettingsRouteKey,
   useNativeChildRoutePresentation,
 } from '../../../src/ui/native-child-route-presentation';
@@ -19,7 +19,7 @@ export default function PathNudgeSettings() {
   const presentation = useNativeChildRoutePresentation(routeKey);
   const navigation = useNavigation();
   usePathRouteAncestry({ kind: 'nudge-settings', pathID, routeKey });
-  useEffect(() => () => dismissNativeChildRoute(routeKey), [routeKey]);
+  useEffect(() => retainNativeChildRoute(routeKey), [routeKey]);
   useEffect(() => navigation.addListener('beforeRemove', (event) => {
     if (presentation?.dismissible === false) event.preventDefault();
   }), [navigation, presentation?.dismissible]);
