@@ -22,6 +22,7 @@ FIXTURE_PATHS = (
     "apps/mobile/modules/hourpaths-timers/expo-module.config.json",
     "apps/mobile/src/timers/timer-surface.android.ts",
     "apps/mobile/src/timers/timer-surface.ios.tsx",
+    "apps/mobile/src/timers/ios-timer-layout.tsx",
     "apps/mobile/src/timers/timer-surface-types.ts",
     "apps/web/src/lib/studio/session/domain/session.ts",
     "apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts",

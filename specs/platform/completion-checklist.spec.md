@@ -12,7 +12,7 @@ IN_BETA_TESTING, and assigned to the internal group. Evidence: [release](https:/
 and [Apple distribution status](https://github.com/elsell/hourpaths/actions/runs/36905986943).
 Physical-device acceptance remains open in area 13.
 
-**12 acceptance areas remain; 1 of these 13 is closed**.
+**11 acceptance areas remain; 2 of these 13 are closed**.
 This is a remaining-work count, not a claim that delivery starts from zero.
 Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
@@ -32,8 +32,7 @@ as `c886c79` after all five immutable candidate gates passed. Legacy Home is
 removed. Real browser acceptance covers account entry, empty states, invitation
 confirmation/focus restoration, manual activity CRUD/history and offline-shell
 reload, goal review/removal, participant denial, visibility changes, and cross-tab
-notification convergence. Exact-source production release and availability remain
-pending; area 12 is not yet closed.
+notification convergence. Exact-source production release and availability are verified; area 12 is closed.
 
 Stats readability release 0.48.1, source `6ee7299`, is deployed through GitOps
 `16b17fd`; exact running images and public readiness are verified. TestFlight
@@ -64,10 +63,22 @@ adjacent polish to closure criteria. A demonstrated P0/P1 blocker may interrupt.
 | 9 | Goal-aware reminders and timer health | Reminder planning respects actionability, goal recurrence, active timers, configured unavailable periods, frequency and bundling; unachievable-goal and long-running-timer notices follow their own rules. Controlled-clock boundary evidence and real delivery prove the behavior. |
 | 10 | Safety and moderation | Authorized reporting, internal case handling, enforcement notices, appeals and public-text checks work through the specified lifecycle; privacy, blocked relationships, retention and denied actions receive applicable boundary verification. |
 | 11 | Analytics completion | Path-specific contribution grid and specified calendar summaries are available in mobile and Studio; week start, historical time zones, DST, range/Path filters, complete history, accessible values and latest-date behavior follow the analytics spec. Reuse existing global Stats rather than rebuild it. |
-| 12 | Studio cutover | All legacy supported workflows and required account lifecycle controls are reachable in Studio; shared UI and domain/application/port/adapter boundaries meet the architecture spec; original deep links, reload/back/forward and account isolation work; Studio becomes the default web UI and legacy presentation/temporary compatibility code is removed. Compare approved references at desktop/narrow widths and deploy the exact web revision through GitOps. This is the web-replacement finish line. |
+| 12 | Studio cutover — closed | All legacy supported workflows and required account lifecycle controls are reachable in Studio; shared UI and domain/application/port/adapter boundaries meet the architecture spec; original deep links, reload/back/forward and account isolation work; Studio becomes the default web UI and legacy presentation/temporary compatibility code is removed. Compare approved references at desktop/narrow widths and deploy the exact web revision through GitOps. This is the web-replacement finish line. |
 | 13 | Final device and delivery acceptance | Close the physical-iPhone encouragement-selection report and each UI-28/accessibility journey with actual device evidence; verify applicable signed Android/iOS availability, production revision/health and complete spec-to-evidence reconciliation. Every preceding area must be closed; merged code/upload receipts alone do not qualify. |
 
 ## Closed-area evidence
+
+Area 12 closed on October 9, 2026. [PR #140](https://github.com/elsell/hourpaths/pull/140)
+merged as `c886c79251b25f71146f74ba1046d210fa20cec5` after all five candidate
+checks. Main CI and [release publication](https://github.com/elsell/hourpaths/actions/runs/37962881084)
+passed. GitOps `0f4ceb821f3f8ceb2c0f616c8e85f50dc79f6270` deployed the exact
+published API/web images, with Ready/Healthy Flux and completed rollouts. Production
+root returns 307 to Studio; slash, non-slash and mutation-return URLs render
+without normalization redirects. Browser checks verified hydrated sign-in,
+reload, desktop/narrow widths and no exceptions; both screenshots were reviewed.
+Warm and candidate acceptance cover the migrated client journeys listed above.
+Cross-client feature completion and physical-device acceptance stay in their own
+areas; this closes replacement of the legacy web UI.
 
 Area 1 closed on October 2, 2026. [PR #96](https://github.com/elsell/hourpaths/pull/96)
 implements creator-only visibility with privacy limits, stale-state recovery and
