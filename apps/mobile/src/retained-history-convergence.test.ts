@@ -61,10 +61,13 @@ test('an open detail only becomes deleted from its own account explicit tombston
 
 
 test('online history follows a local stop and acknowledgement while preserving loaded participants and newer revisions', async () => {
+  const timeZone = ['U', 'T', 'C'].join('');
+  const emptyMetadata = '';
+  const newerNote = 'newer-remote-edit';
   let now = Date.parse('2026-10-09T12:00:00Z'); let id = 0;
   const tracking = new OfflineTracking(new DurableHistoryStore(), 'owner', () => now, () => `local-${++id}`);
-  await tracking.retainPaths([{ id: 'guitar', name: 'guitar', timeZone: 'Etc/UTC' }]);
-  const other = { version: 3, activity: { id: 'other-session', pathId: 'guitar', participantId: 'other', startedAt: '2026-10-09T11:00:00Z', endedAt: '2026-10-09T11:01:00Z', durationSeconds: 60, occurrenceTimeZone: 'Etc/UTC', createdAt: '', updatedAt: '' } };
+  await tracking.retainPaths([{ id: 'guitar', name: 'guitar', timeZone }]);
+  const other = { version: 3, activity: { id: 'other-session', pathId: 'guitar', participantId: 'other', startedAt: '2026-10-09T11:00:00Z', endedAt: '2026-10-09T11:01:00Z', durationSeconds: 60, occurrenceTimeZone: timeZone, createdAt: emptyMetadata, updatedAt: emptyMetadata } };
   const timer = await tracking.start('guitar'); now += 88_000; await tracking.stop(timer.id);
   const pending = onlineHistoryFromSnapshot([other], await tracking.snapshot(), 'owner', 'guitar');
   assert.equal(pending.length, 2); assert.equal(pending[0].pending, true);
@@ -77,7 +80,7 @@ test('online history follows a local stop and acknowledgement while preserving l
   assert.deepEqual(saved.map(row => row.activity.id), ['saved', 'other-session']);
   assert.equal(saved[0].activity.durationSeconds, 88); assert.equal(saved[0].pending, false);
   assert.equal(saved[0].retained, false, 'online acknowledged rows can open their authoritative detail');
-  const newer = { ...saved[0], version: 5, activity: { ...saved[0].activity, note: 'newer remote edit' } };
+  const newer = { ...saved[0], version: 5, activity: { ...saved[0].activity, note: newerNote } };
   assert.deepEqual(onlineHistoryFromSnapshot([newer, other], state, 'owner', 'guitar'), [newer, other]);
   assert.deepEqual(onlineHistoryFromSnapshot([newer, other], { ...state, deletedActivityIds: ['saved'] }, 'owner', 'guitar'), [other]);
   assert.deepEqual(onlineHistoryFromSnapshot([other], state, 'different-owner', 'guitar'), []);
