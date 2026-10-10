@@ -7,23 +7,25 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified production release is [v0.52.1](https://github.com/elsell/hourpaths/releases/tag/v0.52.1),
-source `e356fa3`, deployed through GitOps `823345a`. Exact API/web images,
+The current verified production release is [v0.53.0](https://github.com/elsell/hourpaths/releases/tag/v0.53.0),
+source `385eb12`, deployed through GitOps `f8932fd`. Exact API/web images,
 Ready/Healthy Flux, retention configuration and public readiness are verified.
-TestFlight 0.52.1 (464) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
-internal group; release notes were read back. Google Play publication is pending.
-This release includes shared Path/Stats charts, complete zero-day calendars,
-current periods ending on local today, and native large-text calendar controls.
-Area 11 still requires signed-device/accessibility acceptance.
+TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
+internal group; release notes were read back. Google Play v0.52.1 internal build
+435 was committed after signed-bundle verification; v0.53.0 publication is pending.
 
-Bounded account-history loading merged in [PR #161](https://github.com/elsell/hourpaths/pull/161)
-as `385eb12` after all five candidate gates. Studio and mobile now read paginated
-own-account history without querying every empty Path. Full online history,
-complete 90-day retention, current Path access checks and atomic snapshot
-replacement are preserved. PostgreSQL, client boundary and live Studio/Android
-acceptance passed. Main/release verification remains active; this change is not
-claimed available to production users yet. The next slice should target
-remaining implementation or acceptance, without repeating completed work.
+This release includes shared Path/Stats charts, complete zero-day calendars,
+current periods ending on local today, native large-text controls and bounded
+account-history loading (PR #161). Full online history, complete 90-day retention,
+current Path access checks and atomic snapshot replacement are preserved.
+PostgreSQL, client boundary and live Studio/Android acceptance passed.
+Signed-device acceptance remains required.
+
+The independent Stats calendar correction merged in [PR #163](https://github.com/elsell/hourpaths/pull/163)
+as `e8e7516` after all five candidate gates. Calendar now defaults to the past
+year independently of the chart range, while retaining shared Path filters.
+Browser and Android emulator checks passed. Main/release verification is active;
+this correction is not yet claimed available in production or TestFlight.
 
 Next unresolved implementation choices are provider-picture import during
 onboarding, the richer Live Activity design, and public-text processing location.
@@ -98,9 +100,10 @@ delay the active successful-account-creation slice.
 
 - The approved specifications do not choose an initial public/private profile
   privacy value or state that onboarding asks the user to choose one.
-- The current policy version identifiers, published Terms of Service, Privacy
-  Policy, Community Guidelines locations, and monitored support route have not
-  been supplied.
+- Production configures `public-v1` policy versions and URLs for Terms, Privacy,
+  Community Guidelines and Support, but all four URLs returned 404 on October 10.
+  Publication remains incomplete; approved policy content and a monitored support
+  contact must be established before this acceptance item can close.
 - The specifications require an OIDC profile picture to pre-populate onboarding
   and require accepted images to be safely re-encoded, but do not decide
   whether an untouched provider picture is imported by default, imported only
