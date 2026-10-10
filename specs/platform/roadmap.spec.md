@@ -7,27 +7,26 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The complete-range Stats fix is available in v0.51.1: production GitOps
-`0fcf421`, TestFlight 457 (VALID, IN_BETA_TESTING and internally assigned), and
-Google Play internal 427. TestFlight notes were read back. Empty days and entirely
-empty periods remain visible; physical-device acceptance remains open.
+The current verified production release is [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),
+source `e8e7516`, deployed through GitOps `9da65d4`. Exact API/web images,
+Ready/Healthy Flux, retention configuration and public readiness are verified.
+TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
+internal group; release notes were read back. Google Play v0.53.0 internal build
+438 was committed after signed-bundle verification in [run 38079836984](https://github.com/elsell/hourpaths/actions/runs/38079836984).
 
-Path-specific analytics merged in [PR #158](https://github.com/elsell/hourpaths/pull/158)
-as `e9c3f3c` after all five checks. It uses shared Stats charts and calendars,
-personal activity by default, participant selection, complete recorded-history
-metrics and the specified trailing-year/quartile grid. Studio and Android
-emulator acceptance passed. Production v0.52.0 is verified through GitOps
-`06908ac`, with exact images, Ready/Healthy Flux and public readiness.
-TestFlight 0.52.0 (460) is confirmed available to internal testers with
-verified release notes; Google Play internal build 430 was committed after
-signed-bundle verification. Area 11 stays open until current-year initial calendar positioning and remaining acceptance
-are verified. Shared mobile analytics large-text corrections merged in PR #159;
-Android 160% interaction checks passed and release verification is in progress. The
-current-period Stats correction merged in PR #160 after all five gates; Studio
-and Android confirmed that the grid ends on local today while historical ranges
-remain complete. Its release verification is in progress. The active slice now
-replaces per-Path history hydration with bounded own-account pagination while
-preserving the complete 90-day offline snapshot and existing access rules.
+This release includes shared Path/Stats charts, complete zero-day calendars,
+current periods ending on local today, native large-text controls and bounded
+account-history loading (PR #161). Full online history, complete 90-day retention,
+current Path access checks and atomic snapshot replacement are preserved.
+PostgreSQL, client boundary and live Studio/Android acceptance passed.
+Signed-device acceptance remains required.
+
+The independent Stats calendar correction merged in [PR #163](https://github.com/elsell/hourpaths/pull/163)
+as `e8e7516` after all five candidate gates. Calendar now defaults to the past
+year independently of the chart range, while retaining shared Path filters.
+Browser and Android emulator checks passed. Main CI and exact-source API/web
+deployment passed; signed mobile publication remains pending. The verified
+v0.53.0 store builds above do not yet contain this correction.
 
 Next unresolved implementation choices are provider-picture import during
 onboarding, the richer Live Activity design, and public-text processing location.
@@ -102,9 +101,10 @@ delay the active successful-account-creation slice.
 
 - The approved specifications do not choose an initial public/private profile
   privacy value or state that onboarding asks the user to choose one.
-- The current policy version identifiers, published Terms of Service, Privacy
-  Policy, Community Guidelines locations, and monitored support route have not
-  been supplied.
+- Production configures `public-v1` policy versions and URLs for Terms, Privacy,
+  Community Guidelines and Support, but all four URLs returned 404 on October 10.
+  Publication remains incomplete; approved policy content and a monitored support
+  contact must be established before this acceptance item can close.
 - The specifications require an OIDC profile picture to pre-populate onboarding
   and require accepted images to be safely re-encoded, but do not decide
   whether an untouched provider picture is imported by default, imported only
@@ -118,9 +118,10 @@ delay the active successful-account-creation slice.
   provisional lifecycle that resumes onboarding.
 - The 100-character display-name limit does not define whether a Unicode
   character means a Unicode scalar value or a user-perceived grapheme cluster.
-- The identity-access, onboarding, and profile specifications must be reconciled
-  on provisional identity ownership and whether later provider claims can update
-  a saved profile.
+- Provisional identity ownership and returning-sign-in profile ownership are
+  reconciled in [Identity and Access](../identity-access/identity-access.spec.md):
+  provider data refreshes onboarding seeds, while activated application profiles
+  remain user-owned. This is implemented and is not an unresolved product choice.
 - The verified-email duplicate-account check does not define correspondence and
   normalization rules. Email must remain non-authoritative and must not disclose
   or establish ownership of an existing account.
