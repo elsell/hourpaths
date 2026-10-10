@@ -29,7 +29,7 @@ test('every Studio transport preserves a rotated session after a late 401 and re
         : surface === 'social' ? apiSocialRepository(url, token, rejected).viewer()
         : surface === 'preferences' ? apiPreferencesRepository(url, token, rejected).identity()
         : surface === 'statistics' ? apiStatisticsRepository(url, token, rejected).load({ range: 'week', pathIds: [] })
-        : apiHistorySource(url, token, paths, rejected).initial();
+        : apiHistorySource(url, token, rejected).initial();
       const respond = async (status: number, rotate = false) => {
         const arrived = new Promise<ServerResponse>(resolve => { receive = resolve; });
         const pending = assert.rejects(request());

@@ -194,6 +194,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     exportOwnPaths: (cursor = '', archived = false) => authenticatedClient.GET('/v1/me/export/paths', { params: { query: { cursor, archived, limit: 100 } } }),
     exportOwnActivities: (pathId: string, cursor = '') => authenticatedClient.GET('/v1/me/export/paths/{pathId}/activities', { params: { path: { pathId }, query: { cursor, limit: 100 } } }),
     notificationOwnership: (notificationId: string) => authenticatedClient.GET('/v1/me/notifications/{notificationId}/ownership', { params: { path: { notificationId } } }),
+    ownActivityHistory: (window: 'all' | 'retained' = 'all', cursor = '') => authenticatedClient.GET('/v1/me/activity-history', { params: { query: { window, cursor, limit: 100 } } }),
     ownRunningTimers: (cursor = '') => authenticatedClient.GET('/v1/me/running-timers', { params: { query: { cursor, limit: 50 } } }),
     reviewCurrentPolicies: () => authenticatedClient.GET('/v1/me/policies'),
     acceptCurrentPolicies: (body: Omit<components['schemas']['PolicyRenewalInputBody'], '$schema'>, key: string) => authenticatedClient.POST('/v1/me/policies', { body, params: { header: { 'Idempotency-Key': key } } }),

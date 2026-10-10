@@ -59,8 +59,11 @@ and fence account changes and concurrent local commands. A failed refresh must
 leave the prior snapshot intact. Offline timeline pages must identify retained
 history and incomplete initial hydration; pending sessions must be shown without
 linking to a server entry that does not exist yet. Native Path history must use
-the same account ledger as Home timers. Its background refresh must enumerate
-active and archived Paths and every own-activity page before committing. Cached
+the same account ledger as Home timers. Its background refresh must finish every
+authorized page of the account’s retained-history window before committing,
+including history on archived participating Paths. History loading must not
+require one request for each empty Path or download older history merely to
+discard it outside the retention window. Cached
 rows must be read-only until server details are available, and pending rows
 must be visibly distinguished from acknowledged activity.
 
@@ -354,3 +357,24 @@ state and server authentication rules remain authoritative.
 A completed Home read must not repeat its network traversal solely because another client saved downloaded history or an activity detail in the same account ledger. Home retention must preserve those newer history rows and remain atomic across its Paths and timer summaries. Any intervening local timer/activity command, synchronization result, membership change, or unclassified write must continue to reject the stale Home read. This fence must remain conservative with older clients that do not identify history-only writes. A competing history-only store commit may be retried locally with the already fetched payload; retries must remain bounded.
 
 Acceptance: saving full history and then an activity detail while Home is in flight preserves both and needs one Home fetch. A timer command between history reads still rejects stale Home, including when the writer uses the older snapshot format.
+
+## Bounded account-history loading acceptance
+
+- Own-account history must paginate across participating Paths in descending
+  activity-start order with a deterministic identity tie-breaker. Online history
+  remains fully pageable; offline hydration selects the most recent 90 days by
+  activity end time and must preserve the original interval, note, occurrence
+  time zone, Path name, revision and causal edit metadata.
+- Pagination must bind its cursor to the authenticated owner, selected retention
+  cutoff and snapshot. Reusing another account's or differently filtered cursor
+  must fail without disclosing activity. New entries and edits during traversal
+  must follow the existing snapshot-history semantics.
+- Current Path access, participation, blocking and deletion rules still apply on
+  every page. Application reads must use SpiceDB authorization and emit the
+  existing scoped read and denial audit events; a dependency failure must not
+  publish an unauthorised or partial retained snapshot.
+- An account with many empty Paths must load its history with requests bounded
+  by the number of activity pages, not its Path count. Interactive Home and Stats
+  must remain usable during hydration without increasing server read quotas.
+- A failed page, logout/account replacement, or concurrent local command must
+  leave the previous complete retained snapshot and pending work intact.
