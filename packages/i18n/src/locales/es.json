@@ -5288,5 +5288,11 @@
   "settings.quietHours.differentTimes": "Elige horas de inicio y fin diferentes.",
   "settings.quietHours.saved": "Horario de silencio guardado.",
   "settings.quietHours.on": "Activado",
-  "settings.quietHours.off": "Desactivado"
+  "settings.quietHours.off": "Desactivado",
+  "pathStats.heading": "Estadísticas",
+  "pathStats.yours": "Tu actividad",
+  "pathStats.participant": "Actividad de",
+  "pathStats.choose": "Elige un participante",
+  "pathStats.sessions": "Sesiones",
+  "pathStats.average": "Sesión media"
 }

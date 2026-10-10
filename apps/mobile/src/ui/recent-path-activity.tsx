@@ -15,7 +15,7 @@ export function RecentPathActivity({ retained = false, incomplete = false, activ
   errorText?: string;
   i18n: Translator;
   onRetry: () => void;
-  onSeeAll: () => void;
+  onSeeAll?: () => void;
   onOpen: (id: string) => void;
   onAdd?: () => void;
   participantName: (id: string) => string;
@@ -44,7 +44,7 @@ export function RecentPathActivity({ retained = false, incomplete = false, activ
           <SettingsSeparator />
         </Fragment>;
       })}
-      <SettingsNavigationRow accessibilityLabel={i18n.t('pathDetails.seeAll')} label={i18n.t('pathDetails.seeAll')} onPress={onSeeAll} />
+      {onSeeAll ? <SettingsNavigationRow accessibilityLabel={i18n.t('pathDetails.seeAll')} label={i18n.t('pathDetails.seeAll')} onPress={onSeeAll} /> : null}
       {onAdd ? <><SettingsSeparator /><SettingsActionRow accessibilityLabel={i18n.t('activity.add')} label={i18n.t('activity.add')} onPress={onAdd} /></> : null}
     </SettingsSection>
   </>;

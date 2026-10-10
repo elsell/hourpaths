@@ -146,3 +146,8 @@ must not be rebuilt simply because acceptance or documentation is incomplete.
 Unresolved account and policy decisions remain above until reconciled with the
 authoritative spec and actual implementation. They do not authorize new product
 choices, and they must not stall independent areas of the checklist.
+
+Path analytics continuation: PR #157 merged the complete-range Stats fix; release
+API/web deployment is verified; native availability remains pending. The active
+slice now adds the approved personal-first
+Path statistics with participant selection and shared chart/calendar components.

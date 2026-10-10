@@ -109,6 +109,11 @@ Define the focused view for understanding and managing one path.
   count, and average completed-session duration.
 - The default statistics must include a time-over-time chart for the selected
   Path.
+- Total time, session count and average must cover the selected participant's
+  complete visible recorded history on this Path, not a page of recent sessions.
+  Running timers must not count as completed sessions. The chart and grid must
+  use each recording's retained occurrence time zone when allocating elapsed
+  seconds to dates, as specified for [Stats](../analytics/stats-history.spec.md).
 - The default statistics must include a GitHub-style activity grid in which
   each cell represents one calendar day and visual intensity reflects the
   amount of time recorded on that day.
@@ -116,6 +121,10 @@ Define the focused view for understanding and managing one path.
   day. Every date from the range start through today must have a cell, including
   dates before the first and after the last recorded activity. An empty range
   must show all zero-activity cells on every client.
+- The trailing range is inclusive: on October 10, 2026 it runs from October 11,
+  2025 through October 10, 2026. On February 29, 2024 it starts March 1, 2023;
+  the anniversary is clamped to the previous year's last valid February day
+  before advancing one day.
 - Mirroring GitHub's contribution-level model, the grid must use five total
   states: one `none` state for zero recorded time and four progressively
   stronger quartile levels for days with recorded time relative to other

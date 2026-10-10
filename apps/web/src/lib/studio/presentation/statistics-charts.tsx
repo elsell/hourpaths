@@ -1,7 +1,8 @@
+import { statsCalendarGroups as calendarGroups, statsContributionWeeks as contributionWeeks, statsContributionIntensity } from '@hourpaths/client-core';
 import { useEffect, useRef, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
-import { calendarGroups, contributionLevel, contributionWeeks, type Bucket, type CalendarUnit, type Statistics } from '../analytics/domain/statistics';
+import { type Bucket, type CalendarUnit, type Statistics } from '../analytics/domain/statistics';
 import { duration } from './duration';
 import { calendarLabel } from './statistics-format';
 
@@ -18,13 +19,13 @@ export function ActivityChart({ buckets, unit, selection, dependencies: d }: { b
     </li>)}</ol></div>
   </section>;
 }
-export function ContributionGrid({ statistics: data, selection, dependencies: d }: { statistics: Statistics; selection: string; dependencies: StudioDependencies }) {
+export function ContributionGrid({ statistics: data, selection, dependencies: d, intensity = 'relative' }: { intensity?: 'relative' | 'quartile'; statistics: Pick<Statistics, 'firstDate' | 'lastDate' | 'days' | 'weekStartsOn'>; selection: string; dependencies: StudioDependencies }) {
   const [grouping, setGrouping] = useState<CalendarUnit>('day');
   const [selected, setSelected] = useState<string | null>(null);
   const scroll = useRef<HTMLDivElement>(null);
   useEffect(() => { setSelected(null); if (scroll.current) scroll.current.scrollLeft = scroll.current.scrollWidth; }, [selection, grouping]);
   const weeks = contributionWeeks(data.days, data.weekStartsOn, { startDate: data.firstDate, endDate: data.lastDate });
-  const maximum = Math.max(1, ...data.days.map(day => day.seconds));
+  const level = statsContributionIntensity(data.days.map(day => day.seconds), intensity);
   const chosen = weeks.flat().find(day => day?.date === selected);
   const label = (date: string, seconds: number) => d.i18n.t('stats.chartValue', { label: d.i18n.date(new Date(date + 'T12:00:00Z'), { dateStyle: 'long', timeZone: 'utc' }), duration: d.i18n.t('duration.compactSeconds', { seconds: d.i18n.number(seconds) }) });
   const summary = calendarGroups(data.days, grouping, data.weekStartsOn);
@@ -33,7 +34,7 @@ export function ContributionGrid({ statistics: data, selection, dependencies: d 
       <div className="studio-contribution-scroll" ref={scroll} tabIndex={0} role="region" aria-label={d.i18n.t('stats.contribution.title')}><div className="studio-contribution">{weeks.map((week, index) => {
         const month = week.find(day => day && (index === 0 || day.date.endsWith('-01')));
         return <div className="studio-contribution-week" key={week.find(day => day)?.date ?? index}><span className="studio-contribution-month">{month ? d.i18n.date(new Date(month.date + 'T12:00:00Z'), { month: 'short', timeZone: 'utc' }) : ''}</span>
-          {week.map((day, row) => day ? <button key={day.date} className="studio-contribution-day" data-level={contributionLevel(day.seconds, maximum)} aria-label={label(day.date, day.seconds)} title={label(day.date, day.seconds)} aria-pressed={day.date === selected} onClick={() => setSelected(day.date)} /> : <span className="studio-contribution-placeholder" key={row} />)}
+          {week.map((day, row) => day ? <button key={day.date} className="studio-contribution-day" data-level={level(day.seconds)} aria-label={label(day.date, day.seconds)} title={label(day.date, day.seconds)} aria-pressed={day.date === selected} onClick={() => setSelected(day.date)} /> : <span className="studio-contribution-placeholder" key={row} />)}
         </div>;
       })}</div></div></div> : <ul className="studio-calendar-summary">{summary.map(bucket => <li key={bucket.key}><time>{calendarLabel(bucket.key, grouping === 'week' ? 'day' : grouping, d.i18n)}</time><strong>{duration(d.i18n, bucket.seconds)}</strong><span className="studio-sr-only">{d.i18n.t('duration.compactSeconds', { seconds: d.i18n.number(bucket.seconds) })}</span></li>)}</ul>}
     <div className="studio-contribution-legend"><span>{d.i18n.t('stats.contribution.less')}</span>{[0, 1, 2, 3, 4].map(level => <span key={level} data-level={level} aria-hidden="true" />)}<span>{d.i18n.t('stats.contribution.more')}</span></div>

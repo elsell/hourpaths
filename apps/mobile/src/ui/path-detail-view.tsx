@@ -28,6 +28,7 @@ export type PathDetailViewProps = {
   accumulatedText?: string;
   timer?: ReactNode;
   recentActivity?: ReactNode;
+  statistics?: ReactNode;
   settings: readonly {
     label: string;
     value?: string;
@@ -42,7 +43,7 @@ export type PathDetailViewProps = {
 
 export function PathDetailView({
   actionDisabled = false, comparisonFirst = false, appearance, name, onRename, onAppearance, onColorChange, appearanceBusy = false,
-  headline, periodLabel, goalText, progress, accumulatedText, timer, recentActivity,
+  headline, periodLabel, goalText, progress, accumulatedText, timer, recentActivity, statistics,
   settings, participantComparison, archived, busy,
 }: PathDetailViewProps) {
   const tone = pathPalette[appearance.color];
@@ -109,6 +110,7 @@ export function PathDetailView({
       {!archived ? timer : null}
     </View>
 
+    {statistics}
     {recentActivity ? <View style={styles.section}>
       <SectionHeading>{i18n.t('pathDetails.recentActivity')}</SectionHeading>
       {recentActivity}

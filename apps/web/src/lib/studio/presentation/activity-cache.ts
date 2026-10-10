@@ -12,7 +12,7 @@ export function applyActivityDeletion(client: QueryClient, scope: string, review
   client.setQueryData<TrackingSnapshot>([scope, 'tracking', review.pathId], data => data && ({ ...data, savedTotalSeconds: result.accumulatedSeconds, period: result.period }));
   client.removeQueries({ predicate: query => {
     const [account, area, resource, id] = query.queryKey;
-    return account === scope && ((['activity', 'activity-revisions'].includes(String(area)) && resource === review.pathId && id === review.activityId) || (area === 'social' && ['comments', 'roster', 'commentHistory'].includes(String(resource)) && removed.has(String(id))) || area === 'statistics');
+    return account === scope && ((['activity', 'activity-revisions'].includes(String(area)) && resource === review.pathId && id === review.activityId) || (area === 'social' && ['comments', 'roster', 'commentHistory'].includes(String(resource)) && removed.has(String(id))) || ['statistics', 'path-statistics', 'path-history'].includes(String(area)));
   } });
   // Other activity, people, preferences, appearance, and Path caches remain intact.
 }

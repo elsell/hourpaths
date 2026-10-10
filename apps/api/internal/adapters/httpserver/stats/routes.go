@@ -9,6 +9,7 @@ import (
 )
 
 type Service interface {
+	GetPath(context.Context, string, string, string) (domain.PathSummary, error)
 	Get(context.Context, string, string, string, string) (domain.StatsSummary, error)
 }
 type statsInput struct {
@@ -24,6 +25,7 @@ type statsOutput struct {
 }
 
 func Register(api huma.API, service Service) {
+	registerPath(api, service)
 	huma.Register(api, huma.Operation{OperationID: "get-stats", Method: http.MethodGet, Path: "/v1/stats", Summary: "Read personal recorded activity statistics", Tags: []string{"Stats"}, Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *statsInput) (*statsOutput, error) {
 		result, err := service.Get(ctx, input.Authorization, input.Range, input.Anchor, input.PathIDs)
 		if err != nil {

@@ -1,2 +1,3 @@
-import type { Selection, Statistics } from '../domain/statistics';
-export interface StatisticsRepository { load(selection: Selection, signal?: AbortSignal): Promise<Statistics> }
+import type { Selection, Statistics, PathStatistics } from '../domain/statistics';
+export interface StatisticsRepository {
+  path(pathId: string, participantId: string, signal?: AbortSignal): Promise<PathStatistics>; load(selection: Selection, signal?: AbortSignal): Promise<Statistics> }

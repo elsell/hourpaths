@@ -1376,6 +1376,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/paths/{pathId}/statistics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one visible participant's completed Path statistics */
+        get: operations["get-path-statistics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/paths/{pathId}/timer": {
         parameters: {
             query?: never;
@@ -3629,6 +3646,28 @@ export interface components {
             readonly $schema?: string;
             expectedName: string;
             name: string;
+        };
+        PathStatsOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/PathStatsOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["PathSummary"];
+        };
+        PathSummary: {
+            /** Format: int64 */
+            averageSeconds: number;
+            calendar: components["schemas"]["StatsCalendarDay"][];
+            endDate: string;
+            /** Format: int64 */
+            sessionCount: number;
+            startDate: string;
+            /** Format: int64 */
+            totalSeconds: number;
+            /** Format: int64 */
+            weekStartsOn: number;
         };
         PathUpdate: {
             /**
@@ -8033,6 +8072,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnershipTransferOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-path-statistics": {
+        parameters: {
+            query?: {
+                participantId?: string;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                pathId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PathStatsOutputBody"];
                 };
             };
             /** @description Error */
