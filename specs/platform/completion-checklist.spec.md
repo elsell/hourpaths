@@ -18,7 +18,7 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Current slice — October 9
+## Current delivery status — October 10
 
 Comment removal and appeal enforcement ([issue #154](https://github.com/elsell/hourpaths/issues/154), area 10) merged in PR #155 as `d2bd82c` after all five checks.
 Production v0.50.0 is verified through GitOps `12e991b`, with exact API/web
@@ -35,20 +35,26 @@ and persisted reload at desktop and narrow widths. Android at 160% font size
 shows the same notice and appeal, then the final reversal after Refresh.
 Signed physical-device acceptance remains outstanding.
 
-Draft PR #153 (bundled goal reminders and quiet periods) integrates the merged
-moderation behavior and reserves migrations 95–96 after moderation migration 94.
-The owner has approved rejecting equal enabled start/end times. Client validation
-and API rejection now implement that rule; final review, merge and release remain. Scheduling,
-bundles, online/offline Stop recalculation, account-scoped settings and final push
-suppression are implemented. Prior Studio and Android at 160% text acceptance
-verified saved settings and cross-client readback. Integration with moderation
-passes fresh migrations, focused PostgreSQL delivery/authorization checks, both
-client type checks, generated-contract validation and localization checks.
+Bundled goal reminders and quiet periods merged in [PR #153](https://github.com/elsell/hourpaths/pull/153)
+as `90b41af` after all five candidate checks. The approved rule rejects equal
+start/end times when quiet hours are enabled, with localized correction and no
+saved mutation. Scheduling, bundles, online/offline Stop recalculation,
+account-scoped settings and final push suppression are implemented. Migration 94
+is preserved; reminder and quiet-period migrations are 95–96. Focused PostgreSQL
+checks and the full 149-test store/integration run passed, along with Studio and
+Android at 160% text acceptance for the equal-time correction and disabled Save.
 
-Online history convergence and time-zone selection have subsequently shipped.
-The latest verified availability is TestFlight 0.50.0 (450), source `d2bd82c`,
-VALID and IN_BETA_TESTING with internal-group assignment. This does not close
-physical-device acceptance or the remaining areas below.
+Release v0.51.0 is deployed through GitOps `3603732`: exact API/web images,
+Ready/Healthy Flux, retention image and public readiness are verified. TestFlight
+0.51.0 (453) is VALID, nonexpired, IN_BETA_TESTING and assigned to the internal
+group ([Apple status](https://github.com/elsell/hourpaths/actions/runs/38047918135));
+its release notes were published and read back. Google Play internal version code
+423 was committed after signed-bundle verification in
+[run 38047890528](https://github.com/elsell/hourpaths/actions/runs/38047890528).
+This is the latest verified release availability. Physical-device reminder and
+quiet-period delivery remain open in areas 8, 9 and 13; publication does not close
+those acceptance areas. No implementation slice is currently active. The next
+Path-grid slice awaits the shared-Path participant aggregation decision.
 
 Offline-banner persistence, Android screen-listener lifetime, and native
 synchronization feedback merged in PRs #144–#146 through their five-check gates.
