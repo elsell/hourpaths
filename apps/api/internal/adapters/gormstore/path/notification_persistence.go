@@ -69,34 +69,7 @@ func createOwnershipTransferNotification(
 }
 
 func createNotificationPushDelivery(tx *gorm.DB, notificationID, recipientUserID string, createdAt time.Time) error {
-	if err := tx.Create(&notificationPushOutboxModel{
-		NotificationID: notificationID, CreatedAt: createdAt,
-	}).Error; err != nil {
-		return err
-	}
-	if err := tx.Exec(`
-INSERT INTO notification_push_delivery_models (
-  notification_id, installation_id, recipient_user_id,
-  provider, platform, locale, token_ciphertext, token_nonce, token_hash,
-  available_at, created_at
-)
-SELECT ?, i.id, ?, i.provider, i.platform, i.locale,
-       i.token_ciphertext, i.token_nonce, i.token_hash, ?, ?
-FROM push_installation_models i
-WHERE i.owner_user_id = ? AND i.deleted_at IS NULL
-ON CONFLICT (notification_id, installation_id) DO NOTHING`,
-		notificationID, recipientUserID, createdAt,
-		createdAt, recipientUserID).Error; err != nil {
-		return err
-	}
-	return tx.Exec(`
-UPDATE notification_push_outbox_models
-SET suppressed_at = ?, failure_code = 'no_active_installation'
-WHERE notification_id = ?
-  AND NOT EXISTS (
-    SELECT 1 FROM notification_push_delivery_models
-    WHERE notification_id = ?
-	)`, createdAt, notificationID, notificationID).Error
+	return channelstore.QueuePush(tx, notificationID, recipientUserID, createdAt)
 }
 
 func createMemberAccessNotification(tx *gorm.DB, notification application.MemberAccessNotification, allowSelfStepDown bool) error {

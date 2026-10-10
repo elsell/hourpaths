@@ -457,7 +457,7 @@ func createCommentNotification(tx *gorm.DB, command socialapp.CommentCommand, co
 	if err := tx.Table("notification_models").Create(row).Error; err != nil {
 		return err
 	}
-	return createSocialInteractionPush(tx, notificationID, command.Target.OwnerUserID, command.NotificationEligibleAt)
+	return channelstore.QueuePushAvailable(tx, notificationID, command.Target.OwnerUserID, command.OccurredAt, command.NotificationEligibleAt)
 }
 
 func createSocialInteractionPush(tx *gorm.DB, notificationID, recipientUserID string, eligibleAt time.Time) error {

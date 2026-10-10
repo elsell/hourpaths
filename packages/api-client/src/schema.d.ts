@@ -690,6 +690,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/unavailable-period": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the account daily unavailable period */
+        get: operations["get-unavailable-period"];
+        /** Update the account daily unavailable period */
+        put: operations["update-unavailable-period"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/week-start": {
         parameters: {
             query?: never;
@@ -2455,6 +2473,13 @@ export interface components {
             /** Format: int64 */
             targetSeconds: number;
         };
+        GoalReminderBundle: {
+            paths: components["schemas"]["GoalReminderPath"][] | null;
+        };
+        GoalReminderPath: {
+            id: string;
+            name: string;
+        };
         GoalReminderPreferenceData: {
             enabled: boolean;
             /** Format: int64 */
@@ -3448,9 +3473,10 @@ export interface components {
             presentation: "actionable" | "informational";
             reaction?: string;
             read: boolean;
+            reminder?: components["schemas"]["GoalReminderBundle"];
             socialFeedEventId?: string;
             /** @enum {string} */
-            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started" | "long_timer_running" | "goal_no_longer_achievable" | "interval_goal_achieved" | "overall_target_achieved";
+            type: "path_invitation_received" | "path_invitation_accepted" | "path_ownership_transfer_received" | "path_ownership_transfer_accepted" | "path_ownership_transfer_declined" | "path_ownership_transfer_canceled" | "path_deleted" | "path_member_left" | "path_member_removed" | "path_member_role_changed" | "path_visibility_changed" | "new_follower" | "follow_request_received" | "follow_request_accepted" | "practice_reaction" | "practice_comment" | "comment_heart" | "nudge_received" | "timer_started" | "long_timer_running" | "goal_no_longer_achievable" | "goal_practice_reminder" | "interval_goal_achieved" | "overall_target_achieved";
         };
         PathInvitationOutputBody: {
             /**
@@ -4226,6 +4252,41 @@ export interface components {
             enabled: boolean;
             /** Format: int64 */
             expectedRevision: number;
+        };
+        UnavailablePeriodDTO: {
+            enabled: boolean;
+            /** Format: int64 */
+            endMinute: number;
+            /** Format: int64 */
+            revision: number;
+            /** Format: int64 */
+            startMinute: number;
+            timeZone: string;
+        };
+        UnavailablePeriodInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnavailablePeriodInputBody.json
+             */
+            readonly $schema?: string;
+            enabled: boolean;
+            /** Format: int64 */
+            endMinute: number;
+            /** Format: int64 */
+            expectedRevision: number;
+            reviewedTimeZone: string;
+            /** Format: int64 */
+            startMinute: number;
+        };
+        UnavailablePeriodOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/UnavailablePeriodOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["UnavailablePeriodDTO"];
         };
         UnlinkIdentityInputBody: {
             /**
@@ -6038,6 +6099,73 @@ export interface operations {
             };
         };
     };
+    "get-unavailable-period": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnavailablePeriodOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "update-unavailable-period": {
+        parameters: {
+            query?: never;
+            header: {
+                Authorization?: string;
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnavailablePeriodInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnavailablePeriodOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
     "get-configured-week-start": {
         parameters: {
             query?: never;
@@ -6113,6 +6241,7 @@ export interface operations {
                 achievements?: boolean;
                 longTimers?: boolean;
                 goalDeadlines?: boolean;
+                goalReminders?: boolean;
                 cursor?: string;
                 limit?: number;
             };
@@ -6152,6 +6281,7 @@ export interface operations {
                 achievements?: boolean;
                 longTimers?: boolean;
                 goalDeadlines?: boolean;
+                goalReminders?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -6189,6 +6319,7 @@ export interface operations {
                 achievements?: boolean;
                 longTimers?: boolean;
                 goalDeadlines?: boolean;
+                goalReminders?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -6228,6 +6359,7 @@ export interface operations {
                 achievements?: boolean;
                 longTimers?: boolean;
                 goalDeadlines?: boolean;
+                goalReminders?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -6267,6 +6399,7 @@ export interface operations {
                 achievements?: boolean;
                 longTimers?: boolean;
                 goalDeadlines?: boolean;
+                goalReminders?: boolean;
             };
             header?: {
                 Authorization?: string;
@@ -7032,6 +7165,7 @@ export interface operations {
             query?: {
                 achievements?: boolean;
                 longTimers?: boolean;
+                goalReminders?: boolean;
                 goalDeadlines?: boolean;
             };
             header: {

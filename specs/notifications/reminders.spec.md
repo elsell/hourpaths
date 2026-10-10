@@ -158,6 +158,25 @@ minute later than the 8:05 PM reminder. The bundle must be delivered at 8:00 PM.
 - An active timer on a different Path must not suppress the relevant Path's
   reminder.
 
+## Ordinary-reminder acceptance (`REM-02`)
+
+1. With 40 minutes remaining toward a daily goal ending at midnight, the
+   scheduled reminder is 22:50. If the next unavailable period starts at 22:00,
+   the scheduled reminder is 20:50 instead. Completed goals and an active timer
+   on the same Path produce no deliverable reminder.
+2. For one participant, schedules at 20:00 and 20:05 belong to one bundle at
+   20:00; 20:06 starts a separate bundle. Input ordering must not change this
+   result, and no other participant's schedules may enter that bundle.
+3. Concurrent delivery attempts commit one notification, its included interval
+   receipts, audit event and push admission atomically. A failed transaction
+   must not consume any included Path's once-per-interval eligibility.
+4. A queued ordinary reminder must recheck actionability before push handoff.
+   If a goal still needs 60 minutes but only 15 minutes remain, the provider
+   must not receive that reminder. A newly saved earlier unavailable-period
+   start must also be honored at final handoff.
+5. Native and Studio show every currently accessible included Path. A revoked
+   Path must not expose its name or progress through a stale bundle.
+
 ## No-longer-achievable notice
 
 - If an incomplete interval goal becomes impossible to complete using all of

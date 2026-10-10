@@ -300,6 +300,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	registerWeekStartPreferenceRoutes(api, application)
 	registerPolicyRenewalRoutes(api, application)
 	registerAccountExportRoutes(api, application)
+	registerUnavailablePeriodRoutes(api, application)
 	registerProviderIdentityRoutes(api, application)
 	registerAuthorizationRecoveryRoutes(api, application)
 	registerInvitationRoutes(api, application)

@@ -40,7 +40,7 @@ func TestPostgresTimeZonePreferenceUpdateIsAtomicIdempotentAndConflictSafe(t *te
 		t.Fatalf("non-advancing effective instant error = %v", err)
 	}
 	assertTimeZonePreferenceState(t, migrationStore, userID, "America/New_York", 1, 0, 0)
-	command := timeZonePreferenceCommand(userID, "America/New_York", "Europe/Paris", now, "time-zone-key-0001", "time-zone-audit-1")
+	command := timeZonePreferenceCommand(userID, "America/New_York", "Europe/Paris", now, "time-zone-key-0001", "time-zone-audit-1-"+userID)
 	changed, err := runtimeStore.UpdateTimeZonePreference(ctx, command)
 	if err != nil || changed.Preference != (application.TimeZonePreference{TimeZone: "Europe/Paris", EffectiveAt: now}) || !changed.Changed || changed.Replayed {
 		t.Fatalf("changed preference = %+v, %v", changed, err)
@@ -86,7 +86,7 @@ func TestPostgresTimeZonePreferenceNoOpAndAuditFailureRollback(t *testing.T) {
 	seedTimeZonePreferenceUser(t, migrationStore, userID, "Etc/UTC", initialAt)
 	t.Cleanup(func() { migrationStore.DB.Table("user_models").Where("id = ?", userID).Delete(&struct{ ID string }{}) })
 
-	noop := timeZonePreferenceCommand(userID, "Etc/UTC", "Etc/UTC", now, "time-zone-noop-0001", "time-zone-noop-audit")
+	noop := timeZonePreferenceCommand(userID, "Etc/UTC", "Etc/UTC", now, "time-zone-noop-0001", "time-zone-noop-audit-"+userID)
 	result, err := runtimeStore.UpdateTimeZonePreference(context.Background(), noop)
 	if err != nil || result.Preference != (application.TimeZonePreference{TimeZone: "Etc/UTC", EffectiveAt: initialAt}) || result.Changed {
 		t.Fatalf("no-op result = %+v, %v", result, err)

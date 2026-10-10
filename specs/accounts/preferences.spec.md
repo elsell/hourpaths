@@ -178,3 +178,40 @@ and the keyboard shown.
   [Goal-Aware Practice Reminders](../notifications/reminders.spec.md).
 - Its cross-category push-delivery effect is defined in
   [Notifications](../notifications/notifications.spec.md).
+
+### Daily interval evaluation
+
+The configured daily interval uses local wall-clock minutes in the saved IANA
+zone. Its start is included and its end is excluded. Overnight intervals include
+the end of one local day and the beginning of the next. Repeated local minutes
+during a daylight-saving fall-back are inside the interval on both occurrences;
+a skipped local minute does not require a fabricated instant or notification.
+
+Acceptance examples for distinct start and end times:
+
+1. A 22:00–08:00 interval is active at 22:00 and 07:59, and inactive at 08:00
+   and 21:59 in the configured zone, regardless of device zone.
+2. A 09:00–17:00 interval is active at 09:00 and 16:59 and inactive at 17:00.
+3. A disabled interval never suppresses push delivery.
+4. During a fall-back, a 01:30–02:30 interval includes both occurrences of
+   01:45. During a spring-forward, a 02:30–03:30 interval includes 03:00
+   where the clock skipped from 01:59 to 03:00.
+
+When enabled, identical local start and end times must be rejected as invalid.
+Both clients must explain that the start and end times must differ and preserve
+the draft for correction. A rejected save must not change the saved preference.
+Disabled preferences may retain equal placeholder times; disabling quiet hours
+must remain possible without editing hidden time fields.
+
+### Persistence and concurrent edits
+
+The preference must be scoped to the authenticated account and persist across
+clients. A save must compare the reviewed revision and configured time zone;
+a stale review must not overwrite a newer preference or silently apply local
+times in a different zone. A retry of the same confirmed mutation must return
+its original result without replacing subsequent changes. Preference writes,
+retry receipts and successful audit records must commit atomically.
+
+The notification-channel serialization boundary must also protect quiet-period
+updates and final push handoff. Suppression must preserve the in-app notice.
+A newly created account with no saved interval has quiet hours disabled.

@@ -132,6 +132,9 @@ func (s *Service) SynchronizeTimer(ctx context.Context, authorization, pathID, k
 	if result.Activity != nil && (result.Activity.ParticipantID != principal.UserID || result.Activity.PathID != pathID || result.Activity.DurationSeconds() != result.SavedSeconds) {
 		return OfflineTimerResult{}, errors.Join(ports.ErrInvalidArgument, errInvalidDependencies)
 	}
+	if result.Terminal && input.Kind != "start" {
+		s.reconcileStoppedGoalReminders(ctx, principal.UserID)
+	}
 	return result, nil
 }
 

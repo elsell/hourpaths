@@ -2,6 +2,8 @@ import type { GoalReminderSubject, GoalReminderPreference } from '../domain/pref
 import type { TimerSubscriptionSubject, TimerSubscriptionPreference } from '../domain/preferences';
 import type { NotificationChannelPreference, AccountIdentity, TimeZonePreference, TimeZoneChange, Interactions, NudgePreference, BlockedPerson } from '../domain/preferences';
 export interface PreferencesRepository {
+  unavailablePeriod(owner: string, signal?: AbortSignal): Promise<import('../domain/preferences').UnavailablePeriodPreference>;
+  saveUnavailablePeriod(value: import('../domain/preferences').UnavailablePeriodChange, key: string, signal?: AbortSignal): Promise<import('../domain/preferences').UnavailablePeriodPreference>;
   weekStart(owner: string, signal?: AbortSignal): Promise<import('../domain/preferences').WeekStartPreference>;
   saveWeekStart(value: import('../domain/preferences').WeekStartChange, key: string, signal?: AbortSignal): Promise<import('../domain/preferences').WeekStartPreference>;
   profilePicture(owner:string,signal?:AbortSignal):Promise<import('../domain/preferences').ProfilePicture>;

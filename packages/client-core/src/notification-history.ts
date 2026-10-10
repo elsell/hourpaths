@@ -93,6 +93,12 @@ type AchievementNotification = PathNotificationBase & Readonly<{
   socialFeedEventId: string;
 }>;
 
+type GoalPracticeReminderNotification = NotificationBase & Readonly<{
+  type: 'goal_practice_reminder';
+  presentation: 'informational';
+  reminder: Readonly<{ paths: readonly Readonly<{ id: string; name: string }>[] }>;
+}>;
+
 type TimerStartedNotification = PathNotificationBase & Readonly<{
   type: 'timer_started' | 'long_timer_running' | 'goal_no_longer_achievable';
   presentation: 'informational';
@@ -146,6 +152,7 @@ export type NotificationHistoryItem =
   | PathVisibilityChangedNotification
   | PracticeReactionNotification
   | TimerStartedNotification
+  | GoalPracticeReminderNotification
   | AchievementNotification
   | PracticeCommentNotification
   | NudgeNotification
@@ -195,6 +202,7 @@ export type NotificationPresentationMessageKey =
   | 'notification.timerStarted'
   | 'notification.longTimerRunning'
   | 'notification.goalNoLongerAchievable'
+  | 'notification.goalPracticeReminder'
   | 'notification.intervalGoalAchieved'
   | 'notification.overallTargetAchieved'
   | 'notification.newFollower'
@@ -343,6 +351,25 @@ function validatedNotification(value: unknown): PathInvitationNotification | und
       actor,
       pathName: record.pathName,
     });
+  }
+
+  if (record.type === 'goal_practice_reminder') {
+    if (record.presentation !== 'informational' || !hasExactKeys(record, [...notificationBaseKeys, 'reminder'].sort())) return undefined;
+    const reminder = record.reminder;
+    if (!reminder || typeof reminder !== 'object' || Array.isArray(reminder)) return undefined;
+    const bundle = reminder as Record<string, unknown>;
+    if (!hasExactKeys(bundle, ['paths']) || !Array.isArray(bundle.paths) || bundle.paths.length === 0) return undefined;
+    const seen = new Set<string>();
+    const paths: Readonly<{ id: string; name: string }>[] = [];
+    for (const value of bundle.paths) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+      const path = value as Record<string, unknown>;
+      if (!hasExactKeys(path, ['id', 'name']) || !validText(path.id) || !validText(path.name) || seen.has(path.id)) return undefined;
+      seen.add(path.id);
+      paths.push(Object.freeze({ id: path.id, name: path.name }));
+    }
+    return Object.freeze({ id: record.id, type: record.type, presentation: 'informational', read: record.read,
+      createdAt: record.createdAt, actor, reminder: Object.freeze({ paths: Object.freeze(paths) }) });
   }
 
   if (!validText(record.pathId) || !validText(record.pathName)) return undefined;
@@ -562,6 +589,8 @@ export function notificationPresentationMessageKey(
     return 'notification.overallTargetAchieved';
   case 'timer_started':
     return 'notification.timerStarted';
+  case 'goal_practice_reminder':
+    return 'notification.goalPracticeReminder';
   case 'goal_no_longer_achievable':
     return 'notification.goalNoLongerAchievable';
   case 'long_timer_running':

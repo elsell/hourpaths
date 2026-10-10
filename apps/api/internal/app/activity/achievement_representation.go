@@ -32,3 +32,13 @@ func goalDeadlineNotificationRepresentation(ctx context.Context) bool {
 	enabled, _ := ctx.Value(goalDeadlineRepresentationKey{}).(bool)
 	return enabled
 }
+
+type goalReminderRepresentationKey struct{}
+
+func WithGoalReminderNotificationRepresentation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, goalReminderRepresentationKey{}, enabled)
+}
+func goalReminderNotificationRepresentation(ctx context.Context) bool {
+	enabled, _ := ctx.Value(goalReminderRepresentationKey{}).(bool)
+	return enabled
+}

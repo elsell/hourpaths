@@ -56,6 +56,8 @@ export function notificationTarget(
   pendingOwnershipTransfers: readonly OwnershipTransfer[],
   accessiblePaths: readonly Readonly<{ id: string }>[],
 ): NotificationTarget | null {
+  // Bundled reminders are rendered by Studio's multi-Path destination.
+  if (notification.type === 'goal_practice_reminder') return null;
   if (notification.type === 'path_deleted' || notification.type === 'path_member_removed') return null;
   if (notification.type === 'follow_request_received') {
     return Object.freeze({ kind: 'follow-request', requestId: notification.followRequestId });

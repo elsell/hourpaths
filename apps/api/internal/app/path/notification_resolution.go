@@ -37,7 +37,7 @@ func (service *InvitationService) GetNotification(
 	item, err := service.Invitations.GetNotification(
 		ctx, principal.UserID, notificationID,
 	)
-	if err == nil && (item.CreatedAt.After(now) || (!notificationGoalDeadlineRepresentation(ctx) && item.Kind == NotificationGoalNoLongerAchievable) || (!notificationLongTimerRepresentation(ctx) && item.Kind == NotificationLongTimerRunning) || (!notificationAchievementRepresentation(ctx) && item.Kind.IsAchievement()) || (!notificationTimerRepresentation(ctx) && item.Kind == NotificationTimerStarted) || (!notificationEmojiRepresentation(ctx) && item.Kind == NotificationPracticeReaction && item.Reaction.ValidStored() && !item.Reaction.Valid())) {
+	if err == nil && (item.CreatedAt.After(now) || (!notificationGoalReminderRepresentation(ctx) && item.Kind == NotificationGoalPracticeReminder) || (!notificationGoalDeadlineRepresentation(ctx) && item.Kind == NotificationGoalNoLongerAchievable) || (!notificationLongTimerRepresentation(ctx) && item.Kind == NotificationLongTimerRunning) || (!notificationAchievementRepresentation(ctx) && item.Kind.IsAchievement()) || (!notificationTimerRepresentation(ctx) && item.Kind == NotificationTimerStarted) || (!notificationEmojiRepresentation(ctx) && item.Kind == NotificationPracticeReaction && item.Reaction.ValidStored() && !item.Reaction.Valid())) {
 		err = ports.ErrNotFound
 	}
 	if err == nil {

@@ -28,6 +28,8 @@ export function notificationDestinationTargetKey(
   destination: NotificationDestination,
 ): string {
   switch (destination.kind) {
+    case 'reminder':
+      return `reminder:${destination.notificationID}`;
     case 'comments':
     case 'interaction-disabled':
       return `comments:${destination.eventID}`;

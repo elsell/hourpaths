@@ -36,7 +36,7 @@ func (service *InvitationService) ListNotifications(
 	if !service.AuditRateLimiter.Allow(principal.UserID, now) {
 		return nil, "", 0, platformapp.ErrRateLimited
 	}
-	request := NotificationPageRequest{GoalDeadlines: notificationGoalDeadlineRepresentation(ctx), LongTimers: notificationLongTimerRepresentation(ctx), Achievements: notificationAchievementRepresentation(ctx), Limit: limit, Snapshot: now, TimerStarts: notificationTimerRepresentation(ctx), EmojiReactions: notificationEmojiRepresentation(ctx)}
+	request := NotificationPageRequest{GoalReminders: notificationGoalReminderRepresentation(ctx), GoalDeadlines: notificationGoalDeadlineRepresentation(ctx), LongTimers: notificationLongTimerRepresentation(ctx), Achievements: notificationAchievementRepresentation(ctx), Limit: limit, Snapshot: now, TimerStarts: notificationTimerRepresentation(ctx), EmojiReactions: notificationEmojiRepresentation(ctx)}
 	cursorDomain := "path-notification"
 	if request.EmojiReactions {
 		cursorDomain = "path-notification-emoji"
@@ -52,6 +52,9 @@ func (service *InvitationService) ListNotifications(
 	}
 	if request.GoalDeadlines {
 		cursorDomain += "-goal-deadlines"
+	}
+	if request.GoalReminders {
+		cursorDomain += "-goal-reminders"
 	}
 	if cursor != "" {
 		payload, decodeErr := shared.DecodeCursor(service.CursorSigningKey, cursor)
@@ -71,6 +74,9 @@ func (service *InvitationService) ListNotifications(
 		return nil, "", 0, errInvalidInvitationDependencies
 	}
 	for _, item := range page.Items {
+		if item.Kind == NotificationGoalPracticeReminder && !request.GoalReminders {
+			return nil, "", 0, ports.ErrUnavailable
+		}
 		if err := service.authorizeTimerNotification(ctx, principal.UserID, item); err != nil {
 			// Never expose a partial page or unread count from a stale permission
 			// projection. Its next refresh must reconcile with authoritative access.

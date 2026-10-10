@@ -76,6 +76,13 @@ func InvitationNotification(value pathapp.InvitationNotificationProjection) dto.
 		InteractionDisabled: string(value.InteractionDisabled),
 	}
 	switch value.Kind {
+	case pathapp.NotificationGoalPracticeReminder:
+		if value.Reminder != nil {
+			result.Reminder = &dto.GoalReminderBundle{Paths: make([]dto.GoalReminderPath, 0, len(value.Reminder.Paths))}
+			for _, p := range value.Reminder.Paths {
+				result.Reminder.Paths = append(result.Reminder.Paths, dto.GoalReminderPath{ID: string(p.ID), Name: p.Name})
+			}
+		}
 	case pathapp.NotificationPathDeleted:
 		result.PathName = value.PathName
 	case pathapp.NotificationPracticeReaction:

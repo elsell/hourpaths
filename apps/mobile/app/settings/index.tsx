@@ -61,6 +61,8 @@ export default function Settings() {
         onPress={() => router.push('/settings/notifications')}
       />
       <SettingsSeparator />
+      <SettingsNavigationRow accessibilityLabel={i18n.t('settings.quietHours.heading')} label={i18n.t('settings.quietHours.heading')} icon={<SettingsIcon systemName="bell" />} onPress={() => router.push('/settings/quiet-hours')} />
+      <SettingsSeparator />
       <SettingsNavigationRow
         accessibilityLabel={i18n.t('settings.weekStart.heading')}
         icon={<SettingsIcon systemName="calendar" />}

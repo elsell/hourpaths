@@ -2,6 +2,7 @@ import type { EnforcementRepository } from '@hourpaths/client-core';
 import type { ReportingRepository } from '@hourpaths/client-core';
 import type { GoalRemindersRepository } from '@hourpaths/client-core';
 import type { WeekStartPreferenceRepository } from '@hourpaths/client-core';
+import type { UnavailablePeriodRepository } from '@hourpaths/client-core';
 import type { ProfilePictureRepository } from '@hourpaths/client-core';
 import { providerSettingsLifetime } from '@hourpaths/client-core';
 import type { ProfilePrivacyRepository } from '@hourpaths/client-core';
@@ -21,6 +22,7 @@ export type SignOutPresentationResult =
 
 export type SettingsPresentation = {
   enforcement?: EnforcementRepository;
+  unavailablePeriod?: UnavailablePeriodRepository;
   weekStart?: WeekStartPreferenceRepository;
   profilePrivacy?: ProfilePrivacyRepository;
   profileEditing?: ProfileEditingRepository;
@@ -56,6 +58,7 @@ function emitChange() {
 
 export function SettingsPresentationSource({
   enforcement,
+  unavailablePeriod,
   weekStart,
   timerSubscriptions,
   goalReminders,
@@ -82,6 +85,7 @@ export function SettingsPresentationSource({
   updateConfiguredTimeZone,
 }: SettingsPresentation) {
   const enforcementRef = useRef(enforcement); enforcementRef.current = enforcement;
+  const unavailablePeriodRef = useRef(unavailablePeriod); unavailablePeriodRef.current = unavailablePeriod;
   const weekStartRef = useRef(weekStart); weekStartRef.current = weekStart;
   const profilePrivacyRef = useRef(profilePrivacy);
   profilePrivacyRef.current = profilePrivacy;
@@ -131,6 +135,10 @@ export function SettingsPresentationSource({
         list: async cursor => { assertActive(); const value = await enforcementRef.current!.list(cursor); assertProfileOwner(); return value; },
         get: async id => { assertActive(); const value = await enforcementRef.current!.get(id); assertProfileOwner(); return value; },
         appeal: async (id, explanation, key) => { assertActive(); const value = await enforcementRef.current!.appeal(id, explanation, key); assertProfileOwner(); return value; },
+      } : undefined,
+      unavailablePeriod: unavailablePeriod ? {
+        read: async signal => { assertActive(); const value = await unavailablePeriodRef.current!.read(signal); assertProfileOwner(); return value; },
+        save: async (value, key, signal) => { assertActive(); const saved = await unavailablePeriodRef.current!.save(value, key, signal); assertProfileOwner(); return saved; },
       } : undefined,
       weekStart: weekStart ? {
         read: async signal => { assertActive(); const value = await weekStartRef.current!.read(signal); assertProfileOwner(); return value; },

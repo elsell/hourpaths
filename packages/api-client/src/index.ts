@@ -196,6 +196,8 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     ownRunningTimers: (cursor = '') => authenticatedClient.GET('/v1/me/running-timers', { params: { query: { cursor, limit: 50 } } }),
     reviewCurrentPolicies: () => authenticatedClient.GET('/v1/me/policies'),
     acceptCurrentPolicies: (body: Omit<components['schemas']['PolicyRenewalInputBody'], '$schema'>, key: string) => authenticatedClient.POST('/v1/me/policies', { body, params: { header: { 'Idempotency-Key': key } } }),
+    unavailablePeriod: () => authenticatedClient.GET('/v1/me/unavailable-period'),
+    updateUnavailablePeriod: (body: { expectedRevision: number; reviewedTimeZone: string; enabled: boolean; startMinute: number; endMinute: number }, key: string) => authenticatedClient.PUT('/v1/me/unavailable-period', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredWeekStart: () => authenticatedClient.GET('/v1/me/week-start'),
     updateConfiguredWeekStart: (body: { reviewedFirstDayOfWeek: number; proposedFirstDayOfWeek: number }, key: string) => authenticatedClient.PUT('/v1/me/week-start', { body, params: { header: { 'Idempotency-Key': key } } }),
     configuredTimeZone: () => authenticatedClient.GET('/v1/me/time-zone'),
@@ -247,7 +249,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { query: { cursor, limit: 25 } },
     }),
     notifications: (cursor?: string) => authenticatedClient.GET('/v1/notifications', {
-      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
+      params: { query: { cursor, limit: 25, emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true, goalReminders: true } },
     }),
     notificationChannels: () => authenticatedClient.GET('/v1/me/notification-channels'),
     listEnforcementNotices: (cursor?: string) => authenticatedClient.GET('/v1/enforcement-notices', { params: { query: { cursor, limit: 25 } } }),
@@ -384,15 +386,15 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { requestId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     getNotification: (notificationId: string) => authenticatedClient.GET('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true, goalReminders: true } },
     }),
     markNotificationRead: (notificationId: string) => authenticatedClient.PATCH('/v1/notifications/{notificationId}/read', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true, goalReminders: true } },
     }),
     deleteNotification: (notificationId: string) => authenticatedClient.DELETE('/v1/notifications/{notificationId}', {
-      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } },
+      params: { path: { notificationId }, query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true, goalReminders: true } },
     }),
-    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true } } }),
+    markAllNotificationsRead: () => authenticatedClient.POST('/v1/notifications/read-all', { params: { query: { emojiReactions: true, timerStarts: true, achievements: true, longTimers: true, goalDeadlines: true, goalReminders: true } } }),
     ownershipTransferCandidates: (pathId: string, cursor?: string) => authenticatedClient.GET('/v1/paths/{pathId}/ownership-transfer-candidates', {
       params: { path: { pathId }, query: { cursor, limit: 25 } },
     }),
@@ -496,7 +498,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       body,
     }),
     deleteActivity: (pathId: string, activityId: string, idempotencyKey: string) => authenticatedClient.DELETE('/v1/paths/{pathId}/activities/{activityId}', {
-      params: { query: { achievements: true, longTimers: true, goalDeadlines: true }, path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
+      params: { query: { achievements: true, longTimers: true, goalDeadlines: true, goalReminders: true }, path: { pathId, activityId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     activity: (pathId: string, activityId: string) => authenticatedClient.GET('/v1/paths/{pathId}/activities/{activityId}', {
       params: { path: { pathId, activityId } },

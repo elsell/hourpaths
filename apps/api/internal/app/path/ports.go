@@ -322,6 +322,7 @@ const (
 	NotificationTimerStarted                  InvitationNotificationKind = "timer_started"
 	NotificationLongTimerRunning              InvitationNotificationKind = "long_timer_running"
 	NotificationGoalNoLongerAchievable        InvitationNotificationKind = "goal_no_longer_achievable"
+	NotificationGoalPracticeReminder          InvitationNotificationKind = "goal_practice_reminder"
 	NotificationIntervalGoalAchieved          InvitationNotificationKind = "interval_goal_achieved"
 	NotificationOverallTargetAchieved         InvitationNotificationKind = "overall_target_achieved"
 )
@@ -344,7 +345,14 @@ func (reason InteractionDisabledReason) Valid() bool {
 	return reason == InteractionDisabledComments || reason == InteractionDisabledReactions
 }
 
+type GoalReminderPath struct {
+	ID   domain.ID
+	Name string
+}
+type GoalReminderBundle struct{ Paths []GoalReminderPath }
+
 type InvitationNotificationProjection struct {
+	Reminder            *GoalReminderBundle
 	ID                  string
 	Kind                InvitationNotificationKind
 	Presentation        NotificationPresentation
@@ -366,6 +374,7 @@ type InvitationNotificationProjection struct {
 }
 
 type NotificationPageRequest struct {
+	GoalReminders  bool
 	LongTimers     bool
 	GoalDeadlines  bool
 	Achievements   bool
@@ -384,6 +393,7 @@ type NotificationPage struct {
 }
 
 type NotificationMutationCommand struct {
+	GoalReminders   bool
 	LongTimers      bool
 	GoalDeadlines   bool
 	Achievements    bool

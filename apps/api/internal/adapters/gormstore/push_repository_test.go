@@ -3,12 +3,13 @@ package gormstore
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 func TestPushTokenProtectionUsesRandomCiphertextAndOwnerInstallationAAD(t *testing.T) {
-	repository, err := NewPushRepository(&gorm.DB{}, bytes.Repeat([]byte{0x42}, 32))
+	repository, err := NewPushRepository(&gorm.DB{}, bytes.Repeat([]byte{0x42}, 32), pushTestClock{time.Unix(1, 0).UTC()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,8 +45,12 @@ func TestPushTokenProtectionUsesRandomCiphertextAndOwnerInstallationAAD(t *testi
 
 func TestNewPushRepositoryRejectsMissingOrShortKey(t *testing.T) {
 	for _, key := range [][]byte{nil, bytes.Repeat([]byte{1}, 31)} {
-		if _, err := NewPushRepository(&gorm.DB{}, key); err == nil {
+		if _, err := NewPushRepository(&gorm.DB{}, key, pushTestClock{time.Unix(1, 0).UTC()}); err == nil {
 			t.Fatal("short push encryption key was accepted")
 		}
 	}
 }
+
+type pushTestClock struct{ at time.Time }
+
+func (c pushTestClock) Now() time.Time { return c.at }

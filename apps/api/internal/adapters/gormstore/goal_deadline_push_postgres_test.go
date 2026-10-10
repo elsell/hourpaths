@@ -15,7 +15,7 @@ func TestPostgresGoalDeadlinePushRechecksPreferencesTimerAndAccessAtHandoff(t *t
 	at := time.Now().UTC().Truncate(time.Microsecond)
 	recipient := f.recipient.ID
 	installationID, id := "deadline-install-"+newTestID(), "deadline-push-"+newTestID()
-	repository, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x63}, 32))
+	repository, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x63}, 32), pushTestClock{at})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,15 +18,28 @@ func goalReminderPreferenceRegistration(store *gormstore.Store, auth ports.Authe
 	return func(api huma.API) { activityroutes.RegisterGoalReminderPreferences(api, service) }
 }
 
-// A scan drains bounded pages before waiting, so later participants do not
-// incur an extra polling interval for every earlier page.
+func reconcileGoalReminders(ctx context.Context, store *gormstore.Store, authorizer ports.Authorizer, clock ports.Clock, limiter ports.AuditRateLimiter, probe ports.Probe) {
+	worker := &activityapp.GoalReminderWorker{Repository: activitystore.New(store.DB), Authorizer: authorizer, Clock: clock, Audits: store, RateLimiter: limiter, NewID: uuid.NewString, BatchSize: 100}
+	reconcileGoalNotices(ctx, worker, probe, "goal_reminder.reconciliation")
+}
+
 func reconcileGoalDeadlines(ctx context.Context, store *gormstore.Store, authorizer ports.Authorizer, clock ports.Clock, limiter ports.AuditRateLimiter, probe ports.Probe) {
-	worker := activityapp.GoalDeadlineNoticeWorker{Repository: activitystore.New(store.DB), Authorizer: authorizer, Clock: clock, Audits: store, RateLimiter: limiter, NewID: uuid.NewString, BatchSize: 100}
+	worker := &activityapp.GoalDeadlineNoticeWorker{Repository: activitystore.New(store.DB), Authorizer: authorizer, Clock: clock, Audits: store, RateLimiter: limiter, NewID: uuid.NewString, BatchSize: 100}
+	reconcileGoalNotices(ctx, worker, probe, "goal_deadline_notice.reconciliation")
+}
+
+type goalNoticeWorker interface {
+	RunOnce(context.Context) (int, bool, error)
+}
+
+// Drain bounded pages before waiting so later participants do not incur an
+// extra polling interval for every earlier page. Cancellation bounds shutdown.
+func reconcileGoalNotices(ctx context.Context, worker goalNoticeWorker, probe ports.Probe, eventName string) {
 	for {
 		for ctx.Err() == nil {
 			_, more, err := worker.RunOnce(ctx)
 			if err != nil && ctx.Err() == nil {
-				probe.Observe(ctx, ports.ProbeEvent{Name: "goal_deadline_notice.reconciliation", Outcome: "failed"})
+				probe.Observe(ctx, ports.ProbeEvent{Name: eventName, Outcome: "failed"})
 			}
 			if err != nil || !more {
 				break

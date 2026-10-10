@@ -7,6 +7,7 @@ import { AccountExportController, apiAccountExport } from '@hourpaths/client-cor
 import { NativePolicyReviewSource } from '../src/ui/policy-review-presentation';
 import { apiPolicyRenewal, PolicyReviewController, apiPolicyTimers, PolicyTimersController, retainedPolicyTimers } from '@hourpaths/client-core';
 import { apiEnforcement, EnforcementFailure, type EnforcementRepository } from '@hourpaths/client-core';
+import { apiUnavailablePeriod, UnavailablePeriodFailure, type UnavailablePeriodRepository } from '@hourpaths/client-core';
 import { apiWeekStartPreference, WeekStartFailure, type WeekStartPreferenceRepository } from '@hourpaths/client-core';
 import { apiProfileConnections } from '@hourpaths/client-core';
 import { apiProfilePicture, PictureFailure, type ProfilePictureRepository } from '@hourpaths/client-core';
@@ -37,7 +38,7 @@ import Constants from 'expo-constants';
 import { getCalendars, getLocales } from 'expo-localization';
 import { CommonActions } from '@react-navigation/native';
 import { router, useGlobalSearchParams, useNavigation, usePathname } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createPathSubmissionOwner, createSessionApiClient, createTimerOperationOwner, formatTimerDuration, generatedResponse, sessionExpiryAdvanced, sessionRefreshDelay, sessionRefreshLeadMs, timerMutationPresentation, type ActivityDeletionResult, type ActivityDetail, type ActivityMutationResult, type GeneratedOperationResult, type ManualActivityDefaults, type MemberRemovalReceipt, type MemberRemovalReview as GeneratedMemberRemovalReview, type OnboardingActivationInput, type OwnershipTransferCandidate as GeneratedOwnershipTransferCandidate, type OwnershipTransferResult, type OwnershipTransferReview, type PathGoalMutationResult, type PathGoalUpdateDraft as GeneratedPathGoalUpdateDraft, type PathRecurrence, type SessionPath, type TimerState, type TimerStopResult } from '@hourpaths/api-client';
@@ -216,6 +217,7 @@ import {
   takeSettingsJourneyBootstrap,
 } from '../src/settings-journey-route-recovery';
 import { SettingsJourneyRecoverySource } from '../src/ui/settings-journey-route-presentation';
+import { GoalReminderSheet } from '../src/ui/goal-reminder-sheet';
 import { NotificationHistoryView } from '../src/ui/notification-history-view';
 import { PendingInvitationsView } from '../src/ui/pending-invitations-view';
 import { SocialProfileRouteSource, type SocialFollowRequestState, type SocialProfileDetailState, type SocialProfileSearchState } from '../src/ui/social-profile-route-presentation';
@@ -815,6 +817,7 @@ export function HomeScreen() {
   const [focusedInvitationID, setFocusedInvitationID] = useState<string | null>(null);
   const focusedInvitationIDRef = useRef<string | null>(null);
   focusedInvitationIDRef.current = focusedInvitationID;
+  const [goalReminderId, setGoalReminderId] = useState<string | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationHistory, setNotificationHistory, notificationHistoryRef] =
     useLatestState<NotificationHistoryState>({ items: [], nextCursor: '', unreadCount: 0 });
@@ -1261,6 +1264,7 @@ export function HomeScreen() {
     notificationSettingsTarget.current = null;
     notificationSettingsAdmission.current = null;
     setNotificationsOpen(false);
+    setGoalReminderId(null);
     setNotificationHistory({ items: [], nextCursor: '', unreadCount: 0 });
     setNotificationUnreadCount(null);
     setNotificationsBusy(false);
@@ -3363,6 +3367,7 @@ export function HomeScreen() {
   }
 
   function closeNotificationsRoute() {
+    setGoalReminderId(null);
     notificationRefreshOperations.invalidate();
     notificationTarget.current = null;
     setNotificationsOpen(false);
@@ -3458,6 +3463,7 @@ export function HomeScreen() {
         ? { destination: { kind: 'invitation', invitationID: notification.invitationId }, presentation: notification.presentation }
         : null;
     }
+    if (notification.type === 'goal_practice_reminder') return { destination: { kind: 'reminder', notificationID: notification.id }, presentation: notification.presentation };
     if (notification.type === 'path_deleted') return null;
     if (notification.type === 'follow_request_received') {
       return { destination: { kind: 'follow-request', requestID: notification.followRequestId }, presentation: notification.presentation };
@@ -3585,6 +3591,13 @@ export function HomeScreen() {
 
   function navigateFromPush(destination: NotificationDestination) {
     if (notificationLifecycleState.current.destination?.kind !== 'home') return;
+    if (destination.kind === 'reminder') {
+      const credential = notificationLifecycleState.current.session;
+      void openNotifications(true).then(() => {
+        if (notificationLifecycleState.current.session === credential) setGoalReminderId(destination.notificationID);
+      });
+      return;
+    }
     if (destination.kind === 'interaction-disabled') {
       setSocialFeed((current) => ({
         ...current,
@@ -4505,6 +4518,22 @@ export function HomeScreen() {
     }
   }
 
+  async function unavailablePeriodRequest<T>(request: (repository: UnavailablePeriodRepository) => Promise<T>): Promise<T> {
+    if (!session || destination?.kind !== 'home') throw new UnavailablePeriodFailure('rejected');
+    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
+    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
+      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    try {
+      const result = await request(apiUnavailablePeriod(apiURL, credential.token, owner));
+      if (!current()) throw new Error('unavailable_period_superseded');
+      return result;
+    } catch (cause) {
+      if (cause instanceof UnavailablePeriodFailure && cause.kind === 'rejected') await handleNotificationOperationFailure(sessionFailureFromResponse(401), credential, current);
+      throw cause;
+    }
+  }
+
+
   async function enforcementRequest<T>(request: (repository: EnforcementRepository) => Promise<T>): Promise<T> {
     if (!session || destination?.kind !== 'home') throw new EnforcementFailure('rejected');
     const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
@@ -5302,8 +5331,25 @@ export function HomeScreen() {
     }
   }
 
+  const loadGoalReminder = useCallback(async (id: string) => {
+    const initial = notificationLifecycleState.current;
+    const credential = initial.session;
+    if (!credential || initial.destination?.kind !== 'home') throw new Error('notification_owner_unavailable');
+    const owner = initial.destination.profile.id;
+    const response = generatedResponse(await createSessionApiClient(apiURL, () => credential.token).getNotification(id));
+    if (!response.ok) throw sessionFailureFromResponse(response.status, response.problem);
+    const envelope = await response.json();
+    const current = notificationLifecycleState.current;
+    if (current.session?.token !== credential.token || current.destination?.kind !== 'home' || current.destination.profile.id !== owner) throw new Error('notification_owner_changed');
+    const item = mergeNotificationHistoryPage({ items: [], nextCursor: '', unreadCount: 0 },
+      { items: envelope ? [envelope.data] : [], nextCursor: '', unreadCount: 0 }, '').items[0];
+    if (item?.type !== 'goal_practice_reminder') throw new Error('notification_reminder_unavailable');
+    return item;
+  }, []);
+
   async function openNotificationContext(notification: PathInvitationNotification) {
     if (destination?.kind !== 'home') return;
+    if (notification.type === 'goal_practice_reminder') { setGoalReminderId(notification.id); return; }
     if (notification.type === 'path_deleted' || notification.type === 'path_member_removed') return;
     if (notification.type === 'follow_request_received') {
       await loadSocialFollowRequests(true);
@@ -8636,6 +8682,7 @@ export function HomeScreen() {
       />
     </NativeSheet> : null}
     {ownedHomeDestination ? <SettingsPresentationSource
+      unavailablePeriod={{ read: signal => unavailablePeriodRequest(repository => repository.read(signal)), save: (value, key, signal) => unavailablePeriodRequest(repository => repository.save(value, key, signal)) }}
       weekStart={{ read: signal => weekStartRequest(repository => repository.read(signal)), save: (value, key, signal) => weekStartRequest(repository => repository.save(value, key, signal)) }}
       pickProfilePicture={pickProfilePicture}
       profilePicture={{ read: () => profilePictureRequest(repo => repo.read()), preview: image => profilePictureRequest(repo => repo.preview(image)), save: (value, key) => profilePictureRequest(repo => repo.save(value, key)) }}
@@ -9456,9 +9503,12 @@ export function HomeScreen() {
       refresh={() => void refreshNotifications()}
       refreshing={notificationsRefreshing}
     >
+      {goalReminderId ? <GoalReminderSheet key={ownedHomeDestination.profile.id} i18n={i18n}
+        notificationId={goalReminderId} load={loadGoalReminder} onClose={() => setGoalReminderId(null)}
+        onOpenPath={id => { setGoalReminderId(null); openPathDetail(id); }} /> : null}
       <NotificationHistoryView
         busy={notificationsBusy}
-        canOpen={(notification) => notification.type === 'path_invitation_received'
+        canOpen={(notification) => notification.type === 'goal_practice_reminder' || notification.type === 'path_invitation_received'
           ? true
           : (notification.type === 'practice_comment' || notification.type === 'comment_heart')
             ? true

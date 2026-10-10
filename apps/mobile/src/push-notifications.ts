@@ -52,6 +52,7 @@ export async function nativeForegroundPresentationBeforeDeadline(
 }
 
 export type NotificationDestination =
+  | { kind: 'reminder'; notificationID: string }
   | { kind: 'comments'; eventID: string; commentID?: string }
   | { kind: 'interaction-disabled'; eventID: string; interaction: 'comments' | 'reactions'; pathID: string }
   | { kind: 'invitation'; invitationID: string }

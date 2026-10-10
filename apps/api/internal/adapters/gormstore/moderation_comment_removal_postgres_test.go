@@ -52,7 +52,7 @@ func testModeratedComment(t *testing.T, deleteBeforeAppeal bool) {
 	}
 	// Admit an actual comment-heart push, then hold removal uncommitted while
 	// handoff contends. No provider call may escape a committed removal.
-	push, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x71}, 32))
+	push, err := NewPushRepository(f.runtime.DB, bytes.Repeat([]byte{0x71}, 32), pushTestClock{f.now})
 	if err != nil {
 		t.Fatal(err)
 	}

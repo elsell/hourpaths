@@ -8,6 +8,9 @@ import (
 )
 
 func (s *InvitationService) authorizeTimerNotification(ctx context.Context, recipient string, notice InvitationNotificationProjection) error {
+	if notice.Kind == NotificationGoalPracticeReminder {
+		return s.authorizeGoalReminderNotification(ctx, recipient, notice)
+	}
 	if notice.Kind != NotificationTimerStarted && notice.Kind != NotificationLongTimerRunning && notice.Kind != NotificationGoalNoLongerAchievable && !notice.Kind.IsAchievement() {
 		return nil
 	}
