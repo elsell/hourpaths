@@ -106,6 +106,11 @@ func Aggregate(kind, anchor string, paths []StatsPath, records []Record, now tim
 		if end.Before(currentStart) || end.Equal(currentStart) {
 			s.NextAnchor = date(end)
 		}
+		// Current periods contain recorded dates through participant-local today.
+		// Completed periods retain their full boundaries for navigation/history.
+		if tomorrow := current.AddDate(0, 0, 1); end.After(tomorrow) {
+			end = tomorrow
+		}
 	}
 	s.Anchor = date(start)
 	s.StartDate = date(start)

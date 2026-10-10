@@ -7,30 +7,32 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-Comment-removal enforcement and private appeals merged in PR #155 as `d2bd82c`.
-Release v0.50.0 is verified in production through GitOps `12e991b`, with exact
-API/web images, Ready/Healthy Flux and public readiness. TestFlight 0.50.0 (450)
-is VALID, IN_BETA_TESTING and assigned to internal testers; its release notes
-were read back. Google Play internal version code 420 was committed by workflow
-`38002647767` after signed-bundle verification. Physical-device acceptance is
-still required; publication does not close the wider moderation area.
+The complete-range Stats fix is available in v0.51.1: production GitOps
+`0fcf421`, TestFlight 457 (VALID, IN_BETA_TESTING and internally assigned), and
+Google Play internal 427. TestFlight notes were read back. Empty days and entirely
+empty periods remain visible; physical-device acceptance remains open.
 
-Bundled goal reminders and unavailable periods merged in PR #153 as `90b41af`,
-including the approved rejection of equal enabled quiet-period endpoints.
-Release v0.51.0 is verified in production through GitOps `3603732`; exact images,
-Flux health, retention configuration and public endpoints pass. TestFlight
-0.51.0 (453) is VALID, IN_BETA_TESTING and assigned to internal testers with
-verified release notes (Apple status `38047918135`). Google Play internal version
-code 423 was committed after signed-bundle verification (`38047890528`).
-Physical-device delivery acceptance remains open; the 11-area count is unchanged.
+Path-specific analytics merged in [PR #158](https://github.com/elsell/hourpaths/pull/158)
+as `e9c3f3c` after all five checks. It uses shared Stats charts and calendars,
+personal activity by default, participant selection, complete recorded-history
+metrics and the specified trailing-year/quartile grid. Studio and Android
+emulator acceptance passed. Production v0.52.0 is verified through GitOps
+`06908ac`, with exact images, Ready/Healthy Flux and public readiness.
+TestFlight 0.52.0 (460) is confirmed available to internal testers with
+verified release notes; Google Play internal build 430 was committed after
+signed-bundle verification. Area 11 stays open until current-year initial calendar positioning and remaining acceptance
+are verified. Shared mobile analytics large-text corrections merged in PR #159;
+Android 160% interaction checks passed and release verification is in progress. The
+active slice now corrects current-period Stats ranges to end on participant-local
+today, preserving complete historical periods and shared client charts.
 
-The owner approved personal activity by default with a participant selector for
-Path statistics, and a complete calendar including zero-activity dates on every
-client. The active first slice fixes empty and sparse grids across mobile and
-Studio; the following slice adds the Path-specific statistics surface using
-that approved scope and the existing trailing-12-month/quartile requirements.
-The richer Live Activity proposal and public-text processing location also await
-owner decisions. These unresolved decisions do not authorize inferred behavior.
+Next unresolved implementation choices are provider-picture import during
+onboarding, the richer Live Activity design, and public-text processing location.
+Account suspension/ban enforcement and signed-device acceptance also remain.
+NAS-level snapshot encryption and expiry need authenticated storage evidence;
+Kubernetes configuration and the verified isolated restore rehearsal alone do
+not establish external backup retention. These requirements remain in the
+ordered checklist rather than expanding the analytics slice.
 
 Only one product implementation slice may be active. Preserve completed
 implementation and use the checklist's concrete acceptance criteria to select
@@ -146,8 +148,3 @@ must not be rebuilt simply because acceptance or documentation is incomplete.
 Unresolved account and policy decisions remain above until reconciled with the
 authoritative spec and actual implementation. They do not authorize new product
 choices, and they must not stall independent areas of the checklist.
-
-Path analytics continuation: PR #157 merged the complete-range Stats fix; release
-API/web deployment is verified; native availability remains pending. The active
-slice now adds the approved personal-first
-Path statistics with participant selection and shared chart/calendar components.
