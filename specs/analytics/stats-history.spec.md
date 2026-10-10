@@ -73,7 +73,10 @@ paths and over time.
   and expose each date and exact duration through accessible text and selection.
 - On every client, the grid must render every calendar date from the selected
   range start through its end, including leading, intermediate and trailing
-  zero-activity dates. An entirely empty range must retain its full grid.
+  zero-activity dates. For the current calendar period, the displayed range must
+  end on today in the participant’s configured time zone; future dates must not
+  displace today from the initial view. A completed historical period must retain
+  its full calendar boundaries. An entirely empty range must retain its full grid.
   Activity entries must not determine or shorten the displayed date boundaries.
 - The contribution grid must be the default calendar presentation for every date
   range; weekly, monthly, and yearly summaries remain selectable.
@@ -83,6 +86,18 @@ paths and over time.
 - Horizontally scrolling activity charts must initially show the most recent
   dates when a range or Path filter changes. Refreshes must preserve manual
   exploration of earlier dates.
+
+## Current-period calendar acceptance
+
+- On October 10, 2026 in the participant’s configured time zone, the current
+  Year grid must include every date from January 1 through October 10, including
+  dates with no activity, and initially reveal October 10. It must not initially
+  show November or December.
+- The September 2026 selection must still include September 1 through September
+  30, and forward navigation must return to the current October selection.
+- Near UTC midnight, the current range must use the participant’s local date,
+  including when that date differs from the server’s UTC date.
+- These boundaries must be identical in Studio and mobile clients.
 
 ## Historical calendar attribution
 

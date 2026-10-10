@@ -59,6 +59,8 @@ all clients, as approved in the Home specification.
 
 Approved mobile refinement: compact one-page Path detail/edit surface and Home tile navigation; see [Path details](experience/path-details.spec.md#compact-mobile-detailedit-page-approved-september-2026).
 
+Approved Path analytics: personal activity by default with a participant selector, shared Stats/Path charts, and complete calendar ranges including zero-activity days; see [Path statistics](experience/path-details.spec.md#content).
+
 Approved social redesign: [mobile feed, profiles, and live activity viewer](experience/social-mobile.spec.md).
 
 Approved Studio web rebuild: [experience and delivery slices](experience/web-studio.spec.md),

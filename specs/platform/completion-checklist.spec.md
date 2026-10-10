@@ -51,15 +51,40 @@ group ([Apple status](https://github.com/elsell/hourpaths/actions/runs/380479181
 its release notes were published and read back. Google Play internal version code
 423 was committed after signed-bundle verification in
 [run 38047890528](https://github.com/elsell/hourpaths/actions/runs/38047890528).
-This is the latest verified release availability. Physical-device reminder and
-quiet-period delivery remain open in areas 8, 9 and 13; publication does not close
-those acceptance areas. The owner approved personal Path statistics with a
-participant selector and complete zero-filled calendar ranges on every client.
-The empty/sparse Stats calendar fix merged in PR #157 after all five required
-checks passed; production API/web deployment is verified and native release
-availability remains pending. The active slice is
-Path-specific statistics using shared chart and calendar components, under the
-same analytics acceptance area.
+Physical-device reminder and quiet-period delivery remain open in areas 8, 9
+and 13; publication does not close those acceptance areas.
+
+Release v0.51.1 contains PR #157's complete-range Stats
+calendar fix. Production source `efc6de9` is deployed through GitOps `0fcf421`;
+exact API/web images, Ready/Healthy Flux, retention configuration and public
+readiness were verified. TestFlight 457 is VALID, nonexpired, IN_BETA_TESTING and
+assigned to the internal group ([Apple status](https://github.com/elsell/hourpaths/actions/runs/38069861821));
+release notes were published and read back. Google Play internal version 427 was
+committed after signed-bundle verification in [run 38069812415](https://github.com/elsell/hourpaths/actions/runs/38069812415).
+
+Path-specific analytics merged in [PR #158](https://github.com/elsell/hourpaths/pull/158)
+as `e9c3f3c` after all five candidate gates. Path and Stats views reuse shared
+chart/calendar components and cross-client date calculations. Personal-first
+participant selection scopes lifetime metrics and recent activity; the calendar
+covers every date in its trailing-year range. Studio and Android emulator
+acceptance, scoped PostgreSQL/HTTP checks, and full browser lifecycle acceptance
+passed. CI found stale Home goal fields after detail edits; the corrected
+candidate patches cached goal fields and passed goal-removal acceptance.
+Main CI [38071454749](https://github.com/elsell/hourpaths/actions/runs/38071454749)
+passed. Release [v0.52.0](https://github.com/elsell/hourpaths/releases/tag/v0.52.0)
+is deployed through GitOps `06908ac`: exact-source API/web images, Ready/Healthy
+Flux, retention configuration, Studio HTTP200 and API readiness204 were verified.
+TestFlight 0.52.0 (460) is VALID, nonexpired, IN_BETA_TESTING and assigned
+to the internal group ([Apple status](https://github.com/elsell/hourpaths/actions/runs/38073747812));
+release notes were published and read back. Google Play internal build 430 was
+committed after signed-bundle verification in
+[38073279818](https://github.com/elsell/hourpaths/actions/runs/38073279818).
+Area 11 remains open: current-year Stats initially scrolls to future blank dates
+instead of today, and native physical-device acceptance remains unverified. Shared mobile analytics large-text corrections merged as `28a8520` through all five gates in
+[PR #159](https://github.com/elsell/hourpaths/pull/159): labeled range/grouping
+choices and scaled calendar geometry passed Android 160% interaction checks.
+High-Path-count Home history can reach its retry state under HTTP 429;
+that separate recovery case remains in area 13's acceptance work.
 
 Offline-banner persistence, Android screen-listener lifetime, and native
 synchronization feedback merged in PRs #144–#146 through their five-check gates.

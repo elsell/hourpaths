@@ -50,3 +50,44 @@ func TestPeriodNavigationAndEmptyRange(t *testing.T) {
 		t.Fatalf("%+v %v", s, e)
 	}
 }
+
+func TestCurrentCalendarEndsOnParticipantToday(t *testing.T) {
+	// The application supplies now in the participant's configured time zone.
+	instant := time.Date(2026, 10, 10, 0, 30, 0, 0, time.UTC)
+	for _, zone := range []string{"America/Los_Angeles", "Pacific/Auckland"} {
+		loc, err := time.LoadLocation(zone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		now := instant.In(loc)
+		for _, kind := range []string{"day", "week", "month", "year"} {
+			t.Run(zone+"/"+kind, func(t *testing.T) {
+				got, err := Aggregate(kind, "", nil, nil, now, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				today := now.Format("2006-01-02")
+				if got.EndDate != today || len(got.Calendar) == 0 || got.Calendar[len(got.Calendar)-1].Date != today {
+					t.Fatalf("current %s extends past local today %s: end=%s", kind, today, got.EndDate)
+				}
+				first, _ := time.Parse("2006-01-02", got.StartDate)
+				last, _ := time.Parse("2006-01-02", today)
+				if len(got.Calendar) != int(last.Sub(first)/(24*time.Hour))+1 {
+					t.Fatal("missing zero-activity dates")
+				}
+				for _, day := range got.Calendar {
+					if day.Seconds != 0 {
+						t.Fatal("fabricated activity")
+					}
+				}
+				if got.NextAnchor != "" {
+					t.Fatal("current range permits future navigation")
+				}
+			})
+		}
+		past, err := Aggregate("month", "2026-09-01", nil, nil, now, 1)
+		if err != nil || past.StartDate != "2026-09-01" || past.EndDate != "2026-09-30" || len(past.Calendar) != 30 || past.NextAnchor != "2026-10-01" {
+			t.Fatalf("past period changed: %+v %v", past, err)
+		}
+	}
+}
