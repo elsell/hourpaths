@@ -23,10 +23,12 @@ func TestPostgresUnavailablePeriodIsOwnedVersionedAndAtomic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeSocialProfileTestStore(t, runtime)
 	admin, err := Open("postgres", *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeSocialProfileTestStore(t, admin)
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	owner, peer := "quiet-owner-"+newTestID(), "quiet-peer-"+newTestID()
@@ -104,10 +106,12 @@ func assertQuietPushSuppressed(t *testing.T, at, eligibleAt time.Time) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeSocialProfileTestStore(t, runtime)
 	admin, err := Open("postgres", *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeSocialProfileTestStore(t, admin)
 	owner, peer, id := "quiet-push-owner-"+newTestID(), "quiet-push-peer-"+newTestID(), "quiet-notice-"+newTestID()
 	for _, u := range []string{owner, peer} {
 		seedTimeZonePreferenceUser(t, admin, u, "Etc/UTC", at.Add(-time.Hour))
