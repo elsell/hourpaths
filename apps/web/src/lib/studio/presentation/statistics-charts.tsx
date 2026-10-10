@@ -23,7 +23,7 @@ export function ContributionGrid({ statistics: data, selection, dependencies: d 
   const [selected, setSelected] = useState<string | null>(null);
   const scroll = useRef<HTMLDivElement>(null);
   useEffect(() => { setSelected(null); if (scroll.current) scroll.current.scrollLeft = scroll.current.scrollWidth; }, [selection, grouping]);
-  const weeks = contributionWeeks(data.days, data.weekStartsOn);
+  const weeks = contributionWeeks(data.days, data.weekStartsOn, { startDate: data.firstDate, endDate: data.lastDate });
   const maximum = Math.max(1, ...data.days.map(day => day.seconds));
   const chosen = weeks.flat().find(day => day?.date === selected);
   const label = (date: string, seconds: number) => d.i18n.t('stats.chartValue', { label: d.i18n.date(new Date(date + 'T12:00:00Z'), { dateStyle: 'long', timeZone: 'utc' }), duration: d.i18n.t('duration.compactSeconds', { seconds: d.i18n.number(seconds) }) });

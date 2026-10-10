@@ -69,12 +69,12 @@ export function statsCalendarGroups(days: readonly { date: string; seconds: numb
 }
 
 // Layout historical labels without reinterpreting their occurrence time zones.
-export function statsContributionWeeks(days: readonly { date: string; seconds: number }[], weekStartsOn = 1): ({ date: string; seconds: number } | null)[][] {
-  if (!days.length) return [];
+export function statsContributionWeeks(days: readonly { date: string; seconds: number }[], weekStartsOn = 1, range?: { startDate: string; endDate: string }): ({ date: string; seconds: number } | null)[][] {
+  if (!days.length && !range) return [];
   const ordered = [...days].sort((a, b) => a.date.localeCompare(b.date));
   const values = new Map(ordered.map(day => [day.date, day.seconds]));
-  const cursor = new Date(`${ordered[0]!.date}T12:00:00Z`);
-  const last = ordered[ordered.length - 1]!.date;
+  const cursor = new Date(`${range?.startDate ?? ordered[0]!.date}T12:00:00Z`);
+  const last = range?.endDate ?? ordered[ordered.length - 1]!.date;
   const offset = ((cursor.getUTCDay() || 7) - weekStartsOn + 7) % 7;
   const cells: ({ date: string; seconds: number } | null)[] = Array.from({ length: offset }, () => null);
   while (cursor.toISOString().slice(0, 10) <= last) {

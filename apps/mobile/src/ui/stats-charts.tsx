@@ -60,8 +60,8 @@ export function StatsCalendar({ values, i18n }: { values: readonly StatsChartVal
   </View>;
 }
 
-export function StatsContributionGrid({ days, weekStartsOn, i18n }: { days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
-  const weeks = statsContributionWeeks(days, weekStartsOn);
+export function StatsContributionGrid({ days, weekStartsOn, range, i18n }: { range: { startDate: string; endDate: string }; days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
+  const weeks = statsContributionWeeks(days, weekStartsOn, range);
   const scroll = useRef<ScrollView>(null);
   const positioned = useRef(false);
   const maximum = Math.max(1, ...days.map(day => day.seconds));

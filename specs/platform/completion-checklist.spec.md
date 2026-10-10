@@ -53,8 +53,10 @@ its release notes were published and read back. Google Play internal version cod
 [run 38047890528](https://github.com/elsell/hourpaths/actions/runs/38047890528).
 This is the latest verified release availability. Physical-device reminder and
 quiet-period delivery remain open in areas 8, 9 and 13; publication does not close
-those acceptance areas. No implementation slice is currently active. The next
-Path-grid slice awaits the shared-Path participant aggregation decision.
+those acceptance areas. The owner approved personal Path statistics with a
+participant selector and complete zero-filled calendar ranges on every client.
+The active slice fixes empty and sparse grids; Path-specific statistics follows
+under the same analytics acceptance area.
 
 Offline-banner persistence, Android screen-listener lifetime, and native
 synchronization feedback merged in PRs #144–#146 through their five-check gates.
