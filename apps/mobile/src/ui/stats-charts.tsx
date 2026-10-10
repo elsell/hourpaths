@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { Translator } from '@hourpaths/i18n';
 import { statsDuration, statsDateLabel, statsContributionWeeks, statsContributionIntensity, statsWeekdayLabel, statsContributionMonthLabel } from '@hourpaths/client-core';
 import { mobileTheme } from './tokens';
@@ -61,6 +61,10 @@ export function StatsCalendar({ values, i18n }: { values: readonly StatsChartVal
 }
 
 export function StatsContributionGrid({ days, weekStartsOn, range, i18n, intensity = 'relative' }: { intensity?: 'relative' | 'quartile'; range: { startDate: string; endDate: string }; days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
+  const { fontScale } = useWindowDimensions();
+  const cellSize = Math.ceil(28 * Math.max(1, fontScale));
+  const monthHeight = Math.ceil(18 * Math.max(1, fontScale));
+  const cellDimensions = { width: cellSize, height: cellSize };
   const weeks = statsContributionWeeks(days, weekStartsOn, range);
   const scroll = useRef<ScrollView>(null);
   const positioned = useRef(false);
@@ -69,12 +73,12 @@ export function StatsContributionGrid({ days, weekStartsOn, range, i18n, intensi
   const selectedDay = weeks.flat().find(day => day?.date === selected);
   const label = (day: { date: string; seconds: number }) => i18n.t('stats.chartValue', { label: statsDateLabel(day.date, 'day', i18n), duration: i18n.t('duration.compactSeconds', { seconds: i18n.number(day.seconds) }) });
   return <View style={styles.contribution}>
-    <View style={styles.gridBody}><View style={styles.weekdays}>{Array.from({ length: 7 }, (_, index) => <Text key={index} style={styles.weekday}>{statsWeekdayLabel(index, weekStartsOn, i18n)}</Text>)}</View>
+    <View style={styles.gridBody}><View style={[styles.weekdays, { paddingTop: monthHeight + 7 }]}>{Array.from({ length: 7 }, (_, index) => <View key={index} style={{ height: cellSize, justifyContent: 'center' }}><Text style={styles.weekday}>{statsWeekdayLabel(index, weekStartsOn, i18n)}</Text></View>)}</View>
     <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.weeks}
       onContentSizeChange={() => { if (!positioned.current) { scroll.current?.scrollToEnd({ animated: false }); positioned.current = true; } }}>
       {weeks.map((week, index) => <View key={index} style={styles.week}>
-        <Text numberOfLines={1} style={styles.month}>{statsContributionMonthLabel(week, index, i18n)}</Text>
-        {week.map((day, weekday) => day ? <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={label(day)} accessibilityState={{ selected: selected === day.date }} onPress={() => setSelected(day.date)} style={[styles.day, { backgroundColor: contributionColors[level(day.seconds)] }, selected === day.date && styles.selectedDay]} /> : <View key={weekday} style={styles.dayPlaceholder} />)}
+        <Text numberOfLines={1} style={[styles.month, { height: monthHeight, width: cellSize }]}>{statsContributionMonthLabel(week, index, i18n)}</Text>
+        {week.map((day, weekday) => day ? <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={label(day)} accessibilityState={{ selected: selected === day.date }} onPress={() => setSelected(day.date)} style={[styles.day, cellDimensions, { backgroundColor: contributionColors[level(day.seconds)] }, selected === day.date && styles.selectedDay]} /> : <View key={weekday} style={cellDimensions} />)}
       </View>)}
     </ScrollView></View>
     <View style={styles.gridLegend}><Text style={styles.muted}>{i18n.t('stats.contribution.less')}</Text>{contributionColors.map(color => <View key={color} style={[styles.legendDay, { backgroundColor: color }]} />)}<Text style={styles.muted}>{i18n.t('stats.contribution.more')}</Text></View>
@@ -85,14 +89,13 @@ const contributionColors = [mobileTheme.colors.surfaceRaised, '#514A26', '#80713
 
 const styles = StyleSheet.create({
   gridBody: { flexDirection: 'row', gap: 5 },
-  weekdays: { gap: 4, paddingTop: 25 },
-  weekday: { height: 22, lineHeight: 22, fontSize: 10, color: mobileTheme.colors.textMuted },
-  month: { height: 18, fontSize: 9, color: mobileTheme.colors.textMuted, width: 22 },
+  weekdays: { gap: 4 },
+  weekday: { fontSize: 10, color: mobileTheme.colors.textMuted },
+  month: { fontSize: 9, color: mobileTheme.colors.textMuted },
   contribution: { gap: mobileTheme.spacing.sm },
   weeks: { gap: 4, paddingVertical: 3 },
   week: { gap: 4 },
-  day: { width: 22, height: 22, borderRadius: 4, borderWidth: 1, borderColor: mobileTheme.colors.border },
-  dayPlaceholder: { width: 22, height: 22 },
+  day: { borderRadius: 4, borderWidth: 1, borderColor: mobileTheme.colors.border },
   selectedDay: { borderWidth: 2, borderColor: mobileTheme.colors.text },
   gridLegend: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   legendDay: { width: 12, height: 12, borderRadius: 3 },

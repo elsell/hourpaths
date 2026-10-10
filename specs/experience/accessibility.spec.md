@@ -77,6 +77,18 @@ surface.
 - Accessible chart and grid content must use the same underlying values as the
   visual presentation.
 
+## Analytics large-text acceptance
+
+- Stats and Path detail must use the same native contribution-grid presentation.
+- At 160% operating-system text size, calendar month and weekday labels must
+  remain readable without ellipses or overlap; grid geometry must accommodate
+  the scaled labels while retaining horizontal access to the full date range.
+- Date-range and calendar-grouping choices must remain readable and operable
+  at large text sizes. A segmented control may reflow into the shared labeled
+  choice list when its compact presentation cannot accommodate enlarged text.
+- Changing presentation for text size must preserve the selected choice and
+  the complete calendar range, including zero-activity dates through today.
+
 ## Errors, warnings, and status
 
 - Validation errors must identify the affected input and explain the problem in

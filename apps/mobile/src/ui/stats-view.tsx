@@ -19,7 +19,7 @@ export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { st
   const selectPath = (id: string) => onSelect({ ...selection, pathIds: selection.pathIds.includes(id) ? selection.pathIds.filter(candidate => candidate !== id) : [...selection.pathIds, id] });
   return <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={state.refreshing} onRefresh={onRefresh} tintColor={mobileTheme.colors.accent} />}>
     <Text style={styles.eyebrow}>{i18n.t('stats.personalOnly')}</Text>
-    <NativeSegmentedControl value={selection.range} segments={statsRanges.map(value => ({ value, label: i18n.t(statsRangeKeys[value]) }))} onChange={range => onSelect({ ...selection, range, anchor: undefined })} />
+    <NativeSegmentedControl label={i18n.t('stats.rangeLabel')} value={selection.range} segments={statsRanges.map(value => ({ value, label: i18n.t(statsRangeKeys[value]) }))} onChange={range => onSelect({ ...selection, range, anchor: undefined })} />
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: pathsExpanded }} onPress={() => setPathsExpanded(!pathsExpanded)} style={styles.filter}>
       <PlatformSymbol systemName="line.3.horizontal.decrease.circle" color={mobileTheme.colors.accent} size={22} />
       <Text style={styles.filterLabel}>{filterLabel}</Text>
@@ -54,7 +54,7 @@ export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { st
     {data ? <>
       <Surface>
         <SectionHeading>{i18n.t('stats.calendar')}</SectionHeading>
-        <NativeSegmentedControl value={calendarUnit} segments={(['day', 'week', 'month', 'year'] as const).map(value => ({ value, label: i18n.t(calendarKeys[value]) }))} onChange={setCalendarUnit} />
+        <NativeSegmentedControl label={i18n.t('stats.calendarGrouping')} value={calendarUnit} segments={(['day', 'week', 'month', 'year'] as const).map(value => ({ value, label: i18n.t(calendarKeys[value]) }))} onChange={setCalendarUnit} />
         {calendarUnit === 'day' ? <StatsContributionGrid key={JSON.stringify(selection)} days={data.calendar} range={{ startDate: data.startDate, endDate: data.endDate }} weekStartsOn={data.weekStartsOn} i18n={i18n} /> : <StatsCalendar values={statsCalendarGroups(data.calendar, calendarUnit, data.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} />}
       </Surface>
     </> : null}
