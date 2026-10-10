@@ -11,8 +11,8 @@ The current verified production release is [v0.53.0](https://github.com/elsell/h
 source `385eb12`, deployed through GitOps `f8932fd`. Exact API/web images,
 Ready/Healthy Flux, retention configuration and public readiness are verified.
 TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
-internal group; release notes were read back. Google Play v0.52.1 internal build
-435 was committed after signed-bundle verification; v0.53.0 publication is pending.
+internal group; release notes were read back. Google Play v0.53.0 internal build
+438 was committed after signed-bundle verification in [run 38079836984](https://github.com/elsell/hourpaths/actions/runs/38079836984).
 
 This release includes shared Path/Stats charts, complete zero-day calendars,
 current periods ending on local today, native large-text controls and bounded

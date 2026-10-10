@@ -27,8 +27,8 @@ and retained. Release evidence below is historical unless identified as current.
   zero-activity dates through local today and bounded account-history loading.
 - TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and internally
   assigned ([Apple availability](https://github.com/elsell/hourpaths/actions/runs/38079902486)).
-  The publisher read back its release notes. Google Play v0.52.1 internal build
-  435 was committed after signed-bundle verification; v0.53.0 publication is pending.
+  The publisher read back its release notes. Google Play v0.53.0 internal build
+  438 was committed after signed-bundle verification in [run 38079836984](https://github.com/elsell/hourpaths/actions/runs/38079836984).
 - For account-history loading, real PostgreSQL verifies owner scope, archived
   Paths, retention boundaries and snapshot edits. Studio renders 22 activities
   using one online and one retained-history request; Android cold reopen retains
@@ -49,7 +49,7 @@ it does not close an area merely because a build is available.
 
 | Area | Work or evidence still needed |
 | --- | --- |
-| 2 — Offline | Finish native availability for PR #161; signed-device restart, reconnect, account replacement and conflict acceptance. |
+| 2 — Offline | Signed-device restart, reconnect, account replacement and conflict acceptance; PR #161 publication is verified on both stores. |
 | 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
