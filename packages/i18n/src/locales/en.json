@@ -958,6 +958,8 @@
   "stats.range.day": "Day",
   "stats.range.week": "Week",
   "stats.range.month": "Month",
+  "stats.range.pastYear": "Past year",
+  "stats.calendarRange": "Calendar range",
   "stats.range.year": "Year",
   "stats.range.allTime": "All Time",
   "stats.period": "{{start}} – {{end}}",

@@ -2,7 +2,7 @@ export class StatisticsUnavailable extends Error {
   constructor(readonly retryable = true) { super('statistics_unavailable'); }
 }
 export const ranges = ['day', 'week', 'month', 'year', 'all_time'] as const;
-export type Range = typeof ranges[number];
+export type Range = typeof ranges[number] | 'past_year';
 export type CalendarUnit = 'day' | 'week' | 'month' | 'year';
 export interface Selection { range: Range; anchor?: string; pathIds: readonly string[] }
 export interface CalendarDay { date: string; seconds: number }

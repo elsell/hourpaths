@@ -3,7 +3,8 @@ import type { MessageKey, Translator } from '@hourpaths/i18n';
 import { defaultPathAppearance, pathPalette, type PathAppearance } from './path-appearance';
 
 export const statsRanges = ['day', 'week', 'month', 'year', 'all_time'] as const;
-export type StatsRange = typeof statsRanges[number];
+export const statsCalendarRanges = ['past_year', ...statsRanges] as const;
+export type StatsRange = typeof statsCalendarRanges[number];
 export type StatsSelection = { range: StatsRange; anchor?: string; pathIds: readonly string[] };
 export type StatsState = {
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -13,8 +14,9 @@ export type StatsState = {
   refreshing: boolean;
 };
 export const initialStatsSelection = (): StatsSelection => ({ range: 'week', pathIds: [] });
+export const initialStatsCalendarSelection = (): StatsSelection => ({ range: 'past_year', pathIds: [] });
 export const statsRangeKeys: Record<StatsRange, MessageKey> = {
-  day: 'stats.range.day', week: 'stats.range.week', month: 'stats.range.month', year: 'stats.range.year', all_time: 'stats.range.allTime',
+  past_year: 'stats.range.pastYear', day: 'stats.range.day', week: 'stats.range.week', month: 'stats.range.month', year: 'stats.range.year', all_time: 'stats.range.allTime',
 };
 export function statsDuration(seconds: number, i18n: Translator): string {
   const value = Math.max(0, Math.floor(seconds));
@@ -38,7 +40,7 @@ export function statsPeriodLabel(data: StatsSummary, i18n: Translator): string {
   if (data.range === 'day') return i18n.date(first, { dateStyle: 'long', timeZone: 'UTC' });
   if (data.range === 'month') return i18n.date(first, { month: 'long', year: 'numeric', timeZone: 'UTC' });
   if (data.range === 'year') return i18n.date(first, { year: 'numeric', timeZone: 'UTC' });
-  return i18n.t('stats.period', { start: i18n.date(first, { month: 'short', day: 'numeric', timeZone: 'UTC' }), end: i18n.date(new Date(`${data.endDate}T12:00:00Z`), { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) });
+  return i18n.t('stats.period', { start: i18n.date(first, { month: 'short', day: 'numeric', ...(data.startDate.slice(0, 4) !== data.endDate.slice(0, 4) ? { year: 'numeric' as const } : {}), timeZone: 'UTC' }), end: i18n.date(new Date(`${data.endDate}T12:00:00Z`), { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) });
 }
 export function statsPathTone(id: string, appearance?: (id: string) => PathAppearance) {
   return pathPalette[(appearance?.(id) ?? defaultPathAppearance(id)).color];

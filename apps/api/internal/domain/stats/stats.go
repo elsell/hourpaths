@@ -49,6 +49,8 @@ func date(t time.Time) string { return t.Format("2006-01-02") }
 func period(t time.Time, kind string, weekday int) (time.Time, time.Time) {
 	t = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 	switch kind {
+	case "past_year":
+		return pastYearStart(t), t.AddDate(0, 0, 1)
 	case "day":
 		return t, t.AddDate(0, 0, 1)
 	case "week":
@@ -67,7 +69,7 @@ func Aggregate(kind, anchor string, paths []StatsPath, records []Record, now tim
 	if s.AvailablePaths == nil {
 		s.AvailablePaths = []StatsPath{}
 	}
-	if kind != "day" && kind != "week" && kind != "month" && kind != "year" && kind != "all_time" {
+	if kind != "day" && kind != "week" && kind != "month" && kind != "year" && kind != "all_time" && kind != "past_year" {
 		return s, fmt.Errorf("invalid range")
 	}
 	if anchor == "" {
@@ -99,7 +101,7 @@ func Aggregate(kind, anchor string, paths []StatsPath, records []Record, now tim
 				end = last.AddDate(0, 0, 1)
 			}
 		}
-	} else {
+	} else if kind != "past_year" {
 		prev, _ := period(start.AddDate(0, 0, -1), kind, weekday%7)
 		s.PreviousAnchor = date(prev)
 		currentStart, _ := period(current, kind, weekday%7)
@@ -113,13 +115,16 @@ func Aggregate(kind, anchor string, paths []StatsPath, records []Record, now tim
 		}
 	}
 	s.Anchor = date(start)
+	if kind == "past_year" {
+		s.Anchor = date(a)
+	}
 	s.StartDate = date(start)
 	s.EndDate = date(end.AddDate(0, 0, -1))
 	unit := "day"
 	switch kind {
 	case "day":
 		unit = "hour"
-	case "year":
+	case "year", "past_year":
 		unit = "month"
 	case "all_time":
 		if end.Year()-start.Year() >= 2 {

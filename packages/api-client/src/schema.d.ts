@@ -9512,7 +9512,7 @@ export interface operations {
     "get-stats": {
         parameters: {
             query?: {
-                range?: "day" | "week" | "month" | "year" | "all_time";
+                range?: "day" | "week" | "month" | "year" | "all_time" | "past_year";
                 anchor?: string;
                 pathIds?: string;
             };

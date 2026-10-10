@@ -4,8 +4,9 @@ import type { StudioDependencies } from './app';
 import { ranges, StatisticsUnavailable, type Selection, type Statistics } from '../analytics/domain/statistics';
 import { StudioShell } from './studio-shell';
 import { ActivityTimeline } from './activity-timeline';
-import { ActivityChart, ContributionGrid, PathDistribution } from './statistics-charts';
+import { ActivityChart, PathDistribution } from './statistics-charts';
 import { periodLabel, rangeLabels } from './statistics-format';
+import { StatisticsCalendar } from './statistics-calendar';
 import { duration } from './duration';
 
 export function StatisticsPage({ dependencies: d }: { dependencies: StudioDependencies }) {
@@ -26,8 +27,8 @@ export function StatisticsPage({ dependencies: d }: { dependencies: StudioDepend
     {data && <><div className="studio-stat-cards"><section><span>{d.i18n.t('stats.total')}</span><strong>{duration(d.i18n, data.seconds)}</strong></section><section><span>{d.i18n.t('studio.stats.activeDays')}</span><strong>{d.i18n.number(data.days.filter(day => day.seconds > 0).length)}</strong></section><section><span>{d.i18n.t('studio.stats.activePaths')}</span><strong>{d.i18n.number(data.distribution.filter(path => path.seconds > 0).length)}</strong></section></div>
       {data.seconds === 0 && <div className="studio-stat-panel"><h2>{d.i18n.t('stats.emptyTitle')}</h2><p>{d.i18n.t('stats.emptyDescription')}</p></div>}
       <ActivityChart buckets={data.buckets} unit={data.bucketUnit} selection={signature} dependencies={d} />
-      <ContributionGrid statistics={data} selection={signature} dependencies={d} />
       <PathDistribution statistics={data} dependencies={d} />
     </>}
+    <StatisticsCalendar pathIds={selection.pathIds} dependencies={d} />
   </main><ActivityTimeline paths={d.paths} history={d.history} accountScope={d.accountScope} i18n={d.i18n} /></StudioShell>;
 }

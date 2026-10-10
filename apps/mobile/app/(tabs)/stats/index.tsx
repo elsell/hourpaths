@@ -24,5 +24,5 @@ export default function StatsScreen() {
     return () => clearTimeout(bootstrap);
   }, [Boolean(presentation)]));
   useEffect(() => { if (presentation?.state.status === 'idle') presentation.onRefresh(); }, [presentation]);
-  return presentation ? <StatsView state={presentation.state} i18n={i18n} onSelect={presentation.onSelect} onRefresh={presentation.onRefresh} appearance={presentation.appearance} /> : null;
+  return presentation ? <StatsView calendarState={presentation.calendarState} onCalendarSelect={presentation.onCalendarSelect} onCalendarRefresh={presentation.onCalendarRefresh} state={presentation.state} i18n={i18n} onSelect={presentation.onSelect} onRefresh={presentation.onRefresh} appearance={presentation.appearance} /> : null;
 }
