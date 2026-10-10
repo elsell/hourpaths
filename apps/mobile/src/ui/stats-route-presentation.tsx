@@ -3,6 +3,9 @@ import type { PathAppearance, StatsSelection, StatsState } from '@hourpaths/clie
 
 type StatsPresentation = {
   state: StatsState;
+  calendarState: StatsState;
+  onCalendarSelect: (selection: StatsSelection) => void;
+  onCalendarRefresh: () => void;
   onSelect: (selection: StatsSelection) => void;
   onRefresh: () => void;
   appearance: (id: string) => PathAppearance;
@@ -15,12 +18,14 @@ export function StatsRouteSource(props: StatsPresentation & { sessionKey: string
   const owner = useRef({});
   useEffect(() => {
     current = { ...props, owner: owner.current,
+      onCalendarSelect: selection => { if (props.isCurrent() && current?.owner === owner.current && current.sessionKey === props.sessionKey) props.onCalendarSelect(selection); },
+      onCalendarRefresh: () => { if (props.isCurrent() && current?.owner === owner.current && current.sessionKey === props.sessionKey) props.onCalendarRefresh(); },
       onSelect: selection => { if (props.isCurrent() && current?.owner === owner.current && current.sessionKey === props.sessionKey) props.onSelect(selection); },
       onRefresh: () => { if (props.isCurrent() && current?.owner === owner.current && current.sessionKey === props.sessionKey) props.onRefresh(); },
     };
     emit();
     return () => { if (current?.owner === owner.current) { current = null; emit(); } };
-  }, [props.state, props.sessionKey, props.appearance, props.onSelect, props.onRefresh, props.isCurrent]);
+  }, [props.state, props.calendarState, props.onCalendarSelect, props.onCalendarRefresh, props.sessionKey, props.appearance, props.onSelect, props.onRefresh, props.isCurrent]);
   return null;
 }
 export function useStatsPresentation(): StatsPresentation | null {

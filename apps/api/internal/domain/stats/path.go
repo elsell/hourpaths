@@ -16,12 +16,7 @@ type PathSummary struct {
 
 func AggregatePath(records []Record, now time.Time, weekday int) (PathSummary, error) {
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	anniversaryDay := today.Day()
-	last := time.Date(today.Year()-1, today.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
-	if anniversaryDay > last {
-		anniversaryDay = last
-	}
-	first := time.Date(today.Year()-1, today.Month(), anniversaryDay, 0, 0, 0, 0, time.UTC).AddDate(0, 0, 1)
+	first := pastYearStart(today)
 	result := PathSummary{WeekStartsOn: weekday, StartDate: date(first), EndDate: date(today), Calendar: []StatsCalendarDay{}}
 	// Reuse Stats' occurrence-zone/DST allocation rather than introducing a
 	// second interpretation of historical dates for Path details.
@@ -45,4 +40,13 @@ func AggregatePath(records []Record, now time.Time, weekday int) (PathSummary, e
 		result.AverageSeconds = result.TotalSeconds / result.SessionCount
 	}
 	return result, nil
+}
+
+func pastYearStart(today time.Time) time.Time {
+	anniversaryDay := today.Day()
+	last := time.Date(today.Year()-1, today.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+	if anniversaryDay > last {
+		anniversaryDay = last
+	}
+	return time.Date(today.Year()-1, today.Month(), anniversaryDay, 0, 0, 0, 0, time.UTC).AddDate(0, 0, 1)
 }

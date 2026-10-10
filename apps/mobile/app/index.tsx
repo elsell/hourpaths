@@ -32,7 +32,7 @@ import { retainedAccount, apiTrackingHistory, apiTrackingSync, reviewedManualAct
 import { mobileOfflineHome } from '../src/offline/mobile-offline-home';
 import { nativeTimerSurfaces } from '../src/timers/native-timer-surfaces';
 import { openNativeOfflineStorage } from '../src/offline/native-tracking-store';
-import { initialStatsSelection, type StatsSelection, type StatsState } from '@hourpaths/client-core';
+import { initialStatsSelection, initialStatsCalendarSelection, type StatsSelection, type StatsState } from '@hourpaths/client-core';
 import { StatsRouteSource } from '../src/ui/stats-route-presentation';
 import { usePathAppearances } from '../src/use-path-appearances';
 import { PathAppearanceEditor } from '../src/ui/path-appearance-editor';
@@ -928,6 +928,9 @@ export function HomeScreen() {
     session: Session;
   } | null>(null);
   const [statsState, setStatsState] = useState<StatsState>({ status: 'idle', selection: initialStatsSelection(), refreshing: false });
+  const [calendarState, setCalendarState] = useState<StatsState>({ status: 'idle', selection: initialStatsCalendarSelection(), refreshing: false });
+  const calendarRequest = useRef(0);
+  const calendarSelection = useRef(initialStatsCalendarSelection());
   const statsRequest = useRef(0);
   const statsSelection = useRef(initialStatsSelection());
   const notificationLifecycleState = useRef<{ destination: Destination | null; session: Session | null }>({
@@ -1285,6 +1288,9 @@ export function HomeScreen() {
 
   function resetSocialProfileDiscovery() {
     void clearProfilePictureCache().catch(() => undefined);
+    calendarRequest.current += 1;
+    calendarSelection.current = initialStatsCalendarSelection();
+    setCalendarState({ status: 'idle', selection: calendarSelection.current, refreshing: false });
     statsRequest.current += 1;
     statsSelection.current = initialStatsSelection();
     setStatsState({ status: 'idle', selection: statsSelection.current, refreshing: false });
@@ -4096,26 +4102,29 @@ export function HomeScreen() {
     }
   }
 
-  async function loadStats(selection: StatsSelection = statsSelection.current) {
+  async function loadStats(selection: StatsSelection = statsSelection.current, surface: 'charts' | 'calendar' = 'charts') {
+    const selected = surface === 'calendar' ? calendarSelection : statsSelection;
+    const requests = surface === 'calendar' ? calendarRequest : statsRequest;
+    const publish = surface === 'calendar' ? setCalendarState : setStatsState;
     const active = notificationLifecycleState.current;
     if (!active.session || active.destination?.kind !== 'home') return;
     const currentSession = active.session;
     const ownerID = active.destination.profile.id;
-    const request = ++statsRequest.current;
-    const sameSelection = JSON.stringify(selection) === JSON.stringify(statsSelection.current);
-    statsSelection.current = { ...selection, pathIds: [...selection.pathIds] };
-    const current = () => request === statsRequest.current && notificationLifecycleState.current.destination?.kind === 'home' &&
+    const request = ++requests.current;
+    const sameSelection = JSON.stringify(selection) === JSON.stringify(selected.current);
+    selected.current = { ...selection, pathIds: [...selection.pathIds] };
+    const current = () => request === requests.current && notificationLifecycleState.current.destination?.kind === 'home' &&
       notificationLifecycleState.current.destination.profile.id === ownerID;
-    setStatsState(previous => ({ selection: statsSelection.current, status: sameSelection && previous.data ? 'ready' : 'loading', refreshing: true, paths: previous.paths, data: sameSelection ? previous.data : undefined }));
+    publish(previous => ({ selection: selected.current, status: sameSelection && previous.data ? 'ready' : 'loading', refreshing: true, paths: previous.paths, data: sameSelection ? previous.data : undefined }));
     try {
       const result = await validateSessionCredential<import('@hourpaths/api-client').StatsSummary>(currentSession,
         async credential => generatedResponse(await createSessionApiClient(apiURL, () => credential.token).stats({ range: selection.range, anchor: selection.anchor, pathIds: selection.pathIds.join(',') || undefined })));
       if (!current()) return;
-      setStatsState({ status: 'ready', selection: statsSelection.current, data: result, paths: result.availablePaths, refreshing: false });
+      publish({ status: 'ready', selection: selected.current, data: result, paths: result.availablePaths, refreshing: false });
     } catch (cause) {
       if (!current()) return;
       await handleFeatureSessionFailure(cause, currentSession, { current });
-      if (current()) setStatsState(previous => ({ ...previous, status: 'error', refreshing: false, data: undefined }));
+      if (current()) publish(previous => ({ ...previous, status: 'error', refreshing: false, data: undefined }));
     }
   }
 
@@ -9361,10 +9370,16 @@ export function HomeScreen() {
     /> : null}
     {ready && ownedHomeDestination ? <StatsRouteSource
       state={statsState}
+      calendarState={calendarState}
+      onCalendarSelect={selection => void loadStats({ ...selection, pathIds: statsSelection.current.pathIds }, 'calendar')}
+      onCalendarRefresh={() => void loadStats(calendarSelection.current, 'calendar')}
       sessionKey={socialPresentationKey}
       isCurrent={() => notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === ownedHomeDestination.profile.id}
-      onSelect={selection => void loadStats(selection)}
-      onRefresh={() => void loadStats()}
+      onSelect={selection => {
+        if (JSON.stringify(selection.pathIds) !== JSON.stringify(statsSelection.current.pathIds)) void loadStats({ ...calendarSelection.current, pathIds: selection.pathIds }, 'calendar');
+        void loadStats(selection);
+      }}
+      onRefresh={() => { void loadStats(); void loadStats(calendarSelection.current, 'calendar'); }}
       appearance={appearances.appearance}
     /> : null}
     {ready && ownedHomeDestination ? <SocialFeedRouteSource

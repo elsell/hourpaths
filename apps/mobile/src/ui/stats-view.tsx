@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { statsRanges, statsRangeKeys, statsDuration, statsPeriodLabel, statsDateLabel, statsPathTone, statsCalendarGroups, type StatsState, type StatsSelection, type PathAppearance, type StatsCalendarUnit } from '@hourpaths/client-core';
+import { statsRanges, statsCalendarRanges, statsRangeKeys, statsDuration, statsDateLabel, statsPathTone, statsCalendarGroups, type StatsState, type StatsSelection, type PathAppearance, type StatsCalendarUnit } from '@hourpaths/client-core';
 import type { Translator } from '@hourpaths/i18n';
 import { NativeSegmentedControl } from './native-segmented-control';
-import { NativeButton } from './native-button';
+import { NativeChoicePicker } from './native-choice-picker';
+import { StatsPeriodNavigation } from './stats-period-navigation';
 import { PlatformSymbol } from './platform-symbol';
 import { SectionHeading, StatusBanner, Surface } from './primitives';
 import { StatsBars, StatsCalendar, StatsDonut, StatsContributionGrid } from './stats-charts';
 import { mobileTheme } from './tokens';
 
-export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { state: StatsState; i18n: Translator; onSelect: (selection: StatsSelection) => void; onRefresh: () => void; appearance?: (id: string) => PathAppearance }) {
+export function StatsView({ state, calendarState, onCalendarSelect, onCalendarRefresh, i18n, onSelect, onRefresh, appearance }: { state: StatsState; calendarState: StatsState; onCalendarSelect: (selection: StatsSelection) => void; onCalendarRefresh: () => void; i18n: Translator; onSelect: (selection: StatsSelection) => void; onRefresh: () => void; appearance?: (id: string) => PathAppearance }) {
   const [pathsExpanded, setPathsExpanded] = useState(false);
   const [calendarUnit, setCalendarUnit] = useState<StatsCalendarUnit>('day');
   const { data, selection } = state;
-  useEffect(() => { setCalendarUnit('day'); }, [selection.range]);
+  const calendar = calendarState.data;
   const filterLabel = selection.pathIds.length ? i18n.t('stats.selectedPaths', { count: selection.pathIds.length }) : i18n.t('stats.allPaths');
   const chartValue = (key: string, seconds: number, unit: string) => ({ key, seconds, label: statsDateLabel(key, unit, i18n), color: mobileTheme.colors.accent });
   const selectPath = (id: string) => onSelect({ ...selection, pathIds: selection.pathIds.includes(id) ? selection.pathIds.filter(candidate => candidate !== id) : [...selection.pathIds, id] });
@@ -29,12 +30,7 @@ export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { st
       <PathChoice label={i18n.t('stats.allPaths')} checked={!selection.pathIds.length} onPress={() => onSelect({ ...selection, pathIds: [] })} />
       {(state.paths ?? data?.availablePaths ?? []).map(path => <PathChoice key={path.id} label={path.name} detail={path.archived ? i18n.t('stats.archived') : undefined} color={statsPathTone(path.id, appearance).background} checked={selection.pathIds.includes(path.id)} onPress={() => selectPath(path.id)} />)}
     </Surface> : null}
-    {data ? <View style={styles.period}>
-      {data.previousAnchor ? <Pressable accessibilityRole="button" accessibilityLabel={i18n.t('stats.previous')} onPress={() => onSelect({ ...selection, anchor: data.previousAnchor })} style={styles.arrow}><View style={styles.back}><PlatformSymbol systemName="chevron.right" color={mobileTheme.colors.accent} size={20} /></View></Pressable> : <View style={styles.arrow} />}
-      <Text style={styles.periodLabel}>{statsPeriodLabel(data, i18n)}</Text>
-      {data.nextAnchor ? <Pressable accessibilityRole="button" accessibilityLabel={i18n.t('stats.next')} onPress={() => onSelect({ ...selection, anchor: data.nextAnchor })} style={styles.arrow}><PlatformSymbol systemName="chevron.right" color={mobileTheme.colors.accent} size={20} /></Pressable> : <View style={styles.arrow} />}
-    </View> : null}
-    {selection.anchor ? <NativeButton variant="quiet" label={i18n.t('stats.current')} onPress={() => onSelect({ ...selection, anchor: undefined })} /> : null}
+    <StatsPeriodNavigation state={state} i18n={i18n} onSelect={onSelect} />
     {state.status === 'loading' || state.status === 'idle' ? <StatusBanner text={i18n.t('common.loading')} /> : null}
     {state.status === 'error' ? <StatusBanner text={i18n.t('stats.unavailable')} tone="error" actionLabel={i18n.t('common.retry')} onAction={onRefresh} /> : null}
     {data && data.totalSeconds === 0 ? <Surface>
@@ -51,13 +47,15 @@ export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { st
         <StatsBars key={JSON.stringify(selection)} values={data.buckets.map(bucket => chartValue(bucket.key, bucket.seconds, data.bucketUnit))} i18n={i18n} />
       </Surface>
     </> : null}
-    {data ? <>
-      <Surface>
-        <SectionHeading>{i18n.t('stats.calendar')}</SectionHeading>
-        <NativeSegmentedControl label={i18n.t('stats.calendarGrouping')} value={calendarUnit} segments={(['day', 'week', 'month', 'year'] as const).map(value => ({ value, label: i18n.t(calendarKeys[value]) }))} onChange={setCalendarUnit} />
-        {calendarUnit === 'day' ? <StatsContributionGrid key={JSON.stringify(selection)} days={data.calendar} range={{ startDate: data.startDate, endDate: data.endDate }} weekStartsOn={data.weekStartsOn} i18n={i18n} /> : <StatsCalendar values={statsCalendarGroups(data.calendar, calendarUnit, data.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} />}
-      </Surface>
-    </> : null}
+    <Surface>
+      <SectionHeading>{i18n.t('stats.calendar')}</SectionHeading>
+      <NativeChoicePicker label={i18n.t('stats.calendarRange')} accessibilityLabel={i18n.t('stats.calendarRange')} value={calendarState.selection.range} choices={statsCalendarRanges.map(value => ({ value, label: i18n.t(statsRangeKeys[value]) }))} onChange={range => onCalendarSelect({ ...calendarState.selection, range, anchor: undefined })} />
+      <StatsPeriodNavigation state={calendarState} i18n={i18n} onSelect={onCalendarSelect} />
+      <NativeSegmentedControl label={i18n.t('stats.calendarGrouping')} value={calendarUnit} segments={(['day', 'week', 'month', 'year'] as const).map(value => ({ value, label: i18n.t(calendarKeys[value]) }))} onChange={setCalendarUnit} />
+      {calendarState.status === 'loading' || calendarState.status === 'idle' ? <StatusBanner text={i18n.t('common.loading')} /> : null}
+      {calendarState.status === 'error' ? <StatusBanner text={i18n.t('stats.unavailable')} tone="error" actionLabel={i18n.t('common.retry')} onAction={onCalendarRefresh} /> : null}
+      {calendar ? calendarUnit === 'day' ? <StatsContributionGrid key={JSON.stringify(calendarState.selection)} days={calendar.calendar} range={{ startDate: calendar.startDate, endDate: calendar.endDate }} weekStartsOn={calendar.weekStartsOn} i18n={i18n} /> : <StatsCalendar values={statsCalendarGroups(calendar.calendar, calendarUnit, calendar.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} /> : null}
+    </Surface>
   </ScrollView>;
 }
 const calendarKeys = { day: 'stats.calendar.day', week: 'stats.calendar.week', month: 'stats.calendar.month', year: 'stats.calendar.year' } as const;
@@ -79,10 +77,6 @@ const styles = StyleSheet.create({
   swatch: { width: 12, height: 12, borderRadius: 6 },
   checkbox: { width: 24, height: 24, borderRadius: 7, borderWidth: 1, borderColor: mobileTheme.colors.border, alignItems: 'center', justifyContent: 'center' },
   checked: { backgroundColor: mobileTheme.colors.accent, borderColor: mobileTheme.colors.accent },
-  period: { flexDirection: 'row', alignItems: 'center' },
-  arrow: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
-  back: { transform: [{ rotate: '180deg' }] },
-  periodLabel: { ...mobileTheme.typography.body, fontWeight: '600', color: mobileTheme.colors.text, flex: 1, textAlign: 'center' },
   zero: { ...mobileTheme.typography.title, color: mobileTheme.colors.text },
   description: { ...mobileTheme.typography.body, color: mobileTheme.colors.textMuted },
 });

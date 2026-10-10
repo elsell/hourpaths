@@ -1,6 +1,6 @@
-import { pathStatisticsFromAPI } from '@hourpaths/client-core';
+import { pathStatisticsFromAPI, statsCalendarRanges } from '@hourpaths/client-core';
 import { createSessionApiClient, type StatsSummary } from '@hourpaths/api-client';
-import { ranges, StatisticsUnavailable, type Range, type Statistics } from '../domain/statistics';
+import { StatisticsUnavailable, type Range, type Statistics } from '../domain/statistics';
 import type { StatisticsRepository } from '../ports/statistics-repository';
 function date(value: string): string {
   const parsed = new Date(value + 'T12:00:00Z');
@@ -22,7 +22,7 @@ function bucketKey(value: string, unit: string): string {
   return value;
 }
 export function statisticsFromAPI(dto: StatsSummary): Statistics {
-  if (!ranges.includes(dto.range as Range) || !['hour', 'day', 'month', 'year'].includes(dto.bucketUnit) || !Number.isInteger(dto.weekStartsOn) || dto.weekStartsOn < 1 || dto.weekStartsOn > 7) throw new StatisticsUnavailable();
+  if (!statsCalendarRanges.includes(dto.range as Range) || !['hour', 'day', 'month', 'year'].includes(dto.bucketUnit) || !Number.isInteger(dto.weekStartsOn) || dto.weekStartsOn < 1 || dto.weekStartsOn > 7) throw new StatisticsUnavailable();
   const firstDate = date(dto.startDate), lastDate = date(dto.endDate);
   if (lastDate < firstDate) throw new StatisticsUnavailable();
   return {

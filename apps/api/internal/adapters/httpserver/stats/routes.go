@@ -14,7 +14,7 @@ type Service interface {
 }
 type statsInput struct {
 	Authorization string `header:"Authorization"`
-	Range         string `query:"range" default:"week" enum:"day,week,month,year,all_time"`
+	Range         string `query:"range" default:"week" enum:"day,week,month,year,all_time,past_year"`
 	Anchor        string `query:"anchor" maxLength:"10"`
 	PathIDs       string `query:"pathIds" maxLength:"16384"`
 }

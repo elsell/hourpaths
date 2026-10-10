@@ -139,3 +139,26 @@ paths and over time.
   across the historical calendar buckets, including repeated or skipped hours.
 - Given no activity in the selected period, controls remain usable and the
   surface shows zero recorded time without invented chart values.
+
+## Independent contribution-calendar range
+
+- The Stats contribution calendar must own its date-range selection independently
+  of the totals, distribution and activity-over-time charts. Its default must be
+  the past year through participant-local today, including every zero-activity day.
+- Past year means the day after the prior-year anniversary through the selected
+  end date, inclusive. For February 29, the prior-year anniversary clamps to
+  February 28. This is the same trailing-year rule used by Path detail.
+- Calendar must expose its own range control with Past year, Day, Week, Month,
+  Year and All time. Changing the chart range must not change calendar range or
+  grouping. Days/Weeks/Months/Years within Calendar change grouping only.
+- Both independently selected ranges must use the same selected Paths. Account
+  replacement must invalidate both requests; late or failed responses must not
+  publish another account or filter's data. A calendar failure must leave the
+  independently successful charts usable, with a calendar-specific retry action.
+- Native and web clients must share range defaults and calendar calculations;
+  Stats and Path detail must retain their shared contribution-grid components.
+- On October 10, 2026, initial charts may show October 4–10 while the calendar
+  renders October 11, 2025 through October 10, 2026 (365 dates), even when only
+  October 9 has activity. Switching Calendar to Months must retain all 13 touched
+  months, including empty months; switching chart range must leave those dates
+  unchanged. Empty accounts must receive the same complete past-year grid.

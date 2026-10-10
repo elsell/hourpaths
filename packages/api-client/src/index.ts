@@ -378,7 +378,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
       params: { path: { eventId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
     pathStatistics: (pathId: string, participantId?: string) => authenticatedClient.GET('/v1/paths/{pathId}/statistics', { params: { path: { pathId }, query: { participantId } } }),
-    stats: (query: { range?: 'day' | 'week' | 'month' | 'year' | 'all_time'; anchor?: string; pathIds?: string } = {}) => authenticatedClient.GET('/v1/stats', { params: { query } }),
+    stats: (query: { range?: 'day' | 'week' | 'month' | 'year' | 'all_time' | 'past_year'; anchor?: string; pathIds?: string } = {}) => authenticatedClient.GET('/v1/stats', { params: { query } }),
     socialActiveFollowing: (cursor?: string) => authenticatedClient.GET('/v1/social/feed/active', {
       params: { query: { cursor, limit: 25 } },
     }),
