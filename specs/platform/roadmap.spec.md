@@ -23,8 +23,11 @@ verified release notes; Google Play internal build 430 was committed after
 signed-bundle verification. Area 11 stays open until current-year initial calendar positioning and remaining acceptance
 are verified. Shared mobile analytics large-text corrections merged in PR #159;
 Android 160% interaction checks passed and release verification is in progress. The
-active slice now corrects current-period Stats ranges to end on participant-local
-today, preserving complete historical periods and shared client charts.
+current-period Stats correction merged in PR #160 after all five gates; Studio
+and Android confirmed that the grid ends on local today while historical ranges
+remain complete. Its release verification is in progress. The active slice now
+replaces per-Path history hydration with bounded own-account pagination while
+preserving the complete 90-day offline snapshot and existing access rules.
 
 Next unresolved implementation choices are provider-picture import during
 onboarding, the richer Live Activity design, and public-text processing location.

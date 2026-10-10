@@ -39,7 +39,7 @@ import { SessionController } from '../session/application/session-controller';
 import { historyRepository } from '../history/application/history';
 import { durableHistoryRepository } from '../offline/adapters/durable-history-repository';
 import { HistoryRequestError } from '../history/adapters/api-history-source';
-import { apiHistorySource } from '../history/adapters/api-history-source';
+import { apiHistorySource, apiPathHistorySource } from '../history/adapters/api-history-source';
 import { apiActivityRepository } from '../history/adapters/api-activity-repository';
 import { StudioApp } from '../presentation/app';
 
@@ -143,9 +143,9 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     durableStore, offline.runtime,
     error => error instanceof TypeError || error instanceof PathRequestError && (error.status === 0 || error.status >= 500 || error.status === 429),
   );
-  const pathHistory = apiHistorySource(options.apiURL, () => session.token(), remotePaths, credential => session.reject(credential));
+  const pathHistory = apiPathHistorySource(options.apiURL, () => session.token(), credential => session.reject(credential));
   const history = durableHistoryRepository(
-    historyRepository(pathHistory),
+    historyRepository(apiHistorySource(options.apiURL, () => session.token(), credential => session.reject(credential))),
     offline.runtime,
     error => error instanceof TypeError || error instanceof HistoryRequestError && (error.status === 429 || error.status >= 500),
     25, () => Date.now(),

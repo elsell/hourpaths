@@ -563,3 +563,7 @@ func TestOwnTimerRouteRemainsAvailableDuringPolicyReview(t *testing.T) {
 func (s controlledService) ExportOwnActivities(context.Context, string, string, string, int) ([]application.ActivityListRecord, string, error) {
 	return s.activities, "", s.err
 }
+
+func (s controlledService) ListOwnHistory(context.Context, string, string, string, int) ([]application.ActivityListRecord, string, error) {
+	return nil, "", s.err
+}

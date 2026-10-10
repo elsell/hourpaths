@@ -23,6 +23,9 @@ export interface HistoryStream {
   readonly loaded: boolean;
 }
 export interface HistoryCursor {
+  readonly remoteCursor?: string | null;
+  readonly remaining?: readonly RecordedActivity[];
+  readonly window?: 'all' | 'retained';
   readonly participantId: string;
   readonly retained?: boolean;
   readonly incomplete?: boolean;

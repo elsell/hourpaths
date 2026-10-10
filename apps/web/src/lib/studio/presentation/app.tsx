@@ -47,7 +47,7 @@ import { PathGoalsEditor } from './path-goals';
 import { PathActions } from './path-actions';
 import { CreatePath } from './create-path';
 import { ActivityTimeline } from './activity-timeline';
-import type { HistoryRepository, HistorySource } from '../history/ports/history-source';
+import type { HistoryRepository, PathHistorySource } from '../history/ports/history-source';
 import type { ActivityRepository } from '../history/ports/activity-repository';
 import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
@@ -71,7 +71,7 @@ export interface StudioDependencies {
   social: SocialRepository;
   statistics: StatisticsRepository;
   history: HistoryRepository;
-  pathHistory: HistorySource;
+  pathHistory: PathHistorySource;
   activities: ActivityRepository;
   accountScope: string;
   i18n: Translator;

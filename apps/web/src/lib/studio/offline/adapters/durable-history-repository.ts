@@ -44,7 +44,7 @@ export function durableHistoryRepository(
     const seen = new Set<string>();
     let cursor: HistoryCursor | null = null;
     do {
-      const page = await remote.page(cursor);
+      const page = await remote.page(cursor, undefined, 'retained');
       current.assertCurrent();
       if (page.retained || page.next && page.next.participantId !== current.owner) throw new Error('history_owner_mismatch');
       for (const entry of page.items) {
@@ -56,7 +56,7 @@ export function durableHistoryRepository(
       }
       cursor = page.next;
       if (cursor) {
-        const key = JSON.stringify(cursor.streams.map(stream => [stream.pathId, stream.cursor, stream.remaining[0]?.id, stream.loaded]));
+        const key = JSON.stringify([cursor.remoteCursor, cursor.remaining?.[0]?.id, cursor.streams.map(stream => [stream.pathId, stream.cursor, stream.remaining[0]?.id, stream.loaded])]);
         if (seen.has(key)) throw new Error('history_cursor_repeated');
         seen.add(key);
       }

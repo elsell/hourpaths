@@ -258,6 +258,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/activity-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current account's activity on accessible Paths */
+        get: operations["list-own-activity-history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/deletion": {
         parameters: {
             query?: never;
@@ -3148,6 +3165,22 @@ export interface components {
             /** Format: int64 */
             targetSeconds: number;
         };
+        OwnHistoryOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OwnHistoryOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["OwnHistoryRecord"][];
+            meta: components["schemas"]["PaginationMeta"];
+        };
+        OwnHistoryRecord: {
+            activity: components["schemas"]["Activity"];
+            pathName: string;
+            /** Format: int64 */
+            version: number;
+        };
         OwnPictureDTO: {
             /** Format: int64 */
             revision: number;
@@ -4932,6 +4965,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-own-activity-history": {
+        parameters: {
+            query?: {
+                window?: "all" | "retained";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnHistoryOutputBody"];
+                };
             };
             /** @description Error */
             default: {

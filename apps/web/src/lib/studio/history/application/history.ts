@@ -1,28 +1,31 @@
 import type { HistoryRepository, HistorySource } from '../ports/history-source';
 import type { RecordedActivity } from '../domain/activity';
 
-/** Merge ordered source pages without truncating a busy Path's history. */
+/** Buffer account-ordered pages without querying each Path or mutating cursors. */
 export function historyRepository(source: HistorySource, pageSize = 25): HistoryRepository {
-  return { async page(cursor, signal) {
-    const current = cursor ?? await source.initial(signal);
-    const streams = current.streams.map(stream => ({ ...stream, remaining: [...stream.remaining] }));
+  return { async page(cursor, signal, window = cursor?.window ?? 'all') {
+    if (cursor?.retained || cursor?.window && cursor.window !== window) throw new Error('history_cursor_invalid');
+    const participantId = cursor?.participantId ?? await source.initial(signal);
+    const remaining = [...(cursor?.remaining ?? [])];
+    let remoteCursor = cursor?.remoteCursor ?? null;
+    let loaded = cursor !== null;
+    const seen = new Set<string>();
+    if (remoteCursor) seen.add(remoteCursor);
     const items: RecordedActivity[] = [];
     while (items.length < pageSize) {
-      for (const stream of streams) {
-        if (stream.remaining.length || (stream.loaded && !stream.cursor)) continue;
-        const page = await source.read(stream.pathId, stream.pathName, current.participantId, stream.cursor, signal);
-        if (page.next && page.next === stream.cursor) throw new Error('history_cursor_repeated');
-        stream.remaining = [...page.items];
-        stream.cursor = page.next;
-        stream.loaded = true;
-        // An empty continuation would otherwise create an unbounded request loop.
-        if (!stream.remaining.length && stream.cursor) throw new Error('history_page_empty');
+      if (!remaining.length) {
+        if (loaded && !remoteCursor) break;
+        const page = await source.read(participantId, remoteCursor, window, signal);
+        if (page.next && seen.has(page.next)) throw new Error('history_cursor_repeated');
+        if (page.next) seen.add(page.next);
+        remaining.push(...page.items);
+        remoteCursor = page.next;
+        loaded = true;
+        // Access filtering can legitimately leave a continuation page empty.
+        if (!remaining.length) continue;
       }
-      const stream = streams.filter(value => value.remaining.length).sort((left, right) =>
-        right.remaining[0]!.startedAt - left.remaining[0]!.startedAt || right.remaining[0]!.id.localeCompare(left.remaining[0]!.id))[0];
-      if (!stream) break;
-      items.push(stream.remaining.shift()!);
+      items.push(remaining.shift()!);
     }
-    return { items, next: streams.some(stream => stream.remaining.length || stream.cursor) ? { participantId: current.participantId, streams } : null };
+    return { items, next: remaining.length || remoteCursor ? { participantId, window, remoteCursor, remaining, streams: [] } : null };
   } };
 }

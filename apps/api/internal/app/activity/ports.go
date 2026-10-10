@@ -138,6 +138,7 @@ type ActivityRevisionRecord struct {
 }
 
 type ActivityListRecord struct {
+	PathName string
 	Activity domain.RecordedActivity
 	Version  int64
 }
@@ -173,6 +174,7 @@ type ProfileReader interface {
 }
 
 type Repository interface {
+	ListOwnActivityCandidates(context.Context, string, OwnHistoryPageRequest) (ActivityPage, error)
 	ListRunningTimerCandidates(context.Context, string, RunningTimerPageRequest) ([]RunningTimerCandidate, error)
 	TimerNotificationCandidates(context.Context, string, string) ([]string, error)
 	OfflineActivityRepository
