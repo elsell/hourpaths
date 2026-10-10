@@ -114,9 +114,10 @@ delay the active successful-account-creation slice.
   provisional lifecycle that resumes onboarding.
 - The 100-character display-name limit does not define whether a Unicode
   character means a Unicode scalar value or a user-perceived grapheme cluster.
-- The identity-access, onboarding, and profile specifications must be reconciled
-  on provisional identity ownership and whether later provider claims can update
-  a saved profile.
+- Provisional identity ownership and returning-sign-in profile ownership are
+  reconciled in [Identity and Access](../identity-access/identity-access.spec.md):
+  provider data refreshes onboarding seeds, while activated application profiles
+  remain user-owned. This is implemented and is not an unresolved product choice.
 - The verified-email duplicate-account check does not define correspondence and
   normalization rules. Email must remain non-authoritative and must not disclose
   or establish ownership of an existing account.

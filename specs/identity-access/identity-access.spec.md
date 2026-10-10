@@ -12,9 +12,13 @@ a configurable bounded lifetime, can be revoked, and fail closed for disabled
 or deleted accounts. Provider access and refresh tokens are never accepted by,
 stored in, or relayed to ordinary application routes.
 An identity is uniquely keyed by issuer and subject. First exchange creates a
-local user idempotently. Later verified exchanges synchronize provider email and
-display-name claims without changing the stable local identity. Provider claims
-are mutable profile data and never authorization identifiers. Account status is
+restricted provisional user idempotently; account activation follows
+[Onboarding](../accounts/onboarding.spec.md). Later verified exchanges synchronize
+verified provider email without changing the stable local identity. Display-name
+claims refresh only the provisional onboarding seed. After activation, provider
+sign-in must not overwrite the application profile, as required by
+[User Profile](../accounts/profile.spec.md#profile-editing). Provider claims are
+mutable account-reference data and never authorization identifiers. Account status is
 an explicit typed lifecycle value. Disabled accounts cannot exchange or use a
 session. Account disablement revokes all active sessions transactionally.
 HourPaths trusts one configured OIDC authority at this boundary; Google and
@@ -68,8 +72,9 @@ First-time local user provisioning writes `user.provisioned` in the same
 transaction as the user and external identity. Routine `/v1/me` calls do not
 pretend that the identity provider's own authentication ceremony occurred at
 the API boundary.
-Changed OIDC email or display-name claims write `user.profile_synchronized` in
-the same transaction as the profile update. Application session creation and
+Persisted provider-data changes write `user.profile_synchronized` in the same
+transaction as the update. A changed provider display name alone must not mutate
+or emit a profile-change event for an activated account. Application session creation and
 revocation write `session.created` and `session.revoked` atomically with their
 session row changes; audit targets use the user identity and never store bearer
 credentials or credential hashes.
