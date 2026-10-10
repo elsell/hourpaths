@@ -7,27 +7,23 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The complete-range Stats fix is available in v0.51.1: production GitOps
-`0fcf421`, TestFlight 457 (VALID, IN_BETA_TESTING and internally assigned), and
-Google Play internal 427. TestFlight notes were read back. Empty days and entirely
-empty periods remain visible; physical-device acceptance remains open.
+The current verified production release is [v0.52.1](https://github.com/elsell/hourpaths/releases/tag/v0.52.1),
+source `e356fa3`, deployed through GitOps `823345a`. Exact API/web images,
+Ready/Healthy Flux, retention configuration and public readiness are verified.
+TestFlight 0.52.1 (464) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
+internal group; release notes were read back. Google Play publication is pending.
+This release includes shared Path/Stats charts, complete zero-day calendars,
+current periods ending on local today, and native large-text calendar controls.
+Area 11 still requires signed-device/accessibility acceptance.
 
-Path-specific analytics merged in [PR #158](https://github.com/elsell/hourpaths/pull/158)
-as `e9c3f3c` after all five checks. It uses shared Stats charts and calendars,
-personal activity by default, participant selection, complete recorded-history
-metrics and the specified trailing-year/quartile grid. Studio and Android
-emulator acceptance passed. Production v0.52.0 is verified through GitOps
-`06908ac`, with exact images, Ready/Healthy Flux and public readiness.
-TestFlight 0.52.0 (460) is confirmed available to internal testers with
-verified release notes; Google Play internal build 430 was committed after
-signed-bundle verification. Area 11 stays open until current-year initial calendar positioning and remaining acceptance
-are verified. Shared mobile analytics large-text corrections merged in PR #159;
-Android 160% interaction checks passed and release verification is in progress. The
-current-period Stats correction merged in PR #160 after all five gates; Studio
-and Android confirmed that the grid ends on local today while historical ranges
-remain complete. Its release verification is in progress. The active slice now
-replaces per-Path history hydration with bounded own-account pagination while
-preserving the complete 90-day offline snapshot and existing access rules.
+Bounded account-history loading merged in [PR #161](https://github.com/elsell/hourpaths/pull/161)
+as `385eb12` after all five candidate gates. Studio and mobile now read paginated
+own-account history without querying every empty Path. Full online history,
+complete 90-day retention, current Path access checks and atomic snapshot
+replacement are preserved. PostgreSQL, client boundary and live Studio/Android
+acceptance passed. Main/release verification remains active; this change is not
+claimed available to production users yet. The next slice should target
+remaining implementation or acceptance, without repeating completed work.
 
 Next unresolved implementation choices are provider-picture import during
 onboarding, the richer Live Activity design, and public-text processing location.

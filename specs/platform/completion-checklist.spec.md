@@ -20,6 +20,49 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current delivery status — October 10
 
+- Production [v0.52.1](https://github.com/elsell/hourpaths/releases/tag/v0.52.1),
+  source `e356fa3`, is verified through GitOps `823345a`: exact API/web source and
+  image IDs, Ready/Healthy Flux, current retention image and public 200/204 health.
+  It includes PRs #158–#160: shared Path analytics, large-text corrections and
+  current-period calendars ending on local today with zero-activity days intact.
+- TestFlight 0.52.1 (464) is VALID, nonexpired, IN_BETA_TESTING and internally
+  assigned ([Apple availability](https://github.com/elsell/hourpaths/actions/runs/38077931807)).
+  The publisher read back its release notes. Google Play publication is pending.
+- Account-history loading merged in [PR #161](https://github.com/elsell/hourpaths/pull/161)
+  as `385eb12`, following all five [candidate gates](https://github.com/elsell/hourpaths/actions/runs/38076934618).
+  Main/release availability remains pending. Real PostgreSQL verifies owner
+  scope, archived Paths, retention boundaries and snapshot edits. Studio renders
+  22 activities using one online and one retained-history request; Android cold
+  reopen preserves and refreshes all 22 retained entries. These are browser and
+  emulator results, not signed physical-device acceptance.
+
+### Remaining work by area
+
+The acceptance criteria in the numbered table below remain the finish line.
+This summary distinguishes implementation work from missing acceptance evidence;
+it does not close an area merely because a build is available.
+
+| Area | Work or evidence still needed |
+| --- | --- |
+| 2 — Offline | Ship PR #161; signed-device restart, reconnect, account replacement and conflict acceptance. |
+| 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
+| 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
+| 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
+| 6 — Native timers | Settle the richer visual proposal, implement it and verify signed-device multi-timer/lifecycle behavior. |
+| 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
+| 8 — Preferences | Signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
+| 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
+| 10 — Safety | Suspension/ban timer rule and enforcement, public-text processing boundary and checks, signed-device moderation/appeals. |
+| 11 — Analytics | Remaining native distribution and signed-device/accessibility acceptance; implementation is credited above. |
+| 13 — Final acceptance | Physical-iPhone encouragement/Send confirmation, UI-28 matrix and final spec-to-release evidence reconciliation. |
+
+## Historical delivery evidence
+
+The following records retain each slice's original verification limits. Later
+verified releases may supersede an earlier “release pending” statement; they do
+not silently satisfy a still-unverified physical-device requirement.
+
+
 Comment removal and appeal enforcement ([issue #154](https://github.com/elsell/hourpaths/issues/154), area 10) merged in PR #155 as `d2bd82c` after all five checks.
 Production v0.50.0 is verified through GitOps `12e991b`, with exact API/web
 images, Ready/Healthy Flux and public readiness. TestFlight 0.50.0 (450) is VALID,

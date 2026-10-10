@@ -61,6 +61,11 @@ Approved mobile refinement: compact one-page Path detail/edit surface and Home t
 
 Approved Path analytics: personal activity by default with a participant selector, shared Stats/Path charts, and complete calendar ranges including zero-activity days; see [Path statistics](experience/path-details.spec.md#content).
 
+Current release and remaining acceptance work are summarized in the
+[completion checklist](platform/completion-checklist.spec.md#current-delivery-status--october-10).
+The account-history pagination slice has merged; release availability remains
+separate from implementation and from physical-device acceptance.
+
 Approved social redesign: [mobile feed, profiles, and live activity viewer](experience/social-mobile.spec.md).
 
 Approved Studio web rebuild: [experience and delivery slices](experience/web-studio.spec.md),
