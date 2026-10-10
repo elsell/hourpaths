@@ -16,12 +16,12 @@ export interface Statistics {
 }
 // These are historical date labels, not UTC instants. Calendar arithmetic must
 // preserve the labels attributed by the server in each occurrence time zone.
-export function contributionWeeks(days: readonly CalendarDay[], weekStartsOn: number): (CalendarDay | null)[][] {
-  if (!days.length) return [];
+export function contributionWeeks(days: readonly CalendarDay[], weekStartsOn: number, range?: { startDate: string; endDate: string }): (CalendarDay | null)[][] {
+  if (!days.length && !range) return [];
   const ordered = [...days].sort((a, b) => a.date.localeCompare(b.date));
   const values = new Map(ordered.map(day => [day.date, day.seconds]));
-  const cursor = new Date(ordered[0].date + 'T12:00:00Z');
-  const end = ordered[ordered.length - 1].date;
+  const cursor = new Date((range?.startDate ?? ordered[0].date) + 'T12:00:00Z');
+  const end = range?.endDate ?? ordered[ordered.length - 1].date;
   const offset = ((cursor.getUTCDay() || 7) - weekStartsOn + 7) % 7;
   const cells: (CalendarDay | null)[] = Array.from({ length: offset }, () => null);
   while (cursor.toISOString().slice(0, 10) <= end) {

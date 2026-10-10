@@ -24,9 +24,11 @@ verified release notes (Apple status `38047918135`). Google Play internal versio
 code 423 was committed after signed-bundle verification (`38047890528`).
 Physical-device delivery acceptance remains open; the 11-area count is unchanged.
 
-No product implementation slice is currently active. Path-grid preparation has
-identified reusable calendar layouts and the required trailing-12-month/quartile
-differences; shared-Path participant aggregation awaits the owner decision.
+The owner approved personal activity by default with a participant selector for
+Path statistics, and a complete calendar including zero-activity dates on every
+client. The active first slice fixes empty and sparse grids across mobile and
+Studio; the following slice adds the Path-specific statistics surface using
+that approved scope and the existing trailing-12-month/quartile requirements.
 The richer Live Activity proposal and public-text processing location also await
 owner decisions. These unresolved decisions do not authorize inferred behavior.
 

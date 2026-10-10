@@ -96,6 +96,15 @@ Define the focused view for understanding and managing one path.
   controls and the platform back gesture must move from session detail to
   history, from history to Path details, and from Path details to Home.
 - Path details must show statistics specific to the selected path.
+- Path statistics and the Stats tab must reuse the platform's chart and calendar
+  components, including date selection, zero-activity cells and range layout;
+  Path-specific data access and participant selection remain separate concerns.
+- Path statistics must default to the viewer's own activity for participants. A
+  participant selector must allow viewing another current participant, subject
+  to the existing Path access and session visibility rules. Statistics, chart,
+  grid and recent sessions must all follow that same selection; they must not
+  default to summed activity from everyone. Supporters retain the comparison-first
+  entry and may select a participant without inventing personal activity.
 - The default Path-specific statistics must include total tracked time, session
   count, and average completed-session duration.
 - The default statistics must include a time-over-time chart for the selected
@@ -104,7 +113,9 @@ Define the focused view for understanding and managing one path.
   each cell represents one calendar day and visual intensity reflects the
   amount of time recorded on that day.
 - The activity grid must default to the trailing 12 months through the current
-  day.
+  day. Every date from the range start through today must have a cell, including
+  dates before the first and after the last recorded activity. An empty range
+  must show all zero-activity cells on every client.
 - Mirroring GitHub's contribution-level model, the grid must use five total
   states: one `none` state for zero recorded time and four progressively
   stronger quartile levels for days with recorded time relative to other

@@ -45,3 +45,16 @@ test('temporary Stats failure retains cached-view eligibility while access denia
   await assert.rejects(repository.load(selection), error => error instanceof StatisticsUnavailable && !error.retryable);
   assert.equal(rejected, 1);
 });
+
+
+test('calendar retains both range edges and an entirely empty range', () => {
+  const range = { startDate: '2026-02-27', endDate: '2026-03-03' };
+  const expected = ['2026-02-27', '2026-02-28', '2026-03-01', '2026-03-02', '2026-03-03'];
+  for (const days of [[], [{ date: '2026-03-01', seconds: 60 }]]) {
+    const cells = contributionWeeks(days, 1, range).flat().filter(day => day !== null);
+    assert.deepEqual(cells.map(day => day.date), expected);
+    assert.equal(cells[0].seconds, 0);
+    assert.equal(cells[4].seconds, 0);
+    assert.equal(cells.reduce((sum, day) => sum + day.seconds, 0), days.length ? 60 : 0);
+  }
+});

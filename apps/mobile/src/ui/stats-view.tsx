@@ -50,10 +50,12 @@ export function StatsView({ state, i18n, onSelect, onRefresh, appearance }: { st
         <SectionHeading>{i18n.t('stats.activity')}</SectionHeading>
         <StatsBars key={JSON.stringify(selection)} values={data.buckets.map(bucket => chartValue(bucket.key, bucket.seconds, data.bucketUnit))} i18n={i18n} />
       </Surface>
+    </> : null}
+    {data ? <>
       <Surface>
         <SectionHeading>{i18n.t('stats.calendar')}</SectionHeading>
         <NativeSegmentedControl value={calendarUnit} segments={(['day', 'week', 'month', 'year'] as const).map(value => ({ value, label: i18n.t(calendarKeys[value]) }))} onChange={setCalendarUnit} />
-        {calendarUnit === 'day' ? <StatsContributionGrid key={JSON.stringify(selection)} days={data.calendar} weekStartsOn={data.weekStartsOn} i18n={i18n} /> : <StatsCalendar values={statsCalendarGroups(data.calendar, calendarUnit, data.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} />}
+        {calendarUnit === 'day' ? <StatsContributionGrid key={JSON.stringify(selection)} days={data.calendar} range={{ startDate: data.startDate, endDate: data.endDate }} weekStartsOn={data.weekStartsOn} i18n={i18n} /> : <StatsCalendar values={statsCalendarGroups(data.calendar, calendarUnit, data.weekStartsOn).map(bucket => chartValue(bucket.key, bucket.seconds, calendarUnit))} i18n={i18n} />}
       </Surface>
     </> : null}
   </ScrollView>;

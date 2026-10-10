@@ -71,6 +71,10 @@ paths and over time.
   week columns, and discrete color intensity for recorded duration. It must include
   zero-activity dates within the selected period, respect the configured week start,
   and expose each date and exact duration through accessible text and selection.
+- On every client, the grid must render every calendar date from the selected
+  range start through its end, including leading, intermediate and trailing
+  zero-activity dates. An entirely empty range must retain its full grid.
+  Activity entries must not determine or shorten the displayed date boundaries.
 - The contribution grid must be the default calendar presentation for every date
   range; weekly, monthly, and yearly summaries remain selectable.
 - Native range and calendar-grouping selectors must use paired platform
