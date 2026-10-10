@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router';
+import { PathStatisticsPanel } from './path-statistics';
 import type { EnforcementRepository } from '@hourpaths/client-core';
 import type { ReportingRepository } from '@hourpaths/client-core';
 import { GoalReminder } from './goal-reminder';
@@ -45,7 +47,7 @@ import { PathGoalsEditor } from './path-goals';
 import { PathActions } from './path-actions';
 import { CreatePath } from './create-path';
 import { ActivityTimeline } from './activity-timeline';
-import type { HistoryRepository } from '../history/ports/history-source';
+import type { HistoryRepository, HistorySource } from '../history/ports/history-source';
 import type { ActivityRepository } from '../history/ports/activity-repository';
 import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
@@ -69,6 +71,7 @@ export interface StudioDependencies {
   social: SocialRepository;
   statistics: StatisticsRepository;
   history: HistoryRepository;
+  pathHistory: HistorySource;
   activities: ActivityRepository;
   accountScope: string;
   i18n: Translator;
@@ -130,7 +133,8 @@ function PathPage({ dependencies: d }: { dependencies: StudioDependencies }) {
   const { pathId } = useParams({ strict: false }) as { pathId: string };
   const query = useQuery({ queryKey: [d.accountScope, 'path', pathId], queryFn: ({ signal }) => d.paths.read(pathId, signal), staleTime: 0, gcTime: 0, refetchOnWindowFocus: true });
   return <StudioShell page="paths" i18n={d.i18n}><main className="studio-main"><header className="studio-header"><h1>{query.data && !query.isError && !query.isFetching ? query.data.name : d.i18n.t('studio.path')}</h1></header>
-    {query.isPending || query.isFetching ? <p role="status">{d.i18n.t('common.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : <ul className="studio-paths"><PathRow key={pathId} path={query.data} dependencies={d} moving={false} initialDetails /></ul>}
+    {query.isPending || query.isFetching ? <p role="status">{d.i18n.t('common.loading')}</p> : query.isError ? <div role="alert"><p>{d.i18n.t('studio.loadFailed')}</p><button onClick={() => void query.refetch()}>{d.i18n.t('common.retry')}</button></div> : <ul className="studio-paths"><PathRow key={pathId} path={query.data} dependencies={d} moving={false} /></ul>}
+    {query.data && !query.isError && !query.isFetching && <PathStatisticsPanel key={pathId} path={query.data} dependencies={d} />}
     {query.data?.canTrack && !query.data.archived && !query.isError && <GoalReminder key={JSON.stringify(['goal-reminders', pathId])} subject={{ id: pathId }} dependencies={d} />}
     {query.data?.canTrack && !query.data.archived && !query.isError && <TimerSubscription key={pathId} subject={{ scope: 'path', id: pathId }} dependencies={d} />}
   </main></StudioShell>;
@@ -189,13 +193,13 @@ function PathRow({ path, dependencies: d, move, moving, initialDetails = false }
       const session = query.data?.activeSession;
       return session ? d.paths.stop(path.id, session.id, d.operationId()) : d.paths.start(path.id, d.operationId());
     },
-    onSuccess: value => { client.setQueryData(key, value); setNow(d.now()); if (!value.activeSession) void client.invalidateQueries({ queryKey: [d.accountScope, 'history'] }); },
+    onSuccess: value => { client.setQueryData(key, value); setNow(d.now()); if (!value.activeSession) for (const area of ['history', 'path-history', 'path-statistics']) void client.invalidateQueries({ queryKey: [d.accountScope, area] }); },
   });
   const format = (seconds: number) => duration(d.i18n, seconds);
   const value = path.goal ? progress?.periodSeconds : progress?.totalSeconds;
   return <li className="studio-path" data-color={appearance.data?.color}>
-    <PathActions path={path} dependencies={d} move={move} moving={moving} />
-    <div className="studio-path-name"><span className="studio-emoji" aria-hidden="true">{appearance.data?.emoji ?? '✨'}</span><button className="studio-path-open" onClick={() => setDetails(!details)} aria-expanded={details}><strong>{path.name}</strong>{path.pinned && <small>{d.i18n.t('home.arrange.pinnedHeading')}</small>}</button></div>
+    <PathActions path={path} dependencies={d} move={move} moving={moving} onGoals={() => setDetails(true)} />
+    <div className="studio-path-name"><span className="studio-emoji" aria-hidden="true">{appearance.data?.emoji ?? '✨'}</span><Link className="studio-path-open" to="/paths/$pathId" params={{ pathId: path.id }}><strong>{path.name}</strong>{path.pinned && <small>{d.i18n.t('home.arrange.pinnedHeading')}</small>}</Link></div>
     <div><strong className="studio-time">{value == null ? '—' : format(value)}</strong>
       {path.goal && progress && <small>{d.i18n.t('studio.lifetime', { time: format(progress.totalSeconds) })}</small>}
       {path.goal && value != null && <progress aria-label={d.i18n.t(value >= path.goal.targetSeconds ? 'path.progress.intervalComplete' : 'path.progress.interval', { accumulated: value, target: path.goal.targetSeconds })} max={path.goal.targetSeconds} value={Math.min(value, path.goal.targetSeconds)} />}

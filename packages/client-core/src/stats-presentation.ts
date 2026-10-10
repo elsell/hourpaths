@@ -96,3 +96,13 @@ export function statsContributionMonthLabel(week: ReturnType<typeof statsContrib
   const day = week.find(day => day && (index === 0 || day.date.endsWith('-01')));
   return day ? i18n.date(new Date(`${day.date}T12:00:00Z`), { month: 'short', timeZone: 'UTC' }) : '';
 }
+
+export function statsContributionIntensity(values: readonly number[], mode: 'relative' | 'quartile' = 'relative'): (seconds: number) => number {
+  if (mode === 'relative') {
+    const maximum = Math.max(1, ...values);
+    return seconds => statsContributionLevel(seconds, maximum);
+  }
+  const positive = values.filter(value => value > 0).sort((a, b) => a - b);
+  const thresholds = [0.25, 0.5, 0.75].map(fraction => positive[Math.max(0, Math.ceil(positive.length * fraction) - 1)] ?? 0);
+  return seconds => seconds <= 0 ? 0 : 1 + thresholds.filter(threshold => seconds > threshold).length;
+}

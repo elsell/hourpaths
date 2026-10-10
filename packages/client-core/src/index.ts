@@ -917,3 +917,5 @@ export { appealAvailable, createAppealSubmissionOwner, EnforcementFailure, type 
 export { apiEnforcement } from './adapters/api-enforcement';
 export * from './unavailable-period';
 export { apiUnavailablePeriod } from './adapters/api-unavailable-period';
+export * from './path-statistics';
+export * from './adapters/api-path-statistics';

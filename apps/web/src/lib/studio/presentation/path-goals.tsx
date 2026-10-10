@@ -18,7 +18,9 @@ export function PathGoalsEditor({ path, dependencies: d, close }: { path: Path; 
   const [recurrence, setRecurrence] = useState<Recurrence>(path.goal?.recurrence ?? 'daily');
   const [alignment, setAlignment] = useState<GoalAlignment>(path.goal?.alignment ?? { hour: 0, minute: 0 });
   const [review, setReview] = useState<PathGoals | null>(null);
-  const mutation = useMutation({ mutationFn: (goals: PathGoals) => d.paths.saveGoals(path, goals, d.operationId()), onSuccess: async () => {
+  const mutation = useMutation({ mutationFn: (goals: PathGoals) => d.paths.saveGoals(path, goals, d.operationId()), onSuccess: async updated => {
+    await client.cancelQueries({ queryKey: [d.accountScope, 'paths'] });
+    client.setQueriesData<readonly Path[]>({ queryKey: [d.accountScope, 'paths'] }, previous => previous?.map(value => value.id === updated.id ? { ...value, goal: updated.goal, overallTarget: updated.overallTarget } : value));
     await Promise.all([client.invalidateQueries({ queryKey: [d.accountScope, 'path', path.id] }), client.invalidateQueries({ queryKey: [d.accountScope, 'paths'] }), client.invalidateQueries({ queryKey: [d.accountScope, 'tracking', path.id] })]); close();
   } });
   const summary = (value: PathGoals) => <dl><dt>{d.i18n.t('pathCreate.intervalHeading')}</dt><dd>{value.goal ? <>{d.i18n.t('studio.duration', { minutes: Math.floor(value.goal.targetSeconds / 60), seconds: value.goal.targetSeconds % 60 })} · {d.i18n.t(`pathCreate.recurrence.${value.goal.recurrence}`)}</> : d.i18n.t('pathManage.noInterval')}</dd><dt>{d.i18n.t('pathCreate.overallHeading')}</dt><dd>{value.overallTarget === null ? d.i18n.t('pathManage.noOverall') : d.i18n.t('studio.duration', { minutes: Math.floor(value.overallTarget / 60), seconds: value.overallTarget % 60 })}</dd></dl>;

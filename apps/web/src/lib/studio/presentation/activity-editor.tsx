@@ -60,7 +60,7 @@ function ActivityForm({ pathId, defaults, detail, loadedAt, dependencies: d }: {
       if (!active.current) return;
       await client.cancelQueries({ queryKey: [d.accountScope] });
       if (!active.current) return;
-      client.removeQueries({ predicate: query => query.queryKey[0] === d.accountScope && ['tracking', 'history', 'activity', 'activity-revisions', 'statistics', 'social'].includes(String(query.queryKey[1])) });
+      client.removeQueries({ predicate: query => query.queryKey[0] === d.accountScope && ['tracking', 'history', 'activity', 'activity-revisions', 'statistics', 'path-statistics', 'path-history', 'social'].includes(String(query.queryKey[1])) });
       setDirty(false); admitted.current = false; setSaved(result.id);
     } catch (cause) { if (active.current) { setError('request'); setRetryable(!(cause instanceof ActivityFailure) || cause.retryable); } }
     finally { admitted.current = false; if (active.current) setBusy(false); }

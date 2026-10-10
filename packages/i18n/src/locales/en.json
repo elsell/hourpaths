@@ -5288,5 +5288,11 @@
   "settings.quietHours.differentTimes": "Choose different start and end times.",
   "settings.quietHours.saved": "Quiet hours saved.",
   "settings.quietHours.on": "On",
-  "settings.quietHours.off": "Off"
+  "settings.quietHours.off": "Off",
+  "pathStats.heading": "Statistics",
+  "pathStats.yours": "Your activity",
+  "pathStats.participant": "Activity by",
+  "pathStats.choose": "Choose a participant",
+  "pathStats.sessions": "Sessions",
+  "pathStats.average": "Average session"
 }

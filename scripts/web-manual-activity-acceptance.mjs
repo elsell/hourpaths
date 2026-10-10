@@ -56,7 +56,7 @@ try {
   if (await page.getByRole('link', { name: 'Add activity', exact: true }).isVisible().catch(() => false)) {
     throw new Error('Home exposed manual activity entry outside the Path menu')
   }
-  const card = () => page.locator('li').filter({ has: page.getByRole('button', { name: pathName, exact: true }) })
+  const card = () => page.locator('li').filter({ has: page.getByRole('link', { name: pathName, exact: true }) })
   async function home() {
     await page.getByRole('link', { name: 'Paths', exact: true }).click()
     await page.getByRole('heading', { name: 'Paths', exact: true }).waitFor()
@@ -75,7 +75,7 @@ try {
     await home()
     await card().getByRole('progressbar', { name: label, exact: true }).waitFor()
   }
-  const noGoalCard = page.locator('li').filter({ has: page.getByRole('button', { name: 'Piano practice', exact: true }) })
+  const noGoalCard = page.locator('li').filter({ has: page.getByRole('link', { name: 'Piano practice', exact: true }) })
   await noGoalCard.waitFor()
   if (await noGoalCard.count() !== 1) throw new Error('no-goal Path was missing from Home')
   if (await noGoalCard.getByRole('progressbar').count() !== 0) throw new Error('no-goal Path rendered overall progress')

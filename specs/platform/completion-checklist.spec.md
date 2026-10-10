@@ -55,8 +55,11 @@ This is the latest verified release availability. Physical-device reminder and
 quiet-period delivery remain open in areas 8, 9 and 13; publication does not close
 those acceptance areas. The owner approved personal Path statistics with a
 participant selector and complete zero-filled calendar ranges on every client.
-The active slice fixes empty and sparse grids; Path-specific statistics follows
-under the same analytics acceptance area.
+The empty/sparse Stats calendar fix merged in PR #157 after all five required
+checks passed; production API/web deployment is verified and native release
+availability remains pending. The active slice is
+Path-specific statistics using shared chart and calendar components, under the
+same analytics acceptance area.
 
 Offline-banner persistence, Android screen-listener lifetime, and native
 synchronization feedback merged in PRs #144–#146 through their five-check gates.

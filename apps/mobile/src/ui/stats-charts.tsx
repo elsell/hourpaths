@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Translator } from '@hourpaths/i18n';
-import { statsDuration, statsDateLabel, statsContributionWeeks, statsContributionLevel, statsWeekdayLabel, statsContributionMonthLabel } from '@hourpaths/client-core';
+import { statsDuration, statsDateLabel, statsContributionWeeks, statsContributionIntensity, statsWeekdayLabel, statsContributionMonthLabel } from '@hourpaths/client-core';
 import { mobileTheme } from './tokens';
 
 export type StatsChartValue = { key: string; label: string; seconds: number; color: string };
@@ -60,11 +60,11 @@ export function StatsCalendar({ values, i18n }: { values: readonly StatsChartVal
   </View>;
 }
 
-export function StatsContributionGrid({ days, weekStartsOn, range, i18n }: { range: { startDate: string; endDate: string }; days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
+export function StatsContributionGrid({ days, weekStartsOn, range, i18n, intensity = 'relative' }: { intensity?: 'relative' | 'quartile'; range: { startDate: string; endDate: string }; days: readonly { date: string; seconds: number }[]; weekStartsOn: number; i18n: Translator }) {
   const weeks = statsContributionWeeks(days, weekStartsOn, range);
   const scroll = useRef<ScrollView>(null);
   const positioned = useRef(false);
-  const maximum = Math.max(1, ...days.map(day => day.seconds));
+  const level = statsContributionIntensity(days.map(day => day.seconds), intensity);
   const [selected, setSelected] = useState<string>();
   const selectedDay = weeks.flat().find(day => day?.date === selected);
   const label = (day: { date: string; seconds: number }) => i18n.t('stats.chartValue', { label: statsDateLabel(day.date, 'day', i18n), duration: i18n.t('duration.compactSeconds', { seconds: i18n.number(day.seconds) }) });
@@ -74,7 +74,7 @@ export function StatsContributionGrid({ days, weekStartsOn, range, i18n }: { ran
       onContentSizeChange={() => { if (!positioned.current) { scroll.current?.scrollToEnd({ animated: false }); positioned.current = true; } }}>
       {weeks.map((week, index) => <View key={index} style={styles.week}>
         <Text numberOfLines={1} style={styles.month}>{statsContributionMonthLabel(week, index, i18n)}</Text>
-        {week.map((day, weekday) => day ? <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={label(day)} accessibilityState={{ selected: selected === day.date }} onPress={() => setSelected(day.date)} style={[styles.day, { backgroundColor: contributionColors[statsContributionLevel(day.seconds, maximum)] }, selected === day.date && styles.selectedDay]} /> : <View key={weekday} style={styles.dayPlaceholder} />)}
+        {week.map((day, weekday) => day ? <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={label(day)} accessibilityState={{ selected: selected === day.date }} onPress={() => setSelected(day.date)} style={[styles.day, { backgroundColor: contributionColors[level(day.seconds)] }, selected === day.date && styles.selectedDay]} /> : <View key={weekday} style={styles.dayPlaceholder} />)}
       </View>)}
     </ScrollView></View>
     <View style={styles.gridLegend}><Text style={styles.muted}>{i18n.t('stats.contribution.less')}</Text>{contributionColors.map(color => <View key={color} style={[styles.legendDay, { backgroundColor: color }]} />)}<Text style={styles.muted}>{i18n.t('stats.contribution.more')}</Text></View>

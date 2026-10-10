@@ -1,3 +1,7 @@
+import type { PathStatistics as PathStatisticsDTO } from '@hourpaths/api-client';
+import { mobileTheme } from '../src/ui/tokens';
+import { PathStatisticsView } from '../src/ui/path-statistics-view';
+import { pathStatisticsFromAPI } from '@hourpaths/client-core';
 import { recoverRetainedSession } from '@hourpaths/client-core';
 import { reportReceiptFromAPI, type ReportDraft, type ReportReceipt } from '@hourpaths/client-core';
 import { GoalReminderControl } from '../src/ui/goal-reminder-control';
@@ -8834,18 +8838,41 @@ export function HomeScreen() {
         /> : undefined}
         archived={Boolean(selectedPath.archivedAt)}
         busy={manualBusy}
-        recentActivity={<RecentPathActivity
-          retained={activityHistoryLocal.retained} incomplete={activityHistoryLocal.incomplete}
-          activities={visibleActivityHistory}
-          busy={pathDetailBusy}
-          errorText={activityHistoryErrorKey ? i18n.t(activityHistoryErrorKey) : undefined}
-          i18n={i18n}
-          ownerID={ownedHomeDestination.profile.id}
-          participantName={(id) => pathMembers.find((member) => member.userId === id)?.displayName ?? (id === ownedHomeDestination.profile.id ? ownedHomeDestination.profile.displayName : i18n.t('pathMembers.participant'))}
-          onRetry={() => void openActivityHistory(selectedPath.id, undefined, false, true)}
-          onSeeAll={() => void openActivityHistory(selectedPath.id)}
-          onOpen={(id) => { setActivityHistoryOpen(true); void inspectActivity(selectedPath.id, id); }}
-          onAdd={selectedCapabilities.trackTime && !selectedPath.archivedAt && !pathLeaveBusy && !manualBusy ? () => void openManualActivity(selectedPath.id) : undefined}
+        statistics={<PathStatisticsView
+          key={[socialPresentationKey, selectedPath.id].join(':')}
+          pathId={selectedPath.id} ownerId={ownedHomeDestination.profile.id} canTrack={selectedCapabilities.trackTime}
+          members={pathMembers} i18n={i18n}
+          refreshKey={[selectedTimerState?.accumulatedSeconds, visibleActivityHistory[0]?.activity.updatedAt].join(':')}
+          loadMoreParticipants={pathMembersCursor ? () => { void openPathMembers(selectedPath.id, pathMembersCursor, false); } : undefined}
+          load={async participant => {
+            const active = notificationLifecycleState.current;
+            if (!active.session || active.destination?.kind !== 'home' || active.destination.profile.id !== ownedHomeDestination.profile.id) throw new Error('path_statistics_owner_changed');
+            const credential = active.session;
+            try {
+              const [statistics, page] = await Promise.all([
+                validateSessionCredential<PathStatisticsDTO>(credential, async current => generatedResponse(await createSessionApiClient(apiURL, () => current.token).pathStatistics(selectedPath.id, participant))),
+                loadActivityPage(credential, selectedPath.id, undefined, participant),
+              ]);
+              return { statistics: pathStatisticsFromAPI(statistics), activities: page.items };
+            } catch (cause) {
+              if (isSessionFailure(cause) && classifySessionFailure(cause).discardCredential && notificationLifecycleState.current.session === credential) await handleSessionFailure(cause, credential);
+              throw cause;
+            }
+          }}
+          renderRecent={(participant, activities, loading, retry) => <View style={{ gap: mobileTheme.spacing.sm }}>
+            <SectionHeading>{i18n.t('pathDetails.recentActivity')}</SectionHeading>
+            <RecentPathActivity
+              retained={!activities && participant === ownedHomeDestination.profile.id && activityHistoryLocal.retained}
+              incomplete={!activities && participant === ownedHomeDestination.profile.id && activityHistoryLocal.incomplete}
+              activities={activities ?? (participant === ownedHomeDestination.profile.id ? visibleActivityHistory.filter(entry => entry.activity.participantId === participant) : [])}
+              busy={loading} i18n={i18n} ownerID={ownedHomeDestination.profile.id}
+              participantName={id => pathMembers.find(member => member.userId === id)?.displayName ?? (id === ownedHomeDestination.profile.id ? ownedHomeDestination.profile.displayName : i18n.t('pathMembers.participant'))}
+              onRetry={retry}
+              onSeeAll={pathMembers.some(value => value.userId === participant) ? () => { const member = pathMembers.find(value => value.userId === participant); if (member) void inspectPathMember(member); } : undefined}
+              onOpen={id => { setActivityHistoryOpen(true); void inspectActivity(selectedPath.id, id); }}
+              onAdd={participant === ownedHomeDestination.profile.id && selectedCapabilities.trackTime && !selectedPath.archivedAt && !pathLeaveBusy && !manualBusy ? () => void openManualActivity(selectedPath.id) : undefined}
+            />
+          </View>}
         />}
         settings={[
           ...(selectedCapabilities.manageGoals ? [{ label: i18n.t('pathDetails.goals'), value: selectedPath.intervalGoal ? i18n.t('pathManage.intervalSummary', { duration: formatGoalDuration(selectedPath.intervalGoal.targetSeconds, i18n), recurrence: i18n.t(`path.goal.recurrence.${selectedPath.intervalGoal.recurrence}`) }) : undefined, systemImage: 'target', onPress: () => openFocusedPathManagement(selectedPath, 'goals') }] : []),

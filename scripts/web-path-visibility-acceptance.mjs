@@ -32,16 +32,17 @@ async function applicationContext(browser, token) {
 async function openPath(page) {
   await page.getByRole('heading', { name: 'Paths', exact: true }).waitFor()
   const card = page.locator('li').filter({
-    has: page.getByRole('button', { name: pathName, exact: true }),
+    has: page.getByRole('link', { name: pathName, exact: true }),
   })
   await card.waitFor()
   assert.equal(await card.count(), 1, 'visibility acceptance Path was missing from Home')
-  await card.getByRole('button', { name: pathName, exact: true }).click()
+  await card.getByRole('link', { name: pathName, exact: true }).click()
   await page.getByRole('heading', { name: pathName, exact: true }).waitFor()
 }
 
 async function openVisibilityManagement(page) {
-  await page.locator('.studio-path-details').getByRole('link', { name: 'Path visibility', exact: true }).click()
+  await page.locator('.studio-path-actions summary').click()
+  await page.locator('.studio-path-actions').getByRole('link', { name: 'Path visibility', exact: true }).click()
   await page.getByRole('heading', { name: 'Path visibility', exact: true }).waitFor()
 }
 

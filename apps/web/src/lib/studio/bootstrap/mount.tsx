@@ -143,8 +143,9 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     durableStore, offline.runtime,
     error => error instanceof TypeError || error instanceof PathRequestError && (error.status === 0 || error.status >= 500 || error.status === 429),
   );
+  const pathHistory = apiHistorySource(options.apiURL, () => session.token(), remotePaths, credential => session.reject(credential));
   const history = durableHistoryRepository(
-    historyRepository(apiHistorySource(options.apiURL, () => session.token(), remotePaths, credential => session.reject(credential))),
+    historyRepository(pathHistory),
     offline.runtime,
     error => error instanceof TypeError || error instanceof HistoryRequestError && (error.status === 429 || error.status >= 500),
     25, () => Date.now(),
@@ -184,6 +185,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     statistics: apiStatisticsRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     social: apiSocialRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     history,
+    pathHistory,
     accountScope: crypto.randomUUID(),
     i18n,
     operationId: () => crypto.randomUUID(),

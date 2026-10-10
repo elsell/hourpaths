@@ -29,3 +29,12 @@ test('calendar retains both range edges and an entirely empty range', () => {
     assert.equal(cells.reduce((sum, day) => sum + day.seconds, 0), days.length ? 60 : 0);
   }
 });
+
+test('quartile intensity preserves differences below an outlier and keeps ties consistent', async () => {
+  const { statsContributionIntensity } = await import('./stats-presentation');
+  const level = statsContributionIntensity([0, 1, 2, 3, 1000], 'quartile');
+  assert.deepEqual([0, 1, 2, 3, 1000].map(level), [0, 1, 2, 3, 4]);
+  const tied = statsContributionIntensity([0, 10, 10, 20, 30], 'quartile');
+  assert.equal(tied(0), 0);
+  assert.deepEqual([10, 10, 20, 30].map(tied), [1, 1, 3, 4]);
+});

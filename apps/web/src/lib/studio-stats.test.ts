@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contributionWeeks, calendarGroups } from './studio/analytics/domain/statistics';
+import { statsContributionWeeks as contributionWeeks, statsCalendarGroups as calendarGroups } from '@hourpaths/client-core';
 import { statisticsFromAPI } from './studio/analytics/adapters/api-statistics-repository';
 
 test('calendar preserves historical labels, fills missing days, and honors Sunday week start', () => {
