@@ -15,11 +15,18 @@ were read back. Google Play internal version code 420 was committed by workflow
 `38002647767` after signed-bundle verification. Physical-device acceptance is
 still required; publication does not close the wider moderation area.
 
-Draft PR #153 contains bundled goal reminders and unavailable periods. Its local
-integration preserves moderation migration 94 and assigns the unpublished
-reminder migrations 95–96. Focused database and client integration checks pass.
-The owner approved rejecting equal quiet-period endpoints; the prepared slice
-now proceeds through final review and release.
+Bundled goal reminders and unavailable periods merged in PR #153 as `90b41af`,
+including the approved rejection of equal enabled quiet-period endpoints.
+Release v0.51.0 is verified in production through GitOps `3603732`; exact images,
+Flux health, retention configuration and public endpoints pass. TestFlight
+0.51.0 (453) is VALID, IN_BETA_TESTING and assigned to internal testers with
+verified release notes (Apple status `38047918135`). Google Play internal version
+code 423 was committed after signed-bundle verification (`38047890528`).
+Physical-device delivery acceptance remains open; the 11-area count is unchanged.
+
+No product implementation slice is currently active. Path-grid preparation has
+identified reusable calendar layouts and the required trailing-12-month/quartile
+differences; shared-Path participant aggregation awaits the owner decision.
 The richer Live Activity proposal and public-text processing location also await
 owner decisions. These unresolved decisions do not authorize inferred behavior.
 
