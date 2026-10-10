@@ -20,11 +20,12 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current delivery status — October 10
 
-- Production [v0.53.0](https://github.com/elsell/hourpaths/releases/tag/v0.53.0),
-  source `385eb12`, is verified through GitOps `f8932fd`: exact API/web source and
+- Production [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),
+  source `e8e7516`, is verified through GitOps `9da65d4`: exact API/web source and
   image IDs, Ready/Healthy Flux, current retention image and public 200/204 health.
-  It includes PRs #158–#161: shared Path analytics, large-text corrections,
-  zero-activity dates through local today and bounded account-history loading.
+  It includes PRs #158–#161 and #163: shared Path analytics, large-text
+  corrections, zero-activity dates through local today, bounded account-history
+  loading and the independent past-year Stats calendar.
 - TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and internally
   assigned ([Apple availability](https://github.com/elsell/hourpaths/actions/runs/38079902486)).
   The publisher read back its release notes. Google Play v0.53.0 internal build
@@ -39,7 +40,8 @@ and retained. Release evidence below is historical unless identified as current.
   as `e8e7516` after all five gates. Live browser checks verify 365 dates, 13 month
   groups, chart-range independence and shared Path filtering; Android at 160%
   text size retains the past-year calendar when the chart switches to Day.
-  Main/release availability remains pending.
+  Main CI and exact-source API/web deployment passed. Signed v0.53.1 mobile
+  publication remains pending; the v0.53.0 store builds above lack this correction.
 
 ### Remaining work by area
 
@@ -58,7 +60,7 @@ it does not close an area merely because a build is available.
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Suspension/ban timer rule and enforcement, public-text processing boundary and checks, signed-device moderation/appeals. |
-| 11 — Analytics | Release PR #163 and verify distribution plus signed-device/accessibility acceptance; implementation is credited above. |
+| 11 — Analytics | Verify PR #163 signed mobile distribution and device/accessibility acceptance; production deployment is credited above. |
 | 13 — Final acceptance | Physical-iPhone encouragement/Send confirmation, UI-28 matrix and final spec-to-release evidence reconciliation. |
 
 ## Historical delivery evidence

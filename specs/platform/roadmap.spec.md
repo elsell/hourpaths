@@ -7,8 +7,8 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified production release is [v0.53.0](https://github.com/elsell/hourpaths/releases/tag/v0.53.0),
-source `385eb12`, deployed through GitOps `f8932fd`. Exact API/web images,
+The current verified production release is [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),
+source `e8e7516`, deployed through GitOps `9da65d4`. Exact API/web images,
 Ready/Healthy Flux, retention configuration and public readiness are verified.
 TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
 internal group; release notes were read back. Google Play v0.53.0 internal build
@@ -24,8 +24,9 @@ Signed-device acceptance remains required.
 The independent Stats calendar correction merged in [PR #163](https://github.com/elsell/hourpaths/pull/163)
 as `e8e7516` after all five candidate gates. Calendar now defaults to the past
 year independently of the chart range, while retaining shared Path filters.
-Browser and Android emulator checks passed. Main/release verification is active;
-this correction is not yet claimed available in production or TestFlight.
+Browser and Android emulator checks passed. Main CI and exact-source API/web
+deployment passed; signed mobile publication remains pending. The verified
+v0.53.0 store builds above do not yet contain this correction.
 
 Next unresolved implementation choices are provider-picture import during
 onboarding, the richer Live Activity design, and public-text processing location.
