@@ -37,12 +37,13 @@ async function applicationContext(browser, token) {
 }
 
 async function waitForHome(page) {
+  if (!await page.getByRole('heading', { name: 'Paths', exact: true }).isVisible()) await page.getByRole('link', { name: 'Paths', exact: true }).click()
   await page.getByRole('heading', { name: 'Paths', exact: true }).waitFor()
 }
 
 function homePathCard(page) {
   return page.locator('li').filter({
-    has: page.getByRole('button', { name: pathName, exact: true }),
+    has: page.getByRole('link', { name: pathName, exact: true }),
   })
 }
 
@@ -57,9 +58,13 @@ async function assertHomeInterval(page, label) {
 
 async function openPathDetail(page) {
   const card = homePathCard(page)
-  await card.getByRole('button', { name: pathName, exact: true }).click()
+  await card.getByRole('link', { name: pathName, exact: true }).click()
   await page.getByRole('heading', { name: pathName, exact: true }).waitFor()
+  await homePathCard(page).locator('summary').click()
+  const goals = homePathCard(page).getByRole('button', { name: 'Goals', exact: true })
+  if (await goals.count()) await goals.click()
 }
+
 
 async function backToHome(page) {
   const editor = page.locator('.studio-path-details')

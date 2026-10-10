@@ -1,3 +1,4 @@
+import { pathStatisticsFromAPI } from '@hourpaths/client-core';
 import { createSessionApiClient, type StatsSummary } from '@hourpaths/api-client';
 import { ranges, StatisticsUnavailable, type Range, type Statistics } from '../domain/statistics';
 import type { StatisticsRepository } from '../ports/statistics-repository';
@@ -35,7 +36,16 @@ export function statisticsFromAPI(dto: StatsSummary): Statistics {
   };
 }
 export function apiStatisticsRepository(baseURL: string, token: () => string | null, rejected: (token: string | null) => void): StatisticsRepository {
-  return { async load(selection, signal) {
+  return { async path(pathId, participantId, signal) {
+    try {
+      const result = await createSessionApiClient(baseURL, token, signal, rejected).pathStatistics(pathId, participantId);
+      if (!result.response.ok || !result.data) throw new StatisticsUnavailable(result.response.status === 429 || result.response.status >= 500);
+      return pathStatisticsFromAPI(result.data.data);
+    } catch (error) {
+      if (signal?.aborted || error instanceof StatisticsUnavailable) throw error;
+      throw new StatisticsUnavailable(true);
+    }
+  }, async load(selection, signal) {
     try {
     const result = await createSessionApiClient(baseURL, token, signal, rejected).stats({ range: selection.range, anchor: selection.anchor, pathIds: selection.pathIds.length ? selection.pathIds.join(',') : undefined });
     if (!result.response.ok || !result.data) throw new StatisticsUnavailable(result.response.status === 429 || result.response.status >= 500);

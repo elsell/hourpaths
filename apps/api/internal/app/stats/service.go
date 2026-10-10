@@ -21,7 +21,12 @@ type Snapshot struct {
 type Repository interface {
 	Read(context.Context, string) (Snapshot, error)
 }
+type PathRepository interface {
+	ReadPath(context.Context, string, string, string) (Snapshot, error)
+}
+
 type Service struct {
+	PathRepository   PathRepository
 	Auth             ports.Authenticator
 	Repository       Repository
 	Authorizer       ports.Authorizer

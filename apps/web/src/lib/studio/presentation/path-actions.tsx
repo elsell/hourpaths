@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { StudioDependencies } from './app';
 import type { Path } from '../paths/domain/path';
 
-export function PathActions({ path, dependencies: d, move, moving }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean }) {
+export function PathActions({ path, dependencies: d, move, moving, onGoals }: { path: Path; dependencies: StudioDependencies; move?: (direction: -1 | 1) => void; moving: boolean; onGoals?: () => void }) {
   const client = useQueryClient();
   const [lifecycle, setLifecycle] = useState<LifecycleReview | null>(null);
   const review = (action: LifecycleAction) => { setMenuOpen(false); setLifecycle(reviewLifecycle(path, action, d.operationId())); };
@@ -23,6 +23,7 @@ export function PathActions({ path, dependencies: d, move, moving }: { path: Pat
   const pin = useMutation({ mutationFn: () => d.paths.pin(path.id, !path.pinned, d.operationId()), onSuccess: refresh });
   return <div className="studio-path-actions">
     <details open={menuOpen}><summary onClick={event => { event.preventDefault(); setMenuOpen(!menuOpen); }} aria-label={d.i18n.t('home.pathActions', { pathName: path.name })}>⋯</summary><div className="studio-action-menu"><ReportAction target={{ kind: 'path', id: path.id }} dependencies={d} />
+      {path.canManageGoals && !path.archived && onGoals && <button onClick={() => { setMenuOpen(false); onGoals(); }}>{d.i18n.t('pathDetails.goals')}</button>}
       {path.canManageVisibility && !path.archived && <Link to="/paths/$pathId/visibility" params={{ pathId: path.id }}>{d.i18n.t('pathVisibility.heading')}</Link>}
       {path.canTrack && <Link to="/paths/$pathId/nudge-settings" params={{ pathId: path.id }}>{d.i18n.t('nudge.audience.openLabel')}</Link>}<Link to="/paths/$pathId/people" params={{ pathId: path.id }}>{d.i18n.t('pathMembers.heading')}</Link>
       <Link to="/paths/$pathId/ownership" params={{ pathId: path.id }}>{d.i18n.t('pathOwnership.heading')}</Link>

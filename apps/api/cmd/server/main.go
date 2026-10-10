@@ -8,6 +8,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/deletionjournal"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore"
+	activitystore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/activity"
 	pathstore "github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/path"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver"
 	pathroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/path/routes"
@@ -150,7 +151,7 @@ func main() {
 	go reconcileGoalReminders(ctx, store, authorizer, clock, auditLimiter, probe)
 	registrations := generated.Registrations(generated.Dependencies{DB: store.DB, Auth: sessions, Profiles: store, Authorizer: authorizer, AuthorizationOutbox: store, AuthorizationSerializer: store, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock, Probe: probe, NewID: uuid.NewString, AuthorizationWorker: uuid.NewString(), AuthorizationLease: 30 * time.Second, CursorSigningKey: []byte(cfg.CursorSigningKey)})
 	registrations = append(registrations, func(api huma.API) {
-		statsroutes.Register(api, &statsapp.Service{Auth: sessions, Repository: gormstore.StatsRepository{DB: store.DB}, Authorizer: authorizer, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock})
+		statsroutes.Register(api, &statsapp.Service{PathRepository: activitystore.New(store.DB), Auth: sessions, Repository: gormstore.StatsRepository{DB: store.DB}, Authorizer: authorizer, Audits: store, AuditRateLimiter: auditLimiter, Clock: clock})
 	})
 	socialRelationships := gormstore.NewSocialRelationshipRepository(store.DB, uuid.NewString, authorizationWorker, 30*time.Second)
 	socialFeed := gormstore.NewSocialFeedRepository(store.DB)
