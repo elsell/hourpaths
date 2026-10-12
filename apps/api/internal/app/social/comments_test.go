@@ -133,6 +133,7 @@ func commentService(repository *controlledComments) (*Service, *feedAuthorizer, 
 	service := testService(&controlledProfiles{}, audits)
 	authorizer := &feedAuthorizer{allowed: map[string]bool{"path": true}}
 	service.Comments, service.Authorizer = repository, authorizer
+	service.TextModerator = acceptingTextModerator{}
 	service.CommentRateLimiter = &controlledRelationshipLimiter{allowed: true}
 	return service, authorizer, audits
 }
@@ -508,3 +509,7 @@ func TestPracticeCommentRejectsMalformedRepositoryAndReplayResults(t *testing.T)
 		})
 	}
 }
+
+type acceptingTextModerator struct{}
+
+func (acceptingTextModerator) Check(context.Context, ports.TextSurface, string) error { return nil }

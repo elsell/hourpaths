@@ -259,6 +259,9 @@ func (service *Service) CreatePracticeComment(ctx context.Context, authorization
 	if err := service.authorizeCommentTarget(ctx, principal.UserID, target, now); err != nil {
 		return domain.Comment{}, err
 	}
+	if err := shared.CheckText(ctx, service.TextModerator, ports.CommentText, text); err != nil {
+		return domain.Comment{}, err
+	}
 	command := CommentCommand{
 		ActorUserID: principal.UserID, Target: target, Text: text, OccurredAt: now,
 		NotificationEligibleAt: now.Add(commentNotificationGrace), NotifyEventOwner: principal.UserID != target.OwnerUserID,
@@ -307,6 +310,9 @@ func (service *Service) EditPracticeComment(ctx context.Context, authorization, 
 	}
 	if resolved.Comment.AuthorID != principal.UserID {
 		return domain.Comment{}, service.commentError(ctx, principal.UserID, ports.ErrNotFound, now)
+	}
+	if err := shared.CheckText(ctx, service.TextModerator, ports.CommentText, text); err != nil {
+		return domain.Comment{}, err
 	}
 	command := CommentCommand{
 		ActorUserID: principal.UserID, Target: resolved.Target, CommentID: commentID, Text: text,

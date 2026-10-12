@@ -18,7 +18,7 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Current delivery status — October 10
+## Current delivery status — October 12
 
 - Production [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),
   source `e8e7516`, is verified through GitOps `9da65d4`: exact API/web source and
@@ -26,10 +26,10 @@ and retained. Release evidence below is historical unless identified as current.
   It includes PRs #158–#161 and #163: shared Path analytics, large-text
   corrections, zero-activity dates through local today, bounded account-history
   loading and the independent past-year Stats calendar.
-- TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and internally
-  assigned ([Apple availability](https://github.com/elsell/hourpaths/actions/runs/38079902486)).
-  The publisher read back its release notes. Google Play v0.53.0 internal build
-  438 was committed after signed-bundle verification in [run 38079836984](https://github.com/elsell/hourpaths/actions/runs/38079836984).
+- TestFlight 0.53.1 (471) is VALID, nonexpired, IN_BETA_TESTING and internally
+  assigned ([Apple availability](https://github.com/elsell/hourpaths/actions/runs/38082488999)).
+  The publisher read back its release notes. Google Play v0.53.1 internal build
+  442 was committed after signed-bundle verification in [run 38082431881](https://github.com/elsell/hourpaths/actions/runs/38082431881).
 - For account-history loading, real PostgreSQL verifies owner scope, archived
   Paths, retention boundaries and snapshot edits. Studio renders 22 activities
   using one online and one retained-history request; Android cold reopen retains
@@ -40,8 +40,8 @@ and retained. Release evidence below is historical unless identified as current.
   as `e8e7516` after all five gates. Live browser checks verify 365 dates, 13 month
   groups, chart-range independence and shared Path filtering; Android at 160%
   text size retains the past-year calendar when the chart switches to Day.
-  Main CI and exact-source API/web deployment passed. Signed v0.53.1 mobile
-  publication remains pending; the v0.53.0 store builds above lack this correction.
+  Main CI and exact-source API/web deployment passed. TestFlight 471 and Google
+  Play 442 contain the correction; physical-device acceptance remains pending.
 
 ### Remaining work by area
 
@@ -59,8 +59,8 @@ it does not close an area merely because a build is available.
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
-| 10 — Safety | Suspension/ban timer rule and enforcement, public-text processing boundary and checks, signed-device moderation/appeals. |
-| 11 — Analytics | Verify PR #163 signed mobile distribution and device/accessibility acceptance; production deployment is credited above. |
+| 10 — Safety | Suspension/ban timer rule and enforcement, in-house trusted-content moderation port (classifier deferred by owner), signed-device moderation/appeals. |
+| 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |
 | 13 — Final acceptance | Physical-iPhone encouragement/Send confirmation, UI-28 matrix and final spec-to-release evidence reconciliation. |
 
 ## Historical delivery evidence
@@ -490,7 +490,8 @@ and Studio types, localization, transport boundary and Settings checks passed;
 the scoped security critic found no P0/P1 blockers. PR #137 merged as `70d4cd7`
 and is included in verified TestFlight 0.49.8 (442). This does not close area 10:
 content removal, suspension, bans,
-restricted-account appeals and automated public-text checks remain required.
+restricted-account appeals remain required. The owner approved an in-house no-op moderation port on
+2026-10-12 and deferred automated classification for the trusted-content phase.
 
 ### Native expired-session timer recovery (released; device acceptance open)
 

@@ -81,3 +81,7 @@ Profile-picture delivery boundaries: [safe processing, storage and cleanup](plat
 Profile connection-list browsing and inbound follower removal acceptance is specified in [SOC-01C](social/following.spec.md#profile-connection-lists-and-follower-removal-soc-01c).
 
 - `PREF-01`: [Editable week start](accounts/preferences.spec.md#editable-week-start-acceptance-pref-01) — settings persistence, future goal defaults, calendar grouping, and isolated retry.
+
+The 2026-10-12 owner decision keeps public-text processing in-house and accepts
+content through an explicit no-op moderation adapter for now; actual automated
+classification is deferred. See [Moderation](safety/moderation.spec.md#public-text-moderation-boundary).

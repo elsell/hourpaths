@@ -18,6 +18,7 @@ import (
 func newID() string { return uuid.NewString() }
 
 type App struct {
+	TextModerator                    ports.TextModerator
 	AccountExport                    AccountExportRepository
 	Auth                             ports.Authenticator
 	IdentityVerifier                 ports.IdentityTokenVerifier
