@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"github.com/elsell/hour-paths/apps/api/internal/app/shared"
 	"time"
 
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
@@ -67,6 +68,9 @@ func (a App) UpdateOwnProfile(ctx context.Context, authorization, key string, in
 	text, err := identity.NormalizeProfileText(input.Text)
 	if err != nil || input.ExpectedRevision < 1 || !validTimeZoneMutationKey(key) {
 		return OwnProfile{}, ports.ErrInvalidArgument
+	}
+	if err := shared.CheckText(ctx, a.TextModerator, ports.ProfileDescriptionText, text.Description); err != nil {
+		return OwnProfile{}, err
 	}
 	input.Text = text
 	encoded, err := json.Marshal(input)

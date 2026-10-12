@@ -267,15 +267,43 @@ acknowledgments must remain unchanged.
    heart committed after removal can republish or interact with removed content.
    A removal committed before push handoff must suppress that delivery.
 
-## Automated public-text checks
+## Public-text moderation boundary
 
-- A new or edited public comment or profile description must pass an automated
-  text-safety check before it becomes visible.
-- Text classified as clearly disallowed under the published Community
-  Guidelines must be rejected before publication rather than silently or
-  partially published.
-- The rejection must use neutral language, identify that the text could not be
-  posted, and allow the user to edit and retry it.
-- Automated checks must not replace reporting, blocking, human review, or
-  appeals.
-- Content that passes an automated check must remain reportable.
+Owner decision, 2026-10-12: text processing must stay entirely on HourPaths
+infrastructure. During the current trusted-content phase, automated classification
+is explicitly deferred; the application must use an injected moderation port with
+an explicitly selected no-op adapter that accepts content without screening.
+No external moderation service may receive submitted text.
+
+- New and edited comments and profile descriptions must pass through this port
+  before persistence. Authentication, authorization, normalization, rate limits,
+  idempotency, atomic audit and existing visibility rules must remain intact.
+- The no-op adapter must not classify, store, log or transmit submitted text.
+  Acceptance must not be represented as a safety classification.
+- Missing moderation dependencies or adapter failures must prevent a new write;
+  they must not silently select the trusted-content adapter.
+- Reporting, blocking, human review, enforcement and appeals remain required.
+  Accepted content must remain reportable.
+- This phase does not add a model, keyword filter, external provider or client
+  moderation UI. Introducing actual classification requires a subsequent approved
+  policy and implementation slice; it is not a blocker for this approved phase.
+
+### Acceptance (`SAFE-TEXT-PORT-01`)
+
+1. Valid authorized comment creation, editing and profile-description updates
+   retain their normal behavior with the explicitly injected trusted-content
+   adapter. All clients use the same server-side boundary.
+2. The port receives normalized text and its surface type before the mutation.
+   An unavailable adapter prevents the mutation and does not publish text or
+   queue a notification. Existing comment replay returns the committed result.
+3. Unauthenticated or unauthorized submissions cannot bypass existing checks or
+   reach a content processor before authorization. No text leaves our infrastructure
+   or is added to logs, audit metadata or a new persistence store by this adapter.
+
+### Deferred classifier behavior
+
+When actual classification is approved, clearly disallowed text under the
+published Community Guidelines must be rejected before publication. Rejection
+must be neutral and editable, permitting retry. Classification must not replace
+reporting, blocking, human review or appeals. The classifier must run entirely on
+HourPaths infrastructure.

@@ -2,6 +2,8 @@ package httpserver
 
 import (
 	"context"
+	"errors"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/trustedcontent"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/ports"
 	"net/http"
@@ -83,7 +85,7 @@ func TestOwnProfileHTTPKeepsIdentityOwnerAndMapsFailures(t *testing.T) {
 		"owner": {UserID: "owner", Revision: 1, Text: identity.ProfileText{Username: "owner", DisplayName: "Owner"}},
 		"other": {UserID: "other", Revision: 1, Text: identity.ProfileText{Username: "other", DisplayName: "Other"}},
 	}}
-	handler, _ := newHTTPTestServer(app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, Profiles: repository, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
+	handler, _ := newHTTPTestServer(app.App{Auth: profileRouteAuth{state}, Users: deletionRouteUsers{}, Profiles: repository, TextModerator: trustedcontent.Moderator{}, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
 	call := func(method, credential, body string, want int) string {
 		t.Helper()
 		request := httptest.NewRequest(method, "/v1/me/profile", strings.NewReader(body))
@@ -119,4 +121,28 @@ func TestOwnProfileHTTPKeepsIdentityOwnerAndMapsFailures(t *testing.T) {
 	repository.failed = true
 	call(http.MethodGet, "Bearer owner", "", 503)
 	call(http.MethodPut, "Bearer owner", valid, 503)
+}
+
+// A failing processor must leave the original profile intact, without exposing
+// processor diagnostics. Missing wiring is not implicit trusted-content mode.
+func TestProfileModerationFailureDoesNotPublish(t *testing.T) {
+	for _, moderator := range []ports.TextModerator{nil, failingProfileModerator{}} {
+		repository := &profileRouteStore{rows: map[string]app.OwnProfile{"owner": {UserID: "owner", Revision: 1, Text: identity.ProfileText{Username: "owner", DisplayName: "Owner", Description: "Original"}}}}
+		handler, _ := newHTTPTestServer(app.App{Auth: profileRouteAuth{&deletionRouteState{}}, Users: deletionRouteUsers{}, Profiles: repository, TextModerator: moderator, Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)}}, nil, Options{})
+		request := httptest.NewRequest(http.MethodPut, "/v1/me/profile", strings.NewReader(`{"username":"owner","displayName":"Owner","description":"Changed","expectedRevision":1}`))
+		request.Header.Set("Authorization", "Bearer owner")
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Idempotency-Key", "profile-moderation-001")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != 503 || strings.Contains(response.Body.String(), "sensitive submitted text") || repository.rows["owner"].Text.Description != "Original" || repository.rows["owner"].Revision != 1 {
+			t.Fatalf("unsafe moderation failure: %d %s", response.Code, response.Body.String())
+		}
+	}
+}
+
+type failingProfileModerator struct{}
+
+func (failingProfileModerator) Check(context.Context, ports.TextSurface, string) error {
+	return errors.New("sensitive submitted text")
 }

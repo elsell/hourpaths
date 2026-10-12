@@ -10,9 +10,9 @@ physical-device acceptance remain in their owning areas. Widgets remain excluded
 The current verified production release is [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),
 source `e8e7516`, deployed through GitOps `9da65d4`. Exact API/web images,
 Ready/Healthy Flux, retention configuration and public readiness are verified.
-TestFlight 0.53.0 (467) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
-internal group; release notes were read back. Google Play v0.53.0 internal build
-438 was committed after signed-bundle verification in [run 38079836984](https://github.com/elsell/hourpaths/actions/runs/38079836984).
+TestFlight 0.53.1 (471) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
+internal group; release notes were read back. Google Play v0.53.1 internal build
+442 was committed after signed-bundle verification in [run 38082431881](https://github.com/elsell/hourpaths/actions/runs/38082431881).
 
 This release includes shared Path/Stats charts, complete zero-day calendars,
 current periods ending on local today, native large-text controls and bounded
@@ -25,11 +25,15 @@ The independent Stats calendar correction merged in [PR #163](https://github.com
 as `e8e7516` after all five candidate gates. Calendar now defaults to the past
 year independently of the chart range, while retaining shared Path filters.
 Browser and Android emulator checks passed. Main CI and exact-source API/web
-deployment passed; signed mobile publication remains pending. The verified
-v0.53.0 store builds above do not yet contain this correction.
+deployment passed. TestFlight 471 and Google Play 442 contain this correction;
+physical-device acceptance remains pending.
+
+The active slice is the owner-approved in-house trusted-content moderation port.
 
 Next unresolved implementation choices are provider-picture import during
-onboarding, the richer Live Activity design, and public-text processing location.
+onboarding, the richer Live Activity design, and any future public-text classifier policy. The owner approved an in-house
+moderation port with a trusted-content no-op adapter on 2026-10-12; actual
+classification is deferred for this phase.
 Account suspension/ban enforcement and signed-device acceptance also remain.
 NAS-level snapshot encryption and expiry need authenticated storage evidence;
 Kubernetes configuration and the verified isolated restore rehearsal alone do

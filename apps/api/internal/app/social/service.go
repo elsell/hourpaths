@@ -29,6 +29,7 @@ type ProfileRepository interface {
 }
 
 type Dependencies struct {
+	TextModerator             ports.TextModerator
 	Auth                      ports.Authenticator
 	Profiles                  ProfileRepository
 	Feed                      FeedRepository
