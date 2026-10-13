@@ -388,6 +388,15 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 				return err
 			}
 		}
+		// Profile removal locks the actor before retiring composed delivery rows.
+		// Social pairs already hold this lock; self-notifications need it too.
+		if notice.ActorUserID != "" && notice.ActorUserID == notice.RecipientUserID {
+			var actor struct{ ID string }
+			if err := tx.Table("user_models").Select("id").Where("id=?", notice.ActorUserID).
+				Clauses(clause.Locking{Strength: "SHARE"}).Take(&actor).Error; err != nil {
+				return err
+			}
+		}
 		// Name removal takes the same Path row lock and retires queued payloads.
 		// Include every Path in a bundled reminder and retain deterministic order.
 		var namePaths []struct{ ID string }
