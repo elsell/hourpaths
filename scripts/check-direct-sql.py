@@ -11,6 +11,21 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Exact profile-removal fixtures, restricted reviewer calls and lock-race observations.
+    'apps/api/internal/adapters/gormstore/moderation_profile_fields_postgres_test.go': (
+        '\t\t\t\tif err := f.migration.DB.Exec(q, args...).Error; err != nil {',
+        '\t\t\tif err := f.runtime.DB.Exec(`SELECT moderation_remove_profile_fields(?,?,?,ARRAY[\'display_name\',\'description\',\'picture\'],\'Name removed\')`, caseID, noticeID, "Profile name, bio and picture removed for policy violation").Error; err == nil {',
+        '\t\t\tif err = f.migration.DB.Exec(`SELECT moderation_decide_profile_fields_appeal(?,?,?,?)`, noticeID, "reversed", "Again", "Only reviewer").Error; err == nil {',
+        '\t\tif err := f.migration.DB.Exec(q, args...).Error; err != nil {',
+        '\t\tif err := f.migration.DB.Exec(`SELECT moderation_remove_profile_fields(?,?,?,`+fields+`,\'Name removed\')`, caseID, noticeID, "Profile fields removed").Error; err == nil {',
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_remove_profile_fields(?,?,?,ARRAY[\'description\'],NULL)`, caseID, newTestID(), "Again").Error; err == nil {',
+        "\t\tif err = f.migration.DB.Raw(`SELECT has_function_privilege(?, 'moderation_remove_profile_fields(text,text,text,text[],text)', 'EXECUTE') OR has_function_privilege(?, 'moderation_decide_profile_fields_appeal(text,text,text,text)', 'EXECUTE') OR has_table_privilege(?, 'moderation_removed_profile_field_models', 'SELECT')`, role, role, role).Scan(&allowed).Error; err != nil || allowed {",
+        "\tif err := f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) SELECT ?,?,u.id,'profile',u.id,'spam_or_scam','',jsonb_build_object('title',u.display_name),? FROM user_models u WHERE u.id=?`, caseID, f.recipient.ID, f.now, f.sender.ID).Error; err != nil {",
+        '\tif err := f.runtime.DB.Exec(`SELECT moderation_remove_profile_fields(?,?,?,ARRAY[\'display_name\'],?)`, caseID, noticeID, "Policy reason", "Name removed").Error; err == nil {',
+        '\tif err := tx.Exec(`SELECT moderation_remove_profile_fields(?,?,?,ARRAY[\'display_name\'],?)`, caseID, noticeID, "Policy reason", "Name removed").Error; err != nil {',
+        '\tif err := tx.Raw(`SELECT pg_backend_pid()`).Scan(&backend).Error; err != nil {',
+        '\t\tif err := tx.Raw(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE ?=ANY(pg_blocking_pids(pid)))`, backend).Scan(&waiting).Error; err != nil {',
+    ),
     # Reviewed isolated Path-name lifecycle fixtures, exact reviewer calls and lock observations.
     'apps/api/internal/adapters/gormstore/moderation_path_name_postgres_test.go': (
         '\t\t\t\tif err := f.migration.DB.Exec(query, args...).Error; err != nil {',

@@ -19,8 +19,13 @@ Safety implementation now includes the in-house trusted-content no-op port
 removal (PR #166), feed-event removal preserving source time (PR #167), and
 owner-approved Path-name replacement preserving membership, timers and history
 (PR #170), with private notices and safe appeal restoration. All are released.
-No product implementation slice is currently active. Profile content-removal
-semantics remain pending owner input.
+The active product slice is owner-approved Profile field removal: remove only
+offending display name, description or picture while preserving the profile and
+history, with private notices and safe appeals (`SAFE-PROFILE-REMOVAL-01`).
+Focused PostgreSQL enforcement, privilege, partial-removal and push-race checks
+pass. Studio private notice, appeal submission and reversal with real API profile
+readback pass. The final security review found no P0/P1 blocker. Merge and release
+acceptance are pending ([issue #172](https://github.com/elsell/hourpaths/issues/172)).
 
 The other unresolved product inputs are provider-picture import during
 onboarding, the richer Live Activity design, and approved policy/support content.

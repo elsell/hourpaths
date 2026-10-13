@@ -62,8 +62,13 @@ and Play Console shows it active, fully rolled out and available to internal
 testers with the Path-name removal release note. These records do not establish
 signed physical-device acceptance.
 
-No product implementation slice is currently active. Profile field-removal
-semantics remain pending owner input; remaining acceptance work is listed below.
+The active product slice is owner-approved Profile field removal: remove only
+offending display name, description or picture while preserving the profile and
+history, with private notices and safe appeals (`SAFE-PROFILE-REMOVAL-01`).
+Focused PostgreSQL enforcement, privilege, partial-removal and push-race checks
+pass. Studio private notice, appeal submission and reversal with real API profile
+readback pass. The final security review found no P0/P1 blocker. Merge and release
+acceptance are pending ([issue #172](https://github.com/elsell/hourpaths/issues/172)).
 
 The remaining-work table below is the finish line. Existing implementation does
 not close its physical-device, provider, policy or external-retention evidence.

@@ -99,4 +99,6 @@ remain separate. Profile and Path removal semantics await owner decisions.
 See the [completion checklist](platform/completion-checklist.spec.md) for the
 remaining acceptance criteria.
 
-Path-name moderation: owner-approved replacement with shared Path data preserved; `SAFE-PATH-NAME-REMOVAL-01` implementation in progress (2026-10-13).
+Path-name moderation: owner-approved replacement with shared Path data preserved; `SAFE-PATH-NAME-REMOVAL-01` released in v0.58.0 (2026-10-13).
+
+Profile moderation: owner approved removing offending fields while preserving the profile/history; `SAFE-PROFILE-REMOVAL-01` implementation in progress (2026-10-13).

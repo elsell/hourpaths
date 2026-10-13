@@ -177,7 +177,20 @@ reviewer rules. Reversal restores the original name only if its name revision
 and owner are unchanged; later renames, transfers and deletions are preserved.
 Removed names remain restricted case evidence and expire with the case.
 Grant these exact capabilities only to designated operational reviewers.
-Profile content removal remains unfinished; a warning does not restrict the account.
+Reported profile fields use
+`moderation_remove_profile_fields(text,text,text,text[],text)` with
+`(case_id, notice_id, policy_reason, removed_fields, replacement_name)`.
+Select only `display_name`, `description`, and/or `picture`. The subject-visible
+reason must name the removed fields and the policy basis, without reporter or
+restricted evidence. Supply a neutral replacement name as localized profile data
+when removing the display name; pass NULL otherwise. Username and account
+identity are preserved. Removal refuses selected content that differs from the
+report, clears removed photos from public storage and preserves profile history.
+`moderation_decide_profile_fields_appeal(text,text,text,text)` follows the same
+reviewer and final-decision rules. Text and picture restoration independently
+preserve any subsequent edits. Grant only these exact functions to designated
+reviewers; runtime and retention roles cannot invoke them or read retained fields.
+A warning does not restrict the account.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the

@@ -246,6 +246,36 @@ acknowledgments must remain unchanged.
    replacing the account clears pending notice and appeal presentation, and late
    completions cannot display the previous account's private information.
 
+### Profile-field removal acceptance (`SAFE-PROFILE-REMOVAL-01`)
+
+The owner approved removing offending profile fields while preserving the profile
+and its history on October 13. This must not hide the entire profile or suspend
+its account.
+
+1. A restricted reviewer must select the reported display name, description,
+   picture, or a combination. Unselected fields, immutable identity, username,
+   relationships, Paths, timers and recorded activity must remain unchanged.
+   A removed display name must use a neutral replacement supplied as data;
+   removed descriptions and pictures must become absent.
+2. Selected current content must still match the retained report evidence.
+   Removal must atomically update the profile, private enforcement notice, case
+   and attributed review event. Runtime and retention roles must not receive
+   enforcement or restoration capability. The subject-visible policy reason
+   must identify the profile fields removed; it must not disclose the reporter
+   or restricted evidence.
+3. Both clients must expose the existing private Account notices and 30-day
+   appeal flow. Profile edits must remain available. Stale pre-removal edits
+   must conflict instead of restoring removed content inadvertently.
+4. Reversal must restore only retained fields still owned by that removal.
+   Subsequent edits, including editing away and back, must not be overwritten;
+   text edits must not prevent restoration of an unchanged removed picture or
+   vice versa. Deleted accounts must never be recreated. Appeal decisions must
+   remain final and require a different reviewer or recorded justification.
+5. Removed picture bytes must cease to be publicly available and remain only
+   in restricted evidence/restoration storage until case expiry. Removal must
+   suppress pending push containing the subject's old display name; already
+   delivered notifications cannot be recalled. Reversal must not resend push.
+
 ### Comment-removal acceptance (`SAFE-COMMENT-REMOVAL-01`)
 
 1. An operational reviewer can remove the comment identified by an open or
