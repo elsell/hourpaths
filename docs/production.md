@@ -166,8 +166,18 @@ retained, currently accessible social content; it cannot recreate deleted time,
 restore a separately removed comment or resend old push. Grant only these exact
 capabilities to the relevant operational reviewers, never the ordinary runtime
 or retention role.
-Profile and Path content removal remain unfinished; a warning does not restrict
-the account.
+Reported Path names use `moderation_remove_path_name(text,text,text,text)` with
+`(case_id, notice_id, policy_reason, replacement_name)`. Supply a neutral name as
+Path data; the standard “Name removed” labels are in `packages/i18n` under
+`enforcement.replacementPathName` (English and Spanish). The case must still
+identify the current owner and reported name. Removal preserves tracking and
+membership and retires queued notifications containing the old name.
+`moderation_decide_path_name_appeal(text,text,text,text)` uses the same final
+reviewer rules. Reversal restores the original name only if its name revision
+and owner are unchanged; later renames, transfers and deletions are preserved.
+Removed names remain restricted case evidence and expire with the case.
+Grant these exact capabilities only to designated operational reviewers.
+Profile content removal remains unfinished; a warning does not restrict the account.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the

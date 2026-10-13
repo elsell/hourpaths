@@ -5261,6 +5261,8 @@
   "studio.settings.enforcement": "Avisos de la cuenta",
   "enforcement.empty": "No hay avisos de la cuenta",
   "enforcement.loadFailed": "No se pudieron cargar los avisos. Inténtalo de nuevo.",
+  "enforcement.affectedPathName": "Nombre de Path eliminado · Referencia: {{id}}",
+  "enforcement.replacementPathName": "Nombre eliminado",
   "enforcement.affectedNudge": "Ánimo enviado el {{date}} · Referencia: {{id}}",
   "enforcement.affectedFeedEvent": "Publicación del {{date}} · Referencia: {{id}}",
   "enforcement.affectedComment": "Comentario publicado el {{date}} · Referencia: {{id}}",

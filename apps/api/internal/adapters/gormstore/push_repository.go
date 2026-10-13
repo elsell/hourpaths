@@ -388,6 +388,14 @@ func (r *PushRepository) HandoffPushDelivery(ctx context.Context, worker, notifi
 				return err
 			}
 		}
+		// Name removal takes the same Path row lock and retires queued payloads.
+		// Include every Path in a bundled reminder and retain deterministic order.
+		var namePaths []struct{ ID string }
+		if err := tx.Table("path_models p").Select("p.id").
+			Where("p.id = ? OR EXISTS (SELECT 1 FROM goal_reminder_receipt_models r WHERE r.path_id=p.id AND r.notification_id=?)", notice.PathID, notificationID).
+			Order("p.id").Clauses(clause.Locking{Strength: "SHARE", Table: clause.Table{Name: "p"}}).Find(&namePaths).Error; err != nil {
+			return err
+		}
 		eligible, err := pushDeliveryEligible(tx, worker, notificationID, installationID, r.clock)
 		if err != nil || !eligible {
 			return err

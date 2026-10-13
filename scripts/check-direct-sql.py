@@ -11,6 +11,24 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Reviewed isolated Path-name lifecycle fixtures, exact reviewer calls and lock observations.
+    'apps/api/internal/adapters/gormstore/moderation_path_name_postgres_test.go': (
+        '\t\t\t\tif err := f.migration.DB.Exec(query, args...).Error; err != nil {',
+        '\t\t\tif err := f.runtime.DB.Exec(`SELECT moderation_remove_path_name(?,?,?,?)`, caseID, noticeID, "Policy reason", "Name removed").Error; err == nil {',
+        '\t\t\tif err := f.migration.DB.Exec(`SELECT moderation_remove_path_name(?,?,?,?)`, caseID, newTestID(), "Policy reason", "Name removed").Error; err == nil {',
+        '\t\t\t\tif err = f.migration.DB.Exec("SELECT "+fn+"(?,?,?,?)", noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\t\t\tif err = f.runtime.DB.Exec(`SELECT moderation_decide_path_name_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\t\t\tif err = f.migration.DB.Exec(`SELECT moderation_decide_path_name_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "").Error; err == nil {',
+        '\t\t\tif err = f.migration.DB.Exec(`SELECT moderation_decide_path_name_appeal(?,?,?,?)`, noticeID, "reversed", "Again", "Only reviewer").Error; err == nil {',
+        '\tif err := f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,\'path\',?,\'spam_or_scam\',\'\',\'{"title":"Piano"}\',?)`, caseID, f.recipient.ID, f.sender.ID, f.pathID, f.now).Error; err != nil {',
+        '\tif err := f.runtime.DB.Exec(`SELECT moderation_remove_path_name(?,?,?,?)`, caseID, noticeID, "Policy reason", "Name removed").Error; err == nil {',
+        '\tif err := tx.Exec(`SELECT moderation_remove_path_name(?,?,?,?)`, caseID, noticeID, "Policy reason", "Name removed").Error; err != nil {',
+        '\tif err := tx.Raw(`SELECT pg_backend_pid()`).Scan(&backend).Error; err != nil {',
+        '\t\tif err := tx.Raw(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE ?=ANY(pg_blocking_pids(pid)))`, backend).Scan(&waiting).Error; err != nil {',
+        '\tif err := f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,\'path\',?,\'spam_or_scam\',\'\',\'{"title":"Old name"}\',?)`, caseID, f.recipient.ID, f.sender.ID, f.pathID, f.now).Error; err != nil {',
+        '\tif err := f.migration.DB.Exec(`SELECT moderation_remove_path_name(?,?,?,?)`, caseID, newTestID(), "Reviewed", "Name removed").Error; err == nil {',
+        "\t\tif err := f.migration.DB.Raw(`SELECT has_function_privilege(?, 'moderation_remove_path_name(text,text,text,text)', 'EXECUTE') OR has_function_privilege(?, 'moderation_decide_path_name_appeal(text,text,text,text)', 'EXECUTE') OR has_table_privilege(?, 'moderation_removed_path_name_models', 'SELECT')`, role, role, role).Scan(&allowed).Error; err != nil || allowed {",
+    ),
     # Reviewed feed-event fixtures, restricted reviewer calls and fresh lock observations.
     'apps/api/internal/adapters/gormstore/moderation_feed_removal_postgres_test.go': (
         "\tif err = f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,'feed_event',?,'spam_or_scam','','{}',?)`, caseID, f.recipient.ID, f.sender.ID, eventID, f.now).Error; err != nil {",

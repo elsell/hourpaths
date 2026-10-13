@@ -267,6 +267,42 @@ acknowledgments must remain unchanged.
    heart committed after removal can republish or interact with removed content.
    A removal committed before push handoff must suppress that delivery.
 
+### Path-name removal acceptance (`SAFE-PATH-NAME-REMOVAL-01`)
+
+Owner approval, 2026-10-13: replace an offending Path name while preserving
+members, running timers and recorded history. This action must not hide or delete
+the shared Path.
+
+1. An authorized operational reviewer must replace the name identified by an
+   open or reviewing Path case with a neutral replacement name. The replacement
+   is stored Path data supplied by the reviewer (normally the shared catalog's
+   localized “Name removed”), not an API-generated presentation sentence.
+   The current owner and name must still match the reviewed subject and reported
+   name; otherwise the stale case must not replace newer content.
+2. Removal must preserve Path identity, ownership, visibility, membership, goals,
+   appearance, running timers, recorded time and social history. Subsequent
+   authorized reads and push composition must use the replacement name. Already
+   composed or queued OS notifications containing the old name must be suppressed
+   when removal wins the final handoff; no old push is resent on appeal. Already
+   delivered notifications and offline copies cannot be recalled; refresh uses
+   the current name. An administrator may rename the Path through the existing
+   authorized edit flow; stale rename retries must not restore the removed name.
+3. Removal, its private owner notice, case transition and attributed review event
+   must commit atomically. The notice must identify the affected Path without
+   revealing the removed name, reporter or restricted evidence. Native and Studio
+   clients must reuse the existing notice and appeal components.
+4. The existing 30-day appeal and immutable final-decision rules apply. Reversal
+   must restore the retained original name only if this removal still owns the
+   name revision and the same account owns the Path. Later renames (including a
+   rename away and back), ownership transfer and ordinary deletion must not be
+   undone. Unrelated goal edits must not prevent restoration. A deleted Path
+   must never be recreated. Reversal must not resend old notifications.
+5. Removal and reversal must serialize with Path editing through the Path row
+   lock. Runtime and retention credentials must not invoke reviewer functions
+   or read retained removed names. Wrong-kind appeal functions and repeated
+   final decisions must fail atomically. Retention must follow the existing
+   case/notice and ordinary Path/account deletion lifecycle.
+
 ### Feed-event removal acceptance (`SAFE-FEED-REMOVAL-01`)
 
 These scenarios apply the approved content-removal lifecycle to the social post

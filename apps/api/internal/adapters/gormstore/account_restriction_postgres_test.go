@@ -34,7 +34,7 @@ func TestPostgresAccountRestrictionOwnerExpiryAndReversal(t *testing.T) {
 	ban := enforcementModel{ID: newTestID(), SubjectUserID: owner, Action: "ban", PolicyReason: "Reason", IssuedAt: now}
 	peerBan := enforcementModel{ID: newTestID(), SubjectUserID: other, Action: "ban", PolicyReason: "Reason", IssuedAt: now}
 	for _, row := range []enforcementModel{suspension, ban, peerBan} {
-		if err = admin.DB.Omit("CaseID", "AffectedCommentID", "AffectedCommentCreatedAt", "AffectedNudgeID", "AffectedNudgeSentAt", "AffectedFeedEventID", "AffectedFeedEventPublishedAt").Create(&row).Error; err != nil {
+		if err = admin.DB.Omit("AffectedPathID", "CaseID", "AffectedCommentID", "AffectedCommentCreatedAt", "AffectedNudgeID", "AffectedNudgeSentAt", "AffectedFeedEventID", "AffectedFeedEventPublishedAt").Create(&row).Error; err != nil {
 			t.Fatal(err)
 		}
 	}

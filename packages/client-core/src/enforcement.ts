@@ -4,6 +4,7 @@ export interface EnforcementAppeal {
   outcome?: 'upheld' | 'reversed'; decisionReason?: string; decidedAt?: string;
 }
 export interface EnforcementNotice {
+  affectedPathId?: string;
   affectedFeedEvent?: { id: string; publishedAt: string };
   affectedNudge?: { id: string; sentAt: string };
   affectedComment?: { id: string; createdAt: string };
