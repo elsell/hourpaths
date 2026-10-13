@@ -90,7 +90,11 @@ On 2026-10-13 the owner approved stopping and saving elapsed time on account
 suspension or ban. That behavior is defined by
 [account enforcement](safety/moderation.spec.md#account-suspension-and-ban-enforcement).
 
-Reported nudge removal merged in PR #166. The active safety slice is
+Reported nudge removal merged in PR #166; PR #167 implemented
 [reported feed-event removal](safety/moderation.spec.md#feed-event-removal-acceptance-safe-feed-removal-01),
 including social visibility, interaction and push suppression, private appeals,
 and preservation of recorded time and goal achievements.
+API/web v0.57.0 is verified deployed; native publication and physical acceptance
+remain separate. Profile and Path removal semantics await owner decisions.
+See the [completion checklist](platform/completion-checklist.spec.md) for the
+remaining acceptance criteria.
