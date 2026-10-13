@@ -19,13 +19,22 @@ Safety implementation now includes the in-house trusted-content no-op port
 removal (PR #166), feed-event removal preserving source time (PR #167), and
 owner-approved Path-name replacement preserving membership, timers and history
 (PR #170), with private notices and safe appeal restoration. All are released.
-The active product slice is owner-approved Profile field removal: remove only
-offending display name, description or picture while preserving the profile and
-history, with private notices and safe appeals (`SAFE-PROFILE-REMOVAL-01`).
-Focused PostgreSQL enforcement, privilege, partial-removal and push-race checks
-pass. Studio private notice, appeal submission and reversal with real API profile
-readback pass. The final security review found no P0/P1 blocker. Merge and release
-acceptance are pending ([issue #172](https://github.com/elsell/hourpaths/issues/172)).
+Profile field removal merged in [PR #173](https://github.com/elsell/hourpaths/pull/173)
+as `2b0861a`. Selected display name, description or picture removal preserves the
+profile and history, with private notices and safe appeals. Focused PostgreSQL
+boundary and push-race checks and real Studio notice/appeal acceptance passed;
+the final security review found no P0/P1 blocker. All five candidate/main gates passed.
+
+[v0.59.0](https://github.com/elsell/hourpaths/releases/tag/v0.59.0) is verified in
+production through GitOps `174bbf5`: exact source/images, Flux Ready/Healthy,
+current retention image, Studio HTTP 200 and API readiness 204. TestFlight
+0.59.0 (498) is VALID, nonexpired, IN_BETA_TESTING and assigned to the internal
+group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38429843875));
+release notes were read back. Google Play internal build 470 committed in
+[run 38426925098](https://github.com/elsell/hourpaths/actions/runs/38426925098).
+Independent Play Console availability verification awaits restored browser sign-in.
+Physical-device acceptance remains unverified. No new product implementation
+slice is active; the remaining acceptance areas below remain open.
 
 The other unresolved product inputs are provider-picture import during
 onboarding, the richer Live Activity design, and approved policy/support content.
