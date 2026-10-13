@@ -101,4 +101,4 @@ remaining acceptance criteria.
 
 Path-name moderation: owner-approved replacement with shared Path data preserved; `SAFE-PATH-NAME-REMOVAL-01` released in v0.58.0 (2026-10-13).
 
-Profile moderation: owner approved removing offending fields while preserving the profile/history; `SAFE-PROFILE-REMOVAL-01` implementation in progress (2026-10-13).
+Profile moderation: owner approved removing offending fields while preserving the profile/history; `SAFE-PROFILE-REMOVAL-01` merged in PR #173 and deployed in v0.59.0; remaining acceptance is tracked in the completion checklist.
