@@ -7,40 +7,26 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified production release is [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),
-source `e8e7516`, deployed through GitOps `9da65d4`. Exact API/web images,
-Ready/Healthy Flux, retention configuration and public readiness are verified.
-TestFlight 0.53.1 (471) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
-internal group; release notes were read back. Google Play v0.53.1 internal build
-442 was committed after signed-bundle verification in [run 38082431881](https://github.com/elsell/hourpaths/actions/runs/38082431881).
+The current verified API/web release is [v0.57.0](https://github.com/elsell/hourpaths/releases/tag/v0.57.0),
+source `e08e6e7`, deployed through GitOps `739d55a`. Exact source/images,
+Ready/Healthy Flux, retention configuration and public readiness passed.
+TestFlight 0.56.0 (487) is verified available with release notes; v0.57.0 native
+publication remains in progress. Store availability and physical-device
+acceptance remain separate requirements.
 
-This release includes shared Path/Stats charts, complete zero-day calendars,
-current periods ending on local today, native large-text controls and bounded
-account-history loading (PR #161). Full online history, complete 90-day retention,
-current Path access checks and atomic snapshot replacement are preserved.
-PostgreSQL, client boundary and live Studio/Android acceptance passed.
-Signed-device acceptance remains required.
+Safety implementation now includes the in-house trusted-content no-op port
+(PR #164), suspension/ban stopping and saving active timers (PR #165), nudge
+removal (PR #166), and feed-event removal preserving source time (PR #167).
+Profile and Path content-removal choices are pending owner input; do not treat
+account restriction as implementation of those content-removal behaviors.
 
-The independent Stats calendar correction merged in [PR #163](https://github.com/elsell/hourpaths/pull/163)
-as `e8e7516` after all five candidate gates. Calendar now defaults to the past
-year independently of the chart range, while retaining shared Path filters.
-Browser and Android emulator checks passed. Main CI and exact-source API/web
-deployment passed. TestFlight 471 and Google Play 442 contain this correction;
-physical-device acceptance remains pending.
-
-The active slice is account suspension/ban enforcement. The owner approved
-stopping and saving active timers on 2026-10-13. The in-house trusted-content
-port shipped in PR #164; actual classification remains explicitly deferred.
-
-Next unresolved implementation choices are provider-picture import during
-onboarding, the richer Live Activity design, and any future public-text classifier policy. The owner approved an in-house
-moderation port with a trusted-content no-op adapter on 2026-10-12; actual
-classification is deferred for this phase.
-Account suspension/ban enforcement and signed-device acceptance also remain.
-NAS-level snapshot encryption and expiry need authenticated storage evidence;
-Kubernetes configuration and the verified isolated restore rehearsal alone do
-not establish external backup retention. These requirements remain in the
-ordered checklist rather than expanding the analytics slice.
+The other unresolved product inputs are provider-picture import during
+onboarding, the richer Live Activity design, and approved policy/support content.
+Actual automated text classification remains explicitly deferred for this phase.
+Signed-device acceptance and NAS-level snapshot encryption/expiry evidence also
+remain open. Emulator checks, Kubernetes configuration and isolated restore
+rehearsals do not substitute for those requirements. The checklist retains the
+concrete acceptance criteria and credited earlier delivery evidence.
 
 Only one product implementation slice may be active. Preserve completed
 implementation and use the checklist's concrete acceptance criteria to select
