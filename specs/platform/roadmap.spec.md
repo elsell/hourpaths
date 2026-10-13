@@ -7,19 +7,20 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified API/web release is [v0.57.0](https://github.com/elsell/hourpaths/releases/tag/v0.57.0),
-source `e08e6e7`, deployed through GitOps `739d55a`. Exact source/images,
+The current verified API/web release is [v0.58.0](https://github.com/elsell/hourpaths/releases/tag/v0.58.0),
+source `1d47699`, deployed through GitOps `32cd8b2`. Exact source/images,
 Ready/Healthy Flux, retention configuration and public readiness passed.
-TestFlight 0.57.0 (489) and Google Play internal 461 are verified available
+TestFlight 0.58.0 (494) and Google Play internal 465 are verified available
 with release notes. Store availability and physical-device
 acceptance remain separate requirements.
 
 Safety implementation now includes the in-house trusted-content no-op port
 (PR #164), suspension/ban stopping and saving active timers (PR #165), nudge
-removal (PR #166), and feed-event removal preserving source time (PR #167).
-The active slice is owner-approved Path-name replacement with membership, timers
-and history preserved. It includes private notices and safe appeal restoration.
-Profile content-removal semantics remain pending owner input.
+removal (PR #166), feed-event removal preserving source time (PR #167), and
+owner-approved Path-name replacement preserving membership, timers and history
+(PR #170), with private notices and safe appeal restoration. All are released.
+No product implementation slice is currently active. Profile content-removal
+semantics remain pending owner input.
 
 The other unresolved product inputs are provider-picture import during
 onboarding, the richer Live Activity design, and approved policy/support content.

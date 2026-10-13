@@ -44,10 +44,26 @@ hide removed social content and notifications, suppress queued push, and use the
 shared private notice/appeal flow. The trusted-content no-op moderation port
 shipped in PR #164; automated classification is explicitly deferred by the owner.
 
-The active slice is Path-name removal. The owner approved replacing the offending
-name while preserving shared access, members, timers and history on October 13.
-Implement removal, private notice, appeal and safe restoration without undoing
-later edits or deletion. Profile field-removal semantics remain pending.
+Path-name removal shipped in [PR #170](https://github.com/elsell/hourpaths/pull/170)
+as `1d47699`. Removal preserves shared access, members, timers and recorded history;
+private notices and appeals restore the original name only when later edits,
+ownership changes or deletion have not superseded it. Focused PostgreSQL boundary
+checks, Studio replacement/restoration and appeal interaction, Android enlarged-text
+rendering, and all five candidate/main gates passed.
+
+Current release [v0.58.0](https://github.com/elsell/hourpaths/releases/tag/v0.58.0)
+is verified in production through GitOps `32cd8b2`: exact source/images,
+Ready/Healthy Flux, current retention image and public 200/204 health.
+TestFlight 0.58.0 (494) is VALID, nonexpired, IN_BETA_TESTING and assigned to the
+internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38389306190));
+release notes were read back. Google Play internal 465 published in
+[run 38389237934](https://github.com/elsell/hourpaths/actions/runs/38389237934),
+and Play Console shows it active, fully rolled out and available to internal
+testers with the Path-name removal release note. These records do not establish
+signed physical-device acceptance.
+
+No product implementation slice is currently active. Profile field-removal
+semantics remain pending owner input; remaining acceptance work is listed below.
 
 The remaining-work table below is the finish line. Existing implementation does
 not close its physical-device, provider, policy or external-retention evidence.
@@ -100,7 +116,7 @@ it does not close an area merely because a build is available.
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
-| 10 — Safety | Implement approved Path-name removal; settle Profile removal semantics; signed-device moderation/appeals. PR #167 is available on both stores. Account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
+| 10 — Safety | Settle Profile removal semantics and implement the approved behavior; signed-device moderation/appeals. Path-name removal is verified available in v0.58.0 on both stores. Account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |
 | 13 — Final acceptance | Physical-iPhone encouragement/Send confirmation, UI-28 matrix and final spec-to-release evidence reconciliation. |
 
