@@ -11,6 +11,22 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Reviewed feed-event fixtures, restricted reviewer calls and fresh lock observations.
+    'apps/api/internal/adapters/gormstore/moderation_feed_removal_postgres_test.go': (
+        "\tif err = f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,'feed_event',?,'spam_or_scam','','{}',?)`, caseID, f.recipient.ID, f.sender.ID, eventID, f.now).Error; err != nil {",
+        '\tif err = f.runtime.DB.Exec(`SELECT moderation_remove_feed_event(?,?,?)`, caseID, noticeID, "Policy reason").Error; err == nil {',
+        '\tif err = tx.Exec(`SELECT moderation_remove_feed_event(?,?,?)`, caseID, noticeID, "Policy reason").Error; err != nil {',
+        '\tif err = tx.Raw(`SELECT pg_backend_pid()`).Scan(&backend).Error; err != nil {',
+        '\t\tif err = f.migration.DB.Raw(`SELECT count(*) FROM pg_stat_activity WHERE ?=ANY(pg_blocking_pids(pid))`, backend).Scan(&waiting).Error; err != nil {',
+        '\tif err = f.runtime.DB.Exec(`SELECT moderation_decide_feed_event_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_decide_comment_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_decide_nudge_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_decide_feed_event_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "").Error; err == nil {',
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_decide_feed_event_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err != nil {',
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_decide_feed_event_appeal(?,?,?,?)`, noticeID, "upheld", "Changed mind", "Only reviewer").Error; err == nil {',
+        "\tif err = f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,'feed_event',?,'spam_or_scam','','{}',?)`, caseID, f.recipient.ID, f.sender.ID, eventID, f.now).Error; err != nil {",
+        '\tif err = f.migration.DB.Exec(`SELECT moderation_remove_feed_event(?,?,?)`, caseID, newTestID(), "Policy reason").Error; err != nil {',
+    ),
     # Operational credential verification and controlled transactional enforcement fixtures.
     'apps/api/internal/adapters/operationalmoderation/account_enforcement.go': (
         '\t\tif err := tx.Raw("SELECT session_user AS reviewer, has_table_privilege(current_user, \'moderation_enforcement_models\', \'INSERT\') AS allowed").Scan(&operator).Error; err != nil {',

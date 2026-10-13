@@ -42,6 +42,7 @@ func (r *Repository) GetNotification(
 
 const disabledNotificationEventAccessiblePredicate = `
 notification_models.deleted_at IS NOT NULL
+AND ` + notificationFeedNotRemovedPredicate + `
 AND ` + notificationPairVisiblePredicate + `
 AND notification_event.id IS NOT NULL
 AND event_owner.id IS NOT NULL

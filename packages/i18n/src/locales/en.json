@@ -5262,6 +5262,7 @@
   "enforcement.empty": "No account notices",
   "enforcement.loadFailed": "Account notices couldn’t be loaded. Try again.",
   "enforcement.affectedNudge": "Encouragement sent {{date}} · Reference: {{id}}",
+  "enforcement.affectedFeedEvent": "Post published {{date}} · Reference: {{id}}",
   "enforcement.affectedComment": "Comment posted {{date}} · Reference: {{id}}",
   "enforcement.action.warning": "Warning",
   "enforcement.action.content_removal": "Content removed",

@@ -31,16 +31,21 @@ type EnforcementNudgeData struct {
 	ID     string    `json:"id"`
 	SentAt time.Time `json:"sentAt"`
 }
+type EnforcementFeedEventData struct {
+	ID          string    `json:"id"`
+	PublishedAt time.Time `json:"publishedAt"`
+}
 type EnforcementNoticeData struct {
-	AffectedNudge   *EnforcementNudgeData   `json:"affectedNudge,omitempty"`
-	AffectedComment *EnforcementCommentData `json:"affectedComment,omitempty"`
-	ID              string                  `json:"id"`
-	Action          string                  `json:"action"`
-	PolicyReason    string                  `json:"policyReason"`
-	IssuedAt        time.Time               `json:"issuedAt"`
-	Until           *time.Time              `json:"until,omitempty"`
-	AppealDeadline  time.Time               `json:"appealDeadline"`
-	Appeal          *EnforcementAppealData  `json:"appeal,omitempty"`
+	AffectedFeedEvent *EnforcementFeedEventData `json:"affectedFeedEvent,omitempty"`
+	AffectedNudge     *EnforcementNudgeData     `json:"affectedNudge,omitempty"`
+	AffectedComment   *EnforcementCommentData   `json:"affectedComment,omitempty"`
+	ID                string                    `json:"id"`
+	Action            string                    `json:"action"`
+	PolicyReason      string                    `json:"policyReason"`
+	IssuedAt          time.Time                 `json:"issuedAt"`
+	Until             *time.Time                `json:"until,omitempty"`
+	AppealDeadline    time.Time                 `json:"appealDeadline"`
+	Appeal            *EnforcementAppealData    `json:"appeal,omitempty"`
 }
 type noticeInput struct {
 	Authorization string `header:"Authorization"`
@@ -94,6 +99,9 @@ func noticeData(n app.Notice) EnforcementNoticeData {
 	d := EnforcementNoticeData{ID: e.ID, Action: string(e.Action), PolicyReason: e.PolicyReason, IssuedAt: e.IssuedAt, AppealDeadline: e.IssuedAt.Add(30 * 24 * time.Hour)}
 	if e.AffectedCommentID != "" && !e.AffectedCommentCreatedAt.IsZero() {
 		d.AffectedComment = &EnforcementCommentData{ID: e.AffectedCommentID, CreatedAt: e.AffectedCommentCreatedAt}
+	}
+	if e.AffectedFeedEventID != "" && !e.AffectedFeedEventPublishedAt.IsZero() {
+		d.AffectedFeedEvent = &EnforcementFeedEventData{ID: e.AffectedFeedEventID, PublishedAt: e.AffectedFeedEventPublishedAt}
 	}
 	if e.AffectedNudgeID != "" && !e.AffectedNudgeSentAt.IsZero() {
 		d.AffectedNudge = &EnforcementNudgeData{ID: e.AffectedNudgeID, SentAt: e.AffectedNudgeSentAt}
