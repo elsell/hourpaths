@@ -11,6 +11,21 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Operational credential verification and controlled transactional enforcement fixtures.
+    'apps/api/internal/adapters/operationalmoderation/account_enforcement.go': (
+        '\t\tif err := tx.Raw("SELECT session_user AS reviewer, has_table_privilege(current_user, \'moderation_enforcement_models\', \'INSERT\') AS allowed").Scan(&operator).Error; err != nil {',
+    ),
+    'apps/api/internal/adapters/gormstore/account_enforcement_postgres_test.go': (
+        '\t\tif err = admin.DB.Exec("INSERT INTO path_models(id,owner_user_id,name,visibility,created_at,updated_at) VALUES(?,?,\'Test\',\'private\',?,?)", path, subject, now.Add(-time.Hour), now).Error; err != nil {',
+        '\t\tif err = admin.DB.Exec("INSERT INTO path_membership_models(path_id,user_id,role,joined_at) VALUES(?,?,\'administrator\',?)", path, subject, now.Add(-time.Hour)).Error; err != nil {',
+        '\t\tif err = admin.DB.Exec("INSERT INTO running_timer_models(id,path_id,participant_id,started_at,occurrence_time_zone) VALUES(?,?,?,?,\'America/New_York\')", newTestID(), path, subject, now.Add(-time.Minute)).Error; err != nil {',
+        '\tif err = admin.DB.Exec("INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,\'profile\',?,\'spam_or_scam\',\'\',\'{}\',?)", caseID, peer, owner, owner, now).Error; err != nil {',
+        '\tlockErr := runtime.DB.Raw("SELECT id FROM user_models WHERE id=? FOR SHARE NOWAIT", owner).Row().Scan(&lockedID)',
+        '\tif err = runtime.DB.Exec("SELECT moderation_decide_account_appeal(?,?,?,?)", command.NoticeID, "reversed", "Reviewed appeal", "Only available reviewer").Error; err == nil {',
+        '\tif err = admin.DB.Exec("SELECT moderation_decide_account_appeal(?,?,?,?)", command.NoticeID, "reversed", "Reviewed appeal", "").Error; err == nil {',
+        '\tif err = admin.DB.Exec("SELECT moderation_decide_account_appeal(?,?,?,?)", command.NoticeID, "reversed", "Reviewed appeal", "Only available reviewer").Error; err != nil {',
+        '\tif err = admin.DB.Exec("SELECT moderation_decide_account_appeal(?,?,?,?)", command.NoticeID, "upheld", "Changed decision", "Only available reviewer").Error; err == nil {',
+    ),
     # Exact preference fixture and delayed reminder deadline used by push handoff acceptance.
     'apps/api/internal/adapters/gormstore/goal_reminder_push_postgres_test.go': (
         '\tif err := f.migration.DB.Exec("INSERT INTO user_preference_models (user_id, first_day_of_week, current_time_zone, created_at, updated_at) VALUES (?,1,\'UTC\',?,?) ON CONFLICT (user_id) DO UPDATE SET current_time_zone=\'UTC\'", recipient, at, at).Error; err != nil {',

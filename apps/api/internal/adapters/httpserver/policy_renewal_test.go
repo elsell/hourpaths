@@ -52,7 +52,7 @@ func TestPolicyRenewalHTTPAuthenticatesAndBindsReviewToAccount(t *testing.T) {
 					t.Fatal(err)
 				}
 				body, _ := json.Marshal(map[string]any{"reviewToken": token, "termsAccepted": true, "privacyAcknowledged": true, "communityGuidelinesAccepted": true})
-				handler, _ := New(application, nil, Options{})
+				handler, _ := New(application, nil, Options{AccountAdmission: acceptedPolicyFixture{}})
 				request := httptest.NewRequest(method, "/v1/me/policies?userId=someone-else", strings.NewReader(string(body)))
 				request.Header.Set("Authorization", tc.credential)
 				request.Header.Set("Content-Type", "application/json")
@@ -85,7 +85,7 @@ func TestPolicyAdmissionProtectsIndependentDomainsAndPreservesReviewAndStop(t *t
 	store := &policyRouteStore{}
 	application := app.App{Auth: weekStartRouteAuth{ports.Principal{UserID: "owner", Scopes: []string{"api:user"}}, nil, &received}, Users: timeZoneRouteUsers{}, PolicyAuthority: store, PolicyAcceptances: store, CursorSigningKey: bytes.Repeat([]byte{17}, 32), Audits: timeZoneRouteAudits{}, AuditRateLimiter: docsLimiter{}, Clock: docsClock{now: time.Date(2026, 10, 9, 0, 0, 0, 0, time.UTC)}}
 	handled := 0
-	handler, _ := New(application, nil, Options{DomainRegistrations: []func(huma.API){func(api huma.API) {
+	handler, _ := New(application, nil, Options{AccountAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) {
 		for _, entry := range []struct{ id, path string }{{"independent-domain-write", "/v1/policy-test/write"}, {"stop-path-timer", "/v1/policy-test/stop"}} {
 			huma.Register(api, huma.Operation{OperationID: entry.id, Method: "POST", Path: entry.path, Security: []map[string][]string{{"oidc": {}}}}, func(ctx context.Context, input *MeInput) (*NoContentOutput, error) {
 				handled++

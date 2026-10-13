@@ -28,7 +28,9 @@ Browser and Android emulator checks passed. Main CI and exact-source API/web
 deployment passed. TestFlight 471 and Google Play 442 contain this correction;
 physical-device acceptance remains pending.
 
-The active slice is the owner-approved in-house trusted-content moderation port.
+The active slice is account suspension/ban enforcement. The owner approved
+stopping and saving active timers on 2026-10-13. The in-house trusted-content
+port shipped in PR #164; actual classification remains explicitly deferred.
 
 Next unresolved implementation choices are provider-picture import during
 onboarding, the richer Live Activity design, and any future public-text classifier policy. The owner approved an in-house

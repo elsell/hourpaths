@@ -36,7 +36,7 @@ export function enforcementNoticeFromAPI(value: unknown): EnforcementNotice {
 function requireSuccess(response: Response, data: unknown): void {
   if (response.ok && data) return;
   const status = response.status;
-  throw new EnforcementFailure(status === 401 || status === 403 ? 'rejected' : status === 404 ? 'not_found' : status === 409 ? 'conflict' : status === 400 || status === 422 ? 'invalid' : 'unavailable');
+  throw new EnforcementFailure(status === 401 ? 'rejected' : status === 404 ? 'not_found' : status === 409 ? 'conflict' : status === 400 || status === 422 ? 'invalid' : 'unavailable');
 }
 export function apiEnforcement(baseURL: string, token: string | null, rejected?: (token: string | null) => void, signal?: AbortSignal): EnforcementRepository {
   const api = createSessionApiClient(baseURL, () => token, signal, rejected);

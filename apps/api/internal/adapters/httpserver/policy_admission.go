@@ -11,7 +11,8 @@ func policyReviewExempt(operation string) bool {
 	switch operation {
 	// Session lifecycle and minimal identity remain available so clients can
 	// review policies, switch accounts, or explicitly sign out.
-	case "exchange-session", "revoke-session", "refresh-session", "get-me", "delete-push-installation",
+	case "get-account-restriction", "list-enforcement-notices", "get-enforcement-notice", "submit-enforcement-appeal",
+		"exchange-session", "revoke-session", "refresh-session", "get-me", "delete-push-installation",
 		"get-onboarding-profile", "activate-onboarding", "decline-duplicate-email-recovery", "begin-account-recovery", "complete-account-recovery",
 		"review-current-policies", "accept-current-policies", "delete-account", "confirm-account-deletion-receipt", "deactivate-me",
 		"export-own-activities", "export-own-profile", "export-own-paths", "check-notification-ownership", "list-own-running-timers", "get-path-timer", "stop-path-timer":

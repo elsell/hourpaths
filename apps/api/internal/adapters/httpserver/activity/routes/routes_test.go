@@ -106,7 +106,7 @@ func (s controlledService) ManualActivityDefaults(context.Context, string, strin
 }
 
 func handler(service Service) http.Handler {
-	h, _ := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	h, _ := shared.New(platformapp.App{}, nil, shared.Options{AccountAdmission: acceptedPolicyFixture{}, PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
 	return h
 }
 
@@ -518,7 +518,8 @@ func (s controlledService) ListOwnRunningTimers(context.Context, string, string,
 // Domain-route fixtures represent an account with current policy acceptance.
 type acceptedPolicyFixture struct{}
 
-func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error { return nil }
+func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error  { return nil }
+func (acceptedPolicyFixture) AdmitAccountUse(context.Context, string) error { return nil }
 
 type ownTimerRouteService struct {
 	controlledService
@@ -532,7 +533,7 @@ func (s *ownTimerRouteService) ListOwnRunningTimers(_ context.Context, authoriza
 }
 func TestOwnTimerRouteRemainsAvailableDuringPolicyReview(t *testing.T) {
 	service := &ownTimerRouteService{}
-	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{AccountAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
 	// No policy-admission dependencies: the exemption must reach the service,
 	// which still owns ordinary authentication and Path authorization.
 	req := httptest.NewRequest(http.MethodGet, "/v1/me/running-timers?cursor=page&limit=7", nil)

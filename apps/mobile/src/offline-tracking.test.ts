@@ -105,6 +105,13 @@ test('native cold Home restoration publishes durable timers before making a netw
   online = true;
   await restored.refresh();
   assert.notEqual((await restored.retained())?.state.offlineBannerDismissed, true);
+  const queuedBeforeRestriction = structuredClone(rows.get('alice')?.operations);
+  restored.setRestricted(true);
+  await assert.rejects(restored.start('guitar'), /tracking_session_unavailable/);
+  await assert.rejects(restored.stop('guitar', started.timer!.id), /tracking_session_unavailable/);
+  restored.wake();
+  assert.deepEqual(rows.get('alice')?.operations, queuedBeforeRestriction);
+  restored.setRestricted(false);
   await restored.stop('guitar', started.timer!.id);
   assert.deepEqual(rows.get('alice')?.operations.map(value => value.kind), ['start', 'stop']);
   await assert.rejects(restored.load({ ...credential, ownerId: 'bob' }, () => true), /owner/);

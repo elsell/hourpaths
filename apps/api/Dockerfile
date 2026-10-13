@@ -4,7 +4,7 @@ WORKDIR /src
 COPY apps/api/go.mod apps/api/go.sum* ./
 RUN go mod download
 COPY apps/api .
-RUN CGO_ENABLED=0 go build -o /out/ ./cmd/server ./cmd/schema ./cmd/migrate ./cmd/spicedb-runtime-proxy ./cmd/audit-retention ./cmd/account-deletion-records ./cmd/policy-publish
+RUN CGO_ENABLED=0 go build -o /out/ ./cmd/server ./cmd/schema ./cmd/migrate ./cmd/spicedb-runtime-proxy ./cmd/audit-retention ./cmd/account-deletion-records ./cmd/policy-publish ./cmd/account-enforce
 RUN mkdir -p /out/deletion-journal && chmod 0700 /out/deletion-journal
 FROM registry.access.redhat.com/hi/static:latest-1788855983@sha256:20f419d12511f96524d9b9bb092ef5066d6bacee7ed45d7c528bef62f6d48f74
 COPY --from=build --chown=65532:65532 /out/deletion-journal /var/lib/hourpaths-deletion
@@ -15,4 +15,5 @@ COPY --from=build /out/spicedb-runtime-proxy /spicedb-runtime-proxy
 COPY --from=build /out/audit-retention /audit-retention
 COPY --from=build /out/account-deletion-records /account-deletion-records
 COPY --from=build /out/policy-publish /policy-publish
+COPY --from=build /out/account-enforce /account-enforce
 ENTRYPOINT ["/app"]

@@ -11,8 +11,12 @@ import (
 // policy acceptance. The policy-renewal suite exercises real admission.
 type acceptedPolicyFixture struct{}
 
-func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error { return nil }
+func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error  { return nil }
+func (acceptedPolicyFixture) AdmitAccountUse(context.Context, string) error { return nil }
 func newHTTPTestServer(a app.App, domains []string, options Options) (http.Handler, huma.API) {
+	if options.AccountAdmission == nil {
+		options.AccountAdmission = acceptedPolicyFixture{}
+	}
 	if options.PolicyAdmission == nil {
 		options.PolicyAdmission = acceptedPolicyFixture{}
 	}

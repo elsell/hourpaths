@@ -654,6 +654,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/restriction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Review the current account restriction */
+        get: operations["get-account-restriction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/running-timers": {
         parameters: {
             query?: never;
@@ -1956,7 +1973,7 @@ export interface components {
              * @description Stable machine-readable error code
              * @enum {string}
              */
-            code: "bad_request" | "unauthenticated" | "invalid_credential" | "forbidden" | "not_found" | "conflict" | "username_unavailable" | "policy_set_changed" | "policy_acceptance_required" | "idempotency_conflict" | "invitation_warning_required" | "block_review_required" | "validation_failed" | "rate_limited" | "authorization_pending" | "authorization_dead_lettered" | "authorization_policy_not_configured" | "unavailable" | "internal_error" | "request_failed" | "oidc_discovery_unavailable";
+            code: "bad_request" | "unauthenticated" | "invalid_credential" | "forbidden" | "not_found" | "conflict" | "username_unavailable" | "policy_set_changed" | "policy_acceptance_required" | "account_restricted" | "idempotency_conflict" | "invitation_warning_required" | "block_review_required" | "validation_failed" | "rate_limited" | "authorization_pending" | "authorization_dead_lettered" | "authorization_policy_not_configured" | "unavailable" | "internal_error" | "request_failed" | "oidc_discovery_unavailable";
             detail?: string;
             errors?: components["schemas"]["ErrorDetail"][] | null;
             /** @description Operation that classified this failure, when needed for safe replay */
@@ -2031,6 +2048,28 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["AccountExportProfileDTO"];
+        };
+        AccountRestrictionData: {
+            /** @enum {string} */
+            action: "suspension" | "ban";
+            /** Format: date-time */
+            issuedAt: string;
+            noticeId: string;
+            policyReason: string;
+            /** Format: date-time */
+            until?: string;
+        };
+        AccountRestrictionOutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AccountRestrictionOutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["AccountRestrictionReviewData"];
+        };
+        AccountRestrictionReviewData: {
+            restriction: components["schemas"]["AccountRestrictionData"];
         };
         ActiveFollowingData: {
             items: components["schemas"]["ActiveFollowingItem"][];
@@ -6019,6 +6058,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnProfilePrivacyOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-account-restriction": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountRestrictionOutputBody"];
                 };
             };
             /** @description Error */

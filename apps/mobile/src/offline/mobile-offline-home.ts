@@ -29,22 +29,23 @@ export function mobileOfflineHome(dependencies: {
   publish(owner: string, profile: MobileHomeProfile, state: TrackingSnapshot, replace: boolean): void;
 }) {
   let context: Context | null = null;
+  let restricted = false;
   function dispose() { context?.historyWorker.dispose(); context?.refreshWorker.dispose(); context?.adapter.dispose(); context = null; }
   function valid(current: Context) {
     if (context !== current) throw new Error('tracking_session_superseded');
   }
   function adopt(owner: string, credential: Credential | null): Context {
     if (context?.owner === owner) {
-      if (context.credential?.token !== credential?.token) context.paused = !credential;
+      if (context.credential?.token !== credential?.token) context.paused = !credential || restricted;
       context.credential = credential; return context;
     }
     dispose();
     const tracking = new OfflineTracking(dependencies.store, owner, dependencies.now, dependencies.newId);
-    const next = { owner, credential, paused: !credential, tracking, profile: null, refreshing: null } as Context;
+    const next = { owner, credential, paused: !credential || restricted, tracking, profile: null, refreshing: null } as Context;
     context = next;
     next.adapter = mobileTrackingAdapter({ owner, tracking, schedule: dependencies.schedule,
       current: () => context === next,
-      sync: dependencies.sync(owner, () => context === next && next.credential && Date.parse(next.credential.expiresAt) > dependencies.now() ? next.credential : null),
+      sync: dependencies.sync(owner, () => context === next && !restricted && next.credential && Date.parse(next.credential.expiresAt) > dependencies.now() ? next.credential : null),
       changed: async () => {
         await publish(next);
         const state = await tracking.snapshot();
@@ -127,6 +128,14 @@ export function mobileOfflineHome(dependencies: {
     finally { if (current.refreshing === work) current.refreshing = null; }
   }
   return {
+    setRestricted(value: boolean): void {
+      if (restricted === value) return;
+      restricted = value;
+      if (!context) return;
+      context.paused = value || !context.credential;
+      if (context.paused) { context.adapter.pause(); context.refreshWorker.setPaused(true); context.historyWorker.setPaused(true); }
+      else { context.adapter.wake(); context.refreshWorker.setPaused(false); context.historyWorker.setPaused(false); void context.refreshWorker.wake(); void context.historyWorker.wake(); }
+    },
     async restoreRetained(owner: string, guard: () => boolean = () => true): Promise<{ profile: MobileHomeProfile; state: TrackingSnapshot } | null> {
       const retained = await dependencies.home.readHome(owner);
       if (!guard()) throw new Error('tracking_session_superseded');
@@ -208,7 +217,7 @@ export function mobileOfflineHome(dependencies: {
       return context.adapter.start(pathId);
     },
     async stop(pathId: string, timerId: string) {
-      if (!context) throw new Error('tracking_session_unavailable');
+      if (restricted || !context) throw new Error('tracking_session_unavailable');
       return context.adapter.stop(pathId, timerId);
     },
     async correct(timerId: string, startedAt: string, endedAt: string): Promise<void> {

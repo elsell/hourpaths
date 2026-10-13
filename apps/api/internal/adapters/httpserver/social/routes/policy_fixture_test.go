@@ -6,4 +6,5 @@ import "context"
 // has dedicated adversarial HTTP and real-session PostgreSQL coverage.
 type acceptedPolicyFixture struct{}
 
-func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error { return nil }
+func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error  { return nil }
+func (acceptedPolicyFixture) AdmitAccountUse(context.Context, string) error { return nil }

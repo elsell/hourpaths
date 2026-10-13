@@ -21,7 +21,7 @@ export function apiTrackingSync(clientForOwner: (owner: string) => SessionAPI | 
       }, operation.operationId);
       if (!clientForOwner(owner)) throw new TrackingReplaySuspended();
       const status = response.response.status;
-      if (status === 401) throw new TrackingReplaySuspended();
+      if (status === 401 || status === 403 && response.error?.code === 'account_restricted') throw new TrackingReplaySuspended();
       if (status === 403 || status === 404) {
         if (response.error?.operation !== 'synchronize-offline-path-activity') throw new Error('tracking_sync_temporarily_unavailable');
         return { kind: 'rejected', reason: 'membership', disclosePath: false };
@@ -56,7 +56,7 @@ export function apiTrackingSync(clientForOwner: (owner: string) => SessionAPI | 
       }, operation.operationId, operation.kind === 'start' && stillRunning);
       if (!clientForOwner(owner)) throw new TrackingReplaySuspended();
       const status = response.response.status;
-      if (status === 401) throw new TrackingReplaySuspended();
+      if (status === 401 || status === 403 && response.error?.code === 'account_restricted') throw new TrackingReplaySuspended();
       if (status === 403 || status === 404) {
         if (response.error?.operation !== 'synchronize-offline-path-timer') throw new Error('tracking_sync_temporarily_unavailable');
         return { kind: 'rejected', reason: 'membership', disclosePath: false };

@@ -11,10 +11,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// StopParticipantTimerForLeave completes a server-backed timer while the
-// participant still has membership, allowing ordinary activity derivatives to
-// be created before the caller atomically ends membership and hides them.
-func (r *Repository) StopParticipantTimerForLeave(ctx context.Context, pathID, participantID string, stoppedAt time.Time, activityID string, event audit.Event) (bool, error) {
+// StopParticipantTimerForLifecycle completes a server-backed timer while the
+// participant still has membership, preserving ordinary activity derivatives.
+// The caller owns the transaction that changes membership or account access.
+func (r *Repository) StopParticipantTimerForLifecycle(ctx context.Context, pathID, participantID string, stoppedAt time.Time, activityID string, event audit.Event) (bool, error) {
 	if r == nil || r.DB == nil || strings.TrimSpace(pathID) != pathID || pathID == "" || strings.TrimSpace(participantID) != participantID || participantID == "" || stoppedAt.IsZero() || activityID == "" || !event.Valid() || event.Action != audit.ActivityTimerStopped || event.ActorUserID != participantID || event.OwnerUserID != participantID || event.Outcome != audit.Succeeded {
 		return false, ports.ErrInvalidArgument
 	}

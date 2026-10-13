@@ -1,3 +1,5 @@
+import { AccountRestrictionBoundary } from './account-restriction';
+import type { AccountRestrictionController } from '@hourpaths/client-core';
 import { Link } from '@tanstack/react-router';
 import { PathStatisticsPanel } from './path-statistics';
 import type { EnforcementRepository } from '@hourpaths/client-core';
@@ -53,6 +55,7 @@ import { ActivityDetailPage } from './activity-detail';
 import { ActivityEditorPage } from './activity-editor';
 
 export interface StudioDependencies {
+  accountRestriction?: AccountRestrictionController;
   enforcement?: EnforcementRepository;
   reporting: ReportingRepository;
   policyReview?: PolicyReviewController;
@@ -81,7 +84,7 @@ export interface StudioDependencies {
 export function StudioApp({ dependencies: d }: { dependencies: StudioDependencies }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { networkMode: 'always', retry: false, staleTime: 30_000, refetchOnWindowFocus: false }, mutations: { networkMode: 'always' } } }));
   const [router] = useState(() => {
-    const root = createRootRoute({ component: () => <PolicyReviewBoundary dependencies={d}><Outlet /></PolicyReviewBoundary> });
+    const root = createRootRoute({ component: () => <AccountRestrictionBoundary dependencies={d}><PolicyReviewBoundary dependencies={d}><Outlet /></PolicyReviewBoundary></AccountRestrictionBoundary> });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ pathLeft: search.pathLeft === true, activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
     const ownership = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/ownership', component: () => <OwnershipPage dependencies={d} /> });
     const notifications = createRoute({ getParentRoute: () => root, path: '/notifications', component: () => <NotificationsPage dependencies={d} /> });

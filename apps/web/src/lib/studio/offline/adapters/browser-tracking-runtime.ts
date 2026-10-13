@@ -8,6 +8,7 @@ import { IndexedDBTrackingStore } from './indexeddb-tracking-store';
 
 export function browserTrackingRuntime(apiURL: string, session: SessionController, store: IndexedDBTrackingStore, connected: () => boolean) {
   let disposed = false;
+  let restricted = false;
   let serverAvailable = true;
   let networkFailures = 0;
   let networkRetry: ReturnType<typeof setTimeout> | null = null;
@@ -16,7 +17,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
   let worker: TrackingReplayWorker | null = null;
   const listeners = new Set<(change?: TrackingChange) => void>();
   const notify = (change: TrackingChange = {}) => { if (!disposed) for (const listener of listeners) listener(change); };
-  const assertAlive = () => { if (disposed || !session.token()) throw new Error('tracking_session_unavailable'); };
+  const assertAlive = () => { if (disposed || restricted || !session.token()) throw new Error('tracking_session_unavailable'); };
   async function initialize(): Promise<TrackingRuntime> {
     assertAlive();
     let owner = session.owner();
@@ -44,7 +45,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     if (!timeZone) throw new Error('tracking_zone_unavailable');
     new Intl.DateTimeFormat('en', { timeZone });
     assertCurrent();
-    const sync = apiTrackingSync(requested => !disposed && session.owner() === requested && session.token()
+    const sync = apiTrackingSync(requested => !disposed && !restricted && session.owner() === requested && session.token()
       ? createSessionApiClient(apiURL, () => session.token(), undefined, value => session.reject(value), { retryRateLimitedReads: true }) : null);
     let replayChange: TrackingChange = {};
     worker = new TrackingReplayWorker(async () => {
@@ -56,6 +57,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     }, (work, delay) => {
       const timer = setTimeout(work, delay); return () => clearTimeout(timer);
     }, () => { assertCurrent(); notify(replayChange); });
+    worker.setPaused(restricted);
     current = { owner: boundOwner, timeZone, tracking, assertCurrent, connected,
       reportNetwork: async available => {
         assertCurrent();
@@ -92,6 +94,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
   }
   return {
     runtime,
+    setRestricted(value: boolean): void { if (restricted === value) return; restricted = value; worker?.setPaused(value); if (!value && connected()) void worker?.wake(); },
     async snapshot(): Promise<TrackingStatus> {
       const context = await runtime();
       context.assertCurrent();
@@ -127,7 +130,7 @@ export function browserTrackingRuntime(apiURL: string, session: SessionControlle
     },
     subscribe(listener: (change?: TrackingChange) => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; },
     retry(): void {
-      if (disposed) return;
+      if (disposed || restricted) return;
       notify({ refreshHome: true });
       if (connected()) { worker?.setPaused(false); void worker?.wake(); }
     },

@@ -1,4 +1,6 @@
 {
+  "accountRestriction.heading": "Account access restricted",
+  "accountRestriction.body": "Your server timers have stopped and their elapsed time has been saved. Unsynced work remains on this device. Review your notices below or appeal a decision.",
   "app.title": "HourPaths",
   "app.ready": "Your generated application is ready.",
   "common.loading": "Loading…",

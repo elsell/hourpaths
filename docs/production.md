@@ -127,8 +127,29 @@ Reversal lifts that restriction; it never recreates deleted content, bypasses
 ordinary audience rules, or sends old notifications. A duplicate removal fails
 without another notice or partial case transition.
 
-Other content types, suspension and ban enforcement remain unfinished; issuing
-a warning does not apply those restrictions.
+Suspensions and bans use the image's `/account-enforce` command with a separately
+controlled operational database connection. Do not grant enforcement writes to
+`app`, `app_audit_retention`, or product users. This command needs the privileged
+operator connection used for reviewed maintenance: it writes the decision, case,
+review event, timer completion, activity derivatives and audit in one transaction.
+Use an individually attributed database login; the review event records
+`session_user`. Keep that credential outside API and retention workloads.
+
+After reviewing a case, provide `--case CASE_ID --notice UNIQUE_NOTICE_ID
+--action suspension --until RFC3339_INSTANT --reason-file /protected/reason.txt`.
+For a ban use `--action ban` and omit `--until`. The reason file contains only the
+subject-visible policy explanation. Supply database settings through the existing
+configuration environment, never a command-line connection string. Reuse the
+same notice ID and arguments after an uncertain result; a changed retry fails.
+The operation stops the subject's server timers and saves elapsed time. It does
+not stop other participants' timers. A failure rolls the transaction back.
+
+Account appeals use `moderation_decide_account_appeal(text,text,text,text)` with
+the same reviewer requirements as warning appeals. Grant only that exact
+capability to an appeal reviewer. Reversal or suspension expiry restores ordinary
+admission only if no other restriction remains; it never restarts timers.
+Notices and appeals remain accessible with the existing application session.
+Other content types remain unfinished; a warning does not restrict the account.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the
