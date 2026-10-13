@@ -54,6 +54,7 @@ function Notice({ notice, i18n, repository, update }: { notice: EnforcementNotic
   return <SettingsSection title={i18n.t(`enforcement.action.${notice.action}`)}><View style={styles.content}>
     {notice.affectedComment && <Text>{i18n.t('enforcement.affectedComment', { date: date(notice.affectedComment.createdAt), id: notice.affectedComment.id })}</Text>}
     {notice.affectedNudge && <Text>{i18n.t('enforcement.affectedNudge', { date: date(notice.affectedNudge.sentAt), id: notice.affectedNudge.id })}</Text>}
+    {notice.affectedFeedEvent && <Text>{i18n.t('enforcement.affectedFeedEvent', { date: date(notice.affectedFeedEvent.publishedAt), id: notice.affectedFeedEvent.id })}</Text>}
     <Text>{date(notice.issuedAt)}</Text><Text>{notice.policyReason}</Text>
     {notice.until && <Text>{i18n.t('enforcement.until', { date: date(notice.until) })}</Text>}
     {notice.appeal ? <>

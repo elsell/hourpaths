@@ -187,6 +187,9 @@ func (repository *SocialFeedRepository) CreatePracticeComment(ctx context.Contex
 		if err := lockSocialCommentIdempotency(tx, command.Idempotency); err != nil {
 			return err
 		}
+		if err := lockPracticeReactionEvent(tx, command.Target.EventID); err != nil {
+			return err
+		}
 		if err := lockSocialInteractionPairs(tx, command.ActorUserID, command.Target.EventID, ""); err != nil {
 			return err
 		}
@@ -251,6 +254,9 @@ func (repository *SocialFeedRepository) EditPracticeComment(ctx context.Context,
 		if err := lockSocialCommentIdempotency(tx, command.Idempotency); err != nil {
 			return err
 		}
+		if err := lockPracticeReactionEvent(tx, command.Target.EventID); err != nil {
+			return err
+		}
 		if err := lockSocialInteractionPairs(tx, command.ActorUserID, command.Target.EventID, command.CommentID); err != nil {
 			return err
 		}
@@ -309,6 +315,9 @@ func (repository *SocialFeedRepository) DeletePracticeComment(ctx context.Contex
 	var result socialapp.CommentDeleteResult
 	err := repository.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := lockSocialCommentIdempotency(tx, command.Idempotency); err != nil {
+			return err
+		}
+		if err := lockPracticeReactionEvent(tx, command.Target.EventID); err != nil {
 			return err
 		}
 		if replay, found, err := readSocialCommentReplay(tx, command.Idempotency); err != nil {
@@ -399,6 +408,9 @@ func readSocialCommentReplay(tx *gorm.DB, idempotency ports.Idempotency) (social
 	}
 	if !bytes.Equal(replay.RequestHash, idempotency.RequestHash) {
 		return replay, false, ports.ErrIdempotencyConflict
+	}
+	if err := rejectRemovedFeedEvent(tx, replay.SocialFeedEventID); err != nil {
+		return replay, false, err
 	}
 	if err := rejectRemovedComment(tx, replay.CommentID); err != nil {
 		return replay, false, err

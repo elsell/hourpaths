@@ -267,6 +267,38 @@ acknowledgments must remain unchanged.
    heart committed after removal can republish or interact with removed content.
    A removal committed before push handoff must suppress that delivery.
 
+### Feed-event removal acceptance (`SAFE-FEED-REMOVAL-01`)
+
+These scenarios apply the approved content-removal lifecycle to the social post
+identified by a reported feed event. The post is a social projection of recorded
+activity or a goal achievement; removing the post must not delete that source.
+
+1. An authorized operational reviewer must be able to remove a feed event from
+   an open or reviewing case. The decision must retain the case, subject,
+   reviewer and policy reason. The subject's private notice must identify the
+   affected event and its publication time without exposing reporter identity
+   or restricted report evidence.
+2. A removed event must not appear in Following, profile activity history,
+   direct event reads, comment/reaction interactions or their retained mutation
+   retries, notification history or unread counts. Its associated comments and
+   reactions must not be independently accessible through the removed event.
+   Missing and removed targets must use the same opaque unavailable behavior.
+3. Removal must preserve recorded activity, goal achievements, Path membership,
+   timers and unrelated social content. Editing the underlying recorded
+   activity must not lift the social-post restriction.
+4. Removal must serialize with event interactions and push handoff. If removal
+   commits first, a competing mutation or retry must not republish or interact
+   with the post, and the provider must not receive its queued notification.
+   Pending delivery must be suppressed without retaining its encrypted token.
+5. The existing notice and appeal process must work in native and Studio
+   clients. A successful appeal lifts only this decision's visibility
+   restriction, subject to current access. It must not recreate a deleted event
+   or source activity, restore separately removed comments, or resend old push.
+6. Removal, the case transition, private notice and reviewer event must commit
+   atomically. Ordinary runtime and retention credentials must not perform
+   removal or decide an appeal. Final appeal decisions remain immutable, and
+   a decision function for another content kind must not finalize this appeal.
+
 ### Nudge-removal acceptance (`SAFE-NUDGE-REMOVAL-01`)
 
 These scenarios apply the approved content-removal and appeal lifecycle to a

@@ -90,4 +90,7 @@ On 2026-10-13 the owner approved stopping and saving elapsed time on account
 suspension or ban. That behavior is defined by
 [account enforcement](safety/moderation.spec.md#account-suspension-and-ban-enforcement).
 
-The active safety slice is [reported nudge removal](safety/moderation.spec.md#nudge-removal-acceptance-safe-nudge-removal-01), including notification suppression and existing notice/appeal behavior.
+Reported nudge removal merged in PR #166. The active safety slice is
+[reported feed-event removal](safety/moderation.spec.md#feed-event-removal-acceptance-safe-feed-removal-01),
+including social visibility, interaction and push suppression, private appeals,
+and preservation of recorded time and goal achievements.

@@ -24,15 +24,27 @@ Account suspension/ban enforcement merged in [PR #165](https://github.com/elsell
 Main CI passed after retrying an iOS dependency-download timeout; publication and
 verified store availability remain separate delivery steps.
 
-The current implementation slice applies the existing content-removal lifecycle
-to reported nudges (`SAFE-NUDGE-REMOVAL-01`). It preserves rate limits and retained
-history, suppresses pending push, and exposes the private reference and appeal in
-Studio and native Account notices. Comment and nudge removal do not establish
-completion of Profile, Path, or feed-event removal, which remain open in area 10.
+Reported nudge removal merged in [PR #166](https://github.com/elsell/hourpaths/pull/166)
+after all five checks passed. It preserves rate limits and retained history,
+suppresses pending push, and exposes the private reference and appeal in Studio
+and native Account notices. Its publication and deployment are in progress.
 
-Nonblocking operational follow-up: nudge-removal suppression makes delivery rows
+The current implementation slice applies the same lifecycle to reported social
+posts (`SAFE-FEED-REMOVAL-01`), preserving source activity and goal achievements.
+Profile and Path content removal remain open; the Path-name enforcement choice
+is awaiting the owner's answer and must not be inferred from silence.
+
+PR #165's exact-source API and Studio deployment is verified through GitOps
+`b53c61e`. TestFlight 0.55.0 (484) is VALID, nonexpired, IN_BETA_TESTING and assigned
+to the internal group, with release-note readback verified. Google Play internal
+455 is published. Physical-device acceptance remains a separate requirement.
+
+Nonblocking operational follow-up: nudge/feed removal suppression makes delivery rows
 terminal but does not refresh the push-outbox aggregate status. Reconcile that
 status in a later maintenance batch; terminal delivery rows prevent resend.
+Feed removal also has a reviewed nonblocking lock-order inversion with concurrent
+interactions: PostgreSQL may abort one transaction safely. Align the order in a
+maintenance batch without weakening account-lifecycle admission or event hiding.
 
 ## Current delivery status — October 12
 

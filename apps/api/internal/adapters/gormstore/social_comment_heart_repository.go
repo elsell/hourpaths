@@ -67,6 +67,9 @@ func (repository *SocialFeedRepository) mutatePracticeCommentHeart(ctx context.C
 		if err := lockSocialPathAudience(tx, command.Target.PathID); err != nil {
 			return err
 		}
+		if err := lockPracticeReactionEvent(tx, command.Target.EventID); err != nil {
+			return err
+		}
 		if err := lockSocialInteractionPairs(tx, command.ActorUserID, command.Target.EventID, command.Comment.ID); err != nil {
 			return err
 		}
@@ -177,6 +180,9 @@ func readCommentHeartReplay(tx *gorm.DB, idempotency ports.Idempotency) (socialC
 	}
 	if !bytes.Equal(replay.RequestHash, idempotency.RequestHash) {
 		return replay, false, ports.ErrIdempotencyConflict
+	}
+	if err := rejectRemovedFeedEvent(tx, replay.SocialFeedEventID); err != nil {
+		return replay, false, err
 	}
 	if err := rejectRemovedComment(tx, replay.CommentID); err != nil {
 		return replay, false, err

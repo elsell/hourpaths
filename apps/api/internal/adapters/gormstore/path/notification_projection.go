@@ -13,7 +13,10 @@ const notificationPairVisiblePredicate = `NOT EXISTS (SELECT 1 FROM block_models
      OR (notification_block.blocker_user_id = notification_models.actor_user_id AND
          notification_block.blocked_user_id = notification_models.recipient_user_id))`
 
+const notificationFeedNotRemovedPredicate = `NOT EXISTS (SELECT 1 FROM moderation_removed_feed_event_models removed WHERE removed.feed_event_id=notification_models.social_feed_event_id)`
+
 const visibleNotificationPredicate = `notification_models.deleted_at IS NULL AND
+ ` + notificationFeedNotRemovedPredicate + ` AND
  NOT EXISTS (SELECT 1 FROM moderation_removed_nudge_models removed WHERE removed.nudge_id=notification_models.nudge_id) AND
   ` + notificationreminder.VisiblePredicate + ` AND
   ` + timerNotificationVisiblePredicate + ` AND

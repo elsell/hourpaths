@@ -14,6 +14,8 @@ import (
 )
 
 type enforcementModel struct {
+	AffectedFeedEventID                     string
+	AffectedFeedEventPublishedAt            *time.Time
 	ID, SubjectUserID, Action, PolicyReason string
 	AffectedNudgeID                         string
 	AffectedNudgeSentAt                     *time.Time
@@ -52,6 +54,10 @@ func readEnforcement(tx *gorm.DB, owner, id string) (app.Notice, error) {
 	if e.AffectedNudgeID != "" && e.AffectedNudgeSentAt != nil {
 		n.Decision.AffectedNudgeID = e.AffectedNudgeID
 		n.Decision.AffectedNudgeSentAt = *e.AffectedNudgeSentAt
+	}
+	if e.AffectedFeedEventID != "" && e.AffectedFeedEventPublishedAt != nil {
+		n.Decision.AffectedFeedEventID = e.AffectedFeedEventID
+		n.Decision.AffectedFeedEventPublishedAt = *e.AffectedFeedEventPublishedAt
 	}
 	if e.UntilAt != nil {
 		n.Decision.Until = *e.UntilAt

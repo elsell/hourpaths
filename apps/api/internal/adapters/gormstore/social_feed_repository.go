@@ -104,6 +104,7 @@ func (repository *SocialFeedRepository) listPracticeCandidates(ctx context.Conte
  AND NOT EXISTS (SELECT 1 FROM block_models reaction_block
    WHERE (reaction_block.blocker_user_id = ? AND reaction_block.blocked_user_id = reaction.actor_user_id)
       OR (reaction_block.blocker_user_id = reaction.actor_user_id AND reaction_block.blocked_user_id = ?))`, viewer, viewer).
+		Where("NOT EXISTS (SELECT 1 FROM moderation_removed_feed_event_models removed WHERE removed.feed_event_id=event.id)").
 		Where("event.published_at <= ?", page.Snapshot).
 		Where("(event.source_activity_id IS NOT NULL AND activity.id IS NOT NULL) OR (event.achievement_id IS NOT NULL AND achievement.id IS NOT NULL)").
 		Where(`path.owner_user_id = event.participant_user_id OR EXISTS (
@@ -327,4 +328,16 @@ func (repository *SocialFeedRepository) ListProfilePracticeCandidates(ctx contex
 		return socialapp.FeedCandidatePage{}, ports.ErrInvalidArgument
 	}
 	return repository.listPracticeCandidates(ctx, viewer, page, "", profileID)
+}
+
+// Stored interaction receipts must not expose a post removed by moderation.
+func rejectRemovedFeedEvent(tx *gorm.DB, eventID string) error {
+	var count int64
+	if err := tx.Table("moderation_removed_feed_event_models").Where("feed_event_id = ?", eventID).Count(&count).Error; err != nil {
+		return err
+	}
+	if count != 0 {
+		return ports.ErrNotFound
+	}
+	return nil
 }

@@ -60,3 +60,14 @@ test('nudge notices identify the sent item without carrying restricted evidence'
   assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedNudge: { id: 'nudge', sentAt: 'invalid' } }));
   assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedComment: { id: 'comment', createdAt: '2026-10-08T12:00:00Z' } }));
  });
+
+test('feed-event notices expose only the post reference and reject mixed content targets', async () => {
+  const { enforcementNoticeFromAPI } = await import('./adapters/api-enforcement');
+  const source = { id: 'notice', action: 'content_removal', policyReason: 'Policy', issuedAt: '2026-10-09T12:00:00Z', appealDeadline: '2026-11-08T12:00:00Z', affectedFeedEvent: { id: 'event', publishedAt: '2026-10-08T12:00:00Z', reporter: 'private', evidence: 'private' } };
+  const result = enforcementNoticeFromAPI(source);
+  assert.deepEqual(result.affectedFeedEvent, { id: 'event', publishedAt: '2026-10-08T12:00:00Z' });
+  source.affectedFeedEvent.id = 'changed';
+  assert.equal(result.affectedFeedEvent?.id, 'event');
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedFeedEvent: { id: 'event', publishedAt: 'invalid' } }));
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedNudge: { id: 'nudge', sentAt: '2026-10-08T12:00:00Z' } }));
+ });

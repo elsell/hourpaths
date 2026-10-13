@@ -157,8 +157,17 @@ history. `moderation_decide_nudge_appeal(text,text,text,text)` applies the same
 reviewer requirements: reversal restores only eligible retained in-app history
 and never resends old push. Grant each reviewer only the required exact functions;
 ordinary application and retention credentials must not receive them.
-Profile, Path and feed-event removal remain unfinished; a warning does not
-restrict the account.
+Reported social posts use `moderation_remove_feed_event(text,text,text)` with
+`(case_id, notice_id, policy_reason)`. It suppresses the reported event, its
+interactions and associated notifications while preserving the source recorded
+activity or goal achievement. `moderation_decide_feed_event_appeal(text,text,text,text)`
+uses the same reviewer and final-decision requirements. Reversal restores only
+retained, currently accessible social content; it cannot recreate deleted time,
+restore a separately removed comment or resend old push. Grant only these exact
+capabilities to the relevant operational reviewers, never the ordinary runtime
+or retention role.
+Profile and Path content removal remain unfinished; a warning does not restrict
+the account.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the

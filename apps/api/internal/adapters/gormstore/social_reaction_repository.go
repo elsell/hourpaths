@@ -169,6 +169,7 @@ func resolvePracticeReactionTarget(tx *gorm.DB, viewer, eventID string) (sociala
 		Joins("JOIN user_models owner ON owner.id = event.participant_user_id AND owner.status = 'active'").
 		Joins("JOIN path_models path ON path.id = event.path_id").
 		Where("event.id = ?", eventID).
+		Where("NOT EXISTS (SELECT 1 FROM moderation_removed_feed_event_models removed WHERE removed.feed_event_id=event.id)").
 		Where("((event.source_activity_id IS NOT NULL AND event.achievement_id IS NULL AND activity.id IS NOT NULL) OR (event.source_activity_id IS NULL AND event.achievement_id IS NOT NULL AND achievement.id IS NOT NULL))").
 		Where("EXISTS (SELECT 1 FROM user_models viewer WHERE viewer.id = ? AND viewer.status = 'active')", viewer).
 		Where(`(path.owner_user_id = event.participant_user_id OR
