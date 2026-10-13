@@ -30,6 +30,11 @@ export function enforcementNoticeFromAPI(value: unknown): EnforcementNotice {
     if (action !== 'content_removal' || !id || id.trim() !== id) throw new EnforcementFailure();
     result.affectedComment = { id, createdAt: date(comment.createdAt) };
   }
+  if (row.affectedNudge !== undefined) {
+    const nudge = object(row.affectedNudge), id = text(nudge.id);
+    if (action !== 'content_removal' || !id || id.trim() !== id || result.affectedComment) throw new EnforcementFailure();
+    result.affectedNudge = { id, sentAt: date(nudge.sentAt) };
+  }
   if (row.appeal !== undefined) result.appeal = enforcementAppealFromAPI(row.appeal);
   return result;
 }

@@ -149,7 +149,16 @@ the same reviewer requirements as warning appeals. Grant only that exact
 capability to an appeal reviewer. Reversal or suspension expiry restores ordinary
 admission only if no other restriction remains; it never restarts timers.
 Notices and appeals remain accessible with the existing application session.
-Other content types remain unfinished; a warning does not restrict the account.
+Reported received nudges use `moderation_remove_nudge(text,text,text)` with
+`(case_id, notice_id, policy_reason)` and the same separately granted operational
+capability. The case identifies the recipient's notification. Removal hides that
+nudge and suppresses queued push while preserving rate limits and retained
+history. `moderation_decide_nudge_appeal(text,text,text,text)` applies the same
+reviewer requirements: reversal restores only eligible retained in-app history
+and never resends old push. Grant each reviewer only the required exact functions;
+ordinary application and retention credentials must not receive them.
+Profile, Path and feed-event removal remain unfinished; a warning does not
+restrict the account.
 
 The existing hourly deleted-account retention job also drains closed-case
 expiry in bounded batches. It starts cleanup 89 days after closure, within the

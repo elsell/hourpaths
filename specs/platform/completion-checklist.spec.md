@@ -18,6 +18,22 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
+## Active slice — October 13
+
+Account suspension/ban enforcement merged in [PR #165](https://github.com/elsell/hourpaths/pull/165).
+Main CI passed after retrying an iOS dependency-download timeout; publication and
+verified store availability remain separate delivery steps.
+
+The current implementation slice applies the existing content-removal lifecycle
+to reported nudges (`SAFE-NUDGE-REMOVAL-01`). It preserves rate limits and retained
+history, suppresses pending push, and exposes the private reference and appeal in
+Studio and native Account notices. Comment and nudge removal do not establish
+completion of Profile, Path, or feed-event removal, which remain open in area 10.
+
+Nonblocking operational follow-up: nudge-removal suppression makes delivery rows
+terminal but does not refresh the push-outbox aggregate status. Reconcile that
+status in a later maintenance batch; terminal delivery rows prevent resend.
+
 ## Current delivery status — October 12
 
 - Production [v0.53.1](https://github.com/elsell/hourpaths/releases/tag/v0.53.1),

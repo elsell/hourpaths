@@ -194,6 +194,9 @@ func (repository *SocialFeedRepository) SendNudge(ctx context.Context, command s
 			if !bytes.Equal(replay.RequestHash, command.Idempotency.RequestHash) || replay.PathID != nudge.PathID || replay.RecipientUserID != nudge.RecipientID || replay.Preset != string(nudge.Content.Preset) {
 				return ports.ErrIdempotencyConflict
 			}
+			if err := lockSocialNudgeTarget(tx, replay.NudgeID); err != nil {
+				return err
+			}
 			persisted, err := readPersistedNudge(tx, replay.NudgeID)
 			if err != nil {
 				return err
@@ -416,8 +419,8 @@ func createNudgeNotification(tx *gorm.DB, nudge socialdomain.Nudge) (bool, error
 
 func readPersistedNudge(tx *gorm.DB, id string) (socialdomain.Nudge, error) {
 	var row socialNudgeModel
-	if err := tx.Where("id = ?", id).Take(&row).Error; err != nil {
-		return socialdomain.Nudge{}, err
+	if err := tx.Where("id = ?", id).Where("NOT EXISTS (SELECT 1 FROM moderation_removed_nudge_models removed WHERE removed.nudge_id = social_nudge_models.id)").Take(&row).Error; err != nil {
+		return socialdomain.Nudge{}, reportPersistenceError(err)
 	}
 	result := socialdomain.Nudge{ID: row.ID, SenderID: row.SenderUserID, RecipientID: row.RecipientUserID, PathID: row.PathID, Content: socialdomain.NudgeContent{Kind: socialdomain.NudgeContentKind(row.ContentKind), Preset: socialdomain.NudgePreset(row.Preset)}, SentAt: row.SentAt.UTC()}
 	if !result.Valid() {
@@ -491,3 +494,7 @@ func classifyNudgePersistenceError(err error) error {
 }
 
 var _ socialapp.NudgeRepository = (*SocialFeedRepository)(nil)
+
+func lockSocialNudgeTarget(tx *gorm.DB, id string) error {
+	return lockSocialMutationIdempotency(tx, "social-nudge-target", id)
+}

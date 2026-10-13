@@ -267,6 +267,32 @@ acknowledgments must remain unchanged.
    heart committed after removal can republish or interact with removed content.
    A removal committed before push handoff must suppress that delivery.
 
+### Nudge-removal acceptance (`SAFE-NUDGE-REMOVAL-01`)
+
+These scenarios apply the approved content-removal and appeal lifecycle to a
+reported received nudge; they do not add a new enforcement action.
+
+1. An operational reviewer must be able to remove the nudge identified by a
+   reviewed nudge case. The subject notice must identify the sent nudge and its
+   sent time without exposing the reporter or restricted case evidence. The
+   original nudge, case evidence, decision and reviewer record must be retained
+   according to the existing lifecycle and retention rules.
+2. A removed nudge must not appear in recipient notifications, unread counts,
+   report-target resolution, or lost-response send retries. Unrelated nudges and
+   their notification state must remain unchanged. Removal must not reset the
+   sender's existing rate limit.
+3. Removal must suppress undelivered OS push for that nudge. Removal and push
+   handoff must serialize: if removal commits first, the provider must not be
+   called. An already handed-off push cannot be recalled.
+4. The existing private notice and one-appeal workflow must apply. Reversal must
+   lift only the moderation visibility restriction, subject to current audience,
+   blocking, retention and ordinary deletion rules. It must not recreate deleted
+   records or resend an old OS push.
+5. The removal, case transition, subject notice and attributed review event must
+   commit atomically. Ordinary application and retention credentials must not
+   receive enforcement or appeal-decision capability. A repeated removal must
+   not create a second decision or partially change the case.
+
 ## Account suspension and ban enforcement
 
 Owner decision, 2026-10-13: when an account is suspended or banned, its running

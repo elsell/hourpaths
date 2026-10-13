@@ -2470,6 +2470,7 @@ export interface components {
         EnforcementNoticeData: {
             action: string;
             affectedComment?: components["schemas"]["EnforcementCommentData"];
+            affectedNudge?: components["schemas"]["EnforcementNudgeData"];
             appeal?: components["schemas"]["EnforcementAppealData"];
             /** Format: date-time */
             appealDeadline: string;
@@ -2495,6 +2496,11 @@ export interface components {
         };
         EnforcementNoticeListMeta: {
             nextCursor?: string;
+        };
+        EnforcementNudgeData: {
+            id: string;
+            /** Format: date-time */
+            sentAt: string;
         };
         ErrorDetail: {
             /** @description Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id' */

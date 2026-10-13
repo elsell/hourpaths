@@ -31,6 +31,20 @@ REVIEWED_LINES: dict[str, tuple[str, ...]] = {
         '\tif err := f.migration.DB.Exec("INSERT INTO user_preference_models (user_id, first_day_of_week, current_time_zone, created_at, updated_at) VALUES (?,1,\'UTC\',?,?) ON CONFLICT (user_id) DO UPDATE SET current_time_zone=\'UTC\'", recipient, at, at).Error; err != nil {',
         '\tif err := f.migration.DB.Exec(`UPDATE path_models SET interval_goal_target_seconds =',
     ),
+    # Exact nudge-removal fixtures, denied reviewer calls, and PostgreSQL lock-race observations.
+    'apps/api/internal/adapters/gormstore/moderation_nudge_removal_postgres_test.go': (
+        "\tif err := f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,'nudge',?,'spam_or_scam','','{}',?)`, caseID, f.recipient.ID, f.sender.ID, notificationID, f.now).Error; err != nil {",
+        '\tif err := f.runtime.DB.Exec(`SELECT moderation_remove_nudge(?,?,?)`, caseID, noticeID, "Policy reason").Error; err == nil {',
+        '\tif err := tx.Exec(`SELECT moderation_remove_nudge(?,?,?)`, caseID, noticeID, "Policy reason").Error; err != nil {',
+        '\tif err := tx.Raw(`SELECT pg_backend_pid()`).Scan(&backend).Error; err != nil {',
+        '\t\tif err := tx.Raw(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE ?=ANY(pg_blocking_pids(pid)))`, backend).Scan(&waiting).Error; err != nil {',
+        '\tif err := f.migration.DB.Exec(`SELECT moderation_remove_nudge(?,?,?)`, caseID, newTestID(), "Another notice").Error; err == nil {',
+        '\tif err := f.runtime.DB.Exec(`SELECT moderation_decide_nudge_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\tif err := f.migration.DB.Exec(`SELECT moderation_decide_comment_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err == nil {',
+        '\tif err := f.migration.DB.Exec(`SELECT moderation_decide_nudge_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "").Error; err == nil {',
+        '\tif err := f.migration.DB.Exec(`SELECT moderation_decide_nudge_appeal(?,?,?,?)`, noticeID, "reversed", "Reviewed", "Only reviewer").Error; err != nil {',
+        '\tif err := f.migration.DB.Exec(`SELECT moderation_decide_nudge_appeal(?,?,?,?)`, noticeID, "upheld", "Changed mind", "Only reviewer").Error; err == nil {',
+    ),
     # Exact operational removal/appeal calls, denied runtime mutations and lock-race observations.
     'apps/api/internal/adapters/gormstore/moderation_comment_removal_postgres_test.go': (
         "\tif err = f.migration.DB.Exec(`INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,'comment',?,'spam_or_scam','','{}',?)`, caseID, f.recipient.ID, f.sender.ID, commentID, f.now).Error; err != nil {",

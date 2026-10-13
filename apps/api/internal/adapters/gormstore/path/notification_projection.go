@@ -14,6 +14,7 @@ const notificationPairVisiblePredicate = `NOT EXISTS (SELECT 1 FROM block_models
          notification_block.blocked_user_id = notification_models.recipient_user_id))`
 
 const visibleNotificationPredicate = `notification_models.deleted_at IS NULL AND
+ NOT EXISTS (SELECT 1 FROM moderation_removed_nudge_models removed WHERE removed.nudge_id=notification_models.nudge_id) AND
   ` + notificationreminder.VisiblePredicate + ` AND
   ` + timerNotificationVisiblePredicate + ` AND
  ` + notificationlongtimer.VisiblePredicate + ` AND

@@ -49,3 +49,14 @@ test('removed-comment notice copies only the subject reference and rejects malfo
   assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedComment: { id: 'comment', createdAt: 'invalid' } }));
   assert.throws(() => enforcementNoticeFromAPI({ ...source, action: 'warning' }));
 });
+
+test('nudge notices identify the sent item without carrying restricted evidence', async () => {
+  const { enforcementNoticeFromAPI } = await import('./adapters/api-enforcement');
+  const source = { id: 'notice', action: 'content_removal', policyReason: 'Policy', issuedAt: '2026-10-09T12:00:00Z', appealDeadline: '2026-11-08T12:00:00Z', affectedNudge: { id: 'nudge', sentAt: '2026-10-08T12:00:00Z', reporter: 'private', evidence: 'private' } };
+  const result = enforcementNoticeFromAPI(source);
+  assert.deepEqual(result.affectedNudge, { id: 'nudge', sentAt: '2026-10-08T12:00:00Z' });
+  source.affectedNudge.id = 'changed';
+  assert.equal(result.affectedNudge?.id, 'nudge');
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedNudge: { id: 'nudge', sentAt: 'invalid' } }));
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedComment: { id: 'comment', createdAt: '2026-10-08T12:00:00Z' } }));
+ });
