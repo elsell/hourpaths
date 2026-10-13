@@ -94,6 +94,7 @@ func resolveReportSnapshot(tx *gorm.DB, viewer string, target domain.Target, at 
 		err := tx.Table("social_nudge_models n").Select("n.*").Joins("JOIN user_models sender ON sender.id=n.sender_user_id AND sender.status='active'").
 			Joins("JOIN notification_models notice ON notice.nudge_id=n.id AND notice.kind='nudge_received'").
 			Where("notice.id=? AND notice.recipient_user_id=? AND n.recipient_user_id=?", target.ID, viewer, viewer).
+			Where("NOT EXISTS (SELECT 1 FROM moderation_removed_nudge_models removed WHERE removed.nudge_id=n.id)").
 			Where(`NOT EXISTS(SELECT 1 FROM block_models b WHERE (b.blocker_user_id=n.sender_user_id AND b.blocked_user_id=n.recipient_user_id) OR (b.blocker_user_id=n.recipient_user_id AND b.blocked_user_id=n.sender_user_id))`).Take(&row).Error
 		if err != nil {
 			return result, err

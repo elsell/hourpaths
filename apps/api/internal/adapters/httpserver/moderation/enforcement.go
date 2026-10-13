@@ -27,7 +27,12 @@ type EnforcementCommentData struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"createdAt"`
 }
+type EnforcementNudgeData struct {
+	ID     string    `json:"id"`
+	SentAt time.Time `json:"sentAt"`
+}
 type EnforcementNoticeData struct {
+	AffectedNudge   *EnforcementNudgeData   `json:"affectedNudge,omitempty"`
 	AffectedComment *EnforcementCommentData `json:"affectedComment,omitempty"`
 	ID              string                  `json:"id"`
 	Action          string                  `json:"action"`
@@ -89,6 +94,9 @@ func noticeData(n app.Notice) EnforcementNoticeData {
 	d := EnforcementNoticeData{ID: e.ID, Action: string(e.Action), PolicyReason: e.PolicyReason, IssuedAt: e.IssuedAt, AppealDeadline: e.IssuedAt.Add(30 * 24 * time.Hour)}
 	if e.AffectedCommentID != "" && !e.AffectedCommentCreatedAt.IsZero() {
 		d.AffectedComment = &EnforcementCommentData{ID: e.AffectedCommentID, CreatedAt: e.AffectedCommentCreatedAt}
+	}
+	if e.AffectedNudgeID != "" && !e.AffectedNudgeSentAt.IsZero() {
+		d.AffectedNudge = &EnforcementNudgeData{ID: e.AffectedNudgeID, SentAt: e.AffectedNudgeSentAt}
 	}
 	if !e.Until.IsZero() {
 		until := e.Until

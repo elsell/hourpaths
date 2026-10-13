@@ -87,5 +87,7 @@ content through an explicit no-op moderation adapter for now; actual automated
 classification is deferred. See [Moderation](safety/moderation.spec.md#public-text-moderation-boundary).
 
 On 2026-10-13 the owner approved stopping and saving elapsed time on account
-suspension or ban. The active safety slice is defined by
+suspension or ban. That behavior is defined by
 [account enforcement](safety/moderation.spec.md#account-suspension-and-ban-enforcement).
+
+The active safety slice is [reported nudge removal](safety/moderation.spec.md#nudge-removal-acceptance-safe-nudge-removal-01), including notification suppression and existing notice/appeal behavior.

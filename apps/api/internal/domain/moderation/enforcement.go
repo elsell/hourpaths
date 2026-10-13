@@ -26,6 +26,8 @@ const (
 // reporter's identity deliberately have no representation in this value.
 type Enforcement struct {
 	ID, SubjectUserID        string
+	AffectedNudgeID          string
+	AffectedNudgeSentAt      time.Time
 	AffectedCommentID        string
 	AffectedCommentCreatedAt time.Time
 	Action                   EnforcementAction
@@ -38,6 +40,9 @@ func (e Enforcement) Validate() error {
 		return ErrInvalidEnforcement
 	}
 	if (e.AffectedCommentID == "") != e.AffectedCommentCreatedAt.IsZero() || (e.AffectedCommentID != "" && (e.Action != ContentRemoval || strings.TrimSpace(e.AffectedCommentID) != e.AffectedCommentID)) {
+		return ErrInvalidEnforcement
+	}
+	if (e.AffectedNudgeID == "") != e.AffectedNudgeSentAt.IsZero() || (e.AffectedNudgeID != "" && (e.Action != ContentRemoval || strings.TrimSpace(e.AffectedNudgeID) != e.AffectedNudgeID || e.AffectedCommentID != "")) {
 		return ErrInvalidEnforcement
 	}
 	switch e.Action {
