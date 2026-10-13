@@ -267,6 +267,64 @@ acknowledgments must remain unchanged.
    heart committed after removal can republish or interact with removed content.
    A removal committed before push handoff must suppress that delivery.
 
+## Account suspension and ban enforcement
+
+Owner decision, 2026-10-13: when an account is suspended or banned, its running
+timers must stop and save elapsed time. Suspension and ban are restrictions on
+ordinary account use, not account deletion.
+
+- An authorized operational reviewer must issue a suspension with an end instant
+  or a permanent ban against a reviewed case. The decision, subject notice,
+  case transition, reviewer record and server-known timer completion must commit
+  atomically. Failure must leave the prior account and timer state intact.
+- Every server-known running timer for the subject must stop at the enforcement
+  instant. Recorded activity must retain its start instant and occurrence time
+  zone. Existing subsecond-stop rules apply; another participant's timers and
+  recorded activity must not change.
+- Enforcement must serialize with timer creation/stopping and offline replay so
+  that races cannot leave a new active timer after enforcement, duplicate saved
+  time, or overwrite the enforcement stop with a later stop.
+- Ordinary authenticated use must be denied while any unreversed restriction is
+  active. Suspension covers its issue instant up to, but not including, its end;
+  a ban has no expiry. A dependency failure must not grant ordinary access.
+- The restricted user must retain authenticated access to their own enforcement
+  notices and existing appeal process, minimal account/session lifecycle,
+  sign-out, and the existing account export/deletion controls. Other accounts
+  must not gain access to these private records. A restriction must not be
+  represented as an expired or invalid credential.
+- Mobile and Studio must show the restriction reason, temporary end when
+  applicable, and the existing notice/appeal controls instead of ordinary
+  application actions. Account replacement must clear the previous account's
+  restriction state. Native timer surfaces must be removed when the client
+  learns of the restriction.
+- Clients must pause ordinary synchronization when restricted and must not
+  silently discard retained pending work. Offline clients cannot learn a new
+  restriction until they reconnect; their later requests must obey the current
+  server restriction and canonical timer-stop result.
+- A reversed decision or expired suspension must cease restricting access only
+  when no other active restriction remains. It must not restart stopped timers,
+  erase saved elapsed time, or erase the original decision/appeal evidence.
+- Existing moderation review, appeal deadline, independent-reviewer preference,
+  account deletion, and evidence-retention requirements remain authoritative.
+
+### Acceptance (`SAFE-ACCOUNT-ENFORCEMENT-01`)
+
+1. Restricting a subject with two active Paths saves both elapsed intervals at
+   the same instant and stops both timers; a peer's timer stays running.
+2. A timer start/stop or replay racing enforcement either commits before the
+   restriction or fails safely; no running timer or duplicate elapsed time
+   survives an enforcement-first outcome. Transaction failure rolls back the
+   notice, restriction and timer changes together.
+3. A restricted subject cannot use ordinary routes, including sync. They can
+   read and appeal their own notice, export/delete their account and sign out.
+   Invalid credentials, cross-account notice access and dependency failures
+   remain denied without leaking private evidence.
+4. At suspension expiry, ordinary use resumes unless another active restriction
+   exists. Reversal removes only the reversed restriction. Neither case restarts
+   timers or removes completed activity.
+5. Studio and mobile present the same private decision and appeal behavior;
+   refresh, restart, expiry, reversal and account switching converge safely.
+
 ## Public-text moderation boundary
 
 Owner decision, 2026-10-12: text processing must stay entirely on HourPaths

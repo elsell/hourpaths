@@ -84,7 +84,7 @@ const protectedProviderAdapters = new Set([
   'apps/web/src/lib/provider-auth.ts',
 ]);
 const protectedProviderManifest = 'scripts/protected-provider-adapters.sha256';
-const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts', 'packages/api-client/src/policy-requirement.ts']);
+const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts', 'packages/api-client/src/policy-requirement.ts', 'packages/api-client/src/account-restriction.ts']);
 const protectedApiClientManifest = 'scripts/protected-api-client-adapter.sha256';
 const studioHosts = new Set([
   'apps/web/src/routes/studio/[...path]/+page.svelte',

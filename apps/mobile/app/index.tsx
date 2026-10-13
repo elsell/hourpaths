@@ -1,3 +1,5 @@
+import { AccountRestrictionController, apiAccountRestriction } from '@hourpaths/client-core';
+import { NativeAccountRestrictionSource } from '../src/ui/account-restriction-presentation';
 import type { PathStatistics as PathStatisticsDTO } from '@hourpaths/api-client';
 import { mobileTheme } from '../src/ui/tokens';
 import { PathStatisticsView } from '../src/ui/path-statistics-view';
@@ -649,6 +651,10 @@ export function HomeScreen() {
   const foregroundTargetKey = useRef<string | null>(null);
   foregroundTargetKey.current = foregroundNotificationTargetKey(pathname, routeParameters);
   const [session, setSession] = useState<Session | null>(null);
+  const [restrictionHandle, setRestrictionHandle] = useState<{ controller: AccountRestrictionController; credential: Session } | null>(null);
+  const [accountRestricted, setAccountRestricted] = useState(false);
+  const restrictionCurrent = useRef<{ credential: Session; controller: AccountRestrictionController } | null>(null);
+  const restrictedNow = () => { const current = restrictionCurrent.current; return !!current && current.credential === notificationLifecycleState.current.session && current.controller.state.required; };
   const [policyHandle, setPolicyHandle] = useState<{ controller: PolicyReviewController; credential: Session } | null>(null);
   const policyResume = useRef<() => void>(() => {});
   const userBlockingPort = useMemo(() => {
@@ -2160,11 +2166,12 @@ export function HomeScreen() {
             setNativeTrackingState(snapshot);
             if (replace) { setAccessState('authenticated_online'); }
             const next = { ...active.destination, profile: replace ? profile : { ...active.destination.profile, paths: active.destination.profile.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)), timers: profile.timers } };
-            void timerSurfaces.publish(owner, next.profile.paths, next.profile.timers);
+            if (!restrictedNow()) void timerSurfaces.publish(owner, next.profile.paths, next.profile.timers);
             commitTimerProjectionBeforeRender(next,
               value => { notificationLifecycleState.current = { ...active, destination: value }; }, setDestination);
           },
         });
+        service.setRestricted(restrictedNow());
         nativeOffline.current = service;
         return service;
       }).catch(error => {
@@ -2178,7 +2185,7 @@ export function HomeScreen() {
   useEffect(() => () => { nativeOfflineGeneration.current++; nativeOffline.current?.dispose(); }, []);
 
   useEffect(() => { void clearNativeAccountExportCache().catch(() => undefined); }, []);
-  policyResume.current = () => { nativeOffline.current?.wake(); void retryAuthenticatedHome(); };
+  policyResume.current = () => { if (!restrictedNow()) { nativeOffline.current?.wake(); void retryAuthenticatedHome(); } };
   useEffect(() => {
     if (!session || (session.nextAction ?? 'home') !== 'home') { setPolicyHandle(null); return; }
     const credential = session;
@@ -2209,6 +2216,40 @@ export function HomeScreen() {
     const stopForeground = subscribeNativeAppActive(() => { if (current()) void controller.refresh(); });
     return () => { stop(); stopForeground(); controller.dispose(); };
   }, [session]);
+
+  useEffect(() => {
+    if (!session || (session.nextAction ?? 'home') !== 'home') { restrictionCurrent.current = null; setRestrictionHandle(null); setAccountRestricted(false); return; }
+    const credential = session;
+    const current = () => notificationLifecycleState.current.session === credential;
+    const controller = new AccountRestrictionController(apiAccountRestriction(apiURL, () => current() ? credential.token : null, credential.ownerId,
+      rejected => { if (current() && rejected === credential.token) void handleSessionFailure({ kind: 'http', status: 401 }, credential); }),
+      credential.ownerId && restrictionHandle?.controller.state.review?.userId === credential.ownerId ? restrictionHandle.controller.state.review : undefined);
+    const handle = { controller, credential }; restrictionCurrent.current = handle; setRestrictionHandle(handle);
+    let required = false;
+    const stop = controller.subscribe(() => {
+      if (!current()) return;
+      const next = controller.state.required;
+      setAccountRestricted(next); nativeOffline.current?.setRestricted(next);
+      if (next) void timerSurfaces.clear();
+      else if (required) void retryAuthenticatedHome();
+      required = next;
+    });
+    void controller.refresh();
+    const stopForeground = subscribeNativeAppActive(() => { if (current()) void controller.refresh(); });
+    return () => { stop(); stopForeground(); controller.dispose(); if (restrictionCurrent.current === handle) restrictionCurrent.current = null; };
+  }, [session]);
+
+  async function bindRestrictionOwner() {
+    const handle = restrictionCurrent.current;
+    if (!handle || notificationLifecycleState.current.session !== handle.credential) throw new Error('restriction_session_changed');
+    const expectedOwner = handle.controller.state.review?.userId ?? handle.credential.ownerId;
+    const profile = await validateSessionCredential<{ id: string }>(handle.credential, async current => generatedResponse(await createSessionApiClient(apiURL, () => current.token).profile()));
+    if (!profile.id || expectedOwner && profile.id !== expectedOwner || notificationLifecycleState.current.session !== handle.credential) throw new Error('restriction_session_changed');
+    const owner = profile.id;
+    await serializedSessionStorage.persist({ ...handle.credential, ownerId: owner }, () => notificationLifecycleState.current.session === handle.credential);
+    if (notificationLifecycleState.current.session !== handle.credential) throw new Error('restriction_session_changed');
+    handle.credential.ownerId = owner; return owner;
+  }
 
   async function bindPolicyReviewOwner() {
     const handle = policyHandle;
@@ -4548,10 +4589,9 @@ export function HomeScreen() {
 
 
   async function enforcementRequest<T>(request: (repository: EnforcementRepository) => Promise<T>): Promise<T> {
-    if (!session || destination?.kind !== 'home') throw new EnforcementFailure('rejected');
-    const credential = session, owner = destination.profile.id, generation = socialPresentationGeneration.current;
-    const current = () => notificationLifecycleState.current.session?.token === credential.token &&
-      notificationLifecycleState.current.destination?.kind === 'home' && notificationLifecycleState.current.destination.profile.id === owner && socialPresentationGeneration.current === generation;
+    if (!session || (session.nextAction ?? 'home') !== 'home') throw new EnforcementFailure('rejected');
+    const credential = session;
+    const current = () => notificationLifecycleState.current.session === credential;
     try {
       const result = await request(apiEnforcement(apiURL, credential.token));
       if (!current()) throw new Error('enforcement_superseded');
@@ -8623,7 +8663,11 @@ export function HomeScreen() {
     edges={destination ? ['left', 'right'] : ['top', 'left', 'right', 'bottom']}
     style={[styles.screen, ownedHomeDestination ? { paddingTop: 0 } : null]}
   >
-    {policyHandle && <NativePolicyReviewSource controller={policyHandle.controller} i18n={i18n}
+    {restrictionHandle && !accountDeletionReview && <NativeAccountRestrictionSource controller={restrictionHandle.controller} i18n={i18n} exportData={policyHandle?.controller.exportData}
+      repository={{ list: cursor => enforcementRequest(repo => repo.list(cursor)), get: id => enforcementRequest(repo => repo.get(id)), appeal: (id, text, key) => enforcementRequest(repo => repo.appeal(id, text, key)) }}
+      signOut={async () => { if (notificationLifecycleState.current.session !== restrictionHandle.credential) return; if (await clearSession()) router.navigate('/(tabs)/home'); }}
+      deleteAccount={async () => { const owner = await bindRestrictionOwner(); if (notificationLifecycleState.current.session !== restrictionHandle.credential) return; setAccountDeletionReview({ owner, recovery: false }); router.navigate('/(tabs)/home'); }} />}
+    {policyHandle && !accountRestricted && <NativePolicyReviewSource controller={policyHandle.controller} i18n={i18n}
       signOut={async () => { await bindPolicyReviewOwner(); if (notificationLifecycleState.current.session !== policyHandle.credential) return; if (await clearSession()) router.navigate('/(tabs)/home'); }}
       deleteAccount={async () => { const owner = await bindPolicyReviewOwner(); if (notificationLifecycleState.current.session !== policyHandle.credential) return; setAccountDeletionReview({ owner, recovery: false }); router.navigate('/(tabs)/home'); }} />}
     {ownedHomeDestination && !selectedPath ? <HomeHeaderActions

@@ -1,3 +1,5 @@
+import { notifyAccountRestriction } from './account-restriction';
+export { observeAccountRestriction } from './account-restriction';
 import { notifyPolicyRequirement } from './policy-requirement';
 export { observePolicyRequirement } from './policy-requirement';
 import createClient from 'openapi-fetch';
@@ -134,10 +136,13 @@ export function createApiClient(baseUrl: string, tokenProvider: TokenProvider, s
       for (let attempt = 0; ; attempt++) {
         const response = await fetch(input, { ...requestInit, headers, ...(requestSignal ? { signal: requestSignal } : {}) });
         if (response.status === 401) rejected?.(token);
-        if (response.status === 428 && !requestSignal?.aborted) {
+        if ((response.status === 428 || response.status === 403) && !requestSignal?.aborted) {
           let problem: unknown;
           try { problem = await response.clone().json(); } catch { /* Preserve malformed responses for ordinary error handling. */ }
-          if (typeof problem === 'object' && problem !== null && 'code' in problem && problem.code === 'policy_acceptance_required') await notifyPolicyRequirement(baseUrl, token);
+          if (typeof problem === 'object' && problem !== null && 'code' in problem) {
+            if (response.status === 428 && problem.code === 'policy_acceptance_required') await notifyPolicyRequirement(baseUrl, token);
+            if (response.status === 403 && problem.code === 'account_restricted') await notifyAccountRestriction(baseUrl, token);
+          }
         }
         if (!options.retryRateLimitedReads || !token || method !== 'GET' || response.status !== 429 || attempt >= 2) return response;
         const header = response.headers.get('Retry-After');
@@ -196,6 +201,7 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     notificationOwnership: (notificationId: string) => authenticatedClient.GET('/v1/me/notifications/{notificationId}/ownership', { params: { path: { notificationId } } }),
     ownActivityHistory: (window: 'all' | 'retained' = 'all', cursor = '') => authenticatedClient.GET('/v1/me/activity-history', { params: { query: { window, cursor, limit: 100 } } }),
     ownRunningTimers: (cursor = '') => authenticatedClient.GET('/v1/me/running-timers', { params: { query: { cursor, limit: 50 } } }),
+    reviewAccountRestriction: () => authenticatedClient.GET('/v1/me/restriction'),
     reviewCurrentPolicies: () => authenticatedClient.GET('/v1/me/policies'),
     acceptCurrentPolicies: (body: Omit<components['schemas']['PolicyRenewalInputBody'], '$schema'>, key: string) => authenticatedClient.POST('/v1/me/policies', { body, params: { header: { 'Idempotency-Key': key } } }),
     unavailablePeriod: () => authenticatedClient.GET('/v1/me/unavailable-period'),

@@ -131,7 +131,7 @@ type APIError struct {
 	Type      string              `json:"type,omitempty" format:"uri" default:"about:blank"`
 	Title     string              `json:"title,omitempty"`
 	Status    int                 `json:"status,omitempty"`
-	Code      string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,policy_acceptance_required,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
+	Code      string              `json:"code" doc:"Stable machine-readable error code" enum:"bad_request,unauthenticated,invalid_credential,forbidden,not_found,conflict,username_unavailable,policy_set_changed,policy_acceptance_required,account_restricted,idempotency_conflict,invitation_warning_required,block_review_required,validation_failed,rate_limited,authorization_pending,authorization_dead_lettered,authorization_policy_not_configured,unavailable,internal_error,request_failed,oidc_discovery_unavailable"`
 	Detail    string              `json:"detail,omitempty"`
 	Errors    []*huma.ErrorDetail `json:"errors,omitempty"`
 }
@@ -197,6 +197,7 @@ func init() {
 }
 
 type Options struct {
+	AccountAdmission                                                                                                       app.AccountAdmission
 	PolicyAdmission                                                                                                        app.PolicyAdmission
 	OIDCIssuer, OIDCDiscoveryURL, OIDCAuthorizationURL, OIDCTokenURL, OIDCDocsClientID, OIDCDocsRedirectURI, PublicBaseURL string
 	CORSAllowedOrigins                                                                                                     []string
@@ -220,6 +221,11 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	if admission == nil {
 		admission = application
 	}
+	accountAdmission := options.AccountAdmission
+	if accountAdmission == nil {
+		accountAdmission = application
+	}
+	installAccountAdmission(api, accountAdmission)
 	installPolicyAdmission(api, admission)
 	if !options.DisableDocs {
 		mux.HandleFunc("GET /docs", oidcDocs(options.OIDCIssuer))
@@ -299,6 +305,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	registerProfileRoutes(api, application)
 	registerWeekStartPreferenceRoutes(api, application)
 	registerPolicyRenewalRoutes(api, application)
+	registerAccountRestrictionRoute(api, application)
 	registerAccountExportRoutes(api, application)
 	registerUnavailablePeriodRoutes(api, application)
 	registerProviderIdentityRoutes(api, application)
@@ -699,6 +706,9 @@ func mapError(err error, concealForbidden bool) error {
 	}
 	if errors.Is(err, ports.ErrConflict) {
 		return newCodedAPIError(http.StatusConflict, "conflict", "conflict")
+	}
+	if errors.Is(err, ports.ErrAccountRestricted) {
+		return newCodedAPIError(http.StatusForbidden, "account_restricted", "account use is restricted; review your enforcement notice")
 	}
 	if errors.Is(err, ports.ErrPolicyAcceptanceRequired) {
 		return newCodedAPIError(http.StatusPreconditionRequired, "policy_acceptance_required", "current policies must be reviewed")

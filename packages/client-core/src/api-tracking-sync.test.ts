@@ -8,6 +8,7 @@ import { TrackingReplaySuspended } from './offline-tracking';
 
 test('real HTTP replay retains identity and maps archive, authorization and foreign-account responses safely', async t => {
   let status = 200;
+  let code = 'request_failed';
   let participant = 'alice';
   let identified = true;
   const received: { key: string | undefined; body: unknown; running: string | undefined }[] = [];
@@ -23,7 +24,7 @@ test('real HTTP replay retains identity and maps archive, authorization and fore
       activity: { id: 'entry', participantId: participant, pathId: 'guitar', startedAt: '2026-10-01T12:00:00Z',
         endedAt: '2026-10-01T12:02:00Z', occurrenceTimeZone: 'America/New_York', durationSeconds: 120,
         createdAt: '2026-10-01T12:10:00Z', updatedAt: '2026-10-01T12:10:00Z' },
-    } } : { code: 'request_failed', ...(identified ? { operation: 'synchronize-offline-path-timer' } : {}) }));
+    } } : { code, ...(identified ? { operation: 'synchronize-offline-path-timer' } : {}) }));
   });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -56,6 +57,8 @@ test('real HTTP replay retains identity and maps archive, authorization and fore
   assert.deepEqual(await sync.send('alice', operation), { kind: 'rejected', reason: 'membership', disclosePath: false });
   identified = false;
   await assert.rejects(sync.send('alice', operation), /temporarily_unavailable/);
+  status = 403; code = 'account_restricted'; identified = true;
+  await assert.rejects(sync.send('alice', operation), TrackingReplaySuspended);
   status = 401;
   await assert.rejects(sync.send('alice', operation), TrackingReplaySuspended);
   const before = received.length;

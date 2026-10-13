@@ -11,8 +11,10 @@ import (
 // These domain-boundary fixtures represent accounts with current acceptance.
 type acceptedPolicyHTTPFixture struct{}
 
-func (acceptedPolicyHTTPFixture) AdmitPolicyUse(context.Context, string) error { return nil }
+func (acceptedPolicyHTTPFixture) AdmitPolicyUse(context.Context, string) error  { return nil }
+func (acceptedPolicyHTTPFixture) AdmitAccountUse(context.Context, string) error { return nil }
 func newPolicyAcceptedHTTPTestServer(a app.App, domains []string, options httpserver.Options) (http.Handler, huma.API) {
+	options.AccountAdmission = acceptedPolicyHTTPFixture{}
 	options.PolicyAdmission = acceptedPolicyHTTPFixture{}
 	return httpserver.New(a, domains, options)
 }

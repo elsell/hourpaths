@@ -2,6 +2,7 @@ package activitystore
 
 import (
 	"errors"
+	"github.com/elsell/hour-paths/apps/api/internal/adapters/gormstore/accountguard"
 	"strings"
 	"time"
 
@@ -45,8 +46,11 @@ func lockPathMembership(tx *gorm.DB, pathID, participantID string) (time.Time, *
 	if tx == nil || strings.TrimSpace(pathID) != pathID || pathID == "" || strings.TrimSpace(participantID) != participantID || participantID == "" {
 		return time.Time{}, nil, ports.ErrInvalidArgument
 	}
-	// The participant-and-Path progress lock is always acquired before row
-	// locks. Consumers such as nudges follow the same order so progress writes
+	if err := accountguard.LockActive(tx, participantID); err != nil {
+		return time.Time{}, nil, err
+	}
+	// After the account admission lock, participant-and-Path progress is
+	// acquired before Path and membership row locks. Consumers such as nudges follow the same order so progress writes
 	// cannot deadlock with authorization or foreign-key row locks.
 	if err := progresslock.Lock(tx, participantID, pathID); err != nil {
 		return time.Time{}, nil, err

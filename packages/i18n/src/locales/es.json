@@ -1,4 +1,6 @@
 {
+  "accountRestriction.heading": "Acceso a la cuenta restringido",
+  "accountRestriction.body": "Los temporizadores del servidor se han detenido y se ha guardado el tiempo transcurrido. El trabajo sin sincronizar permanece en este dispositivo. Revisa tus avisos o apela una decisión.",
   "app.title": "HourPaths",
   "app.ready": "Tu aplicación generada está lista.",
   "common.loading": "Cargando…",

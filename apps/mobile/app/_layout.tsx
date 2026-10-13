@@ -1,3 +1,4 @@
+import { NativeAccountRestrictionProvider } from '../src/ui/account-restriction-presentation';
 import { NativePolicyReviewProvider } from '../src/ui/policy-review-presentation';
 import { NativeToastProvider } from '../src/ui/native-toast';
 import { ThemeProvider } from '@react-navigation/native';
@@ -12,7 +13,7 @@ const i18n = createDeviceTranslator(getLocales);
 
 export default function RootLayout() {
   const notificationPresentation = useNotificationRoutePresentation();
-  return <ThemeProvider value={navigationTheme}><NativeToastProvider><NativePolicyReviewProvider><Stack
+  return <ThemeProvider value={navigationTheme}><NativeToastProvider><NativeAccountRestrictionProvider><NativePolicyReviewProvider><Stack
     screenOptions={nativeStackOptions}
   >
     <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -52,5 +53,5 @@ export default function RootLayout() {
     <Stack.Screen name="path/[pathID]/nudge-settings" options={{ headerLargeTitle: false, title: i18n.t('nudge.audience.heading') }} />
     <Stack.Screen name="path/[pathID]/history/index" options={{ headerLargeTitle: false, title: i18n.t('pathDetails.history') }} />
     <Stack.Screen name="path/[pathID]/history/[activityID]" options={{ headerLargeTitle: false, title: i18n.t('pathDetails.activityHeading') }} />
-  </Stack></NativePolicyReviewProvider></NativeToastProvider></ThemeProvider>;
+  </Stack></NativePolicyReviewProvider></NativeAccountRestrictionProvider></NativeToastProvider></ThemeProvider>;
 }

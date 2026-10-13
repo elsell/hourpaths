@@ -3724,15 +3724,19 @@ MANUAL_ACTIVITY_DELETE_EVIDENCE
   exit 1
 }
 echo "manual activity delete/replay, opaque ownership, cascade, tombstone, and unrelated preservation acceptance passed"
+# Keep this CRUD/progress fixture away from the participant's interval boundary.
+# A backdated activity may cross midnight; boundary splitting has its own tests.
+browser_progress_alignment_hour="$(python3 -c 'import datetime,zoneinfo;print((datetime.datetime.now(zoneinfo.ZoneInfo("America/New_York")).hour+12)%24)')"
+browser_progress_path_request="$(BROWSER_PROGRESS_ALIGNMENT_HOUR="$browser_progress_alignment_hour" python3 -c 'import json,os;print(json.dumps({"name":"Browser overall progress","intervalGoal":{"targetSeconds":60,"recurrence":"daily","alignment":{"hour":int(os.environ["BROWSER_PROGRESS_ALIGNMENT_HOUR"])}},"overallTarget":{"targetSeconds":120}},separators=(",",":")))')"
 browser_progress_path_key='browser-progress-path-create-key-0001'
 browser_progress_path_response="$(curl -fsS -X POST \
   -H "Authorization: Bearer $owner_token" \
   -H "Idempotency-Key: $browser_progress_path_key" \
   -H 'Content-Type: application/json' \
-  --data '{"name":"Browser overall progress","intervalGoal":{"targetSeconds":60,"recurrence":"daily","alignment":{"hour":0}},"overallTarget":{"targetSeconds":120}}' \
+  --data "$browser_progress_path_request" \
   http://localhost:8080/v1/paths)"
 browser_progress_path_id="$(printf '%s' "$browser_progress_path_response" |
-  python3 -c 'import json,sys;d=json.load(sys.stdin)["data"];assert d["name"]=="Browser overall progress" and d["intervalGoal"]=={"targetSeconds":60,"recurrence":"daily","alignment":{"hour":0}} and d["overallTarget"]=={"targetSeconds":120};print(d["id"])')"
+  BROWSER_PROGRESS_ALIGNMENT_HOUR="$browser_progress_alignment_hour" python3 -c 'import json,os,sys;d=json.load(sys.stdin)["data"];assert d["name"]=="Browser overall progress" and d["intervalGoal"]=={"targetSeconds":60,"recurrence":"daily","alignment":{"hour":int(os.environ["BROWSER_PROGRESS_ALIGNMENT_HOUR"])}} and d["overallTarget"]=={"targetSeconds":120};print(d["id"])')"
 [[ -n "$browser_progress_path_id" ]] || { echo "browser progress Path creation did not return an ID" >&2; exit 1; }
 # BROWSER_MANUAL_ACTIVITY_CHRONOLOGY_FIXTURE: the browser scenario creates a
 # one-minute activity and then moves its start two minutes earlier, so the

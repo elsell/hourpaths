@@ -75,7 +75,7 @@ func (r *Repository) LeavePath(ctx context.Context, command application.LeavePat
 		if command.RetainActivity {
 			timerAudit := shared.NewAuditEvent(ctx, fixedClock{command.LeftAt}, command.ActorUserID, command.ActorUserID, audit.ActivityTimerStopped, "timer", string(command.PathID), audit.Succeeded)
 			timerAudit.ID = command.NewID()
-			if _, err := activitystore.New(tx).StopParticipantTimerForLeave(ctx, string(command.PathID), command.ActorUserID, command.LeftAt, command.NewID(), timerAudit); err != nil {
+			if _, err := activitystore.New(tx).StopParticipantTimerForLifecycle(ctx, string(command.PathID), command.ActorUserID, command.LeftAt, command.NewID(), timerAudit); err != nil {
 				return err
 			}
 		}

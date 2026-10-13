@@ -296,7 +296,7 @@ fi
 grep -Fq 'WEB_ACCEPTANCE_APPLICATION_TOKEN="$owner_token" WEB_ACCEPTANCE_PATH_NAME=' "$live"
 grep -Fq "browser-progress-path-create-key-0001" "$live"
 grep -Fq '"overallTarget":{"targetSeconds":120}' "$live"
-grep -Fq '"intervalGoal":{"targetSeconds":60,"recurrence":"daily","alignment":{"hour":0}}' "$live"
+grep -Fq '"intervalGoal":{"targetSeconds":60,"recurrence":"daily","alignment":{"hour":int(os.environ["BROWSER_PROGRESS_ALIGNMENT_HOUR"])}}' "$live"
 grep -Fq "saveReviewedActivity(d.activities, review)" apps/web/src/lib/studio/presentation/activity-editor.tsx
 # Native creation/editing now commits through the durable queue. Its behavioral
 # tests cover persistence/replay; do not require an obsolete direct API call.

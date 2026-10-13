@@ -24,7 +24,7 @@ func TestNotificationOwnershipCheckDuringPolicyReviewExposesNoContent(t *testing
 	for _, item := range cases {
 		t.Run(item.name, func(t *testing.T) {
 			service := controlledInvitationHTTPService{notifications: []pathapp.InvitationNotificationProjection{{ID: "notice", PathName: "private-path-name", PathID: "private-path-id", Actor: pathapp.InvitationPublicIdentity{Username: "private-user"}}}, err: item.err}
-			handler, _ := shared.New(app.App{}, nil, shared.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { RegisterInvitations(api, service) }}})
+			handler, _ := shared.New(app.App{}, nil, shared.Options{AccountAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { RegisterInvitations(api, service) }}})
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, invitationRequest(http.MethodGet, "/v1/me/notifications/notice/ownership", "", ""))
 			if response.Code != item.status {

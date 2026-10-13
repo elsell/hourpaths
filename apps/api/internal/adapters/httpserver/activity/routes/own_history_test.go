@@ -25,7 +25,7 @@ func (s *ownHistoryRouteService) ListOwnHistory(_ context.Context, authorization
 }
 func TestOwnHistoryRoutePreservesEmptyAuthorizedPageCursor(t *testing.T) {
 	service := &ownHistoryRouteService{}
-	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{AccountAdmission: acceptedPolicyFixture{}, PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
 	req := httptest.NewRequest(http.MethodGet, "/v1/me/activity-history?window=retained&cursor=page&limit=7", nil)
 	req.Header.Set("Authorization", "Bearer own-session")
 	recorder := httptest.NewRecorder()

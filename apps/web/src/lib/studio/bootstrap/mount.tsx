@@ -1,3 +1,4 @@
+import { AccountRestrictionController, apiAccountRestriction } from '@hourpaths/client-core';
 import { apiEnforcement, apiReporting } from '@hourpaths/client-core';
 import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
 import { browserAccountExportJSON } from '../account/adapters/browser-account-export';
@@ -136,6 +137,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     now: () => Date.now(), device: owner => durableStore.read(owner), sink: browserAccountExportJSON,
   });
   const policyReview: PolicyReviewController = new PolicyReviewController(apiPolicyRenewal(options.apiURL, () => session.token(), initial.ownerId, credential => session.reject(credential)), () => crypto.randomUUID(), url => openWebPolicyLink(url, () => { throw new Error("policy_link_unavailable"); }), policyTimers, accountExport);
+  const accountRestriction = new AccountRestrictionController(apiAccountRestriction(options.apiURL, () => session.token(), initial.ownerId, credential => session.reject(credential)));
   offline = browserTrackingRuntime(options.apiURL, session, durableStore, browserConnected);
   const remotePaths = apiPathRepository(options.apiURL, () => session.token(), credential => session.reject(credential), false);
   const paths = durablePathRepository(
@@ -154,7 +156,13 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     if (!await history.refresh()) throw new Error('history_refresh_unavailable');
   }, (work, delay) => { const timer = setTimeout(work, delay); return () => clearTimeout(timer); }, () => {});
   stopHistoryRefresh = () => historyRefresh.dispose();
+  const stopRestriction = accountRestriction.subscribe(() => {
+    offline?.setRestricted(accountRestriction.state.required);
+    historyRefresh.setPaused(accountRestriction.state.required);
+  });
   const wakeTracking = () => {
+    if (browserConnected()) void accountRestriction.refresh();
+    if (accountRestriction.state.required) return;
     if (browserConnected()) void policyReview.refresh();
     offline?.retry();
     if (browserConnected()) void historyRefresh.wake();
@@ -163,6 +171,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
   const stopConnectivity = subscribeTrackingConnectivity(wakeTracking);
   root.render(<StudioApp dependencies={{
     policyReview,
+    accountRestriction,
     providers: browserProviderIdentities(options.config),
     deletion,
     offline,
@@ -191,7 +200,7 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     operationId: () => crypto.randomUUID(),
     now: () => Date.now(),
   }} />);
-  return () => { active = false; policyReview.dispose(); clearInterval(deadline); stopConnectivity(); historyRefresh.dispose(); offline?.dispose(); stopRetained?.(); session.dispose(); root.unmount(); };
+  return () => { active = false; stopRestriction(); accountRestriction.dispose(); policyReview.dispose(); clearInterval(deadline); stopConnectivity(); historyRefresh.dispose(); offline?.dispose(); stopRetained?.(); session.dispose(); root.unmount(); };
 }
 
 export function mountAccountEntry(element: HTMLElement, options: { config: ClientRuntimeConfig; locale: SupportedLocale; callback?: boolean }) {

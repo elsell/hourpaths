@@ -9,7 +9,7 @@ import { NativeButton } from './native-button';
 import { ThemedText as Text, ThemedTextInput } from './primitives';
 import { mobileTheme } from './tokens';
 
-export function EnforcementSettingsView({ i18n, repository }: { i18n: Translator; repository: EnforcementRepository }) {
+export function EnforcementSettingsView({ i18n, repository, embedded = false }: { i18n: Translator; repository: EnforcementRepository; embedded?: boolean }) {
   const repo = useRef(repository); repo.current = repository;
   const live = useRef(true), ticket = useRef(0), admitted = useRef(false);
   const [items, setItems] = useState<EnforcementNotice[]>(), [next, setNext] = useState<string>();
@@ -24,14 +24,15 @@ export function EnforcementSettingsView({ i18n, repository }: { i18n: Translator
     finally { admitted.current = false; if (live.current && ticket.current === sequence) setBusy(false); }
   }
   useEffect(() => { live.current = true; void load(); return () => { live.current = false; ticket.current++; }; }, []);
-  return <SettingsShell>
+  const content = <>
     {!items && busy && <ActivityIndicator accessibilityLabel={i18n.t('common.loading')} color={mobileTheme.colors.accent} />}
     {items?.length === 0 && <NativeContentUnavailable title={i18n.t('enforcement.empty')} description={i18n.t('enforcement.emptyDescription')} systemImage="checkmark.circle" />}
     {items?.map(notice => <Notice key={notice.id} notice={notice} i18n={i18n} repository={repository} update={value => setItems(previous => previous?.map(old => old.id === value.id ? value : old))} />)}
     {failed && <Text accessibilityRole="alert">{i18n.t('enforcement.loadFailed')}</Text>}
     {(items || failed) && <NativeButton label={i18n.t(failed ? 'common.retry' : 'common.refresh')} busy={busy} variant="quiet" onPress={() => void load()} />}
     {next && <NativeButton label={i18n.t('common.loadMore')} disabled={busy} variant="quiet" onPress={() => void load(next)} />}
-  </SettingsShell>;
+  </>;
+  return embedded ? content : <SettingsShell>{content}</SettingsShell>;
 }
 function Notice({ notice, i18n, repository, update }: { notice: EnforcementNotice; i18n: Translator; repository: EnforcementRepository; update(value: EnforcementNotice): void }) {
   const repo = useRef(repository); repo.current = repository;

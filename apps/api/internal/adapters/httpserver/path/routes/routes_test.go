@@ -226,7 +226,7 @@ func (controlledService) Reject(context.Context, string, string, domain.Invitati
 }
 
 func pathHandler(service Service) http.Handler {
-	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
+	handler, _ := shared.New(platformapp.App{}, nil, shared.Options{AccountAdmission: acceptedPolicyFixture{}, PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, service) }}})
 	return handler
 }
 
@@ -376,7 +376,7 @@ func TestPathCreateHTTPRejectsMalformedGoalPresenceBeforeService(t *testing.T) {
 }
 
 func TestPathGoalOpenAPIRequiresCanonicalResponseAlignmentOnly(t *testing.T) {
-	_, api := shared.New(platformapp.App{}, nil, shared.Options{PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, controlledService{}) }}})
+	_, api := shared.New(platformapp.App{}, nil, shared.Options{AccountAdmission: acceptedPolicyFixture{}, PolicyAdmission: acceptedPolicyFixture{}, DomainRegistrations: []func(huma.API){func(api huma.API) { Register(api, controlledService{}) }}})
 	schemas := api.OpenAPI().Components.Schemas.Map()
 	requestGoal := schemas["IntervalGoalCreate"]
 	responseGoal := schemas["IntervalGoalItem"]
@@ -476,4 +476,5 @@ func TestPathDetailHTTPDependencyFailureIsNotAuthenticationOrAbsence(t *testing.
 // These domain tests model accounts with current policy acceptance.
 type acceptedPolicyFixture struct{}
 
-func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error { return nil }
+func (acceptedPolicyFixture) AdmitPolicyUse(context.Context, string) error  { return nil }
+func (acceptedPolicyFixture) AdmitAccountUse(context.Context, string) error { return nil }

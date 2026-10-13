@@ -85,3 +85,7 @@ Profile connection-list browsing and inbound follower removal acceptance is spec
 The 2026-10-12 owner decision keeps public-text processing in-house and accepts
 content through an explicit no-op moderation adapter for now; actual automated
 classification is deferred. See [Moderation](safety/moderation.spec.md#public-text-moderation-boundary).
+
+On 2026-10-13 the owner approved stopping and saving elapsed time on account
+suspension or ban. The active safety slice is defined by
+[account enforcement](safety/moderation.spec.md#account-suspension-and-ban-enforcement).

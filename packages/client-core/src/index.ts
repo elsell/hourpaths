@@ -919,3 +919,6 @@ export * from './unavailable-period';
 export { apiUnavailablePeriod } from './adapters/api-unavailable-period';
 export * from './path-statistics';
 export * from './adapters/api-path-statistics';
+
+export { AccountRestrictionController, validAccountRestrictionReview, type AccountRestriction, type AccountRestrictionReview, type AccountRestrictionRepository, type AccountRestrictionState } from './account-restriction';
+export { apiAccountRestriction } from './adapters/api-account-restriction';
