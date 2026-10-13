@@ -16,10 +16,12 @@ func TestPostgresAccountRestrictionOwnerExpiryAndReversal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeAccountRestrictionStore(t, runtime)
 	admin, err := Open("postgres", *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeAccountRestrictionStore(t, admin)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	owner, other := newTestID(), newTestID()
 	for _, id := range []string{owner, other} {
@@ -64,4 +66,17 @@ func TestPostgresAccountRestrictionOwnerExpiryAndReversal(t *testing.T) {
 	if e != nil || peer == nil || peer.ID != peerBan.ID {
 		t.Fatal("peer restriction changed", e)
 	}
+}
+
+func closeAccountRestrictionStore(t *testing.T, store *Store) {
+	t.Helper()
+	db, err := store.DB.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Error(err)
+		}
+	})
 }

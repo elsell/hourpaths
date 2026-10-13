@@ -29,10 +29,12 @@ func TestPostgresAccountEnforcementStopsOnlySubjectTimersAtomically(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeAccountRestrictionStore(t, runtime)
 	admin, err := Open("postgres", *migrationPostgresTestDSN)
 	if err != nil {
 		t.Fatal(err)
 	}
+	closeAccountRestrictionStore(t, admin)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	owner, peer, caseID := newTestID(), newTestID(), newTestID()
 	for _, id := range []string{owner, peer} {

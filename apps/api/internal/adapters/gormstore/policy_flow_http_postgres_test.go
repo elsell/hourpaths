@@ -68,7 +68,7 @@ func TestPostgresPolicyReviewKeepsSessionAndStopsTimerBeforeResuming(t *testing.
 	t.Cleanup(func() { f.migration.DB.Table("path_models").Where("id = ?", pathID).Delete(&struct{}{}) })
 	limiter := auditlimit.New(200, time.Minute, 20)
 	signing := bytes.Repeat([]byte{42}, 32)
-	app := application.App{AccountExport: f.runtime, Auth: auth, Users: f.runtime, PolicyAuthority: f.runtime, PolicyAcceptances: f.runtime, Audits: f.runtime, AuditRateLimiter: limiter, Clock: clock, CursorSigningKey: signing}
+	app := application.App{AccountRestrictions: f.runtime, AccountExport: f.runtime, Auth: auth, Users: f.runtime, PolicyAuthority: f.runtime, PolicyAcceptances: f.runtime, Audits: f.runtime, AuditRateLimiter: limiter, Clock: clock, CursorSigningKey: signing}
 	activity := activityapp.New(activityapp.Dependencies{Auth: auth, Profiles: f.runtime, Repository: activitystore.New(f.runtime.DB), Authorizer: subscriptionAuthorizer{allowed: true}, Audits: f.runtime, AuditRateLimiter: limiter, Clock: clock, NewID: newTestID, CursorSigningKey: signing})
 	paths := pathapp.New(pathapp.Dependencies{Auth: auth, Profiles: f.runtime, Repository: pathstore.New(f.runtime.DB), Authorizer: subscriptionAuthorizer{allowed: true}, Audits: f.runtime, AuditRateLimiter: limiter, Clock: clock, NewID: newTestID, CursorSigningKey: signing})
 	handler, _ := httpserver.New(app, nil, httpserver.Options{DomainRegistrations: []func(huma.API){func(api huma.API) { activityroutes.Register(api, activity); pathroutes.Register(api, paths) }}})
