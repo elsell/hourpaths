@@ -25,6 +25,7 @@ const (
 // Enforcement is the subject-facing decision. Restricted case evidence and the
 // reporter's identity deliberately have no representation in this value.
 type Enforcement struct {
+	AffectedPathID               string
 	AffectedFeedEventID          string
 	AffectedFeedEventPublishedAt time.Time
 	ID, SubjectUserID            string
@@ -48,6 +49,9 @@ func (e Enforcement) Validate() error {
 		return ErrInvalidEnforcement
 	}
 	if (e.AffectedFeedEventID == "") != e.AffectedFeedEventPublishedAt.IsZero() || (e.AffectedFeedEventID != "" && (e.Action != ContentRemoval || strings.TrimSpace(e.AffectedFeedEventID) != e.AffectedFeedEventID || e.AffectedCommentID != "" || e.AffectedNudgeID != "")) {
+		return ErrInvalidEnforcement
+	}
+	if e.AffectedPathID != "" && (e.Action != ContentRemoval || strings.TrimSpace(e.AffectedPathID) != e.AffectedPathID || e.AffectedCommentID != "" || e.AffectedNudgeID != "" || e.AffectedFeedEventID != "") {
 		return ErrInvalidEnforcement
 	}
 	switch e.Action {

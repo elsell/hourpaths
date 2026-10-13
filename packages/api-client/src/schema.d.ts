@@ -2477,6 +2477,7 @@ export interface components {
             affectedComment?: components["schemas"]["EnforcementCommentData"];
             affectedFeedEvent?: components["schemas"]["EnforcementFeedEventData"];
             affectedNudge?: components["schemas"]["EnforcementNudgeData"];
+            affectedPathId?: string;
             appeal?: components["schemas"]["EnforcementAppealData"];
             /** Format: date-time */
             appealDeadline: string;

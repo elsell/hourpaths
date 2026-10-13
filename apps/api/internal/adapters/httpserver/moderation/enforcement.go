@@ -36,6 +36,7 @@ type EnforcementFeedEventData struct {
 	PublishedAt time.Time `json:"publishedAt"`
 }
 type EnforcementNoticeData struct {
+	AffectedPathID    string                    `json:"affectedPathId,omitempty"`
 	AffectedFeedEvent *EnforcementFeedEventData `json:"affectedFeedEvent,omitempty"`
 	AffectedNudge     *EnforcementNudgeData     `json:"affectedNudge,omitempty"`
 	AffectedComment   *EnforcementCommentData   `json:"affectedComment,omitempty"`
@@ -96,7 +97,7 @@ func appealData(a domain.Appeal) EnforcementAppealData {
 }
 func noticeData(n app.Notice) EnforcementNoticeData {
 	e := n.Decision
-	d := EnforcementNoticeData{ID: e.ID, Action: string(e.Action), PolicyReason: e.PolicyReason, IssuedAt: e.IssuedAt, AppealDeadline: e.IssuedAt.Add(30 * 24 * time.Hour)}
+	d := EnforcementNoticeData{AffectedPathID: e.AffectedPathID, ID: e.ID, Action: string(e.Action), PolicyReason: e.PolicyReason, IssuedAt: e.IssuedAt, AppealDeadline: e.IssuedAt.Add(30 * 24 * time.Hour)}
 	if e.AffectedCommentID != "" && !e.AffectedCommentCreatedAt.IsZero() {
 		d.AffectedComment = &EnforcementCommentData{ID: e.AffectedCommentID, CreatedAt: e.AffectedCommentCreatedAt}
 	}

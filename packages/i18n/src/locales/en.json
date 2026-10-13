@@ -5261,6 +5261,8 @@
   "studio.settings.enforcement": "Account notices",
   "enforcement.empty": "No account notices",
   "enforcement.loadFailed": "Account notices couldn’t be loaded. Try again.",
+  "enforcement.affectedPathName": "Path name removed · Reference: {{id}}",
+  "enforcement.replacementPathName": "Name removed",
   "enforcement.affectedNudge": "Encouragement sent {{date}} · Reference: {{id}}",
   "enforcement.affectedFeedEvent": "Post published {{date}} · Reference: {{id}}",
   "enforcement.affectedComment": "Comment posted {{date}} · Reference: {{id}}",

@@ -98,3 +98,5 @@ API/web v0.57.0 is verified deployed; native publication and physical acceptance
 remain separate. Profile and Path removal semantics await owner decisions.
 See the [completion checklist](platform/completion-checklist.spec.md) for the
 remaining acceptance criteria.
+
+Path-name moderation: owner-approved replacement with shared Path data preserved; `SAFE-PATH-NAME-REMOVAL-01` implementation in progress (2026-10-13).

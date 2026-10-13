@@ -71,3 +71,15 @@ test('feed-event notices expose only the post reference and reject mixed content
   assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedFeedEvent: { id: 'event', publishedAt: 'invalid' } }));
   assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedNudge: { id: 'nudge', sentAt: '2026-10-08T12:00:00Z' } }));
  });
+
+
+test('Path-name notice accepts only its private reference and rejects mixed targets', async () => {
+  const { enforcementNoticeFromAPI } = await import('./adapters/api-enforcement');
+  const source = { id: 'notice', action: 'content_removal', policyReason: 'Policy', issuedAt: '2026-10-13T12:00:00Z', appealDeadline: '2026-11-12T12:00:00Z', affectedPathId: 'path', originalName: 'private', reporter: 'private' };
+  const result = enforcementNoticeFromAPI(source);
+  assert.equal(result.affectedPathId, 'path');
+  assert.equal('originalName' in result, false);
+  assert.equal('reporter' in result, false);
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedPathId: ' ' }));
+  assert.throws(() => enforcementNoticeFromAPI({ ...source, affectedFeedEvent: { id: 'event', publishedAt: source.issuedAt } }));
+});

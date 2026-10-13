@@ -33,8 +33,9 @@ and retained. Release evidence below is historical unless identified as current.
 - Reported feed-event removal merged in [PR #167](https://github.com/elsell/hourpaths/pull/167)
   as `e08e6e7`. All five candidate and main checks passed. v0.57.0 API/web is
   verified through GitOps `739d55a`: exact source/images, Ready/Healthy Flux,
-  current retention image and public 200/204 health. Its native publication is
-  still running in [release 38356348820](https://github.com/elsell/hourpaths/actions/runs/38356348820).
+  current retention image and public 200/204 health. TestFlight 489 and
+  Google Play internal 461 are verified available, with release notes, from
+  [release 38356348820](https://github.com/elsell/hourpaths/actions/runs/38356348820).
   Studio appeal submission/reversal and Android enlarged-text rendering passed;
   those results do not establish signed physical-device acceptance.
 
@@ -43,12 +44,10 @@ hide removed social content and notifications, suppress queued push, and use the
 shared private notice/appeal flow. The trusted-content no-op moderation port
 shipped in PR #164; automated classification is explicitly deferred by the owner.
 
-Next implementation decisions are Profile and Path content removal. The owner
-has been asked whether to remove only offending profile fields and whether to
-replace an offending Path name while preserving shared access and data. Those
-choices remain pending; neither entire-resource hiding nor field replacement is
-approved by silence. Once resolved, implement one target at a time with removal,
-private notice, appeal and preserved unrelated data as its acceptance criteria.
+The active slice is Path-name removal. The owner approved replacing the offending
+name while preserving shared access, members, timers and history on October 13.
+Implement removal, private notice, appeal and safe restoration without undoing
+later edits or deletion. Profile field-removal semantics remain pending.
 
 The remaining-work table below is the finish line. Existing implementation does
 not close its physical-device, provider, policy or external-retention evidence.
@@ -101,7 +100,7 @@ it does not close an area merely because a build is available.
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
-| 10 — Safety | Profile/Path content-removal semantics and implementation; native publication of PR #167 and signed-device moderation/appeals. Account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
+| 10 — Safety | Implement approved Path-name removal; settle Profile removal semantics; signed-device moderation/appeals. PR #167 is available on both stores. Account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |
 | 13 — Final acceptance | Physical-iPhone encouragement/Send confirmation, UI-28 matrix and final spec-to-release evidence reconciliation. |
 

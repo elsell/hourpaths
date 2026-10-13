@@ -52,6 +52,7 @@ function Notice({ notice, i18n, repository, update }: { notice: EnforcementNotic
   }
   const date = (value: string) => i18n.date(Date.parse(value), { dateStyle: 'medium', timeStyle: 'short' });
   return <SettingsSection title={i18n.t(`enforcement.action.${notice.action}`)}><View style={styles.content}>
+    {notice.affectedPathId && <Text>{i18n.t('enforcement.affectedPathName', { id: notice.affectedPathId })}</Text>}
     {notice.affectedComment && <Text>{i18n.t('enforcement.affectedComment', { date: date(notice.affectedComment.createdAt), id: notice.affectedComment.id })}</Text>}
     {notice.affectedNudge && <Text>{i18n.t('enforcement.affectedNudge', { date: date(notice.affectedNudge.sentAt), id: notice.affectedNudge.id })}</Text>}
     {notice.affectedFeedEvent && <Text>{i18n.t('enforcement.affectedFeedEvent', { date: date(notice.affectedFeedEvent.publishedAt), id: notice.affectedFeedEvent.id })}</Text>}

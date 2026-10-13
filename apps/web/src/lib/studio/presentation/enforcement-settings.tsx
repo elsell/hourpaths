@@ -36,6 +36,7 @@ function Notice({ notice, dependencies: d }: { notice: EnforcementNotice; depend
   }
   const date = (value: string) => d.i18n.date(Date.parse(value), { dateStyle: 'medium', timeStyle: 'short' });
   return <section className="studio-settings-card"><h3>{d.i18n.t(`enforcement.action.${notice.action}`)}</h3>
+    {notice.affectedPathId && <p>{d.i18n.t('enforcement.affectedPathName', { id: notice.affectedPathId })}</p>}
     {notice.affectedComment && <p>{d.i18n.t('enforcement.affectedComment', { date: date(notice.affectedComment.createdAt), id: notice.affectedComment.id })}</p>}
     {notice.affectedNudge && <p>{d.i18n.t('enforcement.affectedNudge', { date: date(notice.affectedNudge.sentAt), id: notice.affectedNudge.id })}</p>}
     {notice.affectedFeedEvent && <p>{d.i18n.t('enforcement.affectedFeedEvent', { date: date(notice.affectedFeedEvent.publishedAt), id: notice.affectedFeedEvent.id })}</p>}

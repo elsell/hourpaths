@@ -10,15 +10,16 @@ physical-device acceptance remain in their owning areas. Widgets remain excluded
 The current verified API/web release is [v0.57.0](https://github.com/elsell/hourpaths/releases/tag/v0.57.0),
 source `e08e6e7`, deployed through GitOps `739d55a`. Exact source/images,
 Ready/Healthy Flux, retention configuration and public readiness passed.
-TestFlight 0.56.0 (487) is verified available with release notes; v0.57.0 native
-publication remains in progress. Store availability and physical-device
+TestFlight 0.57.0 (489) and Google Play internal 461 are verified available
+with release notes. Store availability and physical-device
 acceptance remain separate requirements.
 
 Safety implementation now includes the in-house trusted-content no-op port
 (PR #164), suspension/ban stopping and saving active timers (PR #165), nudge
 removal (PR #166), and feed-event removal preserving source time (PR #167).
-Profile and Path content-removal choices are pending owner input; do not treat
-account restriction as implementation of those content-removal behaviors.
+The active slice is owner-approved Path-name replacement with membership, timers
+and history preserved. It includes private notices and safe appeal restoration.
+Profile content-removal semantics remain pending owner input.
 
 The other unresolved product inputs are provider-picture import during
 onboarding, the richer Live Activity design, and approved policy/support content.
