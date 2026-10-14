@@ -1,6 +1,6 @@
 import { mobileShellStyles } from './shell-styles';
 export { mobileShellStyles } from './shell-styles';
-import { createElement, forwardRef, type ReactNode } from 'react';
+import { createElement, forwardRef, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -50,6 +50,15 @@ export function StatusBanner({
   text: string;
   tone?: 'loading' | 'offline' | 'error' | 'sync' | 'info';
 }) {
+  const transient = tone === 'offline' || tone === 'sync';
+  const [settledTone, setSettledTone] = useState<string | null>(null);
+  useEffect(() => {
+    setSettledTone(null);
+    if (!transient) return;
+    const timer = setTimeout(() => setSettledTone(tone), 1000);
+    return () => clearTimeout(timer);
+  }, [tone, transient]);
+  if (transient && settledTone !== tone) return null;
   return <View style={[styles.banner, tone === 'offline' ? styles.offlineBanner : null, tone === 'error' ? styles.errorBanner : null]}>
     <View
       accessible

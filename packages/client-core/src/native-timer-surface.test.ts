@@ -134,3 +134,29 @@ test('sign-out pause prevents refreshed projections from rebinding revoked nativ
   assert.equal(await coordinator.publish('alice', timers), true);
   assert.equal(replacements, 1);
 });
+
+test('transient native publication retries without another timer edit, and revocation cancels retry', async () => {
+  let retry: (() => void) | undefined;
+  let attempts = 0;
+  let visible: readonly RunningTimerSurface[] = [];
+  let reject = true;
+  const coordinator = new NativeTimerSurfaceCoordinator({
+    clear: async () => { visible = []; },
+    replace: async value => { attempts++; if (reject) throw new Error('stale_local_revision'); visible = value; },
+  }, work => { retry = work; return () => { retry = undefined; }; });
+  await coordinator.account('alice');
+  assert.equal(await coordinator.publish('alice', timers), false);
+  assert.ok(retry);
+  reject = false;
+  retry!();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(visible, timers);
+  reject = true;
+  await coordinator.publish('alice', timers);
+  const delayed = retry!;
+  await coordinator.revokeAccount();
+  const previousAttempts = attempts;
+  delayed();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(attempts, previousAttempts);
+});

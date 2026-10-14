@@ -20,6 +20,11 @@ replay behind injected clock, identity, durable-store and synchronization ports.
 It must not import React, Svelte, SQLite, IndexedDB, HTTP or generated DTOs.
 Mobile uses a transactional SQLite adapter; web uses IndexedDB transactions.
 Credential storage remains separate from tracking storage.
+Mobile database access must serialize in-process statements and transactions across
+tracking, cached Home, appearance, deletion, and native timer lease adapters. A
+failed transaction must release that queue so later reads and commands can retry.
+Independent native extension connections must retain their bounded lock wait;
+local persistence failures must not be presented as proof of lost connectivity.
 
 Every record must be partitioned by the immutable application account ID.
 Adapters must require this owner for reads and writes. Account replacement or

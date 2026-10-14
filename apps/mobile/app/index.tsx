@@ -2161,9 +2161,11 @@ export function HomeScreen() {
           failure: async (owner, cause) => {
             const active = notificationLifecycleState.current;
             if (generation !== nativeOfflineGeneration.current || active.destination?.kind !== 'home' || active.destination.profile.id !== owner || !active.session) return;
-            const failure: SessionFailure = isSessionFailure(cause) ? cause : { kind: 'network' };
-            if (classifySessionFailure(failure).discardCredential) await handleSessionFailure(failure, active.session);
-            else if (failure.kind === 'network') setAccessState('authenticated_offline');
+            // Transport adapters classify network failures. A local SQLite or
+            // orchestration error does not establish lost connectivity.
+            if (!isSessionFailure(cause)) return;
+            if (classifySessionFailure(cause).discardCredential) await handleSessionFailure(cause, active.session);
+            else if (cause.kind === 'network') setAccessState('authenticated_offline');
           },
           publish: (owner, profile, snapshot, replace) => {
             const active = notificationLifecycleState.current;

@@ -33,9 +33,15 @@ export class NativeTimerSurfaceCoordinator {
   private publicationPauses = 0;
   private tail: Promise<boolean> = Promise.resolve(true);
 
-  constructor(private readonly port: NativeTimerSurfacePort) {}
+  private cancelRetry?: () => void;
+
+  constructor(private readonly port: NativeTimerSurfacePort,
+    private readonly schedule?: (work: () => void, delay: number) => () => void) {}
+
+  private stopRetry(): void { this.cancelRetry?.(); this.cancelRetry = undefined; }
 
   pausePublications(): () => void {
+    this.stopRetry();
     this.publicationPauses++;
     let released = false;
     return () => {
@@ -44,6 +50,7 @@ export class NativeTimerSurfaceCoordinator {
   }
 
   revokeAccount(): Promise<boolean> {
+    this.stopRetry();
     this.owner = null;
     ++this.generation;
     ++this.revision;
@@ -54,6 +61,7 @@ export class NativeTimerSurfaceCoordinator {
   account(owner: string | null): Promise<boolean> {
     if (owner && this.publicationPauses) return Promise.resolve(false);
     if (owner === this.owner && !this.needsClear) return this.tail;
+    this.stopRetry();
     this.owner = owner;
     const generation = ++this.generation;
     ++this.revision;
@@ -66,6 +74,7 @@ export class NativeTimerSurfaceCoordinator {
 
   publish(owner: string, timers: readonly RunningTimerSurface[], account?: NativeTimerAccount): Promise<boolean> {
     if (this.publicationPauses || !owner || owner !== this.owner || account && (account.owner !== owner || !Number.isFinite(account.expiresAt))) return Promise.resolve(false);
+    this.stopRetry();
     const snapshot = timers.map(timer => Object.freeze({ ...timer }));
     const valid = snapshot.every(timer => timer.id && timer.pathId && timer.name &&
       Number.isFinite(timer.startedAt) && timer.startedAt >= 0) &&
@@ -73,8 +82,9 @@ export class NativeTimerSurfaceCoordinator {
     const accountSnapshot = account ? Object.freeze({ ...account }) : undefined;
     const generation = this.generation;
     const revision = ++this.revision;
-    return this.enqueue(async () => {
-      if (generation !== this.generation || revision !== this.revision) return;
+    const current = () => generation === this.generation && revision === this.revision && !this.publicationPauses;
+    const attempt = (number: number): Promise<boolean> => this.enqueue(async () => {
+      if (!current()) return;
       if (this.needsClear) {
         await this.port.clear();
         if (generation !== this.generation) return;
@@ -83,7 +93,16 @@ export class NativeTimerSurfaceCoordinator {
       if (revision !== this.revision) return;
       if (!valid) await this.port.clear();
       else await this.port.replace(snapshot, accountSnapshot);
+    }).then(succeeded => {
+      if (!succeeded && current() && this.schedule && number < 2) {
+        this.cancelRetry = this.schedule(() => {
+          this.cancelRetry = undefined;
+          if (current()) void attempt(number + 1);
+        }, 1000 * (number + 1));
+      }
+      return succeeded;
     });
+    return attempt(0);
   }
 
   private enqueue(effect: () => Promise<void>): Promise<boolean> {
