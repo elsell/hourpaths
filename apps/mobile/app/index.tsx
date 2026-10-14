@@ -27,7 +27,6 @@ import { isValidSessionCredential } from '@hourpaths/client-core';
 import { nativeAccountDeletion } from '../src/offline/native-account-deletion';
 import { captureDeletionNotifications, clearDeletionNotifications, clearRecipientNotifications, installDeletionNotificationCleanup } from '../src/push-notifications-native';
 import { AccountDeletionView } from '../src/ui/account-deletion-view';
-import { DelayedStatus } from '../src/ui/delayed-status';
 import { NativeToast } from '../src/ui/native-toast';
 import { OfflineClockCorrection } from '../src/ui/offline-clock-correction';
 import { activityDeletionFromSnapshot, onlineHistoryFromSnapshot, retainedHistoryDetails, retainedHistoryFromSnapshot } from '../src/offline/retained-history-presentation';
@@ -8599,10 +8598,10 @@ export function HomeScreen() {
       actionLabel={i18n.t('common.dismiss')}
       onAction={() => { void nativeOffline.current?.dismissNotice(notice.id).catch(() => setErrorKey('errors.temporarilyUnavailable')); }}
     />) : null}
-    {nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.operations.some(operation => !nativeTrackingState.corrections.some(value => value.timer.id === operation.timerId)) ? <DelayedStatus><StatusBanner
+    {nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.operations.some(operation => !nativeTrackingState.corrections.some(value => value.timer.id === operation.timerId)) ? <StatusBanner
       text={i18n.t('offline.pending')} tone="sync" actionLabel={i18n.t('common.retry')}
       onAction={() => nativeOffline.current?.wake()}
-    /></DelayedStatus> : null}
+    /> : null}
     {accessState === 'authenticated_offline' && !errorKey && !(nativeTrackingState?.owner === ownedHomeDestination.profile.id && nativeTrackingState.offlineBannerDismissed) ? <StatusBanner
       actionLabel={i18n.t('common.dismiss')}
       onAction={() => { void nativeOffline.current?.dismissOfflineBanner().catch(() => setErrorKey('errors.temporarilyUnavailable')); }}
@@ -9723,7 +9722,7 @@ export function HomeScreen() {
     /> : null}
     {ready && !destination && accessState !== 'authenticated_offline' ? <SignedOutScreen
       retained={retainedHome ? <>
-        {retainedHome.state.operations.length ? <DelayedStatus><StatusBanner text={i18n.t('offline.pending')} tone="sync" /></DelayedStatus> : null}
+        {retainedHome.state.operations.length ? <StatusBanner text={i18n.t('offline.pending')} tone="sync" /> : null}
         {retainedHome.state.timers.map(timer => <PathCard key={timer.id}
           name={retainedHome.state.paths.find(path => path.id === timer.pathId)?.name ?? i18n.t('offline.retainedPath')}
           headline={formatSessionClock(activeTimerSeconds(timer.startedAt, now), i18n)}
