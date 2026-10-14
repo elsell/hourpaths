@@ -141,6 +141,11 @@ native builds verify this exact existing combination.
 - Production iOS bundles must select the native Live Activity adapter rather
   than the unsupported-platform fallback. A running timer started in the
   foreground must appear on the Lock Screen when Live Activities are enabled.
+- Native iOS builds must link the HourPaths timer module into the application
+  and register it with Expo. Its minimum deployment target must be compatible
+  with the containing app; unsupported Live Activity versions remain guarded
+  at runtime. Simulator and signed-release checks must fail when that module
+  or registration is absent.
 - A failed native presentation update must receive bounded automatic retries
   without requiring another timer action. A newer projection, account change,
   or sign-out must cancel the obsolete retry; retries must never resurrect
