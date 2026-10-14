@@ -50,5 +50,5 @@ test('sign-out drains an admitted timer start before taking its authoritative sn
   assert.match(page, /const mutationLease = timerMutationBarrier\.enter\(\)/);
   assert.match(page, /commitTimerProjectionBeforeRender\([\s\S]*notificationLifecycleState\.current[\s\S]*setDestination/);
   assert.match(page, /finally \{[\s\S]*mutationLease\.release\(\)/);
-  assert.match(page, /if \(!signOutCompleted\) timerMutationBarrier\.unblock\(\)/);
+  assert.match(page, /if \(!signOutCompleted\)\s*(?:\{\s*)?timerMutationBarrier\.unblock\(\)/);
 });
