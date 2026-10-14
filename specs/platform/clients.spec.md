@@ -201,6 +201,14 @@ native builds verify this exact existing combination.
 - A remote refresh must not start, stop, overwrite, or resurrect a local timer.
   The device’s durable tracking state remains authoritative for pending commands;
   delayed or duplicate refreshes must preserve newer local actions.
+- The iOS adapter must keep the full presentation in the shared App Group and
+  publish only its account/lease identity and refresh deadline to ActivityKit.
+  Native actions and revocation must serialize presentation writes. Before a
+  durable action commits, the previous mirror must be invalidated so a crash
+  cannot leave a newer ledger paired with old actionable controls. Missing,
+  expired, or mismatched local presentation must render no personal content;
+  remote data must not be used as a fallback. Foreground reconciliation may
+  republish the durable projection after such an interruption.
 - Refresh registration and delivery must be scoped to the authenticated account
   and active native presentation. Sign-out, account replacement, deletion, lease
   expiry and presentation dismissal must invalidate that registration. Tokens

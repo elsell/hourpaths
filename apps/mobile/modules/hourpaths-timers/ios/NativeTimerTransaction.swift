@@ -8,7 +8,7 @@ final class NativeTimerTransaction {
   enum Failure: Error { case unavailable, stale, invalid, storage, domain }
   private static let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
-  static func execute(databaseURL: URL, lease: String, actionJSON: String, domainScript: String, now: Date) throws -> String {
+  static func execute(databaseURL: URL, lease: String, actionJSON: String, domainScript: String, now: Date, beforeCommit: () throws -> Void = {}) throws -> String {
     guard let data = actionJSON.data(using: .utf8),
           let action = try JSONSerialization.jsonObject(with: data) as? [String: Any],
           let owner = action["owner"] as? String, !owner.isEmpty,
@@ -78,12 +78,15 @@ final class NativeTimerTransaction {
     bind(update, 3, owner)
     sqlite3_bind_int64(update, 4, revision)
     guard sqlite3_step(update) == SQLITE_DONE, sqlite3_changes(db) == 1 else { throw Failure.storage }
+    try beforeCommit()
     try run(db, "COMMIT")
     committed = true
     return propsJSON
   }
 
-  static func register(databaseURL: URL, presentation: String) throws {
+  static func register(databaseURL: URL, presentation: String, now: Date = Date()) throws {
+    guard let props = try JSONSerialization.jsonObject(with: Data(presentation.utf8)) as? [String: Any],
+          let owner = props["owner"] as? String, let lease = props["accountLease"] as? String else { throw Failure.invalid }
     var database: OpaquePointer?
     guard sqlite3_open_v2(databaseURL.path, &database, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
           let db = database else {
@@ -92,11 +95,26 @@ final class NativeTimerTransaction {
     }
     defer { sqlite3_close(db) }
     sqlite3_busy_timeout(db, 3000)
+    try run(db, "BEGIN IMMEDIATE")
+    var committed = false
+    defer { if !committed { try? run(db, "ROLLBACK") } }
+    let account = try prepare(db, """
+      SELECT a.owner, a.generation, a.expires_at, t.revision FROM native_timer_account_v1 a
+      JOIN tracking_accounts_v1 t ON t.owner = a.owner WHERE a.singleton = 1
+      AND NOT EXISTS (SELECT 1 FROM account_deletion_fences_v1 d WHERE d.owner = a.owner)
+      """)
+    defer { sqlite3_finalize(account) }
+    guard sqlite3_step(account) == SQLITE_ROW, string(account, 0) == owner, string(account, 1) == lease,
+          sqlite3_column_double(account, 2) > now.timeIntervalSince1970 * 1000 else { throw Failure.stale }
+    if let revision = props["trackingRevision"] as? Int64,
+       revision != sqlite3_column_int64(account, 3) { throw Failure.stale }
     try run(db, "CREATE TABLE IF NOT EXISTS native_timer_presentation_v1(singleton INTEGER PRIMARY KEY CHECK(singleton = 1), payload TEXT NOT NULL)")
     let statement = try prepare(db, "INSERT INTO native_timer_presentation_v1(singleton,payload) VALUES(1,?) ON CONFLICT(singleton) DO UPDATE SET payload=excluded.payload")
     defer { sqlite3_finalize(statement) }
     bind(statement, 1, presentation)
     guard sqlite3_step(statement) == SQLITE_DONE else { throw Failure.storage }
+    try run(db, "COMMIT")
+    committed = true
   }
 
   private static func prepare(_ db: OpaquePointer, _ sql: String) throws -> OpaquePointer {

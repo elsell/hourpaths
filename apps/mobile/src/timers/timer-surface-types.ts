@@ -9,7 +9,11 @@ export type TimerSurfaceCopy = Readonly<{
   count: (count: number) => string;
 }>;
 
+export type TimerSurfaceEnvelope = { owner: string; accountLease: string; localPresentation: true; staleAt: number };
+
 export type TimerSurfacePresentation = {
+  activityExpiresAt?: number;
+  trackingRevision?: number;
   accountLease?: string;
   owner?: string;
   startLabel?: string;

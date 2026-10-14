@@ -71,6 +71,7 @@ const protectedProviderAdapters = new Set([
   'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimers.podspec',
   'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimersModule.swift',
   'apps/mobile/modules/hourpaths-timers/ios/NativeTimerTransaction.swift',
+  'apps/mobile/modules/hourpaths-timers/ios/NativeTimerPresentationCache.swift',
   'apps/mobile/modules/hourpaths-timers/ios/TimerDomain.js',
   'patches/expo-widgets@55.0.20.patch',
   'apps/mobile/src/account-export-native.ts',

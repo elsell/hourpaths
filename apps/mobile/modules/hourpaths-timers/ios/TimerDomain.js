@@ -312,7 +312,7 @@ var HourPathsTimerDomain = (() => {
       };
     });
     const titles = presentation.titles;
-    return { ...presentation, timers, title: titles?.[state.timers.length] ?? presentation.title };
+    return { ...presentation, trackingRevision: state.revision, timers, title: titles?.[state.timers.length] ?? presentation.title };
   }
   return __toCommonJS(native_timer_action_exports);
 })();

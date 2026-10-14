@@ -73,5 +73,5 @@ export function refreshNativeTimerPresentation(presentation: {
     };
   });
   const titles = presentation.titles as Record<string, string> | undefined;
-  return { ...presentation, timers, title: titles?.[state.timers.length] ?? presentation.title };
+  return { ...presentation, trackingRevision: state.revision, timers, title: titles?.[state.timers.length] ?? presentation.title };
 }

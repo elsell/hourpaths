@@ -1,9 +1,10 @@
 import { Button, HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
 import { font, foregroundStyle, lineLimit, monospacedDigit, padding, tint, frame } from '@expo/ui/swift-ui/modifiers';
-import type { TimerSurfacePresentation } from './timer-surface-types';
+import type { TimerSurfaceEnvelope, TimerSurfacePresentation } from './timer-surface-types';
 
-export const timerLayout = (props: TimerSurfacePresentation, environment?: { colorScheme?: 'light' | 'dark'; timestamp?: number; isStale?: boolean }) => {
+export const timerLayout = (props: TimerSurfacePresentation | TimerSurfaceEnvelope, environment?: { colorScheme?: 'light' | 'dark'; timestamp?: number; isStale?: boolean }) => {
   'widget';
+  if (!('timers' in props) || !props.timers.length) return { banner: <VStack>{null}</VStack> };
   const now = environment?.timestamp ?? Date.now();
   const timers = props.timers.map(timer => {
     if (environment?.isStale) return { ...timer, goal: undefined };

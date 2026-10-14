@@ -1,3 +1,4 @@
+import { nativeGoalPeriodSchedule } from '@hourpaths/client-core';
 import { retainStoppedTimers } from './retain-stopped-timers';
 import { fitNativePresentation, nativeTimerRegistration } from './native-presentation-size';
 import { requireNativeModule } from 'expo';
@@ -5,14 +6,20 @@ import { randomUUID } from 'expo-crypto';
 import { openNativeOfflineStorage } from '../offline/native-tracking-store';
 import { addUserInteractionListener, createLiveActivity } from 'expo-widgets';
 import { AppState, Platform } from 'react-native';
-import type { CreateTimerSurface, TimerSurfacePresentation } from './timer-surface-types';
+import type { CreateTimerSurface, TimerSurfaceEnvelope, TimerSurfacePresentation } from './timer-surface-types';
 import { timerLayout } from './ios-timer-layout';
 
 // Lazy construction keeps unsupported/denied native presentation inside the
 // coordinator's failure boundary, separate from durable timer commands.
-let activity: ReturnType<typeof createLiveActivity<TimerSurfacePresentation>> | undefined;
+let activity: ReturnType<typeof createLiveActivity<TimerSurfacePresentation | TimerSurfaceEnvelope>> | undefined;
 function factory() {
-  return activity ??= createLiveActivity<TimerSurfacePresentation>(nativeTimerRegistration.activityIdentifier, timerLayout);
+  return activity ??= createLiveActivity<TimerSurfacePresentation | TimerSurfaceEnvelope>(nativeTimerRegistration.activityIdentifier, timerLayout);
+}
+
+async function clearPresentation() {
+  if (Number.parseFloat(String(Platform.Version)) >= 17) {
+    await requireNativeModule<{ clearPresentation(): Promise<void> }>('HourPathsTimers').clearPresentation();
+  }
 }
 
 export const createTimerSurface: CreateTimerSurface = copy => ({
@@ -22,9 +29,10 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     });
     return () => listener.remove();
   },
-  async revokeActions() { await (await openNativeOfflineStorage()).nativeLease.clear(); },
+  async revokeActions() { await (await openNativeOfflineStorage()).nativeLease.clear(); await clearPresentation(); },
   async clear() {
     await (await openNativeOfflineStorage()).nativeLease.clear();
+    await clearPresentation();
     if (Number.parseFloat(String(Platform.Version)) < 16.1) return;
     for (const instance of factory().getInstances()) await instance.end('immediate');
   },
@@ -32,7 +40,7 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     if (Number.parseFloat(String(Platform.Version)) < 16.2) return;
     const storage = await openNativeOfflineStorage();
     const lease = account ? await storage.nativeLease.bind(account.owner, account.expiresAt) : undefined;
-    if (!account) await storage.nativeLease.clear();
+    if (!account) { await storage.nativeLease.clear(); await clearPresentation(); }
     const snapshot = account ? await storage.tracking.read(account.owner) : undefined;
     let ordered = [...timers].sort((a, b) => a.startedAt - b.startedAt || a.id.localeCompare(b.id));
     if (AppState.currentState !== 'active' && lease && snapshot) {
@@ -45,6 +53,7 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     }
     if (!ordered.length) {
       await storage.nativeLease.clear();
+      await clearPresentation();
       for (const instance of factory().getInstances()) await instance.end('immediate');
       return;
     }
@@ -53,7 +62,11 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
       remaining: ordered.length > 2 ? copy.remaining(ordered.length - 2) : '',
       timers: ordered.slice(0, 2),
     };
-    if (lease && snapshot && Number.parseFloat(String(Platform.Version)) >= 17) {
+    let published: TimerSurfacePresentation | TimerSurfaceEnvelope = props;
+    if (lease && snapshot && account && Number.parseFloat(String(Platform.Version)) >= 17) {
+      const now = Date.now();
+      props.activityExpiresAt = Math.min(account.expiresAt, now + 8 * 60 * 60 * 1000);
+      props.trackingRevision = snapshot.revision;
       props.owner = lease.owner;
       props.accountLease = lease.generation;
       props.startLabel = copy.start(); props.stopLabel = copy.stop();
@@ -64,21 +77,21 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
       }));
       props.timers = props.timers.map(timer => {
         const active = snapshot.timers.find(active => active.id === timer.id && active.pathId === timer.pathId);
-        return { ...timer, action: {
+        return { ...timer, goalPeriods: nativeGoalPeriodSchedule(snapshot, lease.owner, timer.pathId, now, props.activityExpiresAt!), action: {
           label: active ? copy.stop() : copy.start(), target: JSON.stringify({ lease: lease.generation, action: {
             owner: lease.owner, revision: snapshot.revision, pathId: timer.pathId,
             timerId: active?.id ?? randomUUID(), operationId: randomUUID(), kind: active ? 'stop' : 'start',
           } }),
         } };
       });
-      fitNativePresentation(props, ordered.length, copy.remaining);
-      await requireNativeModule<{ configureActions(path: string, presentation: string): Promise<void> }>('HourPathsTimers')
+      const envelope = await requireNativeModule<{ configureActions(path: string, presentation: string): Promise<string> }>('HourPathsTimers')
         .configureActions(storage.databasePath, JSON.stringify(props));
+      published = JSON.parse(envelope) as TimerSurfaceEnvelope;
     }
-    fitNativePresentation(props, ordered.length, copy.remaining);
+    if ('timers' in published) fitNativePresentation(published, ordered.length, copy.remaining);
     const [current, ...duplicates] = factory().getInstances();
     for (const duplicate of duplicates) await duplicate.end('immediate');
-    if (current) await current.update(props);
-    else factory().start(props, 'hourpaths:///home');
+    if (current) await current.update(published);
+    else factory().start(published, 'hourpaths:///home');
   },
 });
