@@ -209,6 +209,13 @@ native builds verify this exact existing combination.
   expired, or mismatched local presentation must render no personal content;
   remote data must not be used as a fallback. Foreground reconciliation may
   republish the durable projection after such an interruption.
+- Refresh delivery must use the APNs Live Activity update protocol over HTTP/2,
+  with a bounded request deadline and a refresh deadline no later than the
+  native presentation expiry. It must not follow provider redirects or include
+  timer commands, Path content, tokens, or provider response bodies in logs.
+  Invalid activity tokens must be distinguished from retryable transport/rate
+  failures and signing-configuration failures. Provider credentials must be
+  injected by bootstrap, never read by domain or application code.
 - Refresh registration and delivery must be scoped to the authenticated account
   and active native presentation. Sign-out, account replacement, deletion, lease
   expiry and presentation dismissal must invalidate that registration. Tokens
