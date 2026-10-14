@@ -25,9 +25,15 @@ test('concurrent local writes preserve transactions and recover after rollback',
       // Expo opens a separate connection for each exclusive transaction.
       const transaction = new DatabaseSync(path);
       transaction.exec('BEGIN');
-      try { await work(connection(transaction)); transaction.exec('COMMIT'); }
-      catch (error) { transaction.exec('ROLLBACK'); throw error; }
-      finally { transaction.close(); }
+      try {
+        await work(connection(transaction));
+        transaction.exec('COMMIT');
+      } catch (error) {
+        transaction.exec('ROLLBACK');
+        throw error;
+      } finally {
+        transaction.close();
+      }
     },
   });
   try {
