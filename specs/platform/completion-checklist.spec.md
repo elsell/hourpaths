@@ -18,7 +18,34 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Delivery and remaining work — October 13
+## Current delivery — October 14
+
+[PR #178](https://github.com/elsell/hourpaths/pull/178) merged as `6587659`.
+It serializes shared native SQLite access, retries temporary native timer-surface
+publication failures, and suppresses false or brief offline/sync notices. Real
+SQLite concurrency and rollback checks, focused lifecycle checks, and all five
+candidate/main gates passed. Main acceptance required one retry after an upstream
+Red Hat registry HTTP 502; the unchanged candidate then passed.
+
+[Release v0.61.1](https://github.com/elsell/hourpaths/releases/tag/v0.61.1)
+is verified through GitOps `988e3c1`: exact API/web source and immutable images,
+Ready/Healthy Flux, matching retention image, Studio HTTP 200 and API readiness
+204. TestFlight **0.61.1 (519)** is VALID, nonexpired, IN_BETA_TESTING and assigned
+to the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38643066615)).
+Its release notes were published and read back. Google Play internal **492**
+committed after signed-bundle verification in
+[run 38643010442](https://github.com/elsell/hourpaths/actions/runs/38643010442).
+
+The active acceptance step is the owner's iPhone retest of Home loading, offline
+notice flicker, timer Start/Stop, and Lock Screen/Dynamic Island appearance and
+controls. No device success is inferred from these distribution receipts.
+PRs #175 and #177 are included in this release. Server-driven Live Activity
+period refresh still requires the prepared production APNs key registration and
+secret configuration, followed by background device acceptance. Registration
+awaits the requested action-time confirmation. Onboarding redesign remains on
+hold. The remaining acceptance count is unchanged.
+
+## Prior delivery and remaining work — October 13
 
 - Account suspension/ban enforcement merged in [PR #165](https://github.com/elsell/hourpaths/pull/165).
   Running timers stop and save elapsed time, as approved by the owner. Its
@@ -87,8 +114,8 @@ Automatic Live Activity goal-period refresh merged in PR #177; v0.61.0 is
 available as TestFlight build 512 and Google Play internal 486, with production
 GitOps `fc8df71`. Those distribution receipts do not establish device correctness. Richer controls merged in
 [PR #175](https://github.com/elsell/hourpaths/pull/175) as `83c7c57` after all five
-gates; release availability remains unverified. The acceptance areas below
-remain open.
+gates; its release availability is now verified above. The acceptance areas
+below remain open.
 
 The remaining-work table below is the finish line. Existing implementation does
 not close its physical-device, provider, policy or external-retention evidence.
@@ -137,7 +164,7 @@ it does not close an area merely because a build is available.
 | 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
-| 6 — Native timers | Verify release availability of PR #175, complete automatic goal-period refresh, and verify signed-device multi-timer/lifecycle behavior. |
+| 6 — Native timers | PRs #175, #177 and #178 are available in v0.61.1. Finish the approved APNs configuration after key-registration confirmation, then verify background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
