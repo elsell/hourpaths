@@ -2166,7 +2166,6 @@ export function HomeScreen() {
             setNativeTrackingState(snapshot);
             if (replace) { setAccessState('authenticated_online'); }
             const next = { ...active.destination, profile: replace ? profile : { ...active.destination.profile, paths: active.destination.profile.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)), timers: profile.timers } };
-            if (!restrictedNow()) void timerSurfaces.publish(owner, next.profile.paths, next.profile.timers);
             commitTimerProjectionBeforeRender(next,
               value => { notificationLifecycleState.current = { ...active, destination: value }; }, setDestination);
           },
@@ -8259,6 +8258,20 @@ export function HomeScreen() {
   const ownedHomeDestination = destination?.kind === 'home' && session &&
     homeProjectionSessionToken.current === session.token ? destination : null;
   const appearances = usePathAppearances(apiURL, ownedHomeDestination?.profile.id, session?.token, ownedHomeDestination ? [...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].map((path) => path.id).join('\u0000') : '', nativeAppearanceCache);
+  useEffect(() => timerSurfaces.subscribe(() => {
+    const tracking = nativeOffline.current;
+    if (!tracking || restrictedNow()) return;
+    void tracking.present().then(() => {
+      if (nativeOffline.current === tracking && !restrictedNow()) tracking.wake();
+    }).catch(() => undefined);
+  }), []);
+  const nativeSurfaceAppearances = JSON.stringify(ownedHomeDestination?.profile.paths.map(path => [path.id, appearances.appearance(path.id)]) ?? []);
+  useEffect(() => {
+    if (!ownedHomeDestination || restrictedNow()) return;
+    const profile = ownedHomeDestination.profile;
+    void timerSurfaces.publish(profile.id, profile.paths, profile.timers, Object.fromEntries(JSON.parse(nativeSurfaceAppearances)), session ? Date.parse(session.expiresAt) : undefined);
+  }, [ownedHomeDestination, nativeSurfaceAppearances, session?.expiresAt]);
+
   const socialPresentationKey = [
     ownedHomeDestination?.profile.id ?? '',
     socialPresentationGeneration.current,

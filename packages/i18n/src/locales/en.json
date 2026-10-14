@@ -5148,6 +5148,7 @@
   "notification.channels.loadError": "Notification settings couldn’t be loaded. Try again.",
   "notification.channels.saving": "Saving notification setting…",
   "notification.channels.saveError": "This notification setting couldn’t be updated. Your previous setting is still shown; try again.",
+  "nativeTimers.goalTarget": "of {{target}} this period",
   "nativeTimers.channel": "Running timers",
   "nativeTimers.running_one": "{{count}} running timer",
   "nativeTimers.running_other": "{{count}} running timers",

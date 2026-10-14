@@ -48,7 +48,7 @@ const approvedExternalImports = new Set([
 const providerImports = new Map([
   ['apps/mobile/src/account-export-native.ts', new Set(['expo-file-system/legacy'])],
   ['apps/mobile/src/profile-picture-picker.ts', new Set(['expo-image-picker', 'expo-file-system/legacy'])],
-  ['apps/mobile/src/timers/timer-surface.ios.tsx', new Set(['expo-widgets'])],
+  ['apps/mobile/src/timers/timer-surface.ios.tsx', new Set(['expo-widgets', 'expo'])],
   ['apps/mobile/src/timers/timer-surface.android.ts', new Set(['expo'])],
   ['apps/mobile/src/offline/native-tracking-store.ts', new Set(['expo-sqlite'])],
   ['apps/mobile/src/provider-auth.ts', new Set(['expo-auth-session', 'expo-web-browser'])],
@@ -68,6 +68,11 @@ const browserGlobalReferences = new Set([
 ]);
 const windowProxyMembers = new Set(['contentWindow', 'defaultView', 'view']);
 const protectedProviderAdapters = new Set([
+  'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimers.podspec',
+  'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimersModule.swift',
+  'apps/mobile/modules/hourpaths-timers/ios/NativeTimerTransaction.swift',
+  'apps/mobile/modules/hourpaths-timers/ios/TimerDomain.js',
+  'patches/expo-widgets@55.0.20.patch',
   'apps/mobile/src/account-export-native.ts',
   'apps/mobile/src/profile-picture-picker.ts',
   'apps/mobile/src/timers/timer-surface.ios.tsx',
@@ -207,8 +212,8 @@ const approvedExpoUIImports = new Map([
     ['@expo/ui/swift-ui/modifiers', new Set(['datePickerStyle', 'disabled', 'environment', 'tint'])],
   ])],
   ['apps/mobile/src/timers/ios-timer-layout.tsx', new Map([
-    ['@expo/ui/swift-ui', new Set(['HStack', 'Spacer', 'Text', 'VStack'])],
-    ['@expo/ui/swift-ui/modifiers', new Set(['font', 'lineLimit', 'padding'])],
+    ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'ProgressView', 'Spacer', 'Text', 'VStack'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['font', 'foregroundStyle', 'lineLimit', 'monospacedDigit', 'padding', 'tint'])],
   ])],
   ['apps/mobile/src/ui/comment-heart-icon.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Image'])],
@@ -1198,9 +1203,8 @@ function inspectSource(relative, file, source, index) {
           !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
           clause.namedBindings.elements[0].name.text === 'Linking';
         const exactTimerPlatformImport = relative === 'apps/mobile/src/timers/timer-surface.ios.tsx' && clause && !clause.name &&
-          clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 1 &&
-          !clause.namedBindings.elements[0].isTypeOnly && !clause.namedBindings.elements[0].propertyName &&
-          clause.namedBindings.elements[0].name.text === 'Platform';
+          clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 2 &&
+          clause.namedBindings.elements.every(element => !element.isTypeOnly && !element.propertyName && ['AppState', 'Platform'].includes(element.name.text));
         const exactAccountExportImport = relative === 'apps/mobile/src/account-export-native.ts' && clause && !clause.name &&
           clause.namedBindings && ts.isNamedImports(clause.namedBindings) && clause.namedBindings.elements.length === 2 &&
           clause.namedBindings.elements.every((element) =>

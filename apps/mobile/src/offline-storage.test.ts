@@ -1,3 +1,4 @@
+import { SQLiteNativeTimerLease } from './offline/sqlite-native-timer-lease';
 import { SQLiteAccountDeletion } from './offline/sqlite-account-deletion';
 import { SQLiteAppearanceCache } from './offline/sqlite-appearance-cache';
 import assert from 'node:assert/strict';
@@ -11,6 +12,7 @@ import { SQLiteMobileHomeCache } from './offline/sqlite-mobile-home-cache';
 import type { MobileHomeProfile } from './session-destination';
 import { SQLiteTrackingStore, type TrackingSQLDatabase } from './offline/sqlite-tracking-store';
 
+let leaseSequence = 0;
 function open(path: string) {
   const db = new DatabaseSync(path);
   const connection = {
@@ -31,7 +33,7 @@ function open(path: string) {
       }
     },
   };
-  return { connection, deletion: new SQLiteAccountDeletion(database), appearances: new SQLiteAppearanceCache(database), store: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), close: () => db.close() };
+  return { lease: new SQLiteNativeTimerLease(database, () => `lease-${++leaseSequence}`), connection, deletion: new SQLiteAccountDeletion(database), appearances: new SQLiteAppearanceCache(database), store: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), close: () => db.close() };
 }
 
 test('real SQLite reopen preserves pending timers and rejects stale account revisions', async () => {
@@ -141,5 +143,24 @@ test('deletion intent survives restart, isolates owners, and fences late writes 
     await assert.rejects(database.home.saveHome(home), /account_deletion_pending/);
     await assert.rejects(database.appearances.write('alice', 'guitar', { revision: 2, color: 'mint', emoji: '🎸' }), /account_deletion_pending/);
     assert.equal((await database.appearances.read('bob', 'guitar'))?.color, 'gold');
+  } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
+});
+
+
+test('native action lease survives reopen, rotates on account replacement and respects deletion fencing', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'hourpaths-native-lease-'));
+  const file = join(folder, 'tracking.db');
+  let database = open(file);
+  try {
+    const first = await database.lease.bind('alice', 10000);
+    database.close(); database = open(file);
+    assert.equal((await database.lease.bind('alice', 20000)).generation, first.generation);
+    const other = await database.lease.bind('bob', 20000);
+    assert.notEqual(other.generation, first.generation);
+    await database.lease.clear();
+    assert.equal(await database.connection.getFirstAsync('SELECT owner FROM native_timer_account_v1'), null);
+    assert.notEqual((await database.lease.bind('alice', 20000)).generation, first.generation);
+    await database.deletion.fence('alice');
+    await assert.rejects(database.lease.bind('alice', 30000), /deletion/);
   } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
 });

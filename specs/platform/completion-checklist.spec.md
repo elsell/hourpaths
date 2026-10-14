@@ -75,7 +75,8 @@ current retention image, Studio HTTP 200 and API readiness 204. TestFlight
 group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38429843875));
 release notes were read back. Google Play internal build 470 committed in
 [run 38426925098](https://github.com/elsell/hourpaths/actions/runs/38426925098).
-Independent Play Console availability verification awaits restored browser sign-in.
+The owner waived independent Play Console verification on October 14; the
+successful publication receipt satisfies that delivery requirement.
 Physical-device acceptance remains unverified. No new product implementation
 slice is active; the remaining acceptance areas below remain open.
 
@@ -130,7 +131,7 @@ it does not close an area merely because a build is available.
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
-| 10 — Safety | Settle Profile removal semantics and implement the approved behavior; signed-device moderation/appeals. Path-name removal is verified available in v0.58.0 on both stores. Account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
+| 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |
 | 13 — Final acceptance | Physical-iPhone encouragement/Send confirmation, UI-28 matrix and final spec-to-release evidence reconciliation. |
 

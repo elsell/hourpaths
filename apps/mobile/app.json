@@ -47,6 +47,7 @@
       "bundleIdentifier": "com.hourpaths.mobile",
       "buildNumber": "1",
       "infoPlist": {
+        "ExpoLiveActivityActionHandler": "HourPathsNativeTimerIntent",
         "ITSAppUsesNonExemptEncryption": false,
         "UIViewControllerBasedStatusBarAppearance": true
       },

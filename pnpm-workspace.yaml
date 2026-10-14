@@ -109,5 +109,6 @@ overrides:
   yargs: '17.7.2'
 
 patchedDependencies:
+  expo-widgets@55.0.20: patches/expo-widgets@55.0.20.patch
   react-native-screens@4.23.0: patches/react-native-screens@4.23.0.patch
   brace-expansion@5.0.12: patches/brace-expansion@5.0.12.patch

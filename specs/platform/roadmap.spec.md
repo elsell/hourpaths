@@ -32,12 +32,14 @@ current retention image, Studio HTTP 200 and API readiness 204. TestFlight
 group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38429843875));
 release notes were read back. Google Play internal build 470 committed in
 [run 38426925098](https://github.com/elsell/hourpaths/actions/runs/38426925098).
-Independent Play Console availability verification awaits restored browser sign-in.
-Physical-device acceptance remains unverified. No new product implementation
-slice is active; the remaining acceptance areas below remain open.
+The owner waived independent Play Console verification on October 14; the
+successful publication receipt satisfies that delivery requirement.
+Physical-device acceptance remains unverified. The active product slice is the
+owner-approved richer Live Activity presentation with Start/Stop controls; the
+remaining acceptance areas below remain open.
 
 The other unresolved product inputs are provider-picture import during
-onboarding, the richer Live Activity design, and approved policy/support content.
+onboarding and approved policy/support content.
 Actual automated text classification remains explicitly deferred for this phase.
 Signed-device acceptance and NAS-level snapshot encryption/expiry evidence also
 remain open. Emulator checks, Kubernetes configuration and isolated restore
