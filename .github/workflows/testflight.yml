@@ -162,6 +162,7 @@ jobs:
         run: |
           bundle install --jobs 4 --retry 3
           bundle exec pod install --project-directory=ios
+          bundle exec ruby ../../scripts/verify-ios-timer-linking.rb ios
 
       - name: Install signing certificate and provisioning profile
         id: signing
