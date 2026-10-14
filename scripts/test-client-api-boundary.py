@@ -31,6 +31,7 @@ FIXTURE_PATHS = (
     "apps/mobile/modules/hourpaths-timers/ios/TimerDomain.js",
     "patches/expo-widgets@55.0.20.patch",
     "apps/mobile/src/timers/timer-surface.android.ts",
+    "apps/mobile/src/timers/live-activity-refresh-api.ts",
     "apps/mobile/src/timers/timer-surface.ios.tsx",
     "apps/mobile/src/timers/ios-timer-layout.tsx",
     "apps/mobile/src/timers/timer-surface-types.ts",

@@ -225,6 +225,10 @@ native builds verify this exact existing combination.
   and active native presentation. Sign-out, account replacement, deletion, lease
   expiry and presentation dismissal must invalidate that registration. Tokens
   must be encrypted at rest and must not appear in logs or audit metadata.
+- Client registration must serialize token rotation and revocation, discard queued
+  updates from an obsolete lease, and retry failed registration when foreground
+  reconciliation runs. Repeated presentation updates must not extend the original
+  activity expiry. Registration failures must remain independent of local actions.
 - An unavailable network or rejected refresh must not prevent Start/Stop or erase
   pending work. An expired goal period must not be displayed as the current goal;
   current-period progress must recover from retained state when rendering resumes.

@@ -111,6 +111,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	liveActivityRegistrations, liveActivityWorker, err := newLiveActivityRuntime(cfg, pushInstallations, clock)
+	if err != nil {
+		panic(err)
+	}
 	sessions := sessionauth.NewWithAccountAccess(store, clock, journal.CheckAccountAccess)
 	metrics := observability.NewMetrics(cfg.MetricsBearerToken)
 	probe := observability.Fanout{observability.StructuredLog{Logger: slog.New(slog.NewJSONHandler(os.Stdout, nil))}, metrics}
@@ -144,11 +148,12 @@ func main() {
 	}
 	// Explicit owner-approved no-op: this deployment trusts content without classification.
 	textModerator := trustedcontent.Moderator{}
-	application := app.App{AccountRestrictions: store, TextModerator: textModerator, AccountExport: store, Pictures: store, PictureProcessor: profileimage.NewWorker(executable, profileimage.WorkerArgument), PictureRateLimiter: pictureUploadLimiter{pictureLimiter}, NewPictureID: uuid.NewString, PictureLocation: func(id string) string { return cfg.PublicBaseURL + "/v1/profile-pictures/" + id }, Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, PolicyAcceptances: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, Invitations: store, PushInstallations: pushInstallations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, ProviderIdentities: store, AccountRecoveryAdmissions: sessions, AccountRecoveryCompleter: sessions, DeletionJournal: journal, TimeZonePreferences: store, WeekStartPreferences: store, UnavailablePeriods: store, Profiles: store, ProfilePrivacy: pathstore.New(store.DB), DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
+	application := app.App{AccountRestrictions: store, TextModerator: textModerator, AccountExport: store, Pictures: store, PictureProcessor: profileimage.NewWorker(executable, profileimage.WorkerArgument), PictureRateLimiter: pictureUploadLimiter{pictureLimiter}, NewPictureID: uuid.NewString, PictureLocation: func(id string) string { return cfg.PublicBaseURL + "/v1/profile-pictures/" + id }, Auth: sessions, IdentityVerifier: verifier, Sessions: sessions, OnboardingActivator: sessions, PolicyAuthority: store, PolicyAcceptances: store, SessionTTL: time.Duration(cfg.SessionTTLMinutes) * time.Minute, SessionAbsoluteTTL: time.Duration(cfg.SessionAbsoluteTTLMinutes) * time.Minute, AuthorizationMaxAttempts: cfg.AuthorizationMaxAttempts, AllowAccountProvisioning: cfg.AccountProvisioningMode == "open", InvitedEmails: invitedEmails, InvitationAdmins: invitationAdmins, Invitations: store, PushInstallations: pushInstallations, LiveActivities: liveActivityRegistrations, AllowAccountDeactivation: cfg.AccountSelfDeactivationEnabled, Users: store, AccountDeletion: store, ProviderIdentities: store, AccountRecoveryAdmissions: sessions, AccountRecoveryCompleter: sessions, DeletionJournal: journal, TimeZonePreferences: store, WeekStartPreferences: store, UnavailablePeriods: store, Profiles: store, ProfilePrivacy: pathstore.New(store.DB), DuplicateAccountHints: store, DuplicateAccountRecoveryDeclines: store, UsernameSuggestions: store, Authorizer: authorizer, Resources: store, Audits: store, AuditRateLimiter: auditLimiter, AuthorizationOutbox: store, AuthorizationBatchOutbox: store, AuthorizationSerializer: store, RelationshipWriter: authorizer, Clock: clock, Dependencies: []ports.HealthChecker{store, gormstore.PolicyAuthorityHealth{Authority: store}, authorizer}, CursorSigningKey: []byte(cfg.CursorSigningKey), Probe: probe}
 	authorizationWorker := uuid.NewString()
 	go reconcile(ctx, application, authorizationWorker)
 	go recoverDeletions(ctx, journal, store)
 	go reconcilePush(ctx, pushWorker)
+	go reconcileLiveActivities(ctx, liveActivityWorker, probe)
 	go reconcileLongTimers(ctx, store, authorizer, clock, auditLimiter, probe)
 	go reconcileGoalDeadlines(ctx, store, authorizer, clock, auditLimiter, probe)
 	go reconcileGoalReminders(ctx, store, authorizer, clock, auditLimiter, probe)

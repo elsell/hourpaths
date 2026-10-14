@@ -99,6 +99,7 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/mobile/src/timers/live-activity-refresh-api.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-export.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts',
   'apps/web/src/lib/browser-session-state.ts',
@@ -118,6 +119,7 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/notification-convergence-browser.ts',
 ]);
 const protectedClientCapabilityConstructors = new Map([
+  ['apps/mobile/src/timers/live-activity-refresh-api.ts', new Set(['AbortController'])],
   ['apps/web/src/lib/studio/account/adapters/browser-account-export.ts', new Set(['Blob'])],
   // Only the user-selected file; no network or persistent storage capability.
   ['apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts', new Set(['FileReader'])],

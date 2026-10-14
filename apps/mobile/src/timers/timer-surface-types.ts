@@ -1,4 +1,4 @@
-import type { NativeTimerSurfacePort, RunningTimerSurface } from '@hourpaths/client-core';
+import type { LiveActivityRefreshPort, NativeTimerSurfacePort, RunningTimerSurface } from '@hourpaths/client-core';
 
 export type TimerSurfaceCopy = Readonly<{
   start: () => string;
@@ -25,4 +25,4 @@ export type TimerSurfacePresentation = {
   timers: RunningTimerSurface[];
 };
 
-export type CreateTimerSurface = (copy: TimerSurfaceCopy) => NativeTimerSurfacePort;
+export type CreateTimerSurface = (copy: TimerSurfaceCopy, refresh?: LiveActivityRefreshPort) => NativeTimerSurfacePort;

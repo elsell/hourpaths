@@ -1,3 +1,4 @@
+import { createLiveActivityRefreshPort } from '../src/timers/live-activity-refresh-api';
 import { AccountRestrictionController, apiAccountRestriction } from '@hourpaths/client-core';
 import { NativeAccountRestrictionSource } from '../src/ui/account-restriction-presentation';
 import type { PathStatistics as PathStatisticsDTO } from '@hourpaths/api-client';
@@ -266,7 +267,6 @@ const {
 const storageKey = 'application_session';
 const intervalProgressPresentation = intervalProgress;
 const i18n = createDeviceTranslator(getLocales);
-const timerSurfaces = nativeTimerSurfaces(i18n);
 
 type Session = SessionExchangeCredential;
 type Profile = MobileHomeProfile;
@@ -1020,6 +1020,13 @@ export function HomeScreen() {
     ownershipTransferCandidatesLoaded, ownershipTransferCandidatesLoading,
     ownershipTransferOpen, pendingOwnershipTransfer?.viewerRole]);
   notificationLifecycleState.current = { destination, session };
+  const timerSurfaces = useMemo(() => nativeTimerSurfaces(i18n, Date.now,
+    createLiveActivityRefreshPort(apiURL, () => {
+      const current = notificationLifecycleState.current;
+      return current.session && current.destination?.kind === 'home'
+        ? { owner: current.destination.profile.id, token: current.session.token, expiresAt: Date.parse(current.session.expiresAt) }
+        : null;
+    }, Date.now)), []);
   function currentAdministrationSession(
     target: PathAdministrationTarget<Session> | null,
     pathID: string,

@@ -14,7 +14,10 @@ func (a App) UpsertLiveActivity(ctx context.Context, authorization string, regis
 	if err != nil {
 		return err
 	}
-	if a.LiveActivities == nil || a.Clock == nil || a.AuditRateLimiter == nil || a.Audits == nil {
+	if a.LiveActivities == nil {
+		return ports.ErrUnavailable
+	}
+	if a.Clock == nil || a.AuditRateLimiter == nil || a.Audits == nil {
 		return ports.ErrInvalidArgument
 	}
 	now := a.Clock.Now().UTC().Truncate(time.Microsecond)
@@ -39,7 +42,10 @@ func (a App) RevokeLiveActivity(ctx context.Context, authorization, id, lease st
 	if err != nil {
 		return err
 	}
-	if a.LiveActivities == nil || a.Clock == nil || a.AuditRateLimiter == nil || a.Audits == nil || !liveactivity.ValidID(id) || !liveactivity.ValidID(lease) {
+	if a.LiveActivities == nil {
+		return ports.ErrUnavailable
+	}
+	if a.Clock == nil || a.AuditRateLimiter == nil || a.Audits == nil || !liveactivity.ValidID(id) || !liveactivity.ValidID(lease) {
 		return ports.ErrInvalidArgument
 	}
 	now := a.Clock.Now().UTC().Truncate(time.Microsecond)

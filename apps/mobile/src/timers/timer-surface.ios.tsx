@@ -1,4 +1,4 @@
-import { nativeGoalPeriodSchedule } from '@hourpaths/client-core';
+import { LiveActivityRefreshCoordinator, nativeGoalPeriodSchedule } from '@hourpaths/client-core';
 import { retainStoppedTimers } from './retain-stopped-timers';
 import { fitNativePresentation, nativeTimerRegistration } from './native-presentation-size';
 import { requireNativeModule } from 'expo';
@@ -22,15 +22,27 @@ async function clearPresentation() {
   }
 }
 
-export const createTimerSurface: CreateTimerSurface = copy => ({
+export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
+  const refresh = refreshPort ? new LiveActivityRefreshCoordinator(refreshPort, Date.now) : undefined;
+  let tokenSubscription: { remove(): void } | undefined;
+  let tokenGeneration = 0;
+  function clearRefresh() {
+    ++tokenGeneration;
+    tokenSubscription?.remove();
+    tokenSubscription = undefined;
+    void refresh?.clear();
+  }
+  return ({
   subscribe(changed) {
     const listener = addUserInteractionListener(() => {
       changed();
     });
-    return () => listener.remove();
+    const foreground = AppState.addEventListener('change', state => { if (state === 'active') changed(); });
+    return () => { listener.remove(); foreground.remove(); };
   },
-  async revokeActions() { await (await openNativeOfflineStorage()).nativeLease.clear(); await clearPresentation(); },
+  async revokeActions() { clearRefresh(); await (await openNativeOfflineStorage()).nativeLease.clear(); await clearPresentation(); },
   async clear() {
+    clearRefresh();
     await (await openNativeOfflineStorage()).nativeLease.clear();
     await clearPresentation();
     if (Number.parseFloat(String(Platform.Version)) < 16.1) return;
@@ -39,19 +51,28 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
   async replace(timers, account) {
     if (Number.parseFloat(String(Platform.Version)) < 16.2) return;
     const storage = await openNativeOfflineStorage();
-    const lease = account ? await storage.nativeLease.bind(account.owner, account.expiresAt) : undefined;
-    if (!account) { await storage.nativeLease.clear(); await clearPresentation(); }
+    let lease = account ? await storage.nativeLease.bind(account.owner, account.expiresAt) : undefined;
+    if (!account) { clearRefresh(); await storage.nativeLease.clear(); await clearPresentation(); }
     const snapshot = account ? await storage.tracking.read(account.owner) : undefined;
+    const previousStored = lease ? await storage.nativeLease.readPresentation(lease.owner, lease.generation) : undefined;
+    let previous: TimerSurfacePresentation | undefined = previousStored ? JSON.parse(previousStored) : undefined;
+    if (previous?.activityExpiresAt && previous.activityExpiresAt <= Date.now()) {
+      clearRefresh();
+      await storage.nativeLease.clear();
+      await clearPresentation();
+      for (const instance of factory().getInstances()) await instance.end('immediate');
+      lease = account ? await storage.nativeLease.bind(account.owner, account.expiresAt) : undefined;
+      previous = undefined;
+    }
     let ordered = [...timers].sort((a, b) => a.startedAt - b.startedAt || a.id.localeCompare(b.id));
     if (AppState.currentState !== 'active' && lease && snapshot) {
-      const stored = await storage.nativeLease.readPresentation(lease.owner, lease.generation);
-      const previous: TimerSurfacePresentation | undefined = stored ? JSON.parse(stored) : undefined;
       if (previous?.owner === lease.owner && previous.accountLease === lease.generation) {
         ordered = retainStoppedTimers(ordered, previous.timers,
           snapshot.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)).map(path => path.id));
       }
     }
     if (!ordered.length) {
+      clearRefresh();
       await storage.nativeLease.clear();
       await clearPresentation();
       for (const instance of factory().getInstances()) await instance.end('immediate');
@@ -65,7 +86,7 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     let published: TimerSurfacePresentation | TimerSurfaceEnvelope = props;
     if (lease && snapshot && account && Number.parseFloat(String(Platform.Version)) >= 17) {
       const now = Date.now();
-      props.activityExpiresAt = Math.min(account.expiresAt, now + 8 * 60 * 60 * 1000);
+      props.activityExpiresAt = Math.min(account.expiresAt, previous?.activityExpiresAt ?? now + 8 * 60 * 60 * 1000);
       props.trackingRevision = snapshot.revision;
       props.owner = lease.owner;
       props.accountLease = lease.generation;
@@ -92,6 +113,23 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     const [current, ...duplicates] = factory().getInstances();
     for (const duplicate of duplicates) await duplicate.end('immediate');
     if (current) await current.update(published);
-    else factory().start(published, 'hourpaths:///home');
+    const instance = current ?? factory().start(published, 'hourpaths:///home');
+    const generation = ++tokenGeneration;
+    tokenSubscription?.remove();
+    tokenSubscription = undefined;
+    if (refresh && props.owner && props.accountLease && props.activityExpiresAt) {
+      const registration = {
+        owner: props.owner, activityId: props.accountLease, accountLease: props.accountLease,
+        expiresAt: props.activityExpiresAt,
+        boundaries: props.timers.flatMap(timer => timer.goalPeriods?.map(period => period.endsAt) ?? []),
+      };
+      const register = (token: string | null) => {
+        if (token && generation === tokenGeneration) void refresh.update({ ...registration, token });
+      };
+      let receivedRotation = false;
+      tokenSubscription = instance.addPushTokenListener(event => { receivedRotation = true; register(event.pushToken); });
+      void instance.getPushToken().then(token => { if (!receivedRotation) register(token); }).catch(() => undefined);
+    }
   },
-});
+  });
+};

@@ -29,7 +29,7 @@
         "expo-widgets",
         {
           "widgets": [],
-          "enablePushNotifications": false,
+          "enablePushNotifications": true,
           "bundleIdentifier": "com.hourpaths.mobile.ExpoWidgetsTarget",
           "groupIdentifier": "group.com.hourpaths.mobile"
         }

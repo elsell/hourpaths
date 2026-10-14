@@ -17,6 +17,7 @@ import (
 )
 
 type Config struct {
+	LiveActivity                                                                                                                                                                                                              LiveActivityConfiguration
 	DeletionJournalDirectory, DeletionJournalKey                                                                                                                                                                              string
 	HTTPAddr, PublicBaseURL, DatabaseDSN, CursorSigningKey, PushTokenKey, PushProviderEndpoint, OIDCIssuer, OIDCBackchannelURL, OIDCDocsClientID, OIDCDocsRedirectURI, SpiceDBEndpoint, SpiceDBToken, AccountProvisioningMode string
 	MetricsBearerToken                                                                                                                                                                                                        string
@@ -57,6 +58,7 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	c := Config{
+		LiveActivity:                   loadLiveActivityConfiguration(),
 		HTTPAddr:                       value("HOURPATHS_HTTP_ADDR", ":8080"),
 		PublicBaseURL:                  os.Getenv("HOURPATHS_PUBLIC_BASE_URL"),
 		DatabaseDSN:                    os.Getenv("HOURPATHS_DATABASE_DSN"),
@@ -108,7 +110,7 @@ func Load() (Config, error) {
 }
 
 func validateRawEnvironment() error {
-	for _, key := range []string{"HOURPATHS_DATABASE_INSECURE", "HOURPATHS_PUSH_PROVIDER_INSECURE", "HOURPATHS_OIDC_INSECURE", "HOURPATHS_SPICEDB_INSECURE", "HOURPATHS_SCALAR_DOCS_DISABLED", "HOURPATHS_ACCOUNT_SELF_DEACTIVATION_ENABLED", "HOURPATHS_OTEL_EXPORTER_OTLP_INSECURE"} {
+	for _, key := range []string{"HOURPATHS_DATABASE_INSECURE", "HOURPATHS_PUSH_PROVIDER_INSECURE", "HOURPATHS_LIVE_ACTIVITY_PUSH_ENABLED", "HOURPATHS_APNS_SANDBOX", "HOURPATHS_OIDC_INSECURE", "HOURPATHS_SPICEDB_INSECURE", "HOURPATHS_SCALAR_DOCS_DISABLED", "HOURPATHS_ACCOUNT_SELF_DEACTIVATION_ENABLED", "HOURPATHS_OTEL_EXPORTER_OTLP_INSECURE"} {
 		// hourpaths-env-inventory: allow-computed reviewed fixed boolean key registry
 		if raw := os.Getenv(key); raw != "" {
 			if _, err := strconv.ParseBool(raw); err != nil {
@@ -189,6 +191,9 @@ func (c Config) validate() error {
 		return errors.New("database, OIDC audiences, and SpiceDB configuration is required")
 	}
 	if _, err := validateDeletionJournal(c.DeletionJournalDirectory, c.DeletionJournalKey); err != nil {
+		return err
+	}
+	if err := c.LiveActivity.validate(); err != nil {
 		return err
 	}
 	pushEndpoint, err := url.Parse(c.PushProviderEndpoint)

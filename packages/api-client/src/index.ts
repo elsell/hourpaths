@@ -99,6 +99,7 @@ export type OwnershipTransferReview = components['schemas']['OwnershipTransferRe
 export type OwnershipTransferReviewRequest = Omit<components['schemas']['OwnershipTransferReviewRequest'], '$schema'>;
 export type OwnershipTransferResult = components['schemas']['OwnershipTransferResult'];
 export type OwnershipTransferCreate = Omit<components['schemas']['OwnershipTransferCreate'], '$schema'>;
+export type LiveActivityRegistrationInput = Omit<components['schemas']['LiveActivityRegistrationInputBody'], '$schema'>;
 export type PushInstallationInput =
   Omit<components['schemas']['PushInstallationInputBody'], '$schema'>;
 export type ManualActivityInput = components['schemas']['ManualActivityInputBody'];
@@ -427,6 +428,12 @@ export function createSessionApiClient(baseUrl: string, tokenProvider: TokenProv
     cancelOwnershipTransfer: (transferId: string, idempotencyKey: string) => authenticatedClient.POST('/v1/path-ownership-transfers/{transferId}/cancel', {
       params: { path: { transferId }, header: { 'Idempotency-Key': idempotencyKey } },
     }),
+    upsertLiveActivity: (activityId: string, body: LiveActivityRegistrationInput) =>
+      authenticatedClient.PUT('/v1/live-activities/{activityId}', { params: { path: { activityId } }, body }),
+    revokeLiveActivity: (activityId: string, accountLease: string) =>
+      authenticatedClient.DELETE('/v1/live-activities/{activityId}', {
+        params: { path: { activityId } }, body: { accountLease },
+      }),
     upsertPushInstallation: (installationId: string, body: PushInstallationInput) =>
       authenticatedClient.PUT('/v1/push-installations/{installationId}', {
         params: { path: { installationId } },

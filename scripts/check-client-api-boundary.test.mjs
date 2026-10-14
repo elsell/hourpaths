@@ -23,6 +23,7 @@ const protectedPaths = [
   'apps/mobile/src/profile-picture-picker.ts',
   'apps/web/src/lib/studio/presentation/picture-crop.tsx',
   'apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts',
+  'apps/mobile/src/timers/live-activity-refresh-api.ts',
   'apps/mobile/src/timers/timer-surface.ios.tsx',
   'apps/mobile/src/timers/ios-timer-layout.tsx',
   'apps/mobile/src/timers/timer-surface.android.ts',

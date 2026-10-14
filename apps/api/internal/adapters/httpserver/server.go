@@ -314,6 +314,7 @@ func New(application app.App, domains []string, options Options) (http.Handler, 
 	registerOnboardingRoutes(api, application)
 	registerAccountRecoveryRoutes(api, application)
 	registerPushInstallationRoutes(api, application)
+	registerLiveActivityRoutes(api, application)
 	for _, register := range options.DomainRegistrations {
 		register(api)
 	}
