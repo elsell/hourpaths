@@ -79,18 +79,29 @@
 +}
 --- a/ios/Widgets/WidgetLiveActivity.swift
 +++ b/ios/Widgets/WidgetLiveActivity.swift
-@@ -63,5 +63,5 @@
+@@ -9,4 +9,10 @@
+     var props: String
+   }
++}
++
++@available(iOS 16.1, *)
++private func isLiveActivityStale(_ context: ActivityViewContext<LiveActivityAttributes>) -> Bool {
++  if #available(iOS 16.2, *) { return context.isStale }
++  return true
+ }
+
+@@ -63,5 +69,5 @@
        forName: context.state.name,
        props: context.state.props,
 -      environment: environment
-+      environment: environment.merging(["isStale": context.isStale]) { _, current in current }
++      environment: environment.merging(["isStale": isLiveActivityStale(context)]) { _, current in current }
      )
      if let node = nodes[sectionName] as? [String: Any] {
-@@ -82,5 +82,5 @@
+@@ -82,5 +88,5 @@
        forName: context.state.name,
        props: context.state.props,
 -      environment: environment
-+      environment: environment.merging(["isStale": context.isStale]) { _, current in current }
++      environment: environment.merging(["isStale": isLiveActivityStale(context)]) { _, current in current }
      )
      if #available(iOS 18.0, *) {
 --- a/ios/LiveActivity.swift

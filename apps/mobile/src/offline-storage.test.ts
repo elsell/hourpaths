@@ -181,7 +181,7 @@ test('cold restart clears native state and returns only the persisted refresh id
     const lease = await database.lease.bind('alice', 50000);
     await database.connection.runAsync('INSERT INTO native_timer_presentation_v1 VALUES(1, ?)', JSON.stringify({
       owner: 'alice', accountLease: lease.generation, activityExpiresAt: 10000,
-      timers: [{ name: 'Private Path' }],
+      timers: [{ name: 'private-path-fixture' }],
     }));
     database.close(); database = open(file);
     assert.deepEqual(await database.lease.clear(), {

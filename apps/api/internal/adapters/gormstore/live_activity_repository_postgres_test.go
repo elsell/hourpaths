@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"gorm.io/gorm"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/audit"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/identity"
 	"github.com/elsell/hour-paths/apps/api/internal/domain/liveactivity"
@@ -106,10 +107,14 @@ func TestPostgresLiveActivityTokenRotationRevocationAndAtomicAudit(t *testing.T)
 	}
 	// A runtime-role insert cannot exploit SQL CHECK's NULL semantics to retain an
 	// active registration without an encrypted token.
-	if err := runtime.DB.Exec(`INSERT INTO live_activity_registration_models
-  (id,owner_user_id,account_lease,boundaries_json,version,expires_at,available_at,created_at,updated_at)
-  VALUES(?,?,?,'[]',1,?,?,?,?)`, newTestID(), alice.ID, newTestID(), registration.ExpiresAt, now, now, now).Error; err == nil {
-		t.Fatal("database accepted active registration without protected token")
+	invalid := map[string]any{
+		"id": newTestID(), "owner_user_id": alice.ID, "account_lease": newTestID(),
+		"boundaries_json": "[]", "version": 1, "expires_at": registration.ExpiresAt,
+		"available_at": now, "created_at": now, "updated_at": now,
+	}
+	constraintErr := runtime.DB.Table("live_activity_registration_models").Create(invalid).Error
+	if !errors.Is(constraintErr, gorm.ErrCheckConstraintViolated) {
+		t.Fatalf("expected token CHECK violation, got %v", constraintErr)
 	}
 
 	concurrent := registration
