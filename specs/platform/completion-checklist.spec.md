@@ -77,8 +77,10 @@ release notes were read back. Google Play internal build 470 committed in
 [run 38426925098](https://github.com/elsell/hourpaths/actions/runs/38426925098).
 The owner waived independent Play Console verification on October 14; the
 successful publication receipt satisfies that delivery requirement.
-Physical-device acceptance remains unverified. No new product implementation
-slice is active; the remaining acceptance areas below remain open.
+Physical-device acceptance remains unverified. The active product slice is
+richer iOS Live Activities with durable Start/Stop controls in
+[PR #175](https://github.com/elsell/hourpaths/pull/175). It is not merged or
+released; the remaining acceptance areas below remain open.
 
 The remaining-work table below is the finish line. Existing implementation does
 not close its physical-device, provider, policy or external-retention evidence.

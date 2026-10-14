@@ -100,3 +100,37 @@ test('account action revocation is independent of presentation failure and rejec
   });
   assert.equal(await unavailable.revokeAccount(), false);
 });
+
+
+test('empty timer publication reaches adapter reconciliation so background restart controls survive', async () => {
+  let retained = false;
+  const coordinator = new NativeTimerSurfaceCoordinator({
+    clear: async () => { retained = false; },
+    replace: async () => { retained = true; },
+  });
+  await coordinator.account('alice');
+  await coordinator.publish('alice', timers);
+  await coordinator.publish('alice', []);
+  assert.equal(retained, true);
+  await coordinator.account(null);
+  assert.equal(retained, false);
+});
+
+
+test('sign-out pause prevents refreshed projections from rebinding revoked native controls', async () => {
+  let replacements = 0;
+  const coordinator = new NativeTimerSurfaceCoordinator({
+    clear: async () => {}, revokeActions: async () => {},
+    replace: async () => { replacements++; },
+  });
+  await coordinator.account('alice');
+  const resume = coordinator.pausePublications();
+  await coordinator.revokeAccount();
+  assert.equal(await coordinator.account('alice'), false);
+  assert.equal(await coordinator.publish('alice', timers), false);
+  assert.equal(replacements, 0);
+  resume(); resume();
+  await coordinator.account('alice');
+  assert.equal(await coordinator.publish('alice', timers), true);
+  assert.equal(replacements, 1);
+});

@@ -155,12 +155,19 @@ test('native action lease survives reopen, rotates on account replacement and re
     const first = await database.lease.bind('alice', 10000);
     database.close(); database = open(file);
     assert.equal((await database.lease.bind('alice', 20000)).generation, first.generation);
+    await database.connection.runAsync('INSERT INTO native_timer_presentation_v1 VALUES(1, ?)', '{"timers":[]}');
+    assert.equal(await database.lease.readPresentation('alice', first.generation), '{"timers":[]}');
+    assert.equal(await database.lease.readPresentation('bob', first.generation), null);
+    assert.equal(await database.lease.readPresentation('alice', 'stale-generation'), null);
     const other = await database.lease.bind('bob', 20000);
+    assert.equal(await database.lease.readPresentation('alice', first.generation), null);
     assert.notEqual(other.generation, first.generation);
+    assert.equal(await database.lease.readPresentation('bob', other.generation), null);
     await database.lease.clear();
     assert.equal(await database.connection.getFirstAsync('SELECT owner FROM native_timer_account_v1'), null);
     assert.notEqual((await database.lease.bind('alice', 20000)).generation, first.generation);
     await database.deletion.fence('alice');
+    assert.equal(await database.lease.readPresentation('alice', first.generation), null);
     await assert.rejects(database.lease.bind('alice', 30000), /deletion/);
   } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
 });

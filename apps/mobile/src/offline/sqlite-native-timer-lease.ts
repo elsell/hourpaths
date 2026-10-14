@@ -11,6 +11,15 @@ export class SQLiteNativeTimerLease {
       );
       CREATE TABLE IF NOT EXISTS native_timer_presentation_v1(singleton INTEGER PRIMARY KEY CHECK(singleton = 1), payload TEXT NOT NULL);`);
   }
+  async readPresentation(owner: string, generation: string): Promise<string | null> {
+    await this.ready;
+    const row = await this.database.getFirstAsync<{ payload: string }>(
+      `SELECT p.payload FROM native_timer_presentation_v1 p
+       JOIN native_timer_account_v1 a ON a.singleton = p.singleton
+       WHERE a.owner = ? AND a.generation = ?
+       AND NOT EXISTS (SELECT 1 FROM account_deletion_fences_v1 WHERE owner = a.owner)`, owner, generation);
+    return row?.payload ?? null;
+  }
   async clear(): Promise<void> {
     await this.ready;
     await this.database.withExclusiveTransactionAsync(async transaction => {
@@ -29,6 +38,7 @@ export class SQLiteNativeTimerLease {
       const previous = await transaction.getFirstAsync<{ owner: string; generation: string }>(
         'SELECT owner, generation FROM native_timer_account_v1 WHERE singleton = 1');
       if (previous?.owner === owner) generation = previous.generation;
+      else await transaction.runAsync('DELETE FROM native_timer_presentation_v1');
       await transaction.runAsync(`INSERT INTO native_timer_account_v1(singleton,owner,generation,expires_at) VALUES(1,?,?,?)
         ON CONFLICT(singleton) DO UPDATE SET owner=excluded.owner,generation=excluded.generation,expires_at=excluded.expires_at`,
       owner, generation, expiresAt);

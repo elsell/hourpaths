@@ -19,6 +19,7 @@ export function nativeTimerSurfaces(i18n: Translator, now: () => number = Date.n
     subscribe: (changed: () => void) => port.subscribe?.(changed) ?? (() => undefined),
     clear: () => coordinator.account(null),
     revokeActions: () => coordinator.revokeAccount(),
+    pausePublications: () => coordinator.pausePublications(),
     publish(owner: string, paths: readonly SessionPath[], timers: Readonly<Record<string, TimerState | undefined>>, appearances: Readonly<Record<string, PathAppearance>> = {}, expiresAt?: number) {
       void coordinator.account(owner);
       const sampledAt = now();

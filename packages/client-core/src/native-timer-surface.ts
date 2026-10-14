@@ -27,9 +27,18 @@ export class NativeTimerSurfaceCoordinator {
   private generation = 0;
   private revision = 0;
   private needsClear = true;
+  private publicationPauses = 0;
   private tail: Promise<boolean> = Promise.resolve(true);
 
   constructor(private readonly port: NativeTimerSurfacePort) {}
+
+  pausePublications(): () => void {
+    this.publicationPauses++;
+    let released = false;
+    return () => {
+      if (!released) { released = true; this.publicationPauses--; }
+    };
+  }
 
   revokeAccount(): Promise<boolean> {
     this.owner = null;
@@ -40,6 +49,7 @@ export class NativeTimerSurfaceCoordinator {
   }
 
   account(owner: string | null): Promise<boolean> {
+    if (owner && this.publicationPauses) return Promise.resolve(false);
     if (owner === this.owner && !this.needsClear) return this.tail;
     this.owner = owner;
     const generation = ++this.generation;
@@ -52,7 +62,7 @@ export class NativeTimerSurfaceCoordinator {
   }
 
   publish(owner: string, timers: readonly RunningTimerSurface[], account?: NativeTimerAccount): Promise<boolean> {
-    if (!owner || owner !== this.owner || account && (account.owner !== owner || !Number.isFinite(account.expiresAt))) return Promise.resolve(false);
+    if (this.publicationPauses || !owner || owner !== this.owner || account && (account.owner !== owner || !Number.isFinite(account.expiresAt))) return Promise.resolve(false);
     const snapshot = timers.map(timer => Object.freeze({ ...timer }));
     const valid = snapshot.every(timer => timer.id && timer.pathId && timer.name &&
       Number.isFinite(timer.startedAt) && timer.startedAt >= 0) &&
@@ -68,7 +78,7 @@ export class NativeTimerSurfaceCoordinator {
         this.needsClear = false;
       }
       if (revision !== this.revision) return;
-      if (!valid || snapshot.length === 0) await this.port.clear();
+      if (!valid) await this.port.clear();
       else await this.port.replace(snapshot, accountSnapshot);
     });
   }

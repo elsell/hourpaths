@@ -2348,12 +2348,19 @@ export function HomeScreen() {
   async function resolveTimerSignOut(choice: SignOutTimerChoice): Promise<SignOutPresentationResult> {
     await timerMutationBarrier.blockAndDrain();
     let signOutCompleted = false;
+    const resumeNativePublications = timerSurfaces.pausePublications();
     try {
       const current = notificationLifecycleState.current;
       if (!current.session || current.destination?.kind !== 'home') return { kind: 'superseded' };
       const currentSession = current.session;
       const ownerID = current.destination.profile.id;
-      const runningEntries = Object.entries(current.destination.profile.timers)
+      if (!await timerSurfaces.revokeActions()) return { kind: 'failed' };
+      // Native commands that committed before revocation may not have rendered yet.
+      await nativeOffline.current?.present();
+      if (!ownsSignOutResolution(ownerID, currentSession)) return { kind: 'superseded' };
+      const refreshed = notificationLifecycleState.current.destination;
+      if (refreshed?.kind !== 'home') return { kind: 'superseded' };
+      const runningEntries = Object.entries(refreshed.profile.timers)
         .filter(([, state]) => state.running);
       if (runningEntries.length === 0) {
         if (!ownsSignOutResolution(ownerID, currentSession)) return { kind: 'superseded' };
@@ -2403,7 +2410,11 @@ export function HomeScreen() {
       signOutCompleted = await clearSession(null, 'authentication_required', { ownerID, session: currentSession });
       return signOutCompleted ? { kind: 'signed_out' } : { kind: 'superseded' };
     } finally {
-      if (!signOutCompleted) timerMutationBarrier.unblock();
+      resumeNativePublications();
+      if (!signOutCompleted) {
+        timerMutationBarrier.unblock();
+        void nativeOffline.current?.present().catch(() => undefined);
+      }
     }
   }
 
