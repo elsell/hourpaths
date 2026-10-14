@@ -34,9 +34,10 @@ release notes were read back. Google Play internal build 470 committed in
 [run 38426925098](https://github.com/elsell/hourpaths/actions/runs/38426925098).
 The owner waived independent Play Console verification on October 14; the
 successful publication receipt satisfies that delivery requirement.
-Physical-device acceptance remains unverified. The active product slice is the
-owner-approved richer Live Activity presentation with Start/Stop controls; the
-remaining acceptance areas below remain open.
+Physical-device acceptance remains unverified. Richer Live Activities with
+durable Start/Stop controls merged in PR #175 as `83c7c57`; release availability
+is not yet verified. The active product slice is automatic goal-period refresh
+while the app is suspended. The remaining acceptance areas below remain open.
 
 The other unresolved product inputs are provider-picture import during
 onboarding and approved policy/support content.

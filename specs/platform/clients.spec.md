@@ -192,6 +192,27 @@ native builds verify this exact existing combination.
   repeated taps, and account replacement. A successful foreground-only tap is
   insufficient evidence for these controls.
 
+### Live Activity goal-period refresh
+
+- A running Live Activity must advance to the current goal period without
+  requiring the person to reopen HourPaths. Period boundaries and recorded-time
+  attribution must use the same participant calendar and durable tracking
+  projection as Home, including daylight-saving changes and pending offline work.
+- A remote refresh must not start, stop, overwrite, or resurrect a local timer.
+  The device’s durable tracking state remains authoritative for pending commands;
+  delayed or duplicate refreshes must preserve newer local actions.
+- Refresh registration and delivery must be scoped to the authenticated account
+  and active native presentation. Sign-out, account replacement, deletion, lease
+  expiry and presentation dismissal must invalidate that registration. Tokens
+  must be encrypted at rest and must not appear in logs or audit metadata.
+- An unavailable network or rejected refresh must not prevent Start/Stop or erase
+  pending work. An expired goal period must not be displayed as the current goal;
+  current-period progress must recover from retained state when rendering resumes.
+- Acceptance must cover a running timer across an hourly boundary, a stopped
+  timer followed by a delayed refresh, a new local Start followed by an older
+  refresh, account replacement, token rotation and missed-network recovery.
+  Passing a foreground-only test does not establish suspended-device acceptance.
+
 ### Native timer surface acceptance
 
 - Native timer presentation must consume the durable account-scoped tracking

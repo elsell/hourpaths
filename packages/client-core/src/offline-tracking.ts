@@ -96,6 +96,51 @@ export function projectTrackingHistory(state: TrackingSnapshot, owner: string, p
   return { items: [...items.values()].sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.id.localeCompare(a.id)), incomplete: !state.historyRetainedAt };
 }
 
+/** Read-only projection shared by Home and native background presentation.
+ * The sampled clock is explicit; callers may reuse their calendar-boundary cache. */
+export function projectTrackingState(
+  state: TrackingSnapshot, pathId: string, now: number,
+  periodFor: (path: RetainedTrackingPath) => ReturnType<typeof currentGoalPeriod> | null =
+    path => path.goal ? currentGoalPeriod(path.goal, path.timeZone, now) : null,
+): LocalTrackingView | null {
+  if (state.unavailablePaths?.includes(pathId)) return null;
+  const summary = Object.hasOwn(state.summaries, pathId) ? state.summaries[pathId] : undefined;
+  if (!summary) return null;
+  const pending = state.operations.filter(value => value.pathId === pathId);
+  const intervals = [
+    ...state.unreflected.filter(value => value.pathId === pathId),
+    ...pending.filter(value => value.kind !== 'start' && value.endedAt).map(value => ({ startedAt: value.correctedStartedAt ?? value.startedAt, endedAt: value.endedAt! })),
+  ];
+  const seconds = (start: number, end: number) => Math.max(0, Math.floor((end - start) / 1000));
+  const total = intervals.reduce((sum, value) => sum + seconds(Date.parse(value.startedAt), Date.parse(value.endedAt)), 0);
+  const path = state.paths.find(value => value.id === pathId);
+  let period = summary.period;
+  let periodIntervals = intervals;
+  let includeAcknowledgedEdits = true;
+  if (path && path.goal !== undefined) {
+    const bounds = periodFor(path);
+    if (!bounds) period = null;
+    else if (summary.period?.startsAt === bounds.startsAt && summary.period.endsAt === bounds.endsAt) {
+      period = { ...bounds, savedSeconds: summary.period.savedSeconds };
+    } else {
+      // The old authoritative total belongs only to its old period. Use the
+      // retained occurrences for a different period, deduplicating replay
+      // acknowledgements already present in the history snapshot.
+      const recorded = new Map([...state.unreflected, ...state.history].filter(value => value.pathId === pathId).map(value => [value.id, value]));
+      periodIntervals = [...recorded.values(), ...pending.filter(value => value.kind !== 'start' && value.endedAt)
+        .map(value => ({ startedAt: value.correctedStartedAt ?? value.startedAt, endedAt: value.endedAt! }))];
+      period = { ...bounds, savedSeconds: 0 };
+      includeAcknowledgedEdits = false;
+    }
+  }
+  const periodDelta = period ? periodIntervals.reduce((sum, value) => sum + seconds(Math.max(period.startsAt, Date.parse(value.startedAt)), Math.min(period.endsAt, Date.parse(value.endedAt))), 0) : 0;
+  const timer = state.timers.find(value => value.pathId === pathId);
+  return { savedTotalSeconds: summary.savedTotalSeconds + total + recordedActivityDelta(state, pathId),
+    period: period ? { ...period, savedSeconds: period.savedSeconds + periodDelta + recordedActivityDelta(state, pathId, period, includeAcknowledgedEdits) } : null,
+    activeSession: timer ? { id: timer.id, startedAt: Date.parse(timer.startedAt), originalStartedAt: timer.startedAt, timeZone: timer.timeZone } : null,
+    pending: (state.activityOperations ?? []).some(operation => operation.activity.pathId === pathId) || pending.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)) };
+}
+
 export class OfflineTracking {
   private disposed = false;
   private periods = new Map<string, { key: string; value: ReturnType<typeof currentGoalPeriod> }>();
@@ -302,42 +347,8 @@ export class OfflineTracking {
 
   async tracking(pathId: string): Promise<LocalTrackingView | null> {
     const state = await this.snapshot();
-    if (state.unavailablePaths?.includes(pathId)) return null;
-    const summary = Object.hasOwn(state.summaries, pathId) ? state.summaries[pathId] : undefined;
-    if (!summary) return null;
-    const pending = state.operations.filter(value => value.pathId === pathId);
-    const intervals = [
-      ...state.unreflected.filter(value => value.pathId === pathId),
-      ...pending.filter(value => value.kind !== 'start' && value.endedAt).map(value => ({ startedAt: value.correctedStartedAt ?? value.startedAt, endedAt: value.endedAt! })),
-    ];
-    const seconds = (start: number, end: number) => Math.max(0, Math.floor((end - start) / 1000));
-    const total = intervals.reduce((sum, value) => sum + seconds(Date.parse(value.startedAt), Date.parse(value.endedAt)), 0);
-    const path = state.paths.find(value => value.id === pathId);
-    let period = summary.period;
-    let periodIntervals = intervals;
-    let includeAcknowledgedEdits = true;
-    if (path && path.goal !== undefined) {
-      const bounds = this.periodFor(path, this.now());
-      if (!bounds) period = null;
-      else if (summary.period?.startsAt === bounds.startsAt && summary.period.endsAt === bounds.endsAt) {
-        period = { ...bounds, savedSeconds: summary.period.savedSeconds };
-      } else {
-        // The old authoritative total belongs only to its old period. Use the
-        // retained occurrences for a different period, deduplicating replay
-        // acknowledgements already present in the history snapshot.
-        const recorded = new Map([...state.unreflected, ...state.history].filter(value => value.pathId === pathId).map(value => [value.id, value]));
-        periodIntervals = [...recorded.values(), ...pending.filter(value => value.kind !== 'start' && value.endedAt)
-          .map(value => ({ startedAt: value.correctedStartedAt ?? value.startedAt, endedAt: value.endedAt! }))];
-        period = { ...bounds, savedSeconds: 0 };
-        includeAcknowledgedEdits = false;
-      }
-    }
-    const periodDelta = period ? periodIntervals.reduce((sum, value) => sum + seconds(Math.max(period.startsAt, Date.parse(value.startedAt)), Math.min(period.endsAt, Date.parse(value.endedAt))), 0) : 0;
-    const timer = state.timers.find(value => value.pathId === pathId);
-    return { savedTotalSeconds: summary.savedTotalSeconds + total + recordedActivityDelta(state, pathId),
-      period: period ? { ...period, savedSeconds: period.savedSeconds + periodDelta + recordedActivityDelta(state, pathId, period, includeAcknowledgedEdits) } : null,
-      activeSession: timer ? { id: timer.id, startedAt: Date.parse(timer.startedAt), originalStartedAt: timer.startedAt, timeZone: timer.timeZone } : null,
-      pending: (state.activityOperations ?? []).some(operation => operation.activity.pathId === pathId) || pending.some(operation => !state.corrections.some(value => value.timer.id === operation.timerId)) };
+    const now = this.now();
+    return projectTrackingState(state, pathId, now, path => this.periodFor(path, now));
   }
   /** The complete server timer snapshot is adopted only against the revision
    * captured before fetching. Pending local starts remain visible until replay. */

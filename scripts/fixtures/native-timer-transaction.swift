@@ -29,9 +29,11 @@ struct NativeTimerTransactionAcceptance {
     }
     let now = Date(timeIntervalSince1970: 1_800_000_000)
     let snapshot: [String: Any] = ["owner": "alice", "revision": 4,
-      "paths": [["id": "guitar", "name": "Guitar", "timeZone": "UTC"]],
+      "paths": [["id": "guitar", "name": "Guitar", "timeZone": "UTC",
+        "goal": ["recurrence": "hourly", "alignment": ["minute": 0], "targetSeconds": 600]]],
       "timers": [], "operations": [], "history": [], "historyRetainedAt": NSNull(),
-      "summaries": [:], "unreflected": [], "corrections": [], "notices": []]
+      "summaries": ["guitar": ["savedTotalSeconds": 0, "period": ["savedSeconds": 0, "targetSeconds": 600,
+        "startsAt": now.timeIntervalSince1970 * 1000, "endsAt": now.addingTimeInterval(3600).timeIntervalSince1970 * 1000]]], "unreflected": [], "corrections": [], "notices": []]
     sql("""
       PRAGMA journal_mode=WAL;
       CREATE TABLE tracking_accounts_v1(owner TEXT PRIMARY KEY,revision INTEGER,payload TEXT);
@@ -41,7 +43,7 @@ struct NativeTimerTransactionAcceptance {
       """)
     let original = try encoded(snapshot)
     sql("INSERT INTO tracking_accounts_v1 VALUES('alice',4,'\(original)')")
-    let presentation: [String: Any] = ["owner": "alice", "accountLease": "lease", "startLabel": "Start", "stopLabel": "Stop",
+    let presentation: [String: Any] = ["activityExpiresAt": now.addingTimeInterval(7200).timeIntervalSince1970 * 1000, "owner": "alice", "accountLease": "lease", "startLabel": "Start", "stopLabel": "Stop",
       "titles": ["0": "Ready", "1": "Running"], "timers": [["pathId": "guitar", "startedAt": 1_800_000_000_000.0, "stoppedAt": 1_800_000_000_000.0]]]
     try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(presentation))
     var action: [String: Any] = ["owner": "alice", "revision": 4, "pathId": "guitar", "kind": "start", "timerId": "timer", "operationId": "start"]
@@ -66,7 +68,13 @@ struct NativeTimerTransactionAcceptance {
     precondition(activeRows[0]["stoppedAt"] == nil, "undefined became null across JavaScriptCore")
     rejected { try execute(action) }
     action["revision"] = 5; action["kind"] = "stop"; action["operationId"] = "stop"
-    _ = try execute(action, time: now.addingTimeInterval(60))
+    let stoppedPresentation = try execute(action, time: now.addingTimeInterval(60))
+    let stoppedObject = try JSONSerialization.jsonObject(with: Data(stoppedPresentation.utf8)) as! [String: Any]
+    let stoppedRows = stoppedObject["timers"] as! [[String: Any]]
+    let periods = stoppedRows[0]["goalPeriods"] as! [[String: Any]]
+    precondition(periods.count == 2)
+    precondition((periods[0]["savedSeconds"] as! NSNumber).intValue == 60)
+    precondition((periods[1]["savedSeconds"] as! NSNumber).intValue == 0)
     let saved = try JSONSerialization.jsonObject(with: Data(read().utf8)) as! [String: Any]
     precondition((saved["timers"] as! [Any]).isEmpty)
     precondition((saved["operations"] as! [[String: Any]]).count == 2)

@@ -37,17 +37,22 @@ test('native stop with a reversed device clock retains correction instead of los
 
 test('committed Stop offers Start with the new revision, then restores Stop after restart', async () => {
   const { refreshNativeTimerPresentation } = await import('./native-timer-action');
-  const active = applyNativeTimerAction(snapshot(), start, at);
+  const retained = snapshot();
+  retained.paths[0].goal = { recurrence: 'hourly', alignment: { minute: 0 }, targetSeconds: 600 };
+  retained.summaries.guitar = { savedTotalSeconds: 0, period: { startsAt: at, endsAt: at + 3600000, targetSeconds: 600, savedSeconds: 0 } };
+  const active = applyNativeTimerAction(retained, start, at);
   const stopped = applyNativeTimerAction(active, { ...start, revision: 5, kind: 'stop', operationId: 'stop' }, at + 60000);
-  const presentation = { owner: 'alice', accountLease: 'lease', startLabel: 'Start', stopLabel: 'Stop', titles: ['Ready', 'Running'], timers: [{ pathId: 'guitar', id: 'session', startedAt: at }] };
+  const presentation = { activityExpiresAt: at + 7200000, owner: 'alice', accountLease: 'lease', startLabel: 'Start', stopLabel: 'Stop', titles: ['Ready', 'Running'], timers: [{ pathId: 'guitar', id: 'session', startedAt: at }] };
   const ready = refreshNativeTimerPresentation(presentation, stopped, at + 60000, ['next-session', 'next-start']);
   const action = JSON.parse(ready.timers[0].action.target).action;
   assert.equal(action.kind, 'start'); assert.equal(action.revision, stopped.revision);
   assert.equal(ready.timers[0].stoppedAt, at + 60000);
   assert.equal(ready.title, 'Ready');
+  assert.deepEqual(ready.timers[0].goalPeriods?.map(period => period.savedSeconds), [60, 0]);
   const restarted = applyNativeTimerAction(stopped, action, at + 120000);
   const running = refreshNativeTimerPresentation(ready, restarted, at + 120000, ['unused', 'next-stop']);
   assert.equal(JSON.parse(running.timers[0].action.target).action.kind, 'stop');
   assert.equal(running.timers[0].stoppedAt, undefined);
   assert.equal(running.timers[0].startedAt, at + 120000);
+  assert.deepEqual(running.timers[0].goalPeriods?.map(period => period.savedSeconds), [60, 0]);
 });
