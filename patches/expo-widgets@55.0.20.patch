@@ -37,3 +37,34 @@
      WidgetsEvents.shared.sendNotification(type: .userEvent, data: [
        "source": source as Any,
        "target": target as Any,
+--- a/ios/Widgets/Utils.swift
++++ b/ios/Widgets/Utils.swift
+@@ -47,7 +47,7 @@
+   widgetEnvironment["timestamp"] = Int(Date.now.timeIntervalSince1970 * 1000)
+
+   let result = context.objectForKeyedSubscript("__expoWidgetRender")?.call(
+-    withArguments: [propsDict, environment]
++    withArguments: [propsDict, widgetEnvironment]
+   )
+   return result?.toObject() as? [String: Any] ?? [:]
+ }
+--- a/ios/Widgets/WidgetLiveActivity.swift
++++ b/ios/Widgets/WidgetLiveActivity.swift
+@@ -62,7 +62,7 @@
+     let nodes = getLiveActivityNodes(
+       forName: context.state.name,
+       props: context.state.props,
+-      environment: environment
++      environment: environment.merging(["isStale": context.isStale]) { _, current in current }
+     )
+     if let node = nodes[sectionName] as? [String: Any] {
+       WidgetsDynamicView(name: context.activityID, kind: .liveActivity, node: node)
+@@ -81,7 +81,7 @@
+     let nodes = getLiveActivityNodes(
+       forName: context.state.name,
+       props: context.state.props,
+-      environment: environment
++      environment: environment.merging(["isStale": context.isStale]) { _, current in current }
+     )
+     if #available(iOS 18.0, *) {
+       LiveActivityBanner(context: context, nodes: nodes)

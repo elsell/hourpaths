@@ -306,7 +306,7 @@ var HourPathsTimerDomain = (() => {
         ...active ? {
           startedAt: Date.parse(active.startedAt),
           stoppedAt: void 0,
-          ...wasStopped ? { goal: resumedGoal } : {}
+          ...wasStopped ? { goal: typeof presentation.activityExpiresAt === "number" ? previousGoal : resumedGoal } : {}
         } : { stoppedAt: row.stoppedAt ?? now },
         action: { target, label: active ? presentation.stopLabel : presentation.startLabel }
       };

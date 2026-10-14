@@ -2,15 +2,31 @@ import { Button, HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swi
 import { font, foregroundStyle, lineLimit, monospacedDigit, padding, tint, frame } from '@expo/ui/swift-ui/modifiers';
 import type { TimerSurfacePresentation } from './timer-surface-types';
 
-export const timerLayout = (props: TimerSurfacePresentation) => {
+export const timerLayout = (props: TimerSurfacePresentation, environment?: { colorScheme?: 'light' | 'dark'; timestamp?: number; isStale?: boolean }) => {
   'widget';
-  const primary = props.timers.find(timer => timer.stoppedAt === undefined) ?? props.timers[0];
+  const now = environment?.timestamp ?? Date.now();
+  const timers = props.timers.map(timer => {
+    if (environment?.isStale) return { ...timer, goal: undefined };
+    if (!timer.goalPeriods) return timer;
+    const period = timer.goalPeriods.find(value => value.startsAt <= now && now < value.endsAt);
+    if (!period || !timer.goal) return { ...timer, goal: undefined };
+    const stopped = timer.stoppedAt !== undefined;
+    const lower = (stopped ? now : Math.max(period.startsAt, timer.startedAt)) - period.savedSeconds * 1000;
+    const progressUpper = lower + period.targetSeconds * 1000;
+    return { ...timer, goal: {
+      ...timer.goal, lower, upper: period.endsAt,
+      pauseAt: stopped ? now : undefined,
+      fraction: Math.min(1, Math.max(0, (now - lower) / (period.targetSeconds * 1000))),
+      progressUpper: progressUpper <= period.endsAt ? progressUpper : undefined,
+    } };
+  });
+  const primary = timers.find(timer => timer.stoppedAt === undefined) ?? timers[0];
   const primaryClock = primary.stoppedAt !== undefined
     ? <Text timerInterval={{ lower: new Date(primary.startedAt), upper: new Date(Math.max(primary.startedAt + 1, primary.stoppedAt)) }} countsDown={false} pauseTime={new Date(primary.stoppedAt)} />
     : <Text date={new Date(primary.startedAt)} dateStyle="timer" />;
   const rows = <VStack alignment="leading" spacing={6}>
     {/* Swift widget children must be immediate view nodes, not nested arrays. */}
-    <VStack alignment="leading" spacing={8}>{props.timers.map(timer => <VStack key={timer.pathId} alignment="leading" spacing={5}>
+    <VStack alignment="leading" spacing={8}>{timers.map(timer => <VStack key={timer.pathId} alignment="leading" spacing={5}>
       <HStack spacing={10}>
         <Text modifiers={[font({ size: 22 })]}>{timer.emoji}</Text>
         <Text modifiers={[font({ weight: 'semibold' }), lineLimit(1)]}>{timer.name}</Text>
@@ -20,7 +36,7 @@ export const timerLayout = (props: TimerSurfacePresentation) => {
       </HStack>
       {timer.goal ? <VStack alignment="leading" spacing={4}>
         {timer.goal.lower !== undefined && timer.goal.upper !== undefined ? <HStack spacing={4}>
-          <Text timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.upper) }} countsDown={false} pauseTime={timer.stoppedAt !== undefined ? new Date(timer.stoppedAt) : undefined} modifiers={[font({ size: 12 }), monospacedDigit()]} />
+          <Text timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.upper) }} countsDown={false} pauseTime={timer.goal.pauseAt !== undefined ? new Date(timer.goal.pauseAt) : timer.stoppedAt !== undefined ? new Date(timer.stoppedAt) : undefined} modifiers={[font({ size: 12 }), monospacedDigit()]} />
           <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{timer.goal.targetText}</Text>
         {timer.stoppedAt === undefined && timer.goal.lower !== undefined && timer.goal.progressUpper !== undefined ? <ProgressView
           timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.progressUpper) }}

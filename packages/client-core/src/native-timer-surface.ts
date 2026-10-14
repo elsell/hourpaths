@@ -1,3 +1,5 @@
+import type { NativeGoalPeriod } from './native-goal-period';
+
 /** Presentation values only. Durable tracking remains the timer authority. */
 export type RunningTimerSurface = Readonly<{
   id: string;
@@ -8,7 +10,8 @@ export type RunningTimerSurface = Readonly<{
   action?: Readonly<{ target: string; label: string }>;
   emoji?: string;
   color?: string;
-  goal?: Readonly<{ fraction: number; text: string; lower?: number; upper?: number; progressUpper?: number; targetText?: string }>;
+  goalPeriods?: readonly NativeGoalPeriod[];
+  goal?: Readonly<{ fraction: number; text: string; lower?: number; upper?: number; progressUpper?: number; pauseAt?: number; targetText?: string }>;
 }>;
 
 export type NativeTimerAccount = Readonly<{ owner: string; expiresAt: number }>;

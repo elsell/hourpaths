@@ -56,3 +56,25 @@ test('committed Stop offers Start with the new revision, then restores Stop afte
   assert.equal(running.timers[0].startedAt, at + 120000);
   assert.deepEqual(running.timers[0].goalPeriods?.map(period => period.savedSeconds), [60, 0]);
 });
+
+
+test('restart in a later goal period preserves localized copy and derives fresh local totals', async () => {
+  const { refreshNativeTimerPresentation } = await import('./native-timer-action');
+  const retained = snapshot();
+  retained.paths[0].goal = { recurrence: 'hourly', alignment: { minute: 0 }, targetSeconds: 600 };
+  retained.summaries.guitar = { savedTotalSeconds: 0, period: { startsAt: at, endsAt: at + 3600000, targetSeconds: 600, savedSeconds: 0 } };
+  const active = applyNativeTimerAction(retained, start, at);
+  const stopped = applyNativeTimerAction(active, { ...start, revision: 5, kind: 'stop', operationId: 'stop' }, at + 60000);
+  const goal = { fraction: 0.1, text: '1m of 10m', targetText: 'of 10m', lower: at, upper: at + 3600000 };
+  const presentation = { activityExpiresAt: at + 7200000, owner: 'alice', accountLease: 'lease', startLabel: 'Start', stopLabel: 'Stop', timers: [{ pathId: 'guitar', id: 'session', startedAt: at, goal }] };
+  const ready = refreshNativeTimerPresentation(presentation, stopped, at + 60000, ['new-session', 'new-start']);
+  const action = JSON.parse(ready.timers[0].action.target).action;
+  const now = at + 3660000;
+  const restarted = applyNativeTimerAction(stopped, action, now);
+  const running = refreshNativeTimerPresentation(ready, restarted, now, ['unused', 'new-stop']);
+  assert.ok('goal' in running.timers[0]);
+  assert.deepEqual(running.timers[0].goal, goal);
+  assert.equal(running.timers[0].goalPeriods?.[0].startsAt, at + 3600000);
+  assert.equal(running.timers[0].goalPeriods?.[0].savedSeconds, 0);
+  assert.equal(JSON.parse(running.timers[0].action.target).action.timerId, 'new-session');
+});
