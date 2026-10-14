@@ -1,3 +1,5 @@
+import { randomUUID } from 'expo-crypto';
+import { SQLiteNativeTimerLease } from './sqlite-native-timer-lease';
 import { openDatabaseAsync } from 'expo-sqlite';
 import { SQLiteAppearanceCache } from './sqlite-appearance-cache';
 import { SQLiteMobileHomeCache } from './sqlite-mobile-home-cache';
@@ -6,7 +8,7 @@ import { SQLiteAccountDeletion } from './sqlite-account-deletion';
 
 async function createStorage() {
   const database = await openDatabaseAsync('hourpaths-tracking.db');
-  return { tracking: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), appearances: new SQLiteAppearanceCache(database), deletion: new SQLiteAccountDeletion(database) };
+  return { databasePath: database.databasePath, nativeLease: new SQLiteNativeTimerLease(database, randomUUID), tracking: new SQLiteTrackingStore(database), home: new SQLiteMobileHomeCache(database), appearances: new SQLiteAppearanceCache(database), deletion: new SQLiteAccountDeletion(database) };
 }
 let opening: ReturnType<typeof createStorage> | null = null;
 export function openNativeOfflineStorage() {

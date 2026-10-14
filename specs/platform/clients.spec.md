@@ -159,6 +159,39 @@ native builds verify this exact existing combination.
 - Permanently deleting the account must end and remove every operating-system
   surface associated with that account's running timers.
 
+### Live Activity presentation and controls
+
+- The approved iOS presentation must show each visible Path's personal emoji,
+  palette accent, name, native elapsed session time, and current goal progress
+  when a goal exists. Compact Dynamic Island presentation must prioritize the
+  Path emoji and elapsed time instead of a bare timer count.
+- Expanded Dynamic Island and Lock Screen presentations must provide clearly
+  labeled Start/Stop controls for the displayed Paths, with state reflecting
+  the authoritative tracking projection. Controls must remain usable when the
+  application is suspended; a visual-only state change is not a successful timer
+  command.
+- Background synchronization after a native Stop must preserve that Path’s
+  Start control while its account lease and Path access remain valid. Returning
+  to the app may dismiss a surface with no running timers.
+- Native actions must use the same account-scoped durable tracking semantics as
+  in-app controls, including offline operation, synchronization, and saving
+  elapsed time on Stop. Duplicate or stale actions must not toggle a newly
+  started session or affect another signed-in account.
+- Background commands must share the in-app timer mutations and persist to the
+  same durable tracking ledger under an atomic revision check. The native
+  execution adapter must check an unexpired account lease and the deletion
+  fence inside the writer transaction. Sign-out and account replacement must
+  invalidate that lease before stale native actions can commit. Stop-and-save
+  sign-out must suppress lease rebinding and read the durable timers after
+  revocation so a native Start immediately before revocation is included.
+- Native presentation must use shared Path appearance and goal calculations,
+  localized labels, accessible contrast and system-sized touch targets. A
+  missing goal must omit goal presentation rather than invent a target.
+- Acceptance must demonstrate Start and Stop from the Lock Screen and expanded
+  Dynamic Island, including suspended-app execution, offline reconciliation,
+  repeated taps, and account replacement. A successful foreground-only tap is
+  insufficient evidence for these controls.
+
 ### Native timer surface acceptance
 
 - Native timer presentation must consume the durable account-scoped tracking

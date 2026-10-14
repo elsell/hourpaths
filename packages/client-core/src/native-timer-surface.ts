@@ -4,10 +4,19 @@ export type RunningTimerSurface = Readonly<{
   pathId: string;
   name: string;
   startedAt: number;
+  stoppedAt?: number;
+  action?: Readonly<{ target: string; label: string }>;
+  emoji?: string;
+  color?: string;
+  goal?: Readonly<{ fraction: number; text: string; lower?: number; upper?: number; progressUpper?: number; targetText?: string }>;
 }>;
 
+export type NativeTimerAccount = Readonly<{ owner: string; expiresAt: number }>;
+
 export interface NativeTimerSurfacePort {
-  replace(timers: readonly RunningTimerSurface[]): Promise<void>;
+  revokeActions?(): Promise<void>;
+  subscribe?(changed: () => void): () => void;
+  replace(timers: readonly RunningTimerSurface[], account?: NativeTimerAccount): Promise<void>;
   clear(): Promise<void>;
 }
 
@@ -18,11 +27,29 @@ export class NativeTimerSurfaceCoordinator {
   private generation = 0;
   private revision = 0;
   private needsClear = true;
+  private publicationPauses = 0;
   private tail: Promise<boolean> = Promise.resolve(true);
 
   constructor(private readonly port: NativeTimerSurfacePort) {}
 
+  pausePublications(): () => void {
+    this.publicationPauses++;
+    let released = false;
+    return () => {
+      if (!released) { released = true; this.publicationPauses--; }
+    };
+  }
+
+  revokeAccount(): Promise<boolean> {
+    this.owner = null;
+    ++this.generation;
+    ++this.revision;
+    this.needsClear = true;
+    return this.enqueue(async () => { await this.port.revokeActions?.(); });
+  }
+
   account(owner: string | null): Promise<boolean> {
+    if (owner && this.publicationPauses) return Promise.resolve(false);
     if (owner === this.owner && !this.needsClear) return this.tail;
     this.owner = owner;
     const generation = ++this.generation;
@@ -34,12 +61,13 @@ export class NativeTimerSurfaceCoordinator {
     });
   }
 
-  publish(owner: string, timers: readonly RunningTimerSurface[]): Promise<boolean> {
-    if (!owner || owner !== this.owner) return Promise.resolve(false);
+  publish(owner: string, timers: readonly RunningTimerSurface[], account?: NativeTimerAccount): Promise<boolean> {
+    if (this.publicationPauses || !owner || owner !== this.owner || account && (account.owner !== owner || !Number.isFinite(account.expiresAt))) return Promise.resolve(false);
     const snapshot = timers.map(timer => Object.freeze({ ...timer }));
     const valid = snapshot.every(timer => timer.id && timer.pathId && timer.name &&
       Number.isFinite(timer.startedAt) && timer.startedAt >= 0) &&
       new Set(snapshot.map(timer => timer.id)).size === snapshot.length;
+    const accountSnapshot = account ? Object.freeze({ ...account }) : undefined;
     const generation = this.generation;
     const revision = ++this.revision;
     return this.enqueue(async () => {
@@ -50,8 +78,8 @@ export class NativeTimerSurfaceCoordinator {
         this.needsClear = false;
       }
       if (revision !== this.revision) return;
-      if (!valid || snapshot.length === 0) await this.port.clear();
-      else await this.port.replace(snapshot);
+      if (!valid) await this.port.clear();
+      else await this.port.replace(snapshot, accountSnapshot);
     });
   }
 

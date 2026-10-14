@@ -1,4 +1,16 @@
 {
-  "platforms": ["android"],
-  "android": { "modules": ["com.hourpaths.timers.HourPathsTimersModule"] }
+  "platforms": [
+    "android",
+    "apple"
+  ],
+  "android": {
+    "modules": [
+      "com.hourpaths.timers.HourPathsTimersModule"
+    ]
+  },
+  "apple": {
+    "modules": [
+      "HourPathsTimersModule"
+    ]
+  }
 }

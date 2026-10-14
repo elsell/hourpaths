@@ -7,6 +7,14 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+    'apps/mobile/src/offline/sqlite-native-timer-lease.ts',
+    'apps/mobile/src/timers/native-presentation-size.ts',
+    'apps/mobile/src/timers/retain-stopped-timers.ts',
+  'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimers.podspec',
+  'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimersModule.swift',
+  'apps/mobile/modules/hourpaths-timers/ios/NativeTimerTransaction.swift',
+  'apps/mobile/modules/hourpaths-timers/ios/TimerDomain.js',
+  'patches/expo-widgets@55.0.20.patch',
   'apps/mobile/src/account-export-native.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-export.ts',
   'packages/api-client/src/policy-requirement.ts',

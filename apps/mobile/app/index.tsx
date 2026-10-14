@@ -1740,7 +1740,11 @@ export function HomeScreen() {
     }
     retainedHomeRef.current = null; setRetainedHome(null);
     const activeBeforeAdoption = notificationLifecycleState.current;
-    if (nativeOffline.current && (!next.ownerId || next.ownerId !== activeBeforeAdoption.session?.ownerId)) disposeNativeTracking();
+    if (!next.ownerId || next.ownerId !== activeBeforeAdoption.session?.ownerId) {
+      if (!await timerSurfaces.revokeActions()) throw new Error('native_timer_revocation_unavailable');
+      if (!ticket.current()) return;
+      disposeNativeTracking();
+    }
     const retainsOwnedHome = activeBeforeAdoption.destination?.kind === 'home' &&
       activeBeforeAdoption.session?.token === sourceSessionToken &&
       homeProjectionSessionToken.current === sourceSessionToken;
@@ -2166,7 +2170,6 @@ export function HomeScreen() {
             setNativeTrackingState(snapshot);
             if (replace) { setAccessState('authenticated_online'); }
             const next = { ...active.destination, profile: replace ? profile : { ...active.destination.profile, paths: active.destination.profile.paths.filter(path => !snapshot.unavailablePaths?.includes(path.id)), timers: profile.timers } };
-            if (!restrictedNow()) void timerSurfaces.publish(owner, next.profile.paths, next.profile.timers);
             commitTimerProjectionBeforeRender(next,
               value => { notificationLifecycleState.current = { ...active, destination: value }; }, setDestination);
           },
@@ -2345,12 +2348,19 @@ export function HomeScreen() {
   async function resolveTimerSignOut(choice: SignOutTimerChoice): Promise<SignOutPresentationResult> {
     await timerMutationBarrier.blockAndDrain();
     let signOutCompleted = false;
+    const resumeNativePublications = timerSurfaces.pausePublications();
     try {
       const current = notificationLifecycleState.current;
       if (!current.session || current.destination?.kind !== 'home') return { kind: 'superseded' };
       const currentSession = current.session;
       const ownerID = current.destination.profile.id;
-      const runningEntries = Object.entries(current.destination.profile.timers)
+      if (!await timerSurfaces.revokeActions()) return { kind: 'failed' };
+      // Native commands that committed before revocation may not have rendered yet.
+      await nativeOffline.current?.present();
+      if (!ownsSignOutResolution(ownerID, currentSession)) return { kind: 'superseded' };
+      const refreshed = notificationLifecycleState.current.destination;
+      if (refreshed?.kind !== 'home') return { kind: 'superseded' };
+      const runningEntries = Object.entries(refreshed.profile.timers)
         .filter(([, state]) => state.running);
       if (runningEntries.length === 0) {
         if (!ownsSignOutResolution(ownerID, currentSession)) return { kind: 'superseded' };
@@ -2400,7 +2410,11 @@ export function HomeScreen() {
       signOutCompleted = await clearSession(null, 'authentication_required', { ownerID, session: currentSession });
       return signOutCompleted ? { kind: 'signed_out' } : { kind: 'superseded' };
     } finally {
-      if (!signOutCompleted) timerMutationBarrier.unblock();
+      resumeNativePublications();
+      if (!signOutCompleted) {
+        timerMutationBarrier.unblock();
+        void nativeOffline.current?.present().catch(() => undefined);
+      }
     }
   }
 
@@ -2418,6 +2432,13 @@ export function HomeScreen() {
     if (expected
       ? !ownsSignOutResolution(expected.ownerID, expected.session)
       : active.session !== disposedSession) return false;
+    if (!await timerSurfaces.revokeActions()) {
+      setErrorKey('errors.temporarilyUnavailable');
+      return false;
+    }
+    if (expected
+      ? !ownsSignOutResolution(expected.ownerID, expected.session)
+      : notificationLifecycleState.current.session !== disposedSession) return false;
     const clearedSurfaces = disposeNativeTracking();
     cancelPathCreation();
     resetTimerPresentation();
@@ -8259,6 +8280,20 @@ export function HomeScreen() {
   const ownedHomeDestination = destination?.kind === 'home' && session &&
     homeProjectionSessionToken.current === session.token ? destination : null;
   const appearances = usePathAppearances(apiURL, ownedHomeDestination?.profile.id, session?.token, ownedHomeDestination ? [...ownedHomeDestination.profile.paths, ...ownedHomeDestination.profile.archivedPaths].map((path) => path.id).join('\u0000') : '', nativeAppearanceCache);
+  useEffect(() => timerSurfaces.subscribe(() => {
+    const tracking = nativeOffline.current;
+    if (!tracking || restrictedNow()) return;
+    void tracking.present().then(() => {
+      if (nativeOffline.current === tracking && !restrictedNow()) tracking.wake();
+    }).catch(() => undefined);
+  }), []);
+  const nativeSurfaceAppearances = JSON.stringify(ownedHomeDestination?.profile.paths.map(path => [path.id, appearances.appearance(path.id)]) ?? []);
+  useEffect(() => {
+    if (!ownedHomeDestination || restrictedNow()) return;
+    const profile = ownedHomeDestination.profile;
+    void timerSurfaces.publish(profile.id, profile.paths, profile.timers, Object.fromEntries(JSON.parse(nativeSurfaceAppearances)), session ? Date.parse(session.expiresAt) : undefined);
+  }, [ownedHomeDestination, nativeSurfaceAppearances, session?.expiresAt]);
+
   const socialPresentationKey = [
     ownedHomeDestination?.profile.id ?? '',
     socialPresentationGeneration.current,

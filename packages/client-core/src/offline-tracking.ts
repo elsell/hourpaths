@@ -1,3 +1,4 @@
+import { startTrackingTimer, stopTrackingTimer } from './tracking-timer-commands';
 import { activityIdentity, settleRecordedActivity, type RecordedActivityOutcome, type RecordedActivityDelta, createRecordedActivity, editRecordedActivity, recordedActivityChanges, recordedActivityDelta, type ActivityEditStamp, type RecordedActivityInput, type RecordedActivityOperation } from './offline-recorded-activity';
 import { currentGoalPeriod, type CalendarGoal } from './calendar-goal';
 /** Credential loss pauses replay while preserving the account's durable work. */
@@ -451,16 +452,9 @@ export class OfflineTracking {
     // IDs and instants are captured once, before any storage contention retry.
     const id = this.newId(), operationId = this.newId();
     const startedAt = new Date(this.now()).toISOString();
-    return this.change(state => {
-      const path = state.paths.find(candidate => candidate.id === pathId);
-      if (!path || state.unavailablePaths?.includes(pathId)) throw new Error('tracking_path_unavailable');
-      if (state.timers.some(timer => timer.pathId === pathId)) throw new Error('tracking_timer_already_running');
-      const timer = { id, pathId, startedAt, timeZone: path.timeZone };
-      state.timers.push(timer);
-      state.operations.push({ ...timer, timerId: id, operationId, kind: 'start' });
-      return copy(timer);
-    });
+    return this.change(state => startTrackingTimer(state, pathId, id, operationId, startedAt));
   }
+
   async correct(timerId: string, reviewedStart: string, reviewedEnd: string): Promise<void> {
     const start = Date.parse(reviewedStart), end = Date.parse(reviewedEnd);
     if (!Number.isFinite(start) || !Number.isFinite(end) || end - start < 1000 || end > this.now()) throw new Error('tracking_correction_invalid');
@@ -482,14 +476,6 @@ export class OfflineTracking {
     });
   }
   private queueStop(state: TrackingSnapshot, timerId: string, operationId: string, endedAt: string): void {
-      const timer = state.timers.find(candidate => candidate.id === timerId);
-      if (!timer) throw new Error('tracking_timer_unavailable');
-      state.timers = state.timers.filter(candidate => candidate.id !== timerId);
-      if (Date.parse(endedAt) <= Date.parse(timer.startedAt)) {
-        state.corrections.push({ timer, endedAt });
-      } else {
-        state.operations.push({ ...timer, timerId, operationId, kind: 'stop', endedAt });
-        if (Date.parse(endedAt) - Date.parse(timer.startedAt) < 1000) state.notices.push({ id: operationId, reason: 'subsecond', pathId: timer.pathId });
-      }
+    stopTrackingTimer(state, timerId, operationId, endedAt);
   }
 }

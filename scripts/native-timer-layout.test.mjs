@@ -57,7 +57,7 @@ function descendants(node) {
 for (const count of [1, 2, 4]) {
   test(`${count} running timers retain Path names and native clocks on expanded surfaces`, () => {
     const timers = Array.from({ length: Math.min(count, 3) }, (_, i) => ({
-      id: `timer-${i}`, name: `Path ${i + 1}`, startedAt: 1_790_000_000_000 + i * 60_000,
+      emoji: '🎸', color: '#DFDEFF', goal: { fraction: 0.5, text: '30m of 1h' }, id: `timer-${i}`, name: `Path ${i + 1}`, startedAt: 1_790_000_000_000 + i * 60_000,
     }));
     const remaining = count > 3 ? '1 more timer' : '';
     // JSON is the boundary consumed by the native extension.
@@ -66,6 +66,8 @@ for (const count of [1, 2, 4]) {
     })));
     for (const surface of ['banner', 'expandedBottom']) {
       const nodes = descendants(layout[surface]);
+      assert.ok(nodes.some(node => node.props?.text === '🎸'), `${surface}: missing Path emoji`);
+      assert.ok(nodes.some(node => node.props?.text === '30m of 1h'), `${surface}: missing goal progress`);
       const text = nodes.filter(node => node.type === 'TextView');
       for (const timer of timers) {
         assert.ok(text.some(node => node.props.text === timer.name), `${surface}: missing ${timer.name}`);
@@ -76,3 +78,46 @@ for (const count of [1, 2, 4]) {
     }
   });
 }
+
+test('native goal clocks retain bounded count-up intervals through widget serialization', () => {
+  const lower = 1_790_000_000_000, upper = lower + 3_600_000;
+  const layout = JSON.parse(JSON.stringify(timerLayout({ title: 'Running', count: '1', remaining: '', timers: [{
+    id: 'timer', pathId: 'path', name: 'Guitar', emoji: '🎸', startedAt: lower,
+    goal: { fraction: 0.5, text: 'Fallback', targetText: 'of 1h this period', lower, upper, progressUpper: upper },
+  }] })));
+  for (const surface of ['banner', 'expandedBottom']) {
+    const nodes = descendants(layout[surface]);
+    for (const type of ['TextView', 'ProgressView']) {
+      assert.ok(nodes.some(node => node.type === type && node.props.countsDown === false
+        && node.props.timerInterval?.lower === lower && node.props.timerInterval?.upper === upper),
+      `${surface}: missing native ${type} interval`);
+    }
+  }
+});
+
+test('stopped Path exposes Start and a paused clock rather than a still-running timer', () => {
+  const start = 1_790_000_000_000, stop = start + 60000;
+  const layout = JSON.parse(JSON.stringify(timerLayout({ title: 'Ready', count: '0', remaining: '', timers: [{
+    id: 'timer', pathId: 'path', name: 'Guitar', emoji: '🎸', startedAt: start, stoppedAt: stop,
+    action: { target: 'native-action', label: 'Start' },
+  }] })));
+  for (const surface of ['banner', 'expandedBottom']) {
+    const nodes = descendants(layout[surface]);
+    assert.ok(nodes.some(node => node.props?.target === 'native-action' && node.props.label === 'Start'));
+    assert.ok(nodes.some(node => node.type === 'TextView' && node.props.pauseTime === stop));
+  }
+  assert.equal(layout.compactTrailing.props.pauseTime, stop);
+});
+
+test('large personal labels retain an overflow route within the encoded ActivityKit payload budget', () => {
+  const { fitNativePresentation, nativePresentationBytes } = load(path.join(root, 'src/timers/native-presentation-size.ts'));
+  const props = { title: 'Running', count: '20', remaining: '17 more', timers: Array.from({ length: 3 }, (_, i) => ({
+    id: `timer-${i}`, pathId: `path-${i}`, startedAt: 1_790_000_000_000, name: '🎸'.repeat(240), emoji: '🎸',
+    goal: { text: 'Goal', fraction: 0.5, lower: 1_790_000_000_000, upper: 1_790_003_600_000 },
+    action: { label: 'Stop', target: JSON.stringify({ owner: 'a'.repeat(128), lease: 'b'.repeat(36), path: `path-${i}`, operation: 'c'.repeat(36) }) },
+  })) };
+  fitNativePresentation(props, 20, count => `${count} more`);
+  assert.ok(nativePresentationBytes(props) <= 3400);
+  assert.ok(props.timers.length >= 1 && props.timers.length < 3);
+  assert.equal(props.remaining, `${20 - props.timers.length} more`);
+});

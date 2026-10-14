@@ -1,0 +1,39 @@
+--- a/ios/Widgets/AppIntent.swift
++++ b/ios/Widgets/AppIntent.swift
+@@ -1,5 +1,10 @@
+ import AppIntents
+ import WidgetKit
++import ActivityKit
++
++@objc public protocol ExpoLiveActivityActionHandler {
++  static func performAction(_ target: String) throws -> String
++}
+ 
+ @available(iOS 16.0, *)
+ struct WidgetUserInteraction: AppIntent {
+@@ -91,6 +96,25 @@
+   }
+ 
+   func perform() async throws -> some IntentResult {
++    if let handlerName = Bundle.main.object(forInfoDictionaryKey: "ExpoLiveActivityActionHandler") as? String,
++       let source, let target {
++      guard let handler = NSClassFromString(handlerName) as? ExpoLiveActivityActionHandler.Type else {
++        throw NSError(domain: "ExpoLiveActivity", code: 1)
++      }
++      let props = try handler.performAction(target)
++      if #available(iOS 16.2, *) {
++        let data = Data(props.utf8)
++        let updated = try JSONSerialization.jsonObject(with: data) as? [String: Any]
++        for activity in Activity<LiveActivityAttributes>.activities where activity.id == source {
++          let previous = try JSONSerialization.jsonObject(with: Data(activity.content.state.props.utf8)) as? [String: Any]
++          guard let lease = updated?["accountLease"] as? String,
++                previous?["accountLease"] as? String == lease else { continue }
++          let state = LiveActivityAttributes.ContentState(name: activity.content.state.name, props: props)
++          await activity.update(ActivityContent(state: state, staleDate: nil))
++        }
++      }
++    }
++
+     WidgetsEvents.shared.sendNotification(type: .userEvent, data: [
+       "source": source as Any,
+       "target": target as Any,
