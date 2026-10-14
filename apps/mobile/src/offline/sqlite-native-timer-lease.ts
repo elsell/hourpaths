@@ -1,3 +1,4 @@
+import type { LiveActivityRefreshIdentity } from '@hourpaths/client-core';
 import type { TrackingSQLDatabase } from './sqlite-tracking-store';
 
 /** Public account metadata only: never stores an application/provider token. */
@@ -20,12 +21,29 @@ export class SQLiteNativeTimerLease {
        AND NOT EXISTS (SELECT 1 FROM account_deletion_fences_v1 WHERE owner = a.owner)`, owner, generation);
     return row?.payload ?? null;
   }
-  async clear(): Promise<void> {
+  async clear(): Promise<LiveActivityRefreshIdentity | undefined> {
     await this.ready;
+    let identity: LiveActivityRefreshIdentity | undefined;
     await this.database.withExclusiveTransactionAsync(async transaction => {
+      // Cleanup owns the singleton native surface. Do not return its private
+      // presentation or action payload to the refresh transport.
+      const row = await transaction.getFirstAsync<{ owner: string; generation: string; expires_at: number; payload: string }>(
+        `SELECT a.owner, a.generation, a.expires_at, p.payload FROM native_timer_account_v1 a
+         JOIN native_timer_presentation_v1 p ON a.singleton = p.singleton`);
+      if (row) {
+        try {
+          const presentation = JSON.parse(row.payload);
+          if (presentation.owner === row.owner && presentation.accountLease === row.generation &&
+            Number.isFinite(presentation.activityExpiresAt)) {
+            identity = { owner: row.owner, activityId: row.generation, accountLease: row.generation,
+              expiresAt: Math.min(row.expires_at, presentation.activityExpiresAt) };
+          }
+        } catch { /* Corrupt presentation must not prevent local revocation. */ }
+      }
       await transaction.runAsync('DELETE FROM native_timer_account_v1');
       await transaction.runAsync('DELETE FROM native_timer_presentation_v1');
     });
+    return identity;
   }
   async bind(owner: string, expiresAt: number): Promise<{ owner: string; generation: string }> {
     if (!owner.trim() || !Number.isFinite(expiresAt)) throw new Error('native_timer_lease_invalid');

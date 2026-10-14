@@ -182,3 +182,26 @@ that uploads and assigns the bundle to internal testing. No new credentials or
 store permissions are required. A failed notes step is a release failure, not
 proof of tester availability. These workflows do not submit a public App Store
 version or promote a Google Play release.
+
+### Live Activity refresh delivery
+
+The API uses a dedicated APNs signing key for background Live Activity refreshes.
+Configure `HOURPATHS_APNS_KEY_ID`, `HOURPATHS_APNS_TEAM_ID`, and the complete PEM
+value in `HOURPATHS_APNS_PRIVATE_KEY` through the deployment secret store, then
+set `HOURPATHS_LIVE_ACTIVITY_PUSH_ENABLED=true`. TestFlight uses production APNs;
+`HOURPATHS_APNS_SANDBOX=true` is only for development-signed builds. Signing
+configuration is validated before startup. With delivery disabled, registration
+returns service unavailable instead of accepting work that cannot be delivered.
+
+Refreshes carry only an account/lease identity and deadline. Native controls and
+goal-period data are read from the device's shared presentation cache; a remote
+push cannot supply timer commands. Registering an activity does not prove that
+APNs delivery or suspended-device behavior works; release acceptance must verify
+an hourly rollover and Start/Stop on a signed device.
+
+Known follow-up: sign-out clears the local presentation and durable action lease
+before asynchronous server registration cleanup. If session revocation wins that
+race, the server may continue identity-only refresh signals until the original
+activity expiry. The widget cannot recover personal content from those signals.
+Suspended-device acceptance must still verify successful boundary refresh and
+Start/Stop; a green build does not establish APNs delivery.

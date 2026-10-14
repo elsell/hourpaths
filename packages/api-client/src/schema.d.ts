@@ -240,6 +240,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/live-activities/{activityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Register this Live Activity for private refresh signals */
+        put: operations["upsert-live-activity"];
+        post?: never;
+        /** Revoke refresh signals for this Live Activity lease */
+        delete: operations["revoke-live-activity"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -2752,6 +2770,28 @@ export interface components {
             /** @enum {string} */
             provider: "google" | "apple";
         };
+        LiveActivityRegistrationInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LiveActivityRegistrationInputBody.json
+             */
+            readonly $schema?: string;
+            accountLease: string;
+            boundaries: string[] | null;
+            /** Format: date-time */
+            expiresAt: string;
+            token: string;
+        };
+        LiveActivityRevocationInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/LiveActivityRevocationInputBody.json
+             */
+            readonly $schema?: string;
+            accountLease: string;
+        };
         ManagedPathInvitation: {
             invitation: components["schemas"]["PathInvitation"];
             inviter: components["schemas"]["PathInvitationPublicIdentity"];
@@ -4950,6 +4990,76 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "upsert-live-activity": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                activityId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveActivityRegistrationInputBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "revoke-live-activity": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                activityId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveActivityRevocationInputBody"];
+            };
+        };
         responses: {
             /** @description No Content */
             204: {

@@ -62,6 +62,7 @@ type App struct {
 	AuthorizationBatchOutbox         ports.AuthorizationBatchOutbox
 	AuthorizationSerializer          ports.AuthorizationSerializer
 	RelationshipWriter               ports.RelationshipBatchWriter
+	LiveActivities                   ports.LiveActivityRegistrationRepository
 	PushInstallations                PushInstallationRepository
 	Clock                            ports.Clock
 	Dependencies                     []ports.HealthChecker

@@ -71,6 +71,7 @@ const protectedProviderAdapters = new Set([
   'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimers.podspec',
   'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimersModule.swift',
   'apps/mobile/modules/hourpaths-timers/ios/NativeTimerTransaction.swift',
+  'apps/mobile/modules/hourpaths-timers/ios/NativeTimerPresentationCache.swift',
   'apps/mobile/modules/hourpaths-timers/ios/TimerDomain.js',
   'patches/expo-widgets@55.0.20.patch',
   'apps/mobile/src/account-export-native.ts',
@@ -98,6 +99,7 @@ const studioHosts = new Set([
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/mobile/src/timers/live-activity-refresh-api.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-export.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts',
   'apps/web/src/lib/browser-session-state.ts',
@@ -117,6 +119,7 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/notification-convergence-browser.ts',
 ]);
 const protectedClientCapabilityConstructors = new Map([
+  ['apps/mobile/src/timers/live-activity-refresh-api.ts', new Set(['AbortController'])],
   ['apps/web/src/lib/studio/account/adapters/browser-account-export.ts', new Set(['Blob'])],
   // Only the user-selected file; no network or persistent storage capability.
   ['apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts', new Set(['FileReader'])],

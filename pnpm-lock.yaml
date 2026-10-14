@@ -105,7 +105,7 @@ overrides:
   yargs: 17.7.2
 
 patchedDependencies:
-  expo-widgets@55.0.20: 847ca6145140f579db9353688a3ea650a03201f1f56ff49611142e6cdb903a69
+  expo-widgets@55.0.20: 510cfb74fec61d28cbab666d4671d356dedee319a62327dff680a7c92f644657
   brace-expansion@5.0.12: c0e322136e674993338695c936da35ea444046d9f110a0865c6bd7c8b6c72905
   react-native-screens@4.23.0: 860a71748751cc4caef98ed82700c7c723851e103a92c565b1ae98e3382d99a4
 
@@ -199,7 +199,7 @@ importers:
         version: 55.0.20(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))
       expo-widgets:
         specifier: 55.0.20
-        version: 55.0.20(patch_hash=847ca6145140f579db9353688a3ea650a03201f1f56ff49611142e6cdb903a69)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)
+        version: 55.0.20(patch_hash=510cfb74fec61d28cbab666d4671d356dedee319a62327dff680a7c92f644657)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -7621,7 +7621,7 @@ snapshots:
     optionalDependencies:
       '@babel/runtime': 7.29.7
       expo: 55.0.31(@babel/core@7.29.7)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.12)(expo-router@55.0.18)(expo-widgets@55.0.20)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
-      expo-widgets: 55.0.20(patch_hash=847ca6145140f579db9353688a3ea650a03201f1f56ff49611142e6cdb903a69)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)
+      expo-widgets: 55.0.20(patch_hash=510cfb74fec61d28cbab666d4671d356dedee319a62327dff680a7c92f644657)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)
     transitivePeerDependencies:
       - '@babel/core'
       - supports-color
@@ -8429,7 +8429,7 @@ snapshots:
       expo: 55.0.31(@babel/core@7.29.7)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.12)(expo-router@55.0.18)(expo-widgets@55.0.20)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       react-native: 0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0)
 
-  expo-widgets@55.0.20(patch_hash=847ca6145140f579db9353688a3ea650a03201f1f56ff49611142e6cdb903a69)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0):
+  expo-widgets@55.0.20(patch_hash=510cfb74fec61d28cbab666d4671d356dedee319a62327dff680a7c92f644657)(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0):
     dependencies:
       '@expo/plist': 0.5.4
       '@expo/ui': 55.0.17(expo@55.0.31)(react-native@0.83.10(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.0))(react@19.2.0)

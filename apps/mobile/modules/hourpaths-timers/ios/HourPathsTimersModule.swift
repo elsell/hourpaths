@@ -7,8 +7,17 @@ public final class HourPathsTimersModule: Module {
     Name("HourPathsTimers")
     AsyncFunction("configureActions") { (databasePath: String, presentation: String) in
       let url = URL(fileURLWithPath: databasePath)
-      try NativeTimerTransaction.register(databaseURL: url, presentation: presentation)
-      UserDefaults.standard.set(databasePath, forKey: "HourPathsNativeTimerDatabase")
+      let cache = try NativeTimerPresentationCache.configured()
+      return try cache.withExclusiveAccess {
+        try NativeTimerTransaction.register(databaseURL: url, presentation: presentation)
+        UserDefaults.standard.set(databasePath, forKey: "HourPathsNativeTimerDatabase")
+        let envelope = try cache.publish(presentation, now: Date())
+        return envelope
+      }
+    }
+    AsyncFunction("clearPresentation") {
+      let cache = try NativeTimerPresentationCache.configured()
+      try cache.withExclusiveAccess { try cache.invalidate() }
     }
   }
 }
@@ -26,7 +35,13 @@ public final class HourPathsNativeTimerIntent: NSObject, ExpoLiveActivityActionH
     }
     let actionData = try JSONSerialization.data(withJSONObject: action)
     guard let actionJSON = String(data: actionData, encoding: .utf8) else { throw NativeTimerTransaction.Failure.invalid }
-    return try NativeTimerTransaction.execute(databaseURL: URL(fileURLWithPath: databasePath), lease: lease,
-      actionJSON: actionJSON, domainScript: String(contentsOf: scriptURL, encoding: .utf8), now: Date())
+    let cache = try NativeTimerPresentationCache.configured()
+    return try cache.withExclusiveAccess {
+      let now = Date()
+      let props = try NativeTimerTransaction.execute(databaseURL: URL(fileURLWithPath: databasePath), lease: lease,
+        actionJSON: actionJSON, domainScript: String(contentsOf: scriptURL, encoding: .utf8), now: now,
+        beforeCommit: { try cache.invalidate() })
+      return try cache.publish(props, now: now)
+    }
   }
 }

@@ -1,6 +1,6 @@
 --- a/ios/Widgets/AppIntent.swift
 +++ b/ios/Widgets/AppIntent.swift
-@@ -1,5 +1,10 @@
+@@ -1,4 +1,9 @@
  import AppIntents
  import WidgetKit
 +import ActivityKit
@@ -8,12 +8,10 @@
 +@objc public protocol ExpoLiveActivityActionHandler {
 +  static func performAction(_ target: String) throws -> String
 +}
- 
+
  @available(iOS 16.0, *)
- struct WidgetUserInteraction: AppIntent {
-@@ -91,6 +96,25 @@
-   }
- 
+@@ -92,4 +97,23 @@
+
    func perform() async throws -> some IntentResult {
 +    if let handlerName = Bundle.main.object(forInfoDictionaryKey: "ExpoLiveActivityActionHandler") as? String,
 +       let source, let target {
@@ -29,11 +27,107 @@
 +          guard let lease = updated?["accountLease"] as? String,
 +                previous?["accountLease"] as? String == lease else { continue }
 +          let state = LiveActivityAttributes.ContentState(name: activity.content.state.name, props: props)
-+          await activity.update(ActivityContent(state: state, staleDate: nil))
++          await activity.update(ActivityContent(state: state, staleDate: liveActivityStaleDate(props: props)))
 +        }
 +      }
 +    }
 +
      WidgetsEvents.shared.sendNotification(type: .userEvent, data: [
        "source": source as Any,
-       "target": target as Any,
+--- a/ios/Widgets/Utils.swift
++++ b/ios/Widgets/Utils.swift
+@@ -39,5 +39,23 @@
+   let layout = WidgetsStorage.getString(forKey: "__expo_widgets_live_activity_\(name)_layout") ?? ""
+   let propsData = props.data(using: .utf8)
+-  let propsDict = propsData.flatMap { try? JSONSerialization.jsonObject(with: $0, options: []) as? [String: Any] } ?? [:]
++  var propsDict = propsData.flatMap { try? JSONSerialization.jsonObject(with: $0, options: []) as? [String: Any] } ?? [:]
++  // The app opts in locally. A remote payload cannot disable this fence or
++  // supply its own timer actions when local presentation data is unavailable.
++  guard !name.isEmpty,
++        name.utf8.allSatisfy({ (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 95 }),
++        let group = WidgetsStorage.appGroupIdentifier,
++        let directory = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else { return [:] }
++  let marker = directory.appendingPathComponent("__expo_widgets_live_activity_\(name)_local_presentation")
++  if FileManager.default.fileExists(atPath: marker.path) {
++    guard
++          let data = try? Data(contentsOf: directory.appendingPathComponent("__expo_widgets_live_activity_\(name)_presentation.json")),
++          data.count <= 131072,
++          let local = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
++          let owner = local["owner"] as? String, owner == propsDict["owner"] as? String,
++          let lease = local["accountLease"] as? String, lease == propsDict["accountLease"] as? String,
++          let expiresAt = local["activityExpiresAt"] as? Double,
++          expiresAt > Date.now.timeIntervalSince1970 * 1000 else { return [:] }
++    propsDict = local
++  }
+   guard let context = createWidgetContext(layout: layout) else {
+     return [:]
+@@ -48,5 +66,5 @@
+
+   let result = context.objectForKeyedSubscript("__expoWidgetRender")?.call(
+-    withArguments: [propsDict, environment]
++    withArguments: [propsDict, widgetEnvironment]
+   )
+   return result?.toObject() as? [String: Any] ?? [:]
+@@ -107,2 +125,8 @@
+   return env
+ }
++
++func liveActivityStaleDate(props: String) -> Date? {
++  guard let value = try? JSONSerialization.jsonObject(with: Data(props.utf8)) as? [String: Any],
++        let timestamp = value["staleAt"] as? Double, timestamp.isFinite else { return nil }
++  return Date(timeIntervalSince1970: timestamp / 1000)
++}
+--- a/ios/Widgets/WidgetLiveActivity.swift
++++ b/ios/Widgets/WidgetLiveActivity.swift
+@@ -9,4 +9,10 @@
+     var props: String
+   }
++}
++
++@available(iOS 16.1, *)
++private func isLiveActivityStale(_ context: ActivityViewContext<LiveActivityAttributes>) -> Bool {
++  if #available(iOS 16.2, *) { return context.isStale }
++  return true
+ }
+
+@@ -63,5 +69,5 @@
+       forName: context.state.name,
+       props: context.state.props,
+-      environment: environment
++      environment: environment.merging(["isStale": isLiveActivityStale(context)]) { _, current in current }
+     )
+     if let node = nodes[sectionName] as? [String: Any] {
+@@ -82,5 +88,5 @@
+       forName: context.state.name,
+       props: context.state.props,
+-      environment: environment
++      environment: environment.merging(["isStale": isLiveActivityStale(context)]) { _, current in current }
+     )
+     if #available(iOS 18.0, *) {
+--- a/ios/LiveActivity.swift
++++ b/ios/LiveActivity.swift
+@@ -21,5 +21,5 @@
+
+     let newState = LiveActivityAttributes.ContentState(name: name, props: props)
+-    await activity.update(ActivityContent(state: newState, staleDate: nil))
++    await activity.update(ActivityContent(state: newState, staleDate: liveActivityStaleDate(props: props)))
+   }
+
+--- a/ios/LiveActivityFactory.swift
++++ b/ios/LiveActivityFactory.swift
+@@ -28,5 +28,5 @@
+       let activity = try Activity.request(
+         attributes: LiveActivityAttributes(),
+-        content: .init(state: initialState, staleDate: nil),
++        content: .init(state: initialState, staleDate: liveActivityStaleDate(props: props)),
+         pushType: LiveActivityFactory.pushNotificationsEnabled ? .token : nil
+       )
+@@ -47,5 +47,7 @@
+     return Activity<LiveActivityAttributes>.activities.map { activity in
+-      LiveActivity(id: activity.id, name: name)
++      let instance = LiveActivity(id: activity.id, name: name)
++      instance.observePushTokenUpdates(for: activity, pushNotificationsEnabled: LiveActivityFactory.pushNotificationsEnabled)
++      return instance
+     }
+   }
+ }

@@ -9,6 +9,23 @@ struct NativeTimerTransactionAcceptance {
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: folder) }
+    let cache = try NativeTimerPresentationCache(directory: folder)
+    let cacheNow = Date(timeIntervalSince1970: 1_800_000_000)
+    try cache.withExclusiveAccess {
+      let local: [String: Any] = ["owner": "alice", "accountLease": "lease", "activityExpiresAt": 1_800_007_200_000.0,
+        "timers": [["action": ["target": "local-only"], "goalPeriods": [["endsAt": 1_800_003_600_000.0]]]]]
+      let json = String(data: try JSONSerialization.data(withJSONObject: local), encoding: .utf8)!
+      let envelope = try cache.publish(json, now: cacheNow)
+      precondition(!envelope.contains("local-only"), "Native action leaked into refresh envelope")
+      let value = try JSONSerialization.jsonObject(with: Data(envelope.utf8)) as! [String: Any]
+      precondition(value["staleAt"] as? Double == 1_800_003_600_000.0)
+      let file = folder.appendingPathComponent("__expo_widgets_live_activity_HourPathsTimers_presentation.json")
+      let cached = try String(contentsOf: file, encoding: .utf8)
+      precondition(cached == json)
+      try cache.invalidate()
+      precondition(!FileManager.default.fileExists(atPath: file.path))
+      precondition(FileManager.default.fileExists(atPath: folder.appendingPathComponent("__expo_widgets_live_activity_HourPathsTimers_local_presentation").path), "Revocation removed the no-fallback fence")
+    }
     let url = folder.appendingPathComponent("tracking.db")
     var connection: OpaquePointer?
     precondition(sqlite3_open(url.path, &connection) == SQLITE_OK)
@@ -29,9 +46,11 @@ struct NativeTimerTransactionAcceptance {
     }
     let now = Date(timeIntervalSince1970: 1_800_000_000)
     let snapshot: [String: Any] = ["owner": "alice", "revision": 4,
-      "paths": [["id": "guitar", "name": "Guitar", "timeZone": "UTC"]],
+      "paths": [["id": "guitar", "name": "Guitar", "timeZone": "UTC",
+        "goal": ["recurrence": "hourly", "alignment": ["minute": 0], "targetSeconds": 600]]],
       "timers": [], "operations": [], "history": [], "historyRetainedAt": NSNull(),
-      "summaries": [:], "unreflected": [], "corrections": [], "notices": []]
+      "summaries": ["guitar": ["savedTotalSeconds": 0, "period": ["savedSeconds": 0, "targetSeconds": 600,
+        "startsAt": now.timeIntervalSince1970 * 1000, "endsAt": now.addingTimeInterval(3600).timeIntervalSince1970 * 1000]]], "unreflected": [], "corrections": [], "notices": []]
     sql("""
       PRAGMA journal_mode=WAL;
       CREATE TABLE tracking_accounts_v1(owner TEXT PRIMARY KEY,revision INTEGER,payload TEXT);
@@ -41,9 +60,21 @@ struct NativeTimerTransactionAcceptance {
       """)
     let original = try encoded(snapshot)
     sql("INSERT INTO tracking_accounts_v1 VALUES('alice',4,'\(original)')")
-    let presentation: [String: Any] = ["owner": "alice", "accountLease": "lease", "startLabel": "Start", "stopLabel": "Stop",
+    let presentation: [String: Any] = ["activityExpiresAt": now.addingTimeInterval(7200).timeIntervalSince1970 * 1000, "owner": "alice", "accountLease": "lease", "startLabel": "Start", "stopLabel": "Stop",
       "titles": ["0": "Ready", "1": "Running"], "timers": [["pathId": "guitar", "startedAt": 1_800_000_000_000.0, "stoppedAt": 1_800_000_000_000.0]]]
-    try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(presentation))
+    try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(presentation), now: now)
+    var stalePresentation = presentation
+    stalePresentation["trackingRevision"] = 3
+    do {
+      try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(stalePresentation), now: now)
+      preconditionFailure("Old foreground presentation replaced native state")
+    } catch {}
+    stalePresentation["trackingRevision"] = 4
+    stalePresentation["accountLease"] = "revoked"
+    do {
+      try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(stalePresentation), now: now)
+      preconditionFailure("Revoked presentation was registered")
+    } catch {}
     var action: [String: Any] = ["owner": "alice", "revision": 4, "pathId": "guitar", "kind": "start", "timerId": "timer", "operationId": "start"]
     func execute(_ value: [String: Any], lease: String = "lease", time: Date? = nil) throws -> String {
       try NativeTimerTransaction.execute(databaseURL: url, lease: lease, actionJSON: encoded(value), domainScript: script, now: time ?? now)
@@ -52,6 +83,10 @@ struct NativeTimerTransactionAcceptance {
       let before = read()
       do { _ = try operation(); preconditionFailure("Native command unexpectedly accepted") }
       catch { precondition(read() == before, "Rejected native command changed tracking") }
+    }
+    rejected {
+      try NativeTimerTransaction.execute(databaseURL: url, lease: "lease", actionJSON: encoded(action), domainScript: script,
+        now: now, beforeCommit: { throw NativeTimerPresentationCache.Failure.unavailable })
     }
     rejected { try execute(action, lease: "previous-account-lease") }
     rejected { try execute(action, time: now.addingTimeInterval(7200)) }
@@ -66,7 +101,13 @@ struct NativeTimerTransactionAcceptance {
     precondition(activeRows[0]["stoppedAt"] == nil, "undefined became null across JavaScriptCore")
     rejected { try execute(action) }
     action["revision"] = 5; action["kind"] = "stop"; action["operationId"] = "stop"
-    _ = try execute(action, time: now.addingTimeInterval(60))
+    let stoppedPresentation = try execute(action, time: now.addingTimeInterval(60))
+    let stoppedObject = try JSONSerialization.jsonObject(with: Data(stoppedPresentation.utf8)) as! [String: Any]
+    let stoppedRows = stoppedObject["timers"] as! [[String: Any]]
+    let periods = stoppedRows[0]["goalPeriods"] as! [[String: Any]]
+    precondition(periods.count == 2)
+    precondition((periods[0]["savedSeconds"] as! NSNumber).intValue == 60)
+    precondition((periods[1]["savedSeconds"] as! NSNumber).intValue == 0)
     let saved = try JSONSerialization.jsonObject(with: Data(read().utf8)) as! [String: Any]
     precondition((saved["timers"] as! [Any]).isEmpty)
     precondition((saved["operations"] as! [[String: Any]]).count == 2)

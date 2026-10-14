@@ -78,9 +78,10 @@ release notes were read back. Google Play internal build 470 committed in
 The owner waived independent Play Console verification on October 14; the
 successful publication receipt satisfies that delivery requirement.
 Physical-device acceptance remains unverified. The active product slice is
-richer iOS Live Activities with durable Start/Stop controls in
-[PR #175](https://github.com/elsell/hourpaths/pull/175). It is not merged or
-released; the remaining acceptance areas below remain open.
+automatic Live Activity goal-period refresh. Richer controls merged in
+[PR #175](https://github.com/elsell/hourpaths/pull/175) as `83c7c57` after all five
+gates; release availability remains unverified. The acceptance areas below
+remain open.
 
 The remaining-work table below is the finish line. Existing implementation does
 not close its physical-device, provider, policy or external-retention evidence.
@@ -129,7 +130,7 @@ it does not close an area merely because a build is available.
 | 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
-| 6 — Native timers | Settle the richer visual proposal, implement it and verify signed-device multi-timer/lifecycle behavior. |
+| 6 — Native timers | Verify release availability of PR #175, complete automatic goal-period refresh, and verify signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |

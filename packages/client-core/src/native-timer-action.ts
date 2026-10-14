@@ -1,3 +1,4 @@
+import { nativeGoalPeriodSchedule } from './native-goal-period';
 import type { TrackingSnapshot } from './offline-tracking';
 import { startTrackingTimer, stopTrackingTimer } from './tracking-timer-commands';
 
@@ -63,11 +64,14 @@ export function refreshNativeTimerPresentation(presentation: {
       timerId, operationId, kind: active ? 'stop' : 'start',
     } });
     return { ...row, id: timerId,
+      ...(typeof presentation.activityExpiresAt === 'number' ? {
+        goalPeriods: nativeGoalPeriodSchedule(state, presentation.owner, row.pathId, now, presentation.activityExpiresAt),
+      } : {}),
       ...(active ? { startedAt: Date.parse(active.startedAt), stoppedAt: undefined,
-        ...(wasStopped ? { goal: resumedGoal } : {}) } : { stoppedAt: row.stoppedAt ?? now }),
+        ...(wasStopped ? { goal: typeof presentation.activityExpiresAt === 'number' ? previousGoal : resumedGoal } : {}) } : { stoppedAt: row.stoppedAt ?? now }),
       action: { target, label: active ? presentation.stopLabel : presentation.startLabel },
     };
   });
   const titles = presentation.titles as Record<string, string> | undefined;
-  return { ...presentation, timers, title: titles?.[state.timers.length] ?? presentation.title };
+  return { ...presentation, trackingRevision: state.revision, timers, title: titles?.[state.timers.length] ?? presentation.title };
 }

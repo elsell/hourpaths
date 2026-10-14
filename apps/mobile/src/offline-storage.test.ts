@@ -171,3 +171,24 @@ test('native action lease survives reopen, rotates on account replacement and re
     await assert.rejects(database.lease.bind('alice', 30000), /deletion/);
   } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
 });
+
+
+test('cold restart clears native state and returns only the persisted refresh identity', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'hourpaths-native-refresh-cleanup-'));
+  const file = join(folder, 'tracking.db');
+  let database = open(file);
+  try {
+    const lease = await database.lease.bind('alice', 50000);
+    await database.connection.runAsync('INSERT INTO native_timer_presentation_v1 VALUES(1, ?)', JSON.stringify({
+      owner: 'alice', accountLease: lease.generation, activityExpiresAt: 10000,
+      timers: [{ name: 'private-path-fixture' }],
+    }));
+    database.close(); database = open(file);
+    assert.deepEqual(await database.lease.clear(), {
+      owner: 'alice', activityId: lease.generation, accountLease: lease.generation, expiresAt: 10000,
+    });
+    assert.equal(await database.connection.getFirstAsync('SELECT owner FROM native_timer_account_v1'), null);
+    assert.equal(await database.connection.getFirstAsync('SELECT payload FROM native_timer_presentation_v1'), null);
+    assert.equal(await database.lease.clear(), undefined);
+  } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
+});

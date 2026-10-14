@@ -121,3 +121,35 @@ test('large personal labels retain an overflow route within the encoded Activity
   assert.ok(props.timers.length >= 1 && props.timers.length < 3);
   assert.equal(props.remaining, `${20 - props.timers.length} more`);
 });
+
+test('background render advances the goal period without replacing the local Stop action', () => {
+  const start = 1_790_000_000_000, boundary = start + 3600000, now = boundary + 300000;
+  const props = { title: 'Running', count: '1', remaining: '', timers: [{
+    id: 'new-local-timer', pathId: 'path', name: 'Guitar', startedAt: start,
+    action: { target: 'current-local-stop', label: 'Stop' },
+    goal: { fraction: 0.5, text: 'Old period', targetText: 'of 10m', lower: start, upper: boundary },
+    goalPeriods: [
+      { startsAt: start, endsAt: boundary, targetSeconds: 600, savedSeconds: 300 },
+      { startsAt: boundary, endsAt: boundary + 3600000, targetSeconds: 600, savedSeconds: 120 },
+    ],
+  }] };
+  const nodes = descendants(JSON.parse(JSON.stringify(timerLayout(props, { timestamp: now, isStale: false }))).banner);
+  assert.ok(nodes.some(node => node.type === 'TextView' && node.props.timerInterval?.lower === boundary - 120000
+    && node.props.timerInterval?.upper === boundary + 3600000));
+  assert.ok(nodes.some(node => node.props?.target === 'current-local-stop'));
+  const stale = descendants(JSON.parse(JSON.stringify(timerLayout(props, { timestamp: now, isStale: true }))).banner);
+  assert.ok(stale.some(node => node.props?.target === 'current-local-stop'));
+  assert.ok(!stale.some(node => node.props?.text === 'of 10m'));
+});
+
+test('stopped timer in a new period freezes goal progress at rendering time, not the prior period stop', () => {
+  const now = 1_790_004_000_000;
+  const props = { title: 'Ready', count: '0', remaining: '', timers: [{
+    id: 'stopped', pathId: 'path', name: 'Guitar', startedAt: now - 7200000, stoppedAt: now - 3600000,
+    action: { target: 'current-start', label: 'Start' }, goal: { fraction: 0, text: '', targetText: 'of 10m' },
+    goalPeriods: [{ startsAt: now - 300000, endsAt: now + 3300000, targetSeconds: 600, savedSeconds: 0 }],
+  }] };
+  const nodes = descendants(JSON.parse(JSON.stringify(timerLayout(props, { timestamp: now, isStale: false }))).banner);
+  assert.ok(nodes.some(node => node.type === 'TextView' && node.props.timerInterval?.lower === now && node.props.pauseTime === now));
+  assert.ok(nodes.some(node => node.props?.target === 'current-start'));
+});

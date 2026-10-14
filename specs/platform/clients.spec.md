@@ -192,6 +192,54 @@ native builds verify this exact existing combination.
   repeated taps, and account replacement. A successful foreground-only tap is
   insufficient evidence for these controls.
 
+### Live Activity goal-period refresh
+
+- A running Live Activity must advance to the current goal period without
+  requiring the person to reopen HourPaths. Period boundaries and recorded-time
+  attribution must use the same participant calendar and durable tracking
+  projection as Home, including daylight-saving changes and pending offline work.
+- A remote refresh must not start, stop, overwrite, or resurrect a local timer.
+  The device’s durable tracking state remains authoritative for pending commands;
+  delayed or duplicate refreshes must preserve newer local actions.
+- The iOS adapter must keep the full presentation in the shared App Group and
+  publish only its account/lease identity and refresh deadline to ActivityKit.
+  Native actions and revocation must serialize presentation writes. Before a
+  durable action commits, the previous mirror must be invalidated so a crash
+  cannot leave a newer ledger paired with old actionable controls. Missing,
+  expired, or mismatched local presentation must render no personal content;
+  remote data must not be used as a fallback. Foreground reconciliation may
+  republish the durable projection after such an interruption.
+- Refresh delivery must use the APNs Live Activity update protocol over HTTP/2,
+  with a bounded request deadline and a refresh deadline no later than the
+  native presentation expiry. It must not follow provider redirects or include
+  timer commands, Path content, tokens, or provider response bodies in logs.
+  Invalid activity tokens must be distinguished from retryable transport/rate
+  failures and signing-configuration failures. Provider credentials must be
+  injected by bootstrap, never read by domain or application code.
+- Registration must bound its lifetime to eight hours and carry no more than 64
+  ordered goal-period boundaries across the displayed Paths. A delayed wake must
+  select the next future deadline, never replay an obsolete period. Persistence
+  must fence claimed work against registration changes and revocation before
+  provider handoff, and must bound active registrations per account.
+- Refresh registration and delivery must be scoped to the authenticated account
+  and active native presentation. Sign-out, account replacement, deletion, lease
+  expiry and presentation dismissal must invalidate that registration. Tokens
+  must be encrypted at rest and must not appear in logs or audit metadata.
+- Cleanup after process restart must recover the prior presentation identity from
+  durable local storage before clearing it. Failed cleanup for a prior account
+  must not prevent a different account from registering its own presentation.
+- Client registration must serialize token rotation and revocation, discard queued
+  updates from an obsolete lease, and retry failed registration when foreground
+  reconciliation runs. Repeated presentation updates must not extend the original
+  activity expiry. Registration failures must remain independent of local actions.
+- An unavailable network or rejected refresh must not prevent Start/Stop or erase
+  pending work. An expired goal period must not be displayed as the current goal;
+  current-period progress must recover from retained state when rendering resumes.
+- Acceptance must cover a running timer across an hourly boundary, a stopped
+  timer followed by a delayed refresh, a new local Start followed by an older
+  refresh, account replacement, token rotation and missed-network recovery.
+  Passing a foreground-only test does not establish suspended-device acceptance.
+
 ### Native timer surface acceptance
 
 - Native timer presentation must consume the durable account-scoped tracking
