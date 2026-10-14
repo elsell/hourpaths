@@ -82,3 +82,21 @@ test('account replacement during cleanup never presents the previous account aga
   await Promise.all([old, adopt, next]);
   assert.deepEqual(presentations, ['Bob’s reading']);
 });
+
+test('account action revocation is independent of presentation failure and rejects queued old publications', async () => {
+  let revoked = 0;
+  const surface = new NativeTimerSurfaceCoordinator({
+    clear: async () => { throw new Error('presentation denied'); },
+    revokeActions: async () => { revoked++; },
+    replace: async () => { throw new Error('old account must not publish'); },
+  });
+  await surface.account('alice');
+  assert.equal(await surface.revokeAccount(), true);
+  assert.equal(revoked, 1);
+  assert.equal(await surface.publish('alice', []), false);
+  const unavailable = new NativeTimerSurfaceCoordinator({
+    clear: async () => undefined, replace: async () => undefined,
+    revokeActions: async () => { throw new Error('durable storage unavailable'); },
+  });
+  assert.equal(await unavailable.revokeAccount(), false);
+});

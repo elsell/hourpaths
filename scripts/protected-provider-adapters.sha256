@@ -4,7 +4,7 @@
 182711a99d8363b4b52b5f5e2f225e96144331bbd11c91645e01d3dd6213db0a  apps/mobile/src/provider-identity-settings.ts
 0e45f2e66fa352716ad354631e89324f9ebe89ab10a5162f10f728336bf9fff4  apps/mobile/src/push-notifications-native.ts
 5e7b6a6ce0857aaf769a6cd777279f03613a385df8611f31bed5d616799d8052  apps/web/src/lib/provider-auth.ts
-3e2f7ed2b6c79a16cd4f5b5f1f6781de3123036b5770c780321179602b2f1178  apps/mobile/src/timers/timer-surface.ios.tsx
+6ed48c598d61b34a9f27a1cc46447b700416deb92d8a5162cb337ae36a41ec2e  apps/mobile/src/timers/timer-surface.ios.tsx
 d23a78582cf3ed877621d698cd3100394514927965a8fbdbb23adbe918e66c75  apps/mobile/src/timers/timer-surface.android.ts
 74f7881a08971fa136bcda9ec87b7c5bd4470f5696de626041e5bfd7ff8ca5ff  apps/mobile/modules/hourpaths-timers/expo-module.config.json
 74f81d41f0f2bf54d4ac5c293a280c48927c6016bbb62654824bad8376cdcea0  apps/mobile/modules/hourpaths-timers/android/build.gradle

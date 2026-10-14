@@ -1740,7 +1740,11 @@ export function HomeScreen() {
     }
     retainedHomeRef.current = null; setRetainedHome(null);
     const activeBeforeAdoption = notificationLifecycleState.current;
-    if (nativeOffline.current && (!next.ownerId || next.ownerId !== activeBeforeAdoption.session?.ownerId)) disposeNativeTracking();
+    if (!next.ownerId || next.ownerId !== activeBeforeAdoption.session?.ownerId) {
+      if (!await timerSurfaces.revokeActions()) throw new Error('native_timer_revocation_unavailable');
+      if (!ticket.current()) return;
+      disposeNativeTracking();
+    }
     const retainsOwnedHome = activeBeforeAdoption.destination?.kind === 'home' &&
       activeBeforeAdoption.session?.token === sourceSessionToken &&
       homeProjectionSessionToken.current === sourceSessionToken;
@@ -2417,6 +2421,13 @@ export function HomeScreen() {
     if (expected
       ? !ownsSignOutResolution(expected.ownerID, expected.session)
       : active.session !== disposedSession) return false;
+    if (!await timerSurfaces.revokeActions()) {
+      setErrorKey('errors.temporarilyUnavailable');
+      return false;
+    }
+    if (expected
+      ? !ownsSignOutResolution(expected.ownerID, expected.session)
+      : notificationLifecycleState.current.session !== disposedSession) return false;
     const clearedSurfaces = disposeNativeTracking();
     cancelPathCreation();
     resetTimerPresentation();

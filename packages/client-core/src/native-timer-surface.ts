@@ -14,6 +14,7 @@ export type RunningTimerSurface = Readonly<{
 export type NativeTimerAccount = Readonly<{ owner: string; expiresAt: number }>;
 
 export interface NativeTimerSurfacePort {
+  revokeActions?(): Promise<void>;
   subscribe?(changed: () => void): () => void;
   replace(timers: readonly RunningTimerSurface[], account?: NativeTimerAccount): Promise<void>;
   clear(): Promise<void>;
@@ -29,6 +30,14 @@ export class NativeTimerSurfaceCoordinator {
   private tail: Promise<boolean> = Promise.resolve(true);
 
   constructor(private readonly port: NativeTimerSurfacePort) {}
+
+  revokeAccount(): Promise<boolean> {
+    this.owner = null;
+    ++this.generation;
+    ++this.revision;
+    this.needsClear = true;
+    return this.enqueue(async () => { await this.port.revokeActions?.(); });
+  }
 
   account(owner: string | null): Promise<boolean> {
     if (owner === this.owner && !this.needsClear) return this.tail;

@@ -21,6 +21,7 @@ export const createTimerSurface: CreateTimerSurface = copy => ({
     });
     return () => listener.remove();
   },
+  async revokeActions() { await (await openNativeOfflineStorage()).nativeLease.clear(); },
   async clear() {
     await (await openNativeOfflineStorage()).nativeLease.clear();
     if (Number.parseFloat(String(Platform.Version)) < 16.1) return;
