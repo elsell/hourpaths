@@ -37,7 +37,8 @@ export class LiveActivityRefreshCoordinator {
     this.current = value;
     const revision = ++this.revision;
     return this.enqueue(async () => {
-      await this.flushRevocations();
+      await this.flushRevocations().catch(() => undefined);
+      if (this.pendingRevocations.has(identity(value))) return;
       if (revision !== this.revision || expiresAt <= this.now()) return;
       const fingerprint = JSON.stringify(value);
       if (fingerprint === this.accepted) return;
@@ -46,7 +47,8 @@ export class LiveActivityRefreshCoordinator {
     });
   }
 
-  clear(): Promise<boolean> {
+  clear(persisted?: LiveActivityRefreshIdentity): Promise<boolean> {
+    if (persisted) this.stageRevocation(persisted);
     if (this.current) this.stageRevocation(this.current);
     this.current = undefined;
     this.accepted = undefined;
@@ -54,17 +56,21 @@ export class LiveActivityRefreshCoordinator {
     return this.enqueue(() => this.flushRevocations());
   }
 
-  private stageRevocation(value: LiveActivityRefreshRegistration) {
+  private stageRevocation(value: LiveActivityRefreshIdentity) {
     const { owner, activityId, accountLease, expiresAt } = value;
     this.pendingRevocations.set(identity(value), { owner, activityId, accountLease, expiresAt });
     this.accepted = undefined;
   }
 
   private async flushRevocations() {
+    let failed = false;
     for (const [key, value] of this.pendingRevocations) {
-      if (value.expiresAt > this.now()) await this.port.revoke(value);
-      this.pendingRevocations.delete(key);
+      try {
+        if (value.expiresAt > this.now()) await this.port.revoke(value);
+        this.pendingRevocations.delete(key);
+      } catch { failed = true; }
     }
+    if (failed) throw new Error('live_activity_cleanup_pending');
   }
 
   private enqueue(work: () => Promise<void>): Promise<boolean> {

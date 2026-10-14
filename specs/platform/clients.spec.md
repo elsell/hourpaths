@@ -225,6 +225,9 @@ native builds verify this exact existing combination.
   and active native presentation. Sign-out, account replacement, deletion, lease
   expiry and presentation dismissal must invalidate that registration. Tokens
   must be encrypted at rest and must not appear in logs or audit metadata.
+- Cleanup after process restart must recover the prior presentation identity from
+  durable local storage before clearing it. Failed cleanup for a prior account
+  must not prevent a different account from registering its own presentation.
 - Client registration must serialize token rotation and revocation, discard queued
   updates from an obsolete lease, and retry failed registration when foreground
   reconciliation runs. Repeated presentation updates must not extend the original

@@ -1,4 +1,4 @@
-import { LiveActivityRefreshCoordinator, nativeGoalPeriodSchedule } from '@hourpaths/client-core';
+import { LiveActivityRefreshCoordinator, nativeGoalPeriodSchedule, type LiveActivityRefreshIdentity } from '@hourpaths/client-core';
 import { retainStoppedTimers } from './retain-stopped-timers';
 import { fitNativePresentation, nativeTimerRegistration } from './native-presentation-size';
 import { requireNativeModule } from 'expo';
@@ -26,11 +26,11 @@ export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
   const refresh = refreshPort ? new LiveActivityRefreshCoordinator(refreshPort, Date.now) : undefined;
   let tokenSubscription: { remove(): void } | undefined;
   let tokenGeneration = 0;
-  function clearRefresh() {
+  function clearRefresh(persisted?: LiveActivityRefreshIdentity) {
     ++tokenGeneration;
     tokenSubscription?.remove();
     tokenSubscription = undefined;
-    void refresh?.clear();
+    void refresh?.clear(persisted);
   }
   return ({
   subscribe(changed) {
@@ -40,10 +40,10 @@ export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
     const foreground = AppState.addEventListener('change', state => { if (state === 'active') changed(); });
     return () => { listener.remove(); foreground.remove(); };
   },
-  async revokeActions() { clearRefresh(); await (await openNativeOfflineStorage()).nativeLease.clear(); await clearPresentation(); },
+  async revokeActions() { clearRefresh(); clearRefresh(await (await openNativeOfflineStorage()).nativeLease.clear()); await clearPresentation(); },
   async clear() {
     clearRefresh();
-    await (await openNativeOfflineStorage()).nativeLease.clear();
+    clearRefresh(await (await openNativeOfflineStorage()).nativeLease.clear());
     await clearPresentation();
     if (Number.parseFloat(String(Platform.Version)) < 16.1) return;
     for (const instance of factory().getInstances()) await instance.end('immediate');
@@ -52,13 +52,13 @@ export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
     if (Number.parseFloat(String(Platform.Version)) < 16.2) return;
     const storage = await openNativeOfflineStorage();
     let lease = account ? await storage.nativeLease.bind(account.owner, account.expiresAt) : undefined;
-    if (!account) { clearRefresh(); await storage.nativeLease.clear(); await clearPresentation(); }
+    if (!account) { clearRefresh(); clearRefresh(await storage.nativeLease.clear()); await clearPresentation(); }
     const snapshot = account ? await storage.tracking.read(account.owner) : undefined;
     const previousStored = lease ? await storage.nativeLease.readPresentation(lease.owner, lease.generation) : undefined;
     let previous: TimerSurfacePresentation | undefined = previousStored ? JSON.parse(previousStored) : undefined;
     if (previous?.activityExpiresAt && previous.activityExpiresAt <= Date.now()) {
       clearRefresh();
-      await storage.nativeLease.clear();
+      clearRefresh(await storage.nativeLease.clear());
       await clearPresentation();
       for (const instance of factory().getInstances()) await instance.end('immediate');
       lease = account ? await storage.nativeLease.bind(account.owner, account.expiresAt) : undefined;
@@ -73,7 +73,7 @@ export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
     }
     if (!ordered.length) {
       clearRefresh();
-      await storage.nativeLease.clear();
+      clearRefresh(await storage.nativeLease.clear());
       await clearPresentation();
       for (const instance of factory().getInstances()) await instance.end('immediate');
       return;

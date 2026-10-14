@@ -48,7 +48,7 @@ test('account replacement revokes old binding before registering new owner', asy
   await coordinator.update({ ...registration, owner: 'bob', accountLease: 'new-lease' });
   assert.deepEqual(events, ['put:alice', 'delete:alice', 'put:bob']);
 });
-test('failed cleanup is retained for reconciliation before a replacement can register', async () => {
+test('failed cleanup is retried without starving another account registration', async () => {
   const events: string[] = [];
   let offline = true;
   const coordinator = new LiveActivityRefreshCoordinator({
@@ -58,9 +58,19 @@ test('failed cleanup is retained for reconciliation before a replacement can reg
   await coordinator.update(registration);
   assert.equal(await coordinator.clear(), false);
   const next = { ...registration, owner: 'bob', accountLease: 'bob-lease' };
-  assert.equal(await coordinator.update(next), false);
-  assert.deepEqual(events, ['alice']);
+  assert.equal(await coordinator.update(next), true);
+  assert.deepEqual(events, ['alice', 'bob']);
   offline = false;
   assert.equal(await coordinator.update(next), true);
-  assert.deepEqual(events, ['alice', 'revoked', 'bob']);
+  assert.deepEqual(events, ['alice', 'bob', 'revoked']);
+});
+
+test('cleanup recovers a persisted lease without a registration in this process', async () => {
+  const revoked: string[] = [];
+  const coordinator = new LiveActivityRefreshCoordinator({
+    register: async () => undefined,
+    revoke: async value => { revoked.push(value.accountLease); },
+  }, () => 1000);
+  assert.equal(await coordinator.clear(registration), true);
+  assert.deepEqual(revoked, ['lease']);
 });

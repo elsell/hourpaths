@@ -198,3 +198,10 @@ goal-period data are read from the device's shared presentation cache; a remote
 push cannot supply timer commands. Registering an activity does not prove that
 APNs delivery or suspended-device behavior works; release acceptance must verify
 an hourly rollover and Start/Stop on a signed device.
+
+Known follow-up: sign-out clears the local presentation and durable action lease
+before asynchronous server registration cleanup. If session revocation wins that
+race, the server may continue identity-only refresh signals until the original
+activity expiry. The widget cannot recover personal content from those signals.
+Suspended-device acceptance must still verify successful boundary refresh and
+Start/Stop; a green build does not establish APNs delivery.
