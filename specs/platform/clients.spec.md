@@ -216,6 +216,11 @@ native builds verify this exact existing combination.
   Invalid activity tokens must be distinguished from retryable transport/rate
   failures and signing-configuration failures. Provider credentials must be
   injected by bootstrap, never read by domain or application code.
+- Registration must bound its lifetime to eight hours and carry no more than 64
+  ordered goal-period boundaries across the displayed Paths. A delayed wake must
+  select the next future deadline, never replay an obsolete period. Persistence
+  must fence claimed work against registration changes and revocation before
+  provider handoff, and must bound active registrations per account.
 - Refresh registration and delivery must be scoped to the authenticated account
   and active native presentation. Sign-out, account replacement, deletion, lease
   expiry and presentation dismissal must invalidate that registration. Tokens
