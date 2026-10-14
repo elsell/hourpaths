@@ -47,6 +47,7 @@ const protectedPaths = [
   'apps/web/src/lib/offline-shell/cache.ts',
   'apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts',
   'apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts',
+  'apps/mobile/src/offline/serialized-tracking-database.ts',
   'apps/mobile/src/offline/native-tracking-store.ts',
   'apps/mobile/src/offline/sqlite-tracking-store.ts',
   'apps/mobile/src/offline/sqlite-mobile-home-cache.ts',

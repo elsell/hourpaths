@@ -14,7 +14,10 @@ export function nativeTimerSurfaces(i18n: Translator, now: () => number = Date.n
     remaining: count => i18n.t('nativeTimers.remaining', { count }),
     count: count => i18n.number(count),
   }, refresh);
-  const coordinator = new NativeTimerSurfaceCoordinator(port);
+  const coordinator = new NativeTimerSurfaceCoordinator(port, (work, delay) => {
+    const timer = setTimeout(work, delay);
+    return () => clearTimeout(timer);
+  });
   return {
     subscribe: (changed: () => void) => port.subscribe?.(changed) ?? (() => undefined),
     clear: () => coordinator.account(null),

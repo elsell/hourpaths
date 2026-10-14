@@ -141,6 +141,10 @@ native builds verify this exact existing combination.
 - Production iOS bundles must select the native Live Activity adapter rather
   than the unsupported-platform fallback. A running timer started in the
   foreground must appear on the Lock Screen when Live Activities are enabled.
+- A failed native presentation update must receive bounded automatic retries
+  without requiring another timer action. A newer projection, account change,
+  or sign-out must cancel the obsolete retry; retries must never resurrect
+  revoked native controls.
 - On Android, running timers must be shown through one grouped persistent
   ongoing notification.
 - These operating-system surfaces must represent all timers currently running,

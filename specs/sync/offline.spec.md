@@ -57,8 +57,10 @@ connection and the limits of other offline surfaces.
 
 ## Offline banner
 
-- Whenever the application is offline, it must display a visible but
-  non-blocking offline banner.
+- A connectivity failure that persists for more than one second must display
+  a visible but non-blocking offline banner. Brief reconnects must not flash a
+  banner. Local database errors and intentionally suspended or superseded work
+  must not be interpreted as evidence that the device is offline.
 - The banner must explain that tracking remains available, changes will
   synchronize automatically, and locally shown history is limited to the most
   recent 90 days.

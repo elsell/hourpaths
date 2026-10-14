@@ -56,14 +56,14 @@ export function mobileOfflineHome(dependencies: {
       if (context !== next || next.paused) throw new TrackingReplaySuspended();
       try { await refreshContext(next); }
       catch (cause) {
-        if (context === next && !(cause instanceof HydrationChanged)) await dependencies.failure?.(owner, cause);
+        if (context === next && !(cause instanceof HydrationChanged) && !(cause instanceof TrackingReplaySuspended)) await dependencies.failure?.(owner, cause);
         throw cause;
       }
     }, dependencies.schedule, () => {});
     next.historyWorker = new TrackingReplayWorker(async () => {
       try { await refreshHistory(next); }
       catch (cause) {
-        if (context === next && !(cause instanceof HydrationChanged)) await dependencies.failure?.(owner, cause);
+        if (context === next && !(cause instanceof HydrationChanged) && !(cause instanceof TrackingReplaySuspended)) await dependencies.failure?.(owner, cause);
         throw cause;
       }
     }, dependencies.schedule, () => {});

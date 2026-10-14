@@ -78,7 +78,14 @@ release notes were read back. Google Play internal build 470 committed in
 The owner waived independent Play Console verification on October 14; the
 successful publication receipt satisfies that delivery requirement.
 Physical-device acceptance remains unverified. The active product slice is
-automatic Live Activity goal-period refresh. Richer controls merged in
+repairing the owner-reported iOS 0.61.0 Home loading, offline-state flicker,
+timer Start rejection, and missing Live Activity regressions. Acceptance requires
+reliable cached Home entry and local Start/Stop, quiet transient status, and
+restored Lock Screen/Dynamic Island presentation in a corrected signed build.
+Onboarding redesign is on hold while these regressions are resolved.
+Automatic Live Activity goal-period refresh merged in PR #177; v0.61.0 is
+available as TestFlight build 512 and Google Play internal 486, with production
+GitOps `fc8df71`. Those distribution receipts do not establish device correctness. Richer controls merged in
 [PR #175](https://github.com/elsell/hourpaths/pull/175) as `83c7c57` after all five
 gates; release availability remains unverified. The acceptance areas below
 remain open.

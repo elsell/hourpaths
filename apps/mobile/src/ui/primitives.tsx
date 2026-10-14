@@ -1,3 +1,4 @@
+import { DelayedStatus } from './delayed-status';
 import { mobileShellStyles } from './shell-styles';
 export { mobileShellStyles } from './shell-styles';
 import { createElement, forwardRef, type ReactNode } from 'react';
@@ -50,7 +51,7 @@ export function StatusBanner({
   text: string;
   tone?: 'loading' | 'offline' | 'error' | 'sync' | 'info';
 }) {
-  return <View style={[styles.banner, tone === 'offline' ? styles.offlineBanner : null, tone === 'error' ? styles.errorBanner : null]}>
+  const content = <View style={[styles.banner, tone === 'offline' ? styles.offlineBanner : null, tone === 'error' ? styles.errorBanner : null]}>
     <View
       accessible
       accessibilityLabel={text}
@@ -67,6 +68,7 @@ export function StatusBanner({
     </View>
     {onAction && actionLabel ? <NativeButton label={actionLabel} onPress={onAction} variant="quiet" /> : null}
   </View>;
+  return tone === 'offline' || tone === 'sync' ? <DelayedStatus key={tone}>{content}</DelayedStatus> : content;
 }
 
 export function Surface({ children }: { children: ReactNode }) {
