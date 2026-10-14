@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+    'apps/mobile/src/offline/sqlite-native-timer-lease.ts',
+    'apps/mobile/src/timers/native-presentation-size.ts',
   'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimers.podspec',
   'apps/mobile/modules/hourpaths-timers/ios/HourPathsTimersModule.swift',
   'apps/mobile/modules/hourpaths-timers/ios/NativeTimerTransaction.swift',

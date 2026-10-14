@@ -61,10 +61,10 @@ final class NativeTimerTransaction {
           let rows = presentation["timers"] as? [[String: Any]],
           let refresh = context.objectForKeyedSubscript("HourPathsTimerDomain")?.objectForKeyedSubscript("refreshNativeTimerPresentation") else { throw Failure.stale }
     let identifiers = (0..<(rows.count * 2)).map { _ in UUID().uuidString }
-    let refreshed = refresh.call(withArguments: [presentation, next, now.timeIntervalSince1970 * 1000, identifiers])
-    guard context.exception == nil, let refreshedProps = refreshed?.toDictionary() else { throw Failure.domain }
-    let propsData = try JSONSerialization.data(withJSONObject: refreshedProps)
-    guard let propsJSON = String(data: propsData, encoding: .utf8) else { throw Failure.invalid }
+    guard let refreshed = refresh.call(withArguments: [presentation, next, now.timeIntervalSince1970 * 1000, identifiers]),
+          context.exception == nil,
+          let propsJSON = context.objectForKeyedSubscript("JSON")?.invokeMethod("stringify", withArguments: [refreshed])?.toString(),
+          context.exception == nil else { throw Failure.domain }
     let presentationWrite = try prepare(db, "UPDATE native_timer_presentation_v1 SET payload = ? WHERE singleton = 1")
     defer { sqlite3_finalize(presentationWrite) }
     bind(presentationWrite, 1, propsJSON)

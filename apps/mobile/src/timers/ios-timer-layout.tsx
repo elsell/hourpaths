@@ -1,5 +1,5 @@
 import { Button, HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, lineLimit, monospacedDigit, padding, tint } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, lineLimit, monospacedDigit, padding, tint, frame } from '@expo/ui/swift-ui/modifiers';
 import type { TimerSurfacePresentation } from './timer-surface-types';
 
 export const timerLayout = (props: TimerSurfacePresentation) => {
@@ -10,28 +10,28 @@ export const timerLayout = (props: TimerSurfacePresentation) => {
     : <Text date={new Date(primary.startedAt)} dateStyle="timer" />;
   const rows = <VStack alignment="leading" spacing={6}>
     {/* Swift widget children must be immediate view nodes, not nested arrays. */}
-    <VStack alignment="leading" spacing={12}>{props.timers.map(timer => <VStack key={timer.pathId} alignment="leading" spacing={5}>
+    <VStack alignment="leading" spacing={8}>{props.timers.map(timer => <VStack key={timer.pathId} alignment="leading" spacing={5}>
       <HStack spacing={10}>
-        <Text modifiers={[font({ size: 26 })]}>{timer.emoji}</Text>
+        <Text modifiers={[font({ size: 22 })]}>{timer.emoji}</Text>
         <Text modifiers={[font({ weight: 'semibold' }), lineLimit(1)]}>{timer.name}</Text>
         <Spacer />
-        {timer.stoppedAt !== undefined ? <Text timerInterval={{ lower: new Date(timer.startedAt), upper: new Date(Math.max(timer.startedAt + 1, timer.stoppedAt)) }} countsDown={false} pauseTime={new Date(timer.stoppedAt)} modifiers={[font({ size: 22, weight: 'semibold' }), monospacedDigit()]} /> : <Text date={new Date(timer.startedAt)} dateStyle="timer" modifiers={[font({ size: 22, weight: 'semibold' }), monospacedDigit()]} />}
-      </HStack>
+        {timer.stoppedAt !== undefined ? <Text timerInterval={{ lower: new Date(timer.startedAt), upper: new Date(Math.max(timer.startedAt + 1, timer.stoppedAt)) }} countsDown={false} pauseTime={new Date(timer.stoppedAt)} modifiers={[font({ size: 18, weight: 'semibold' }), monospacedDigit()]} /> : <Text date={new Date(timer.startedAt)} dateStyle="timer" modifiers={[font({ size: 18, weight: 'semibold' }), monospacedDigit()]} />}
       {timer.action ? <Button target={timer.action.target} label={timer.action.label} systemImage={timer.stoppedAt !== undefined ? "play.fill" : "stop.fill"} /> : null}
+      </HStack>
       {timer.goal ? <VStack alignment="leading" spacing={4}>
-        {timer.stoppedAt === undefined && timer.goal.lower !== undefined && timer.goal.progressUpper !== undefined ? <ProgressView
-          timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.progressUpper) }}
-          countsDown={false} modifiers={[tint(timer.color ?? '#DFDEFF')]} /> : null}
         {timer.goal.lower !== undefined && timer.goal.upper !== undefined ? <HStack spacing={4}>
           <Text timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.upper) }} countsDown={false} pauseTime={timer.stoppedAt !== undefined ? new Date(timer.stoppedAt) : undefined} modifiers={[font({ size: 12 }), monospacedDigit()]} />
           <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{timer.goal.targetText}</Text>
+        {timer.stoppedAt === undefined && timer.goal.lower !== undefined && timer.goal.progressUpper !== undefined ? <ProgressView
+          timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.progressUpper) }}
+          countsDown={false} modifiers={[tint(timer.color ?? '#DFDEFF'), frame({ width: 40 })]} /> : null}
         </HStack> : <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{timer.goal.text}</Text>}
       </VStack> : null}
     </VStack>)}</VStack>
     {props.remaining ? <Text modifiers={[font({ size: 12 })]}>{props.remaining}</Text> : null}
   </VStack>;
   return {
-    banner: <VStack alignment="leading" spacing={8} modifiers={[padding({ all: 16 })]}>
+    banner: <VStack alignment="leading" spacing={8} modifiers={[padding({ all: 12 })]}>
       <Text modifiers={[font({ weight: 'semibold' }), lineLimit(1)]}>{props.title}</Text>
       {rows}
     </VStack>,

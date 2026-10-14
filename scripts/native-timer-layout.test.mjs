@@ -108,3 +108,16 @@ test('stopped Path exposes Start and a paused clock rather than a still-running 
   }
   assert.equal(layout.compactTrailing.props.pauseTime, stop);
 });
+
+test('large personal labels retain an overflow route within the encoded ActivityKit payload budget', () => {
+  const { fitNativePresentation, nativePresentationBytes } = load(path.join(root, 'src/timers/native-presentation-size.ts'));
+  const props = { title: 'Running', count: '20', remaining: '17 more', timers: Array.from({ length: 3 }, (_, i) => ({
+    id: `timer-${i}`, pathId: `path-${i}`, startedAt: 1_790_000_000_000, name: '🎸'.repeat(240), emoji: '🎸',
+    goal: { text: 'Goal', fraction: 0.5, lower: 1_790_000_000_000, upper: 1_790_003_600_000 },
+    action: { label: 'Stop', target: JSON.stringify({ owner: 'a'.repeat(128), lease: 'b'.repeat(36), path: `path-${i}`, operation: 'c'.repeat(36) }) },
+  })) };
+  fitNativePresentation(props, 20, count => `${count} more`);
+  assert.ok(nativePresentationBytes(props) <= 3400);
+  assert.ok(props.timers.length >= 1 && props.timers.length < 3);
+  assert.equal(props.remaining, `${20 - props.timers.length} more`);
+});

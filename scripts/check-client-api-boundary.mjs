@@ -213,7 +213,7 @@ const approvedExpoUIImports = new Map([
   ])],
   ['apps/mobile/src/timers/ios-timer-layout.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Button', 'HStack', 'ProgressView', 'Spacer', 'Text', 'VStack'])],
-    ['@expo/ui/swift-ui/modifiers', new Set(['font', 'foregroundStyle', 'lineLimit', 'monospacedDigit', 'padding', 'tint'])],
+    ['@expo/ui/swift-ui/modifiers', new Set(['font', 'foregroundStyle', 'lineLimit', 'monospacedDigit', 'padding', 'tint', 'frame'])],
   ])],
   ['apps/mobile/src/ui/comment-heart-icon.ios.tsx', new Map([
     ['@expo/ui/swift-ui', new Set(['Image'])],

@@ -68,6 +68,6 @@ export function refreshNativeTimerPresentation(presentation: {
       action: { target, label: active ? presentation.stopLabel : presentation.startLabel },
     };
   });
-  const titles = presentation.titles as string[] | undefined;
+  const titles = presentation.titles as Record<string, string> | undefined;
   return { ...presentation, timers, title: titles?.[state.timers.length] ?? presentation.title };
 }

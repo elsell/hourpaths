@@ -14,7 +14,7 @@ export type TimerSurfacePresentation = {
   owner?: string;
   startLabel?: string;
   stopLabel?: string;
-  titles?: string[];
+  titles?: Record<string, string>;
   title: string;
   count: string;
   remaining: string;
