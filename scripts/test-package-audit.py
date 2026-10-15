@@ -42,7 +42,7 @@ class AuditPolicyTest(unittest.TestCase):
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
                 audit.evaluate(changed, 1, now)
         with self.assertRaises(ValueError):
-            audit.evaluate(report, 1, dt.datetime(2026, 10, 15, tzinfo=dt.timezone.utc))
+            audit.evaluate(report, 1, audit.DEADLINE)
 
     def test_sprintf_exception_rejects_different_versions_and_deadline(self):
         report = {'metadata': {'vulnerabilities': {'moderate': 1}}, 'advisories': {'1': {
@@ -51,7 +51,7 @@ class AuditPolicyTest(unittest.TestCase):
         now = dt.datetime(2026, 10, 8, tzinfo=dt.timezone.utc)
         self.assertEqual(audit.evaluate(report, 1, now), ['GHSA-hp3w-g68c-fv3c'])
         with self.assertRaises(ValueError):
-            audit.evaluate(report, 1, dt.datetime(2026, 10, 15, tzinfo=dt.timezone.utc))
+            audit.evaluate(report, 1, audit.DEADLINE)
         report['advisories']['1']['findings'].append({'version': '1.1.3'})
         with self.assertRaises(ValueError):
             audit.evaluate(report, 1, now)
