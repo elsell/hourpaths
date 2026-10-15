@@ -17,6 +17,8 @@ export type RunningTimerSurface = Readonly<{
 export type NativeTimerAccount = Readonly<{ owner: string; expiresAt: number }>;
 
 export interface NativeTimerSurfacePort {
+  /** Validate an existing surface on first account restoration without renewing it. */
+  restoreAccount?(owner: string): Promise<boolean>;
   revokeActions?(): Promise<void>;
   subscribe?(changed: () => void): () => void;
   replace(timers: readonly RunningTimerSurface[], account?: NativeTimerAccount): Promise<void>;
@@ -30,6 +32,7 @@ export class NativeTimerSurfaceCoordinator {
   private generation = 0;
   private revision = 0;
   private needsClear = true;
+  private accountTransition = false;
   private publicationPauses = 0;
   private tail: Promise<boolean> = Promise.resolve(true);
 
@@ -52,6 +55,7 @@ export class NativeTimerSurfaceCoordinator {
   revokeAccount(): Promise<boolean> {
     this.stopRetry();
     this.owner = null;
+    this.accountTransition = false;
     ++this.generation;
     ++this.revision;
     this.needsClear = true;
@@ -60,15 +64,22 @@ export class NativeTimerSurfaceCoordinator {
 
   account(owner: string | null): Promise<boolean> {
     if (owner && this.publicationPauses) return Promise.resolve(false);
-    if (owner === this.owner && !this.needsClear) return this.tail;
+    if (owner === this.owner && (!this.needsClear || this.accountTransition)) return this.tail;
     this.stopRetry();
+    const restoring = this.owner === undefined && owner !== null;
     this.owner = owner;
     const generation = ++this.generation;
+    this.accountTransition = true;
     ++this.revision;
     this.needsClear = true;
     return this.enqueue(async () => {
-      await this.port.clear();
-      if (generation === this.generation) this.needsClear = false;
+      try {
+        const restored = restoring && await this.port.restoreAccount?.(owner);
+        if (!restored) await this.port.clear();
+        if (generation === this.generation) this.needsClear = false;
+      } finally {
+        if (generation === this.generation) this.accountTransition = false;
+      }
     });
   }
 

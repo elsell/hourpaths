@@ -180,6 +180,10 @@ native builds verify this exact existing combination.
   restoration completes without a session, native cleanup must run. Explicit
   sign-out, deletion, expiry and account replacement must retain their existing
   revocation behavior; native actions must still validate their persisted lease.
+- First adoption of a restored account must preserve an existing native presentation
+  only when the adapter verifies the same owner, matching persisted lease, unexpired
+  account and presentation, and no deletion fence. Explicit account changes must
+  still clear the previous surface. Restoration must not renew an expired lease.
 
 - Repeated Lock Screen and Dynamic Island renders must reuse a bounded widget
   JavaScript runtime rather than load a new engine and bundle for each region.
