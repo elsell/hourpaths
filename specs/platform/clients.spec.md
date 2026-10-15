@@ -175,6 +175,12 @@ native builds verify this exact existing combination.
 
 ### Live Activity presentation and controls
 
+- Initial session restoration must not revoke native timer leases or end Live
+  Activities merely because the in-memory session has not loaded yet. Once
+  restoration completes without a session, native cleanup must run. Explicit
+  sign-out, deletion, expiry and account replacement must retain their existing
+  revocation behavior; native actions must still validate their persisted lease.
+
 - Repeated Lock Screen and Dynamic Island renders must reuse a bounded widget
   JavaScript runtime rather than load a new engine and bundle for each region.
   Runtime reuse must serialize evaluation and use fresh presentation data on each
