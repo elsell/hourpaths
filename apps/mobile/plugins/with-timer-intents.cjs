@@ -7,7 +7,7 @@ module.exports = config => withAppDelegate(config, mod => {
   if (!mod.modResults.contents.includes('struct HourPathsAppIntentsPackage:')) {
     mod.modResults.contents += `
 import AppIntents
-import ExpoWidgets
+internal import ExpoWidgets
 
 @available(iOS 17.0, *)
 struct HourPathsAppIntentsPackage: AppIntentsPackage {
