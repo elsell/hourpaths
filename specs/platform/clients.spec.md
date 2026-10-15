@@ -184,6 +184,13 @@ native builds verify this exact existing combination.
   the authoritative tracking projection. Controls must remain usable when the
   application is suspended; a visual-only state change is not a successful timer
   command.
+- Live Activity controls must use the shared mobile Start/Stop colors, not the
+  platform default blue. Elapsed session time and goal progress must form
+  compact, separately aligned rows; goal labels must stay beside their value.
+  Timer progress bars must hide their redundant system time labels.
+- The application and widget extension must include the shared framework’s App
+  Intents metadata so system buttons can resolve their native action without
+  depending on a foreground JavaScript listener.
 - Background synchronization after a native Stop must preserve that Path’s
   Start control while its account lease and Path access remain valid. Returning
   to the app may dismiss a surface with no running timers.
