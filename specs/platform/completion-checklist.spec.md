@@ -20,33 +20,40 @@ and retained. Release evidence below is historical unless identified as current.
 
 ## Current delivery — October 15
 
-[PR #183](https://github.com/elsell/hourpaths/pull/183) merged as `5e81345`.
-It registers the framework's App Intents in the application and widget extension,
-uses shared Start/Stop colors, and tightens the Live Activity layout. All five
-candidate and [main checks](https://github.com/elsell/hourpaths/actions/runs/38668533506)
-passed. Native compilation and metadata extraction do not prove on-device intent
-dispatch; the owner's Stop failure remains open until retested.
+[PR #183](https://github.com/elsell/hourpaths/pull/183) registered App Intents
+and refined the native controls. [PR #185](https://github.com/elsell/hourpaths/pull/185)
+then backported a bounded, serialized widget JavaScript runtime to avoid creating
+an engine for every Dynamic Island region. [PR #191](https://github.com/elsell/hourpaths/pull/191)
+prevents initial session restoration from prematurely clearing native timer leases
+and Live Activities. Explicit account-lifecycle cleanup remains intact.
+All five candidate and [main checks](https://github.com/elsell/hourpaths/actions/runs/38764910388)
+passed for PR #191. The startup regression was reproduced before its correction;
+these checks do not establish the cause of the owner's inert Stop button.
 
-[Release v0.61.4](https://github.com/elsell/hourpaths/releases/tag/v0.61.4)
+[Release v0.61.6](https://github.com/elsell/hourpaths/releases/tag/v0.61.6)
 completed signed iOS upload and TestFlight release-note readback in
-[run 38669565592](https://github.com/elsell/hourpaths/actions/runs/38669565592).
-TestFlight **0.61.4 (534)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
-internal testers ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38672003552)).
-Google Play internal **508** was committed in
-[run 38671648102](https://github.com/elsell/hourpaths/actions/runs/38671648102).
-The owner's earlier waiver of independent Play Console verification applies;
+[run 38766595113](https://github.com/elsell/hourpaths/actions/runs/38766595113).
+TestFlight **0.61.6 (550)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
+internal testers ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38769659647)).
+Google Play v0.61.6 publication is still running in
+[run 38769399934](https://github.com/elsell/hourpaths/actions/runs/38769399934).
+The preceding v0.61.5 is also verified available as TestFlight 545 and Google Play
+internal 519. The owner's waiver of independent Play Console verification applies;
 publication is not physical-device acceptance.
 
-Production GitOps `c49cf5179344fad4aa081c0c2f7f8da6ae66c8de` deploys source
-`5e813457addd0b5409f6b4db1cbdfad128ae9209`. Exact API/web images and source
+Production GitOps `4ad9bdd21f19e1405a1feeb509210057ad96aa23` deploys source
+`1802b2ceb94f9f1ddf13184a5710839601f511cb`. Exact API/web images and source
 annotations, ready pods, Flux Ready/Healthy, retention-image consistency and
 public HTTP 204/200 health were verified. Production APNs remains enabled using
 the previously verified Infisical credentials; no credentials were changed.
 
-The owner confirmed that 0.61.3 no longer crashes and that its Live Activity
-appears, but reported poor layout and an unresponsive Stop button. The next
-physical check is Stop then Start from the Live Activity while HourPaths is
-backgrounded, followed by reopening the app to confirm timer state and saved time.
+The owner reports an in-app timer that works, a Dynamic Island arrival animation
+followed by missing content, and a Stop button that visibly depresses without
+completing the action. The build associated with the latest Stop report is not
+yet confirmed. Retest 0.61.6 (550): start a timer, background the app, confirm
+persistent Lock Screen/Dynamic Island content, then Stop and Start there and
+reopen the app to verify timer state and saved elapsed time. Rendering and native
+command acceptance remain separate; neither is closed by a successful upload.
 Background goal-period refresh, multi-timer, offline and account-lifecycle behavior
 also require device evidence. Onboarding redesign remains on hold. All eleven
 remaining acceptance areas stay open.
@@ -174,7 +181,7 @@ it does not close an area merely because a build is available.
 | 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
-| 6 — Native timers | PR #183 is available in TestFlight 0.61.4 (534), with earlier native fixes retained. Production APNs is configured; launch and visible presentation were confirmed on 0.61.3. Retest native Stop/Start and layout, then background period refresh and signed-device multi-timer/lifecycle behavior. |
+| 6 — Native timers | PRs #185 and #191 are available in TestFlight 0.61.6 (550), with earlier controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
