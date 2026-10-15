@@ -2277,8 +2277,11 @@ export function HomeScreen() {
 
 
   useEffect(() => {
+    // A background App Intent can wake the app before secure storage restores.
+    // The native lease remains authoritative while the session is unresolved.
+    if (!ready) return;
     if (!session) void timerSurfaces.clear();
-  }, [session]);
+  }, [ready, session]);
 
   useEffect(() => {
     if (!session || destination?.kind !== 'home' || session.ownerId !== destination.profile.id) return;
