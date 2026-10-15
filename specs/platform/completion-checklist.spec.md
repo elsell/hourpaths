@@ -35,7 +35,7 @@ completed signed iOS upload and TestFlight release-note readback in
 [run 38766595113](https://github.com/elsell/hourpaths/actions/runs/38766595113).
 TestFlight **0.61.6 (550)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
 internal testers ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38769659647)).
-Google Play v0.61.6 publication is still running in
+Google Play v0.61.6 internal **523** was committed in
 [run 38769399934](https://github.com/elsell/hourpaths/actions/runs/38769399934).
 The preceding v0.61.5 is also verified available as TestFlight 545 and Google Play
 internal 519. The owner's waiver of independent Play Console verification applies;
