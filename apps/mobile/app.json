@@ -41,7 +41,8 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "./plugins/with-timer-intents.cjs"
     ],
     "ios": {
       "bundleIdentifier": "com.hourpaths.mobile",

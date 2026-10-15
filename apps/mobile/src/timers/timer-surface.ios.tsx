@@ -8,6 +8,7 @@ import { addUserInteractionListener, createLiveActivity } from 'expo-widgets';
 import { AppState, Platform } from 'react-native';
 import type { CreateTimerSurface, TimerSurfaceEnvelope, TimerSurfacePresentation } from './timer-surface-types';
 import { timerLayout } from './ios-timer-layout';
+import { mobileTheme } from '../ui/tokens';
 
 // Lazy construction keeps unsupported/denied native presentation inside the
 // coordinator's failure boundary, separate from durable timer commands.
@@ -79,6 +80,8 @@ export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
       return;
     }
     const props: TimerSurfacePresentation = {
+      controlAppearance: { startBackground: mobileTheme.colors.accent, startForeground: mobileTheme.colors.accentText,
+        stopBackground: mobileTheme.colors.errorSurface, stopForeground: mobileTheme.colors.error },
       title: copy.title(timers.length), count: copy.count(timers.length),
       remaining: ordered.length > 2 ? copy.remaining(ordered.length - 2) : '',
       timers: ordered.slice(0, 2),

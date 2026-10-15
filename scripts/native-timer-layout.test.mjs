@@ -153,3 +153,18 @@ test('stopped timer in a new period freezes goal progress at rendering time, not
   assert.ok(nodes.some(node => node.type === 'TextView' && node.props.timerInterval?.lower === now && node.props.pauseTime === now));
   assert.ok(nodes.some(node => node.props?.target === 'current-start'));
 });
+
+
+test('Live Activity controls use explicit shared colors and keep goal clocks bounded', () => {
+  const props = {title:'Running',count:'1',remaining:'',
+    controlAppearance:{startBackground:'#FFD84D',startForeground:'#141414',stopBackground:'#3B2424',stopForeground:'#FF8A80'},
+    timers:[{id:'timer',pathId:'path',name:'Test',startedAt:1790000000000,
+      action:{target:'stop',label:'Stop'},goal:{fraction:0.5,text:'Goal',targetText:'of 2m',lower:1790000000000,upper:1790003600000,progressUpper:1790000120000}}]};
+  const nodes = descendants(JSON.parse(JSON.stringify(timerLayout(props))).expandedBottom);
+  const button = nodes.find(node => node.type === 'Button');
+  assert.ok(button.props.modifiers.some(mod => mod.$type === 'tint' && mod.color === '#3B2424'));
+  const progress = nodes.find(node => node.type === 'ProgressView');
+  assert.ok(progress.props.modifiers.some(mod => mod.$type === 'labelsHidden'));
+  const clock = nodes.find(node => node.type === 'TextView' && node.props.timerInterval);
+  assert.ok(clock.props.modifiers.some(mod => mod.$type === 'frame' && mod.width === 80));
+});

@@ -1,5 +1,5 @@
 import { Button, HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { font, foregroundStyle, lineLimit, monospacedDigit, padding, tint, frame } from '@expo/ui/swift-ui/modifiers';
+import { font, foregroundStyle, lineLimit, monospacedDigit, padding, tint, frame, buttonStyle, controlSize, foregroundColor, labelsHidden } from '@expo/ui/swift-ui/modifiers';
 import type { TimerSurfaceEnvelope, TimerSurfacePresentation } from './timer-surface-types';
 
 export const timerLayout = (props: TimerSurfacePresentation | TimerSurfaceEnvelope, environment?: { colorScheme?: 'light' | 'dark'; timestamp?: number; isStale?: boolean }) => {
@@ -32,17 +32,22 @@ export const timerLayout = (props: TimerSurfacePresentation | TimerSurfaceEnvelo
         <Text modifiers={[font({ size: 22 })]}>{timer.emoji}</Text>
         <Text modifiers={[font({ weight: 'semibold' }), lineLimit(1)]}>{timer.name}</Text>
         <Spacer />
-        {timer.stoppedAt !== undefined ? <Text timerInterval={{ lower: new Date(timer.startedAt), upper: new Date(Math.max(timer.startedAt + 1, timer.stoppedAt)) }} countsDown={false} pauseTime={new Date(timer.stoppedAt)} modifiers={[font({ size: 18, weight: 'semibold' }), monospacedDigit()]} /> : <Text date={new Date(timer.startedAt)} dateStyle="timer" modifiers={[font({ size: 18, weight: 'semibold' }), monospacedDigit()]} />}
-      {timer.action ? <Button target={timer.action.target} label={timer.action.label} systemImage={timer.stoppedAt !== undefined ? "play.fill" : "stop.fill"} /> : null}
+        {timer.stoppedAt !== undefined ? <Text timerInterval={{ lower: new Date(timer.startedAt), upper: new Date(Math.max(timer.startedAt + 1, timer.stoppedAt)) }} countsDown={false} pauseTime={new Date(timer.stoppedAt)} modifiers={[font({ size: 18, weight: 'semibold' }), monospacedDigit(), frame({ width: 72, alignment: 'trailing' })]} /> : <Text date={new Date(timer.startedAt)} dateStyle="timer" modifiers={[font({ size: 18, weight: 'semibold' }), monospacedDigit(), frame({ width: 72, alignment: 'trailing' })]} />}
+      {timer.action ? <Button target={timer.action.target} label={timer.action.label} systemImage={timer.stoppedAt !== undefined ? "play.fill" : "stop.fill"} modifiers={[
+        buttonStyle('borderedProminent'), controlSize('regular'), frame({ minHeight: 44 }),
+        tint(timer.stoppedAt !== undefined ? props.controlAppearance?.startBackground ?? timer.color ?? '#FFD84D' : props.controlAppearance?.stopBackground ?? '#3B2424'),
+        foregroundColor(timer.stoppedAt !== undefined ? props.controlAppearance?.startForeground ?? '#141414' : props.controlAppearance?.stopForeground ?? '#FF8A80'),
+      ]} /> : null}
       </HStack>
       {timer.goal ? <VStack alignment="leading" spacing={4}>
         {timer.goal.lower !== undefined && timer.goal.upper !== undefined ? <HStack spacing={4}>
-          <Text timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.upper) }} countsDown={false} pauseTime={timer.goal.pauseAt !== undefined ? new Date(timer.goal.pauseAt) : timer.stoppedAt !== undefined ? new Date(timer.stoppedAt) : undefined} modifiers={[font({ size: 12 }), monospacedDigit()]} />
-          <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{timer.goal.targetText}</Text>
+          <Text timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.upper) }} countsDown={false} pauseTime={timer.goal.pauseAt !== undefined ? new Date(timer.goal.pauseAt) : timer.stoppedAt !== undefined ? new Date(timer.stoppedAt) : undefined} modifiers={[font({ size: 12 }), monospacedDigit(), frame({ width: 80, alignment: 'leading' })]} />
+          <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>{timer.goal.targetText}</Text>
+        <Spacer />
+        </HStack> : <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{timer.goal.text}</Text>}
         {timer.stoppedAt === undefined && timer.goal.lower !== undefined && timer.goal.progressUpper !== undefined ? <ProgressView
           timerInterval={{ lower: new Date(timer.goal.lower), upper: new Date(timer.goal.progressUpper) }}
-          countsDown={false} modifiers={[tint(timer.color ?? '#DFDEFF'), frame({ width: 40 })]} /> : null}
-        </HStack> : <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{timer.goal.text}</Text>}
+          countsDown={false} modifiers={[tint(timer.color ?? '#DFDEFF'), labelsHidden()]} /> : null}
       </VStack> : null}
     </VStack>)}</VStack>
     {props.remaining ? <Text modifiers={[font({ size: 12 })]}>{props.remaining}</Text> : null}
@@ -59,7 +64,7 @@ export const timerLayout = (props: TimerSurfacePresentation | TimerSurfaceEnvelo
     compactLeading: <Text>{primary.emoji}</Text>,
     compactTrailing: primaryClock,
     minimal: <Text>{primary.emoji}</Text>,
-    expandedCenter: <Text modifiers={[font({ weight: 'semibold' })]}>{props.title}</Text>,
+    expandedCenter: <Text modifiers={[font({ size: 12 }), foregroundStyle({ type: 'hierarchical', style: 'secondary' })]}>{props.title}</Text>,
     expandedBottom: rows,
   };
 };

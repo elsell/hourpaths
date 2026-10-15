@@ -12,6 +12,7 @@ export type TimerSurfaceCopy = Readonly<{
 export type TimerSurfaceEnvelope = { owner: string; accountLease: string; localPresentation: true; staleAt: number };
 
 export type TimerSurfacePresentation = {
+  controlAppearance?: { startBackground: string; startForeground: string; stopBackground: string; stopForeground: string };
   activityExpiresAt?: number;
   trackingRevision?: number;
   accountLease?: string;

@@ -34,6 +34,12 @@
 +
      WidgetsEvents.shared.sendNotification(type: .userEvent, data: [
        "source": source as Any,
+@@ -101,2 +125,5 @@
+   }
+ }
++
++@available(iOS 17.0, *)
++public struct ExpoWidgetsIntentsPackage: AppIntentsPackage {}
 --- a/ios/Widgets/Utils.swift
 +++ b/ios/Widgets/Utils.swift
 @@ -39,5 +39,23 @@
@@ -122,7 +128,8 @@
 +        content: .init(state: initialState, staleDate: liveActivityStaleDate(props: props)),
          pushType: LiveActivityFactory.pushNotificationsEnabled ? .token : nil
        )
-@@ -47,5 +47,7 @@
+@@ -44,5 +44,7 @@
+
      return Activity<LiveActivityAttributes>.activities.map { activity in
 -      LiveActivity(id: activity.id, name: name)
 +      let instance = LiveActivity(id: activity.id, name: name)
@@ -130,4 +137,33 @@
 +      return instance
      }
    }
- }
+--- a/plugin/src/withWidgetSourceFiles.ts
++++ b/plugin/src/withWidgetSourceFiles.ts
+@@ -51,4 +51,12 @@
+ import SwiftUI
+ internal import ExpoWidgets
++import AppIntents
++
++@available(iOS 17.0, *)
++struct ExpoWidgetsExtensionIntentsPackage: AppIntentsPackage {
++  static var includedPackages: [any AppIntentsPackage.Type] {
++    [ExpoWidgetsIntentsPackage.self]
++  }
++}
+ `;
+
+--- a/plugin/build/withWidgetSourceFiles.js
++++ b/plugin/build/withWidgetSourceFiles.js
+@@ -71,4 +71,12 @@
+ import SwiftUI
+ internal import ExpoWidgets
++import AppIntents
++
++@available(iOS 17.0, *)
++struct ExpoWidgetsExtensionIntentsPackage: AppIntentsPackage {
++  static var includedPackages: [any AppIntentsPackage.Type] {
++    [ExpoWidgetsIntentsPackage.self]
++  }
++}
+ `;
+     if (numberOfWidgets > 0) {
