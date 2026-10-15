@@ -221,6 +221,11 @@ native builds verify this exact existing combination.
   invalidate that lease before stale native actions can commit. Stop-and-save
   sign-out must suppress lease rebinding and read the durable timers after
   revocation so a native Start immediately before revocation is included.
+- Every local native presentation publication must change its bounded ActivityKit
+  content envelope, including Stop/Start within the same goal period. The update
+  marker must not expose timer action targets or replace account lease validation.
+  Verification must check the envelope returned after committed native commands,
+  not only the shared presentation file.
 - Native presentation must use shared Path appearance and goal calculations,
   localized labels, accessible contrast and system-sized touch targets. A
   missing goal must omit goal presentation rather than invent a target.
