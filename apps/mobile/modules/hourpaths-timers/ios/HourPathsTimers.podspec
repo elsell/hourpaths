@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   s.dependency 'ExpoModulesCore'
   s.dependency 'ExpoWidgets'
   s.frameworks = 'JavaScriptCore'
-  s.libraries = 'sqlite3'
+  s.dependency 'ExpoSQLite'
   s.source_files = '*.swift'
   s.resource_bundles = { 'HourPathsTimerDomain' => ['TimerDomain.js'] }
 end
