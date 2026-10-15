@@ -1,6 +1,45 @@
+diff --git a/ios/LiveActivity.swift b/ios/LiveActivity.swift
+index a603765f9cc1ac1a1eeebb86f497e2c9b4d858ed..483f3dd5f44476909f43c870df843586cfb15fa4 100644
+--- a/ios/LiveActivity.swift
++++ b/ios/LiveActivity.swift
+@@ -20,7 +20,7 @@ final class LiveActivity: SharedObject {
+     }
+
+     let newState = LiveActivityAttributes.ContentState(name: name, props: props)
+-    await activity.update(ActivityContent(state: newState, staleDate: nil))
++    await activity.update(ActivityContent(state: newState, staleDate: liveActivityStaleDate(props: props)))
+   }
+
+   func end(dismissalPolicy: LiveActivityDismissalPolicy?, afterDate: Date?, props: String?, contentDate: Date?) async throws {
+diff --git a/ios/LiveActivityFactory.swift b/ios/LiveActivityFactory.swift
+index caf1e050224d595d8c57c0a832de182fd35ad897..2d1da3ca02d6a01f53de93bbb0ac5075a069fe8e 100644
+--- a/ios/LiveActivityFactory.swift
++++ b/ios/LiveActivityFactory.swift
+@@ -27,7 +27,7 @@ final class LiveActivityFactory: SharedObject {
+       let initialState = LiveActivityAttributes.ContentState(name: name, props: props)
+       let activity = try Activity.request(
+         attributes: LiveActivityAttributes(),
+-        content: .init(state: initialState, staleDate: nil),
++        content: .init(state: initialState, staleDate: liveActivityStaleDate(props: props)),
+         pushType: LiveActivityFactory.pushNotificationsEnabled ? .token : nil
+       )
+
+@@ -43,7 +43,9 @@ final class LiveActivityFactory: SharedObject {
+     guard #available(iOS 16.1, *) else { throw LiveActivitiesNotSupportedException() }
+
+     return Activity<LiveActivityAttributes>.activities.map { activity in
+-      LiveActivity(id: activity.id, name: name)
++      let instance = LiveActivity(id: activity.id, name: name)
++      instance.observePushTokenUpdates(for: activity, pushNotificationsEnabled: LiveActivityFactory.pushNotificationsEnabled)
++      return instance
+     }
+   }
+ }
+diff --git a/ios/Widgets/AppIntent.swift b/ios/Widgets/AppIntent.swift
+index 2c45354c91f933ee000db1eb63ad1c5f70563a32..444a89d1a6d64314d4a9027fc90bbe04bd700844 100644
 --- a/ios/Widgets/AppIntent.swift
 +++ b/ios/Widgets/AppIntent.swift
-@@ -1,4 +1,9 @@
+@@ -1,5 +1,10 @@
  import AppIntents
  import WidgetKit
 +import ActivityKit
@@ -10,7 +49,30 @@
 +}
 
  @available(iOS 16.0, *)
-@@ -92,4 +97,23 @@
+ struct WidgetUserInteraction: AppIntent {
+@@ -38,17 +43,15 @@ struct WidgetUserInteraction: AppIntent {
+           let entryIndex,
+           let entry = timeline[entryIndex] as? [String: Any],
+           let props = entry["props"] as? [String: Any],
+-          let context = createWidgetContext(layout: layout),
+           let environmentData = environmentString?.data(using: .utf8),
+           var environment = try? JSONSerialization.jsonObject(with: environmentData) as? [String: Any] else {
+       return .result()
+     }
+     environment["target"] = target
+
+-    let result = context.objectForKeyedSubscript("__expoWidgetHandlePress")?.call(
+-      withArguments: [props, environment]
+-    )
+-    if let newProps = result?.toObject() as? [String: Any] {
++    let result = evaluateWidgetScript(layout: layout, functionName: "__expoWidgetHandlePress",
++      arguments: [props, environment])
++    if let newProps = result as? [String: Any] {
+       var newEntry = entry
+       if let originalProps = entry["props"] as? [String: Any] {
+         newEntry["props"] = originalProps.merging(newProps) { _, new in new }
+@@ -91,6 +94,25 @@ struct LiveActivityUserInteraction: LiveActivityIntent {
+   }
 
    func perform() async throws -> some IntentResult {
 +    if let handlerName = Bundle.main.object(forInfoDictionaryKey: "ExpoLiveActivityActionHandler") as? String,
@@ -34,18 +96,40 @@
 +
      WidgetsEvents.shared.sendNotification(type: .userEvent, data: [
        "source": source as Any,
-@@ -101,2 +125,5 @@
+       "target": target as Any,
+@@ -100,3 +122,6 @@ struct LiveActivityUserInteraction: LiveActivityIntent {
+     return .result()
    }
  }
 +
 +@available(iOS 17.0, *)
 +public struct ExpoWidgetsIntentsPackage: AppIntentsPackage {}
+diff --git a/ios/Widgets/Utils.swift b/ios/Widgets/Utils.swift
+index 1cd5ca93de1ce188b0f335bc8a1a3c5d2d434a38..ead7f6530eec7ef2d6e39775378a4c02119af59a 100644
 --- a/ios/Widgets/Utils.swift
 +++ b/ios/Widgets/Utils.swift
-@@ -39,5 +39,23 @@
+@@ -25,31 +25,38 @@ func evaluateLayout(
+   props: [String: Any],
+   environment: [String: Any]
+ ) -> [String: Any]? {
+-  guard let context = createWidgetContext(layout: layout) else {
+-    return nil
+-  }
++  return evaluateWidgetScript(layout: layout, functionName: "__expoWidgetRender",
++    arguments: [props, environment]) as? [String: Any]
+
+-  let result = context.objectForKeyedSubscript("__expoWidgetRender")?.call(
+-    withArguments: [props, environment]
+-  )
+-  return result?.toObject() as? [String: Any]
+ }
+
+ func getLiveActivityNodes(forName name: String, props: String = "{}", environment: [String: Any]) -> [String: Any] {
    let layout = WidgetsStorage.getString(forKey: "__expo_widgets_live_activity_\(name)_layout") ?? ""
    let propsData = props.data(using: .utf8)
 -  let propsDict = propsData.flatMap { try? JSONSerialization.jsonObject(with: $0, options: []) as? [String: Any] } ?? [:]
+-  guard let context = createWidgetContext(layout: layout) else {
+-    return [:]
 +  var propsDict = propsData.flatMap { try? JSONSerialization.jsonObject(with: $0, options: []) as? [String: Any] } ?? [:]
 +  // The app opts in locally. A remote payload cannot disable this fence or
 +  // supply its own timer actions when local presentation data is unavailable.
@@ -64,17 +148,22 @@
 +          let expiresAt = local["activityExpiresAt"] as? Double,
 +          expiresAt > Date.now.timeIntervalSince1970 * 1000 else { return [:] }
 +    propsDict = local
-+  }
-   guard let context = createWidgetContext(layout: layout) else {
-     return [:]
-@@ -48,5 +66,5 @@
+   }
+-
+   var widgetEnvironment = environment
+   widgetEnvironment["timestamp"] = Int(Date.now.timeIntervalSince1970 * 1000)
++  return evaluateWidgetScript(layout: layout, functionName: "__expoWidgetRender",
++    arguments: [propsDict, widgetEnvironment]) as? [String: Any] ?? [:]
 
-   let result = context.objectForKeyedSubscript("__expoWidgetRender")?.call(
+-  let result = context.objectForKeyedSubscript("__expoWidgetRender")?.call(
 -    withArguments: [propsDict, environment]
-+    withArguments: [propsDict, widgetEnvironment]
-   )
-   return result?.toObject() as? [String: Any] ?? [:]
-@@ -107,2 +125,8 @@
+-  )
+-  return result?.toObject() as? [String: Any] ?? [:]
+ }
+
+ func getLiveActivityUrl(forName name: String) -> URL? {
+@@ -106,3 +113,9 @@ func getLiveActivityEnvironment(environment: EnvironmentValues) -> [String: Any]
+   }
    return env
  }
 +
@@ -83,78 +172,134 @@
 +        let timestamp = value["staleAt"] as? Double, timestamp.isFinite else { return nil }
 +  return Date(timeIntervalSince1970: timestamp / 1000)
 +}
+diff --git a/ios/Widgets/WidgetContext.swift b/ios/Widgets/WidgetContext.swift
+index 68ff52a1a3fd8b94fea5e495899e251b3e9ec8cd..2e21f7e0a8c06606384b632109ccfbeceed9000e 100644
+--- a/ios/Widgets/WidgetContext.swift
++++ b/ios/Widgets/WidgetContext.swift
+@@ -1,29 +1,64 @@
+ import Foundation
+ import JavaScriptCore
+
+-func createWidgetContext(layout: String) -> JSContext? {
+-  guard let context = JSContext() else {
+-    return nil
++// Backport of Expo #45781 for SDK 55. Each Dynamic Island region evaluates
++// independently; allocating an engine and loading the bundle for each one can
++// exhaust the extension's memory budget. Only executable layout code is cached.
++final class WidgetsJSRuntime {
++  static let shared = WidgetsJSRuntime()
++  private let lock = NSRecursiveLock()
++  private let bundleScript: () -> String?
++  private let createContext: () -> JSContext?
++  private var context: JSContext?
++  // One layout is sufficient for the consolidated activity and bounds retention.
++  private var cachedLayout: (source: String, value: JSValue)?
++
++  init(bundleScript: @escaping () -> String? = WidgetsJSRuntime.readBundle,
++       createContext: @escaping () -> JSContext? = { JSContext() }) {
++    self.bundleScript = bundleScript
++    self.createContext = createContext
+   }
+
+-  context.exceptionHandler = { _, exception in
+-    if let exception {
+-      print("[ExpoWidgets] Layout evaluation failed: \(exception)")
++  func evaluate(layout: String, functionName: String, arguments: [Any]) -> Any? {
++    lock.lock()
++    defer { lock.unlock() }
++    guard let context = preparedContext() else { return nil }
++    context.exception = nil
++    defer { context.exception = nil }
++    let value: JSValue
++    if let cachedLayout, cachedLayout.source == layout {
++      value = cachedLayout.value
++    } else {
++      guard let evaluated = context.evaluateScript("(\(layout))"),
++            context.exception == nil, evaluated.isObject else { return nil }
++      cachedLayout = (layout, evaluated)
++      value = evaluated
+     }
++    context.setObject(value, forKeyedSubscript: "__expoWidgetLayout" as NSString)
++    guard let function = context.objectForKeyedSubscript(functionName), function.isObject else { return nil }
++    let result = function.call(withArguments: arguments)
++    guard context.exception == nil else { return nil }
++    // Convert while holding the lock; no JSValue escapes to another evaluator.
++    return result?.toObject()
++  }
++
++  private func preparedContext() -> JSContext? {
++    if let context { return context }
++    guard let script = bundleScript(), let created = createContext() else { return nil }
++    created.evaluateScript(script)
++    guard created.exception == nil else { return nil }
++    context = created
++    return created
+   }
+
+-  // Inject ExpoUI bundle
+-  guard let bundleURL = Bundle.main.url(forResource: "ExpoWidgets", withExtension: "bundle"),
+-        let bundle = Bundle(url: bundleURL),
+-        let url = bundle.url(forResource: "ExpoWidgets", withExtension: "bundle"),
+-        let bundleJS = try? String(contentsOf: url, encoding: .utf8) else {
+-    print("[ExpoWidgets] Missing ExpoWidgets.bundle")
+-    return nil
++  static func readBundle() -> String? {
++    guard let bundleURL = Bundle.main.url(forResource: "ExpoWidgets", withExtension: "bundle"),
++          let bundle = Bundle(url: bundleURL),
++          let url = bundle.url(forResource: "ExpoWidgets", withExtension: "bundle") else { return nil }
++    return try? String(contentsOf: url, encoding: .utf8)
+   }
+-  context.evaluateScript(bundleJS)
++}
+
+-  // Inject layout
+-  let layoutValue = context.evaluateScript("(\(layout))")
+-  context.setObject(layoutValue, forKeyedSubscript: "__expoWidgetLayout" as NSString)
+-  return context
++func evaluateWidgetScript(layout: String, functionName: String, arguments: [Any]) -> Any? {
++  WidgetsJSRuntime.shared.evaluate(layout: layout, functionName: functionName, arguments: arguments)
+ }
+diff --git a/ios/Widgets/WidgetLiveActivity.swift b/ios/Widgets/WidgetLiveActivity.swift
+index 9eae71832928e11620c37c237ee9239310d29e91..c5a043aa90fa8b6428320f8d94c940a90b67787d 100644
 --- a/ios/Widgets/WidgetLiveActivity.swift
 +++ b/ios/Widgets/WidgetLiveActivity.swift
-@@ -9,4 +9,10 @@
-     var props: String
+@@ -10,6 +10,12 @@ struct LiveActivityAttributes: ActivityAttributes {
    }
-+}
-+
+ }
+
 +@available(iOS 16.1, *)
 +private func isLiveActivityStale(_ context: ActivityViewContext<LiveActivityAttributes>) -> Bool {
 +  if #available(iOS 16.2, *) { return context.isStale }
 +  return true
- }
-
-@@ -63,5 +69,5 @@
++}
++
+ @available(iOS 16.1, *)
+ public struct WidgetLiveActivity: Widget {
+   @Environment(\.self) var env
+@@ -62,7 +68,7 @@ private struct LiveActivitySectionView: View {
+     let nodes = getLiveActivityNodes(
        forName: context.state.name,
        props: context.state.props,
 -      environment: environment
 +      environment: environment.merging(["isStale": isLiveActivityStale(context)]) { _, current in current }
      )
      if let node = nodes[sectionName] as? [String: Any] {
-@@ -82,5 +88,5 @@
+       WidgetsDynamicView(name: context.activityID, kind: .liveActivity, node: node)
+@@ -81,7 +87,7 @@ private struct LiveActivityBannerView: View {
+     let nodes = getLiveActivityNodes(
        forName: context.state.name,
        props: context.state.props,
 -      environment: environment
 +      environment: environment.merging(["isStale": isLiveActivityStale(context)]) { _, current in current }
      )
      if #available(iOS 18.0, *) {
---- a/ios/LiveActivity.swift
-+++ b/ios/LiveActivity.swift
-@@ -21,5 +21,5 @@
-
-     let newState = LiveActivityAttributes.ContentState(name: name, props: props)
--    await activity.update(ActivityContent(state: newState, staleDate: nil))
-+    await activity.update(ActivityContent(state: newState, staleDate: liveActivityStaleDate(props: props)))
-   }
-
---- a/ios/LiveActivityFactory.swift
-+++ b/ios/LiveActivityFactory.swift
-@@ -28,5 +28,5 @@
-       let activity = try Activity.request(
-         attributes: LiveActivityAttributes(),
--        content: .init(state: initialState, staleDate: nil),
-+        content: .init(state: initialState, staleDate: liveActivityStaleDate(props: props)),
-         pushType: LiveActivityFactory.pushNotificationsEnabled ? .token : nil
-       )
-@@ -44,5 +44,7 @@
-
-     return Activity<LiveActivityAttributes>.activities.map { activity in
--      LiveActivity(id: activity.id, name: name)
-+      let instance = LiveActivity(id: activity.id, name: name)
-+      instance.observePushTokenUpdates(for: activity, pushNotificationsEnabled: LiveActivityFactory.pushNotificationsEnabled)
-+      return instance
-     }
-   }
---- a/plugin/src/withWidgetSourceFiles.ts
-+++ b/plugin/src/withWidgetSourceFiles.ts
-@@ -51,4 +51,12 @@
- import SwiftUI
- internal import ExpoWidgets
-+import AppIntents
-+
-+@available(iOS 17.0, *)
-+struct ExpoWidgetsExtensionIntentsPackage: AppIntentsPackage {
-+  static var includedPackages: [any AppIntentsPackage.Type] {
-+    [ExpoWidgetsIntentsPackage.self]
-+  }
-+}
- `;
-
+       LiveActivityBanner(context: context, nodes: nodes)
+diff --git a/plugin/build/withWidgetSourceFiles.js b/plugin/build/withWidgetSourceFiles.js
+index 4cbe4da351762687e8a5ece6986a1e06c50a4e22..a14a3ffa07cc0e11611b363985f1cbcbabbfbd8a 100644
 --- a/plugin/build/withWidgetSourceFiles.js
 +++ b/plugin/build/withWidgetSourceFiles.js
-@@ -71,4 +71,12 @@
+@@ -70,6 +70,14 @@ const createIndexSwift = (widgets, targetPath) => {
+     let output = `import WidgetKit
  import SwiftUI
  internal import ExpoWidgets
 +import AppIntents
@@ -167,3 +312,23 @@
 +}
  `;
      if (numberOfWidgets > 0) {
+         for (let i = 0; i < numberOfBundles; i++) {
+diff --git a/plugin/src/withWidgetSourceFiles.ts b/plugin/src/withWidgetSourceFiles.ts
+index 450e2c81c94f0f67fcba831a07c12fbac7b491ff..9c58ab0f644a3d0648094f3e2956b09d04a0ca71 100644
+--- a/plugin/src/withWidgetSourceFiles.ts
++++ b/plugin/src/withWidgetSourceFiles.ts
+@@ -50,6 +50,14 @@ const createIndexSwift = (widgets: WidgetConfig[], targetPath: string): string =
+   let output = `import WidgetKit
+ import SwiftUI
+ internal import ExpoWidgets
++import AppIntents
++
++@available(iOS 17.0, *)
++struct ExpoWidgetsExtensionIntentsPackage: AppIntentsPackage {
++  static var includedPackages: [any AppIntentsPackage.Type] {
++    [ExpoWidgetsIntentsPackage.self]
++  }
++}
+ `;
+
+   if (numberOfWidgets > 0) {
