@@ -175,6 +175,16 @@ native builds verify this exact existing combination.
 
 ### Live Activity presentation and controls
 
+- Repeated Lock Screen and Dynamic Island renders must reuse a bounded widget
+  JavaScript runtime rather than load a new engine and bundle for each region.
+  Runtime reuse must serialize evaluation and use fresh presentation data on each
+  call; it must not cache account data or bypass lease, revocation or expiry checks.
+  An invalid layout or render must not poison subsequent valid renders.
+- Regression verification must exercise repeated rendering with changing props,
+  concurrent evaluations, and recovery after a JavaScript exception. Native build
+  success alone must not be reported as physical-device visibility acceptance.
+
+
 - The approved iOS presentation must show each visible Path's personal emoji,
   palette accent, name, native elapsed session time, and current goal progress
   when a goal exists. Compact Dynamic Island presentation must prioritize the

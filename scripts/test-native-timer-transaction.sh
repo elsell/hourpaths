@@ -14,3 +14,9 @@ swiftc -I "$work_dir" "$work_dir/sqlite3.o" "$repo_root/apps/mobile/modules/hour
   "$repo_root/scripts/fixtures/native-timer-transaction.swift" \
   -framework JavaScriptCore -o "$work_dir/native-timer-transaction"
 "$work_dir/native-timer-transaction" "$repo_root"
+
+# Exercise the pinned widget renderer's bounded engine reuse and error recovery.
+swiftc "$repo_root/apps/mobile/node_modules/expo-widgets/ios/Widgets/WidgetContext.swift" \
+  "$repo_root/scripts/fixtures/widget-runtime.swift" \
+  -framework JavaScriptCore -o "$work_dir/widget-runtime"
+"$work_dir/widget-runtime"
