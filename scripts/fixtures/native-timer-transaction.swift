@@ -1,5 +1,5 @@
 import Foundation
-import SQLite3
+import ExpoSQLite
 
 @main
 struct NativeTimerTransactionAcceptance {
@@ -28,18 +28,18 @@ struct NativeTimerTransactionAcceptance {
     }
     let url = folder.appendingPathComponent("tracking.db")
     var connection: OpaquePointer?
-    precondition(sqlite3_open(url.path, &connection) == SQLITE_OK)
+    precondition(exsqlite3_open(url.path, &connection) == SQLITE_OK)
     let db = connection!
-    defer { sqlite3_close(db) }
+    defer { exsqlite3_close(db) }
     func sql(_ value: String) {
-      precondition(sqlite3_exec(db, value, nil, nil, nil) == SQLITE_OK)
+      precondition(exsqlite3_exec(db, value, nil, nil, nil) == SQLITE_OK)
     }
     func read() -> String {
       var statement: OpaquePointer?
-      precondition(sqlite3_prepare_v2(db, "SELECT payload FROM tracking_accounts_v1 WHERE owner='alice'", -1, &statement, nil) == SQLITE_OK)
-      defer { sqlite3_finalize(statement) }
-      precondition(sqlite3_step(statement) == SQLITE_ROW)
-      return String(cString: sqlite3_column_text(statement, 0))
+      precondition(exsqlite3_prepare_v2(db, "SELECT payload FROM tracking_accounts_v1 WHERE owner='alice'", -1, &statement, nil) == SQLITE_OK)
+      defer { exsqlite3_finalize(statement) }
+      precondition(exsqlite3_step(statement) == SQLITE_ROW)
+      return String(cString: exsqlite3_column_text(statement, 0))
     }
     func encoded(_ value: Any) throws -> String {
       String(data: try JSONSerialization.data(withJSONObject: value), encoding: .utf8)!
@@ -62,6 +62,15 @@ struct NativeTimerTransactionAcceptance {
     sql("INSERT INTO tracking_accounts_v1 VALUES('alice',4,'\(original)')")
     let presentation: [String: Any] = ["activityExpiresAt": now.addingTimeInterval(7200).timeIntervalSince1970 * 1000, "owner": "alice", "accountLease": "lease", "startLabel": "Start", "stopLabel": "Stop",
       "titles": ["0": "Ready", "1": "Running"], "timers": [["pathId": "guitar", "startedAt": 1_800_000_000_000.0, "stoppedAt": 1_800_000_000_000.0]]]
+    // Native registration must respect the foreground connection's WAL writer lock.
+    // Separate SQLite library instances in one process bypass this lock and can
+    // truncate each other's mapped WAL index (the build 525 launch crash).
+    sql("BEGIN IMMEDIATE")
+    do {
+      try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(presentation), now: now)
+      preconditionFailure("Native writer bypassed the foreground transaction")
+    } catch NativeTimerTransaction.Failure.storage {}
+    sql("ROLLBACK")
     try NativeTimerTransaction.register(databaseURL: url, presentation: encoded(presentation), now: now)
     var stalePresentation = presentation
     stalePresentation["trackingRevision"] = 3

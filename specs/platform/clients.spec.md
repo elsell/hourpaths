@@ -146,6 +146,11 @@ native builds verify this exact existing combination.
   with the containing app; unsupported Live Activity versions remain guarded
   at runtime. Simulator and signed-release checks must fail when that module
   or registration is absent.
+- Foreground storage and native timer controls in the same iOS process must
+  use the same SQLite library instance. Opening an existing WAL database during
+  timer restoration must not crash or bypass an active writer transaction.
+  Verification must exercise native controls against the Expo SQLite engine,
+  including writer contention and an existing foreground reader.
 - A failed native presentation update must receive bounded automatic retries
   without requiring another timer action. A newer projection, account change,
   or sign-out must cancel the obsolete retry; retries must never resurrect

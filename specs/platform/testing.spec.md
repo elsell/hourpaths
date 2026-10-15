@@ -579,3 +579,13 @@ Path visibility query. The shared query must remain independent of repositories
 that depend on the root persistence adapter, so all persistence test packages
 remain independently compilable. This extraction must not change membership,
 follow, block, or SpiceDB authorization behavior.
+
+### October 15 launch-crash release exception
+
+The owner explicitly approved this renewal on October 15, 2026. The same three
+exact advisory, package and version exceptions listed above may remain accepted until
+2026-10-17T00:00:00Z to release the iOS launch-crash correction. Registry checks
+on October 15 still return 404 for node-forge 1.4.1, braces 3.0.4 and
+sprintf-js 1.1.4. No additional advisory or package version is accepted. All
+existing full-audit, expiry, authorization, native and merge gates remain
+required. This is bounded risk acceptance, not remediation.
