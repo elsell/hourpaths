@@ -18,32 +18,42 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Current delivery — October 14
+## Current delivery — October 15
 
-[PR #178](https://github.com/elsell/hourpaths/pull/178) merged as `6587659`.
-It serializes shared native SQLite access, retries temporary native timer-surface
-publication failures, and suppresses false or brief offline/sync notices. Real
-SQLite concurrency and rollback checks, focused lifecycle checks, and all five
-candidate/main gates passed. Main acceptance required one retry after an upstream
-Red Hat registry HTTP 502; the unchanged candidate then passed.
+[PR #180](https://github.com/elsell/hourpaths/pull/180) corrected Expo autolinking
+that had omitted the native timer module. The owner's build 525 crash report
+then exposed simultaneous use of Expo's SQLite engine and Apple's separate
+SQLite engine against the same WAL database. [PR #181](https://github.com/elsell/hourpaths/pull/181)
+merged as `eab709f` and makes native controls share Expo's engine and lock registry.
+A real-engine reproduction demonstrated the previous write-lock bypass; the
+corrected native acceptance harness verifies contention, leases, account deletion,
+stale actions and Start/Stop. All five final candidate and
+[main checks](https://github.com/elsell/hourpaths/actions/runs/38661559784) passed.
 
-[Release v0.61.1](https://github.com/elsell/hourpaths/releases/tag/v0.61.1)
-is verified through GitOps `988e3c1`: exact API/web source and immutable images,
-Ready/Healthy Flux, matching retention image, Studio HTTP 200 and API readiness
-204. TestFlight **0.61.1 (519)** is VALID, nonexpired, IN_BETA_TESTING and assigned
-to the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38643066615)).
-Its release notes were published and read back. Google Play internal **492**
-committed after signed-bundle verification in
-[run 38643010442](https://github.com/elsell/hourpaths/actions/runs/38643010442).
+[Release v0.61.3](https://github.com/elsell/hourpaths/releases/tag/v0.61.3)
+contains the crash fix and the earlier loading/offline-notice corrections.
+TestFlight **0.61.3 (528)** is VALID, nonexpired, IN_BETA_TESTING and assigned
+to the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38664912252)).
+[Release 38662793328](https://github.com/elsell/hourpaths/actions/runs/38662793328)
+completed the signed archive, upload and verified release-note publication.
+The API/web source and immutable images were verified through GitOps `7c1abfb`,
+including retention-image consistency and public HTTP 204/200 health.
 
-The active acceptance step is the owner's iPhone retest of Home loading, offline
-notice flicker, timer Start/Stop, and Lock Screen/Dynamic Island appearance and
-controls. No device success is inferred from these distribution receipts.
-PRs #175 and #177 are included in this release. Server-driven Live Activity
-period refresh still requires the prepared production APNs key registration and
-secret configuration, followed by background device acceptance. Registration
-awaits the requested action-time confirmation. Onboarding redesign remains on
-hold. The remaining acceptance count is unchanged.
+Production APNs background refresh is now configured. The owner created the
+approved credentials in Infisical; read-only comparisons verified their values
+without printing them. GitOps `5ca3707` added explicit secret mappings, and the
+Kubernetes values were verified before `ccaf904` enabled production APNs and
+updated the API secret references. The new API pod is ready, Flux is
+Ready/Healthy at that revision, and public API readiness returns 204. The key
+was previously authenticated against production APNs using an invalid test token;
+that provider-authentication result is not proof of delivery to a real device.
+
+The active acceptance step remains the owner's iPhone retest of app launch,
+Home loading, offline notice flicker, timer Start/Stop and consolidated Lock
+Screen/Dynamic Island appearance and controls. Background goal-period refresh,
+multi-timer and account-lifecycle behavior also require actual device evidence.
+No success is inferred from native builds, distribution or server configuration.
+Onboarding redesign remains on hold. The remaining acceptance count is unchanged.
 
 ## Prior delivery and remaining work — October 13
 
@@ -164,7 +174,7 @@ it does not close an area merely because a build is available.
 | 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
-| 6 — Native timers | PRs #175, #177 and #178 are available in v0.61.1. Finish the approved APNs configuration after key-registration confirmation, then verify background period refresh and signed-device multi-timer/lifecycle behavior. |
+| 6 — Native timers | PRs #175, #177, #178, #180 and #181 are available in TestFlight 0.61.3 (528). Production APNs configuration is verified. Confirm app launch after the build 525 regression, then background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
