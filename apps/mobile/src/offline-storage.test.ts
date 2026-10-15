@@ -192,3 +192,31 @@ test('cold restart clears native state and returns only the persisted refresh id
     assert.equal(await database.lease.clear(), undefined);
   } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
 });
+
+
+test('restored native presentation requires same owner, live lease and presentation, and no deletion fence', async () => {
+  const folder = await mkdtemp(join(tmpdir(), 'hourpaths-native-restore-'));
+  let database = open(join(folder, 'tracking.db'));
+  try {
+    const lease = await database.lease.bind('alice', 20000);
+    const valid = { owner: 'alice', accountLease: lease.generation, activityExpiresAt: 10000 };
+    const save = async (value: unknown) => database.connection.runAsync(
+      'INSERT OR REPLACE INTO native_timer_presentation_v1(singleton,payload) VALUES(1,?)', JSON.stringify(value));
+    await save(valid);
+    database.close(); database = open(join(folder, 'tracking.db'));
+    assert.equal(await database.lease.canRestore('alice', 5000), true);
+    assert.equal(await database.lease.canRestore('bob', 5000), false);
+    assert.equal(await database.lease.canRestore('alice', 10000), false);
+    await save({ ...valid, activityExpiresAt: 30000 });
+    assert.equal(await database.lease.canRestore('alice', 20000), false);
+    for (const value of [{ ...valid, owner: 'bob' }, { ...valid, accountLease: 'old' }, {}, null]) {
+      await save(value);
+      assert.equal(await database.lease.canRestore('alice', 5000), false);
+    }
+    await save(valid);
+    await database.connection.runAsync('INSERT INTO account_deletion_fences_v1(owner) VALUES(?)', 'alice');
+    assert.equal(await database.lease.canRestore('alice', 5000), false);
+    await database.lease.clear();
+    assert.equal(await database.lease.canRestore('alice', 5000), false);
+  } finally { database.close(); await rm(folder, { recursive: true, force: true }); }
+});

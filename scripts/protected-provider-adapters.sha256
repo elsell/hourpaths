@@ -4,7 +4,7 @@
 182711a99d8363b4b52b5f5e2f225e96144331bbd11c91645e01d3dd6213db0a  apps/mobile/src/provider-identity-settings.ts
 0e45f2e66fa352716ad354631e89324f9ebe89ab10a5162f10f728336bf9fff4  apps/mobile/src/push-notifications-native.ts
 5e7b6a6ce0857aaf769a6cd777279f03613a385df8611f31bed5d616799d8052  apps/web/src/lib/provider-auth.ts
-87c8b243280b87bcaf579f4ff60a3f22b0bec5acdab5d5f3aabdb12ea7fb6ef0  apps/mobile/src/timers/timer-surface.ios.tsx
+83f1a53cb9641f7ee2fe7faa7a4ba66d9719cd9a3bac1d2b00c04d57ecabca87  apps/mobile/src/timers/timer-surface.ios.tsx
 d23a78582cf3ed877621d698cd3100394514927965a8fbdbb23adbe918e66c75  apps/mobile/src/timers/timer-surface.android.ts
 74f7881a08971fa136bcda9ec87b7c5bd4470f5696de626041e5bfd7ff8ca5ff  apps/mobile/modules/hourpaths-timers/expo-module.config.json
 74f81d41f0f2bf54d4ac5c293a280c48927c6016bbb62654824bad8376cdcea0  apps/mobile/modules/hourpaths-timers/android/build.gradle
@@ -17,4 +17,4 @@ a517abd0f1b4386d511ba57f7d2aceba457c6b841beab9ff8c3ce5e902d521b3  apps/mobile/mo
 97ccc3720e10c86dfcb4b7867ed8be88d9f94ed200af1d7e62e3a75dc47d66de  apps/mobile/modules/hourpaths-timers/ios/NativeTimerTransaction.swift
 2e1c4d3432d33acae7bd0d4b75151edbca22a004ac2e59734918ec67e6103856  apps/mobile/modules/hourpaths-timers/ios/TimerDomain.js
 4cde682c24d4645b272eafb716f511eab197bc4cc1112eab5ec43fa05be433af  patches/expo-widgets@55.0.20.patch
-10f75e68a89d2d14d90586c23391658b494f6e015bdac08972cbacec822dfaec  apps/mobile/modules/hourpaths-timers/ios/NativeTimerPresentationCache.swift
+9e5a972d0ff7c5d92a6718d0f0762daf592043535d6008a69f4325150bbaf9b5  apps/mobile/modules/hourpaths-timers/ios/NativeTimerPresentationCache.swift

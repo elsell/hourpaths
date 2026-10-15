@@ -56,7 +56,10 @@ final class NativeTimerPresentationCache {
       (row["goalPeriods"] as? [[String: Any]]) ?? []
     }.compactMap { $0["endsAt"] as? Double }.filter { $0 > now.timeIntervalSince1970 * 1000 }.min()
     let envelope: [String: Any] = ["owner": owner, "accountLease": lease,
-      "localPresentation": true, "staleAt": min(boundary ?? expiry, expiry)]
+      "localPresentation": true, "staleAt": min(boundary ?? expiry, expiry),
+      // ActivityKit cannot observe changes in the shared file. Give each local
+      // publication a new content identity even within the same goal period.
+      "presentationRevision": UUID().uuidString]
     return String(data: try JSONSerialization.data(withJSONObject: envelope), encoding: .utf8)!
   }
 }

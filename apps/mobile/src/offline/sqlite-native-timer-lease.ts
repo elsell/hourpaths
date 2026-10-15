@@ -12,6 +12,21 @@ export class SQLiteNativeTimerLease {
       );
       CREATE TABLE IF NOT EXISTS native_timer_presentation_v1(singleton INTEGER PRIMARY KEY CHECK(singleton = 1), payload TEXT NOT NULL);`);
   }
+  async canRestore(owner: string, now: number): Promise<boolean> {
+    if (!owner.trim() || !Number.isFinite(now)) return false;
+    await this.ready;
+    const row = await this.database.getFirstAsync<{ generation: string; payload: string }>(
+      `SELECT a.generation, p.payload FROM native_timer_account_v1 a
+       JOIN native_timer_presentation_v1 p ON p.singleton = a.singleton
+       WHERE a.owner = ? AND a.expires_at > ?
+       AND NOT EXISTS (SELECT 1 FROM account_deletion_fences_v1 WHERE owner = a.owner)`, owner, now);
+    if (!row) return false;
+    try {
+      const presentation = JSON.parse(row.payload);
+      return presentation?.owner === owner && presentation.accountLease === row.generation &&
+        Number.isFinite(presentation.activityExpiresAt) && presentation.activityExpiresAt > now;
+    } catch { return false; }
+  }
   async readPresentation(owner: string, generation: string): Promise<string | null> {
     await this.ready;
     const row = await this.database.getFirstAsync<{ payload: string }>(

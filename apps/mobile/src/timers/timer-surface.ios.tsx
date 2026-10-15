@@ -34,6 +34,10 @@ export const createTimerSurface: CreateTimerSurface = (copy, refreshPort) => {
     void refresh?.clear(persisted);
   }
   return ({
+  async restoreAccount(owner) {
+    const storage = await openNativeOfflineStorage();
+    return storage.nativeLease.canRestore(owner, Date.now());
+  },
   subscribe(changed) {
     const listener = addUserInteractionListener(() => {
       changed();

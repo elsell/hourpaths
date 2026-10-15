@@ -180,6 +180,10 @@ native builds verify this exact existing combination.
   restoration completes without a session, native cleanup must run. Explicit
   sign-out, deletion, expiry and account replacement must retain their existing
   revocation behavior; native actions must still validate their persisted lease.
+- First adoption of a restored account must preserve an existing native presentation
+  only when the adapter verifies the same owner, matching persisted lease, unexpired
+  account and presentation, and no deletion fence. Explicit account changes must
+  still clear the previous surface. Restoration must not renew an expired lease.
 
 - Repeated Lock Screen and Dynamic Island renders must reuse a bounded widget
   JavaScript runtime rather than load a new engine and bundle for each region.
@@ -221,6 +225,11 @@ native builds verify this exact existing combination.
   invalidate that lease before stale native actions can commit. Stop-and-save
   sign-out must suppress lease rebinding and read the durable timers after
   revocation so a native Start immediately before revocation is included.
+- Every local native presentation publication must change its bounded ActivityKit
+  content envelope, including Stop/Start within the same goal period. The update
+  marker must not expose timer action targets or replace account lease validation.
+  Verification must check the envelope returned after committed native commands,
+  not only the shared presentation file.
 - Native presentation must use shared Path appearance and goal calculations,
   localized labels, accessible contrast and system-sized touch targets. A
   missing goal must omit goal presentation rather than invent a target.

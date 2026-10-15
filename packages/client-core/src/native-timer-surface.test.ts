@@ -160,3 +160,51 @@ test('transient native publication retries without another timer edit, and revoc
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(attempts, previousAttempts);
 });
+
+
+test('first restored owner preserves verified controls; replacement and signout still clear', async () => {
+  const events: string[] = [];
+  const surface = new NativeTimerSurfaceCoordinator({
+    restoreAccount: async owner => { events.push(`restore:${owner}`); return owner === 'alice'; },
+    clear: async () => { events.push('clear'); }, replace: async () => {},
+  });
+  await surface.account('alice');
+  assert.deepEqual(events, ['restore:alice']);
+  await surface.account('bob');
+  await surface.account(null);
+  assert.deepEqual(events, ['restore:alice', 'clear', 'clear']);
+});
+
+test('unverified or failed restoration clears old controls before publishing', async () => {
+  for (const fails of [false, true]) {
+    const events: string[] = [];
+    const surface = new NativeTimerSurfaceCoordinator({
+      restoreAccount: async () => { if (fails) throw new Error('storage unavailable'); return false; },
+      clear: async () => { events.push('clear'); }, replace: async () => { events.push('replace'); },
+    });
+    assert.equal(await surface.account('alice'), !fails);
+    assert.deepEqual(events, fails ? [] : ['clear']);
+    await surface.publish('alice', timers);
+    assert.deepEqual(events, ['clear', 'replace']);
+  }
+});
+
+
+test('repeated same-owner publications share pending restoration without revoking its lease', async () => {
+  let resolve!: (value: boolean) => void;
+  let entered!: () => void;
+  const started = new Promise<void>(done => { entered = done; });
+  const pending = new Promise<boolean>(done => { resolve = done; });
+  const events: string[] = [];
+  const surface = new NativeTimerSurfaceCoordinator({
+    restoreAccount: async () => { entered(); return pending; },
+    clear: async () => { events.push('clear'); }, replace: async () => { events.push('replace'); },
+  });
+  const first = surface.account('alice');
+  await started;
+  const duplicate = surface.account('alice');
+  const publication = surface.publish('alice', timers);
+  resolve(true);
+  await Promise.all([first, duplicate, publication]);
+  assert.deepEqual(events, ['replace']);
+});

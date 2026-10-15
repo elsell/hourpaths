@@ -108,10 +108,17 @@ struct NativeTimerTransactionAcceptance {
     let activeObject = try JSONSerialization.jsonObject(with: Data(active.utf8)) as! [String: Any]
     let activeRows = activeObject["timers"] as! [[String: Any]]
     precondition(activeRows[0]["stoppedAt"] == nil, "undefined became null across JavaScriptCore")
+    let activeEnvelope = try cache.publish(active, now: now)
     rejected { try execute(action) }
     action["revision"] = 5; action["kind"] = "stop"; action["operationId"] = "stop"
     let stoppedPresentation = try execute(action, time: now.addingTimeInterval(60))
     let stoppedObject = try JSONSerialization.jsonObject(with: Data(stoppedPresentation.utf8)) as! [String: Any]
+    let stoppedEnvelope = try cache.publish(stoppedPresentation, now: now.addingTimeInterval(60))
+    let activeContent = try JSONSerialization.jsonObject(with: Data(activeEnvelope.utf8)) as! NSDictionary
+    let stoppedContent = try JSONSerialization.jsonObject(with: Data(stoppedEnvelope.utf8)) as! NSDictionary
+    precondition(!activeContent.isEqual(stoppedContent), "Committed Stop must change ActivityKit content, not only the shared file")
+    precondition(stoppedContent["presentationRevision"] is String)
+    precondition(stoppedContent["timers"] == nil, "Native action targets must stay local")
     let stoppedRows = stoppedObject["timers"] as! [[String: Any]]
     let periods = stoppedRows[0]["goalPeriods"] as! [[String: Any]]
     precondition(periods.count == 2)
