@@ -11,6 +11,7 @@ REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
     "apps/mobile/src/offline/sqlite-native-timer-lease.ts",
+    "apps/mobile/src/ui/tokens.ts",
     "apps/mobile/src/timers/native-presentation-size.ts",
     "apps/mobile/src/timers/retain-stopped-timers.ts",
     "apps/mobile/src/account-export-native.ts",
