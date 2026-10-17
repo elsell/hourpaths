@@ -1,6 +1,6 @@
 # Private support
 
-Status: Implemented in v0.62.0 (October 17, 2026). Production and iOS availability
+Status: Implemented in v0.62.0 (October 17, 2026). Production, iOS and Android delivery
 are verified; remaining delivery and acceptance evidence is tracked in the
 [completion checklist](../platform/completion-checklist.spec.md).
 
