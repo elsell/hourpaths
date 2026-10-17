@@ -16,7 +16,10 @@ export type NativeTimerAction = Readonly<{
  * The adapter must separately enforce the current account lease/deletion fence. */
 export function applyNativeTimerAction(snapshot: TrackingSnapshot, action: NativeTimerAction, now: number): TrackingSnapshot {
   if (!action.owner || snapshot.owner !== action.owner) throw new Error('tracking_owner_mismatch');
-  if (!Number.isSafeInteger(action.revision) || action.revision !== snapshot.revision) throw new Error('tracking_native_action_stale');
+  // Stop names an exact existing timer. Unrelated ledger writes must not disable
+  // that control; Start still requires the displayed state to be current.
+  if (!Number.isSafeInteger(action.revision) || action.revision < 0 || action.revision > snapshot.revision
+    || action.kind !== 'stop' && action.revision !== snapshot.revision) throw new Error('tracking_native_action_stale');
   if (!Number.isFinite(now) || !action.pathId || !action.timerId || !action.operationId
     || !['start', 'stop'].includes(action.kind)) throw new Error('tracking_native_action_invalid');
   if (!snapshot.paths.some(path => path.id === action.pathId) || snapshot.unavailablePaths?.includes(action.pathId)) {

@@ -225,6 +225,13 @@ native builds verify this exact existing combination.
   invalidate that lease before stale native actions can commit. Stop-and-save
   sign-out must suppress lease rebinding and read the durable timers after
   revocation so a native Start immediately before revocation is included.
+- A Stop action for the same still-running timer must remain usable after an
+  unrelated tracking revision, including history refresh or synchronization.
+  The native transaction must read and commit against the current ledger revision
+  under its writer lock, retaining the action's exact owner, Path and timer identity.
+  Future revisions, replaced or stopped timers, unavailable Paths, revoked leases
+  and deletion fences must still reject the action. Start continues to require
+  the exact displayed revision so an old control cannot start a new session.
 - Every local native presentation publication must change its bounded ActivityKit
   content envelope, including Stop/Start within the same goal period. The update
   marker must not expose timer action targets or replace account lease validation.

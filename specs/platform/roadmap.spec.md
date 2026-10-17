@@ -12,7 +12,8 @@ source `e3766d3`, deployed through GitOps `145bd64`. PR #199 delivers guided
 onboarding with retained edits, the approved social-profile default and a
 skippable local-photo task after activation. Exact images, healthy Flux and public
 route availability are verified. Native publication is verified on both stores;
-physical-device acceptance and provider-photo import remain open.
+physical-device acceptance remains open; automatic provider-photo import with
+remove/replace controls is approved and queued after the active timer fix.
 
 Public Terms, Privacy Policy and Community Guidelines remain available in English
 and Spanish, with policy revision 2 (`public-2026-10-17`) activated. Private support,
@@ -21,8 +22,9 @@ deployed. Latest verified native availability is TestFlight 0.64.0 (576) and
 Google Play internal 549, with release notes. The owner's device inbox and policy
 reacceptance results remain pending; no acceptance is inferred from publication.
 
-Prior safety and native timer implementations remain credited. The unresolved
-Live Activity Stop device result is not closed by build availability. Public-text
+Prior safety and native timer implementations remain credited. The owner
+reconfirmed that Live Activity Stop fails in the current build. Fixing this is the
+active slice; build availability does not establish success. Public-text
 classification uses the owner-approved no-op port for this phase. See the
 completion checklist for evidence and remaining acceptance criteria.
 
@@ -93,15 +95,13 @@ delay the active successful-account-creation slice.
   identity, preferences, consent, and optional photo flow. Web interaction checks
   cover back navigation, retained edits, explicit consent, and photo handoff.
   Web production, TestFlight and Google Play publication are verified. Native
-  device acceptance remains open. Provider-photo import is still a separate
-  unsettled decision.
+  device acceptance remains open. Automatic provider-photo import with
+  remove/replace is approved; implementation follows the active Live Activity Stop fix.
 - Public policy publication and private support are delivered. Physical-device
   policy reacceptance and admin inbox acceptance remain verification work, not
   unresolved product decisions.
-- The specifications require an OIDC profile picture to pre-populate onboarding
-  and require accepted images to be safely re-encoded, but do not decide
-  whether an untouched provider picture is imported by default, imported only
-  after an explicit choice, or used only as a preview.
+- The owner approved automatic OIDC picture import with remove/replace controls.
+  Accepted images must still pass the safe image-processing boundary.
 - The first-day-of-week preference must follow the device locale, but fallback
   behavior is not defined when locale week information is unavailable.
 - The specifications allow an incomplete account to return to onboarding, but
@@ -145,3 +145,6 @@ must not be rebuilt simply because acceptance or documentation is incomplete.
 Unresolved account and policy decisions remain above until reconciled with the
 authoritative spec and actual implementation. They do not authorize new product
 choices, and they must not stall independent areas of the checklist.
+
+The owner deferred external backup-retention verification on October 17. This
+is a temporary scope deferral, not a verified retention or restore guarantee.

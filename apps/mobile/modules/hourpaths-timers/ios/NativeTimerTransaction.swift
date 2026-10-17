@@ -13,7 +13,7 @@ final class NativeTimerTransaction {
     guard let data = actionJSON.data(using: .utf8),
           let action = try JSONSerialization.jsonObject(with: data) as? [String: Any],
           let owner = action["owner"] as? String, !owner.isEmpty,
-          let revision = action["revision"] as? Int64 else { throw Failure.invalid }
+          action["revision"] is NSNumber else { throw Failure.invalid }
     var database: OpaquePointer?
     guard exsqlite3_open_v2(databaseURL.path, &database, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
           let db = database else {
@@ -41,14 +41,18 @@ final class NativeTimerTransaction {
     let read = try prepare(db, "SELECT payload, revision FROM tracking_accounts_v1 WHERE owner = ?")
     defer { exsqlite3_finalize(read) }
     bind(read, 1, owner)
-    guard exsqlite3_step(read) == SQLITE_ROW, exsqlite3_column_int64(read, 1) == revision,
+    guard exsqlite3_step(read) == SQLITE_ROW,
           let payload = string(read, 0), let context = JSContext() else { throw Failure.stale }
+    // The domain validates the displayed action against current timer identity.
+    // Commit against the revision read under this writer lock, not the old UI.
+    let revision = exsqlite3_column_int64(read, 1)
     // No network, tokens, file APIs or host callbacks are exposed to this VM.
     context.evaluateScript(domainScript)
     guard context.exception == nil,
           let apply = context.objectForKeyedSubscript("HourPathsTimerDomain")?.objectForKeyedSubscript("applyNativeTimerAction") else { throw Failure.domain }
     guard let snapshotData = payload.data(using: .utf8),
-          let snapshot = try JSONSerialization.jsonObject(with: snapshotData) as? [String: Any] else { throw Failure.invalid }
+          let snapshot = try JSONSerialization.jsonObject(with: snapshotData) as? [String: Any],
+          snapshot["revision"] as? Int64 == revision else { throw Failure.invalid }
     let result = apply.call(withArguments: [snapshot, action, now.timeIntervalSince1970 * 1000])
     guard context.exception == nil, let next = result?.toDictionary(),
           let nextOwner = next["owner"] as? String, nextOwner == owner,

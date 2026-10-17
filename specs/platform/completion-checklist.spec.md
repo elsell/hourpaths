@@ -24,7 +24,8 @@ and retained. Release evidence below is historical unless identified as current.
 form with focused identity, preferences and policy-review steps on Studio and
 mobile. Profiles initially select the approved social visibility. Successful
 activation opens an optional local-photo task with a visible Skip action; returning
-accounts proceed directly Home. Provider-photo import remains an open decision.
+accounts proceed directly Home. Automatic provider-photo import with remove/replace was approved on October 17
+and remains to be implemented after the active Live Activity Stop fix.
 
 All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/39007032335)
 and [main checks](https://github.com/elsell/hourpaths/actions/runs/39007971250) passed.
@@ -284,7 +285,7 @@ it does not close an area merely because a build is available.
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
 | 6 — Native timers | PR #193 is available in TestFlight 0.61.7 (557), with prior runtime fixes, controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
-| 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
+| 7 — Profiles | Implement approved automatic provider-picture import with remove/replace; signed-device profile/image/privacy acceptance. |
 | 8 — Preferences | Public policy documents and version activation are verified in v0.63.0; support is deployed in v0.62.0. Guided onboarding is implemented and published across clients above; signed-device week-start, policy, quiet-period and onboarding acceptance remain. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
@@ -735,3 +736,11 @@ this slice. PR #149 merged as `01a4939`; exact API/web deployment through
 GitOps `f18bd8e` is verified. TestFlight 0.49.7 (438) is VALID, IN_BETA_TESTING
 and internally assigned (status run `37989424308`). Area 2 remains open for its
 remaining acceptance criteria.
+
+## October 17 owner follow-up
+
+Live Activity Stop still fails on the owner’s current build; native control
+acceptance remains open and is the active implementation priority. Automatic
+provider-photo import with removal/replacement is now approved. External backup
+retention verification is temporarily deferred at the owner’s request; it must
+not be represented as completed. Account deletion and other acceptance stay open.
