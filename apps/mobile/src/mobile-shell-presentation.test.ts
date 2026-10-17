@@ -146,7 +146,8 @@ test('native sheets expose compact navigation chrome and fail closed for busy di
 
 test('existing form workflows use native iOS sheet and button primitives', () => {
   assert.match(primitives, /Modal,[\s\S]*Text,[\s\S]*TextInput/);
-  assert.match(primitives, /presentationStyle="pageSheet"/);
+  assert.match(primitives, /presentationStyle = 'pageSheet'/);
+  assert.match(primitives, /presentationStyle=\{presentationStyle\}/);
   assert.match(primitives, /automaticallyAdjustKeyboardInsets/);
   assert.match(primitives, /keyboardDismissMode="interactive"/);
   assert.match(primitives, /keyboardShouldPersistTaps="handled"/);
@@ -563,7 +564,7 @@ test('onboarding presentation is extracted into an accessible native form', () =
   assert.match(page, /<OnboardingForm[\s\S]*profile=\{destination\.profile\}/);
   assert.doesNotMatch(page, /ready && destination\?\.kind === 'onboarding' \? <ScrollView/);
   assert.match(onboardingForm, /<NativeSheet/);
-  assert.match(onboardingForm, /title=\{i18n\.t\('onboarding\.heading'\)\}/);
+  assert.match(onboardingForm, /title=\{i18n\.t\(heading\)\}/);
   assert.match(onboardingForm, /<SectionHeading>/);
   assert.match(onboardingForm, /<Surface>/);
   assert.match(onboardingForm, /<StatusBanner/);
