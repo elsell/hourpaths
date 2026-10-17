@@ -78,8 +78,10 @@ successful provider/OIDC sign-in.
 - The photo prompt must appear during initial setup, be clearly optional and
   provide a visible Skip action. Skipping must not prevent account creation;
   upload failure must preserve a way to skip or retry without reactivating the
-  account. Back navigation after activation must not return to account creation. The provider-picture
-  import behavior remains an open question below and must not be inferred.
+  account. Back navigation after activation must not return to account creation.
+  A provider-supplied picture must be imported automatically through the safe
+  image-processing boundary. The photo step must show the imported picture and
+  allow removal or replacement. Import failure must not block setup or Skip.
 - Profile visibility must initially select the owner-approved social/public
   option, explain its meaning and allow the person to choose private before
   final confirmation. Device-derived time zone and week start remain editable
@@ -175,9 +177,8 @@ The browser navigation adapter must admit only that fixed internal path; it must
 not accept a caller-supplied redirect URL. Existing-account restoration must
 continue to Home without replaying photo setup.
 
-## Open photo decision
+## Provider-photo decision — October 17
 
-- When OIDC supplies a picture, should it be retained only after an explicit
-  Use this photo choice, or imported by default unless removed? The proposed
-  explicit-choice behavior makes Skip leave no picture. Await the owner's
-  answer before implementing provider-photo persistence.
+The owner approved automatic import of a provider-supplied picture, with removal
+and replacement available during setup. Explicit Use this photo consent is not
+required. Existing image validation and re-encoding requirements still apply.

@@ -78,3 +78,21 @@ test('restart in a later goal period preserves localized copy and derives fresh 
   assert.equal(running.timers[0].goalPeriods?.[0].savedSeconds, 0);
   assert.equal(JSON.parse(running.timers[0].action.target).action.timerId, 'new-session');
 });
+
+test('Stop from displayed timer survives unrelated history synchronization without losing newer data', () => {
+  const active = applyNativeTimerAction(snapshot(), start, at);
+  const stop = { ...start, kind: 'stop' as const, revision: active.revision, operationId: 'stop-after-sync' };
+  // A history-only write advances the ledger while iOS retains the displayed button.
+  const refreshed = { ...active, revision: active.revision + 1, historyRetainedAt: new Date(at + 30000).toISOString() };
+  const stopped = applyNativeTimerAction(refreshed, stop, at + 60000);
+  assert.equal(stopped.revision, refreshed.revision + 1);
+  assert.equal(stopped.historyRetainedAt, refreshed.historyRetainedAt);
+  assert.equal(stopped.timers.length, 0);
+  assert.equal(stopped.operations.at(-1)?.endedAt, new Date(at + 60000).toISOString());
+  assert.throws(() => applyNativeTimerAction(stopped, stop, at + 61000), /unavailable|stale/);
+  const replacement = applyNativeTimerAction(stopped, { ...start, revision: stopped.revision,
+    timerId: 'replacement', operationId: 'replacement-start' }, at + 62000);
+  assert.throws(() => applyNativeTimerAction(replacement, stop, at + 63000), /unavailable|stale/);
+  assert.throws(() => applyNativeTimerAction(refreshed, { ...stop, revision: refreshed.revision + 1 }, at), /stale/);
+  assert.throws(() => applyNativeTimerAction({ ...refreshed, unavailablePaths: ['guitar'] }, stop, at), /unavailable/);
+});

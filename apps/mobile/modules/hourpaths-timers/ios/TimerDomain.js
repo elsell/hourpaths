@@ -254,7 +254,7 @@ var HourPathsTimerDomain = (() => {
   // packages/client-core/src/native-timer-action.ts
   function applyNativeTimerAction(snapshot, action, now) {
     if (!action.owner || snapshot.owner !== action.owner) throw new Error("tracking_owner_mismatch");
-    if (!Number.isSafeInteger(action.revision) || action.revision !== snapshot.revision) throw new Error("tracking_native_action_stale");
+    if (!Number.isSafeInteger(action.revision) || action.revision < 0 || action.revision > snapshot.revision || action.kind !== "stop" && action.revision !== snapshot.revision) throw new Error("tracking_native_action_stale");
     if (!Number.isFinite(now) || !action.pathId || !action.timerId || !action.operationId || !["start", "stop"].includes(action.kind)) throw new Error("tracking_native_action_invalid");
     if (!snapshot.paths.some((path) => path.id === action.pathId) || snapshot.unavailablePaths?.includes(action.pathId)) {
       throw new Error("tracking_path_unavailable");

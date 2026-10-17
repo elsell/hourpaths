@@ -111,6 +111,12 @@ struct NativeTimerTransactionAcceptance {
     let activeEnvelope = try cache.publish(active, now: now)
     rejected { try execute(action) }
     action["revision"] = 5; action["kind"] = "stop"; action["operationId"] = "stop"
+    // History synchronization commits after the visible Stop was rendered.
+    // Keep the exact running timer but advance the durable ledger revision.
+    var synchronized = try JSONSerialization.jsonObject(with: Data(read().utf8)) as! [String: Any]
+    synchronized["revision"] = 6
+    synchronized["historyRetainedAt"] = "2027-01-15T08:00:30Z"
+    sql("UPDATE tracking_accounts_v1 SET revision=6,payload='\(try encoded(synchronized))' WHERE owner='alice'")
     let stoppedPresentation = try execute(action, time: now.addingTimeInterval(60))
     let stoppedObject = try JSONSerialization.jsonObject(with: Data(stoppedPresentation.utf8)) as! [String: Any]
     let stoppedEnvelope = try cache.publish(stoppedPresentation, now: now.addingTimeInterval(60))
@@ -125,6 +131,8 @@ struct NativeTimerTransactionAcceptance {
     precondition((periods[0]["savedSeconds"] as! NSNumber).intValue == 60)
     precondition((periods[1]["savedSeconds"] as! NSNumber).intValue == 0)
     let saved = try JSONSerialization.jsonObject(with: Data(read().utf8)) as! [String: Any]
+    precondition((saved["revision"] as! NSNumber).intValue == 7)
+    precondition(saved["historyRetainedAt"] as? String == "2027-01-15T08:00:30Z")
     precondition((saved["timers"] as! [Any]).isEmpty)
     precondition((saved["operations"] as! [[String: Any]]).count == 2)
     sql("DELETE FROM native_timer_account_v1")
