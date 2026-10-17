@@ -21,6 +21,7 @@ type userModel struct {
 	ID                    string `gorm:"primaryKey"`
 	Email, DisplayName    string
 	ProviderEmailVerified bool
+	ProviderPictureSource string
 	Username              *string
 	PictureRevision       int64 `gorm:"not null;default:1"`
 	ProfileRevision       int64 `gorm:"not null;default:1"`

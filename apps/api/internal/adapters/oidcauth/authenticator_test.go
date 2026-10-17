@@ -112,9 +112,9 @@ func TestVerifierValidatesEveryIdentityTokenBoundary(t *testing.T) {
 		profile   normalizedBrokerProfile
 		wantError bool
 	}{
-		{name: "normalized Google claims", claims: jwt.Claims{Issuer: issuer, Subject: "broker-google-subject", Audience: jwt.Audience{"web-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, key: key, profile: normalizedBrokerProfile{Email: "person@gmail.com", Name: "Google Person", EmailVerified: boolPointer(true)}},
+		{name: "normalized Google claims", claims: jwt.Claims{Issuer: issuer, Subject: "broker-google-subject", Audience: jwt.Audience{"web-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, key: key, profile: normalizedBrokerProfile{Email: "person@gmail.com", Name: "Google Person", Picture: "https://example.com/avatar", EmailVerified: boolPointer(true)}},
 		{name: "normalized Apple private relay without name", claims: jwt.Claims{Issuer: issuer, Subject: "broker-apple-subject", Audience: jwt.Audience{"mobile-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, key: key, profile: normalizedBrokerProfile{Email: "opaque@privaterelay.appleid.com", EmailVerified: boolPointer(true)}},
-		{name: "unverified normalized email remains untrusted", claims: jwt.Claims{Issuer: issuer, Subject: "broker-unverified-subject", Audience: jwt.Audience{"web-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, key: key, profile: normalizedBrokerProfile{Email: "unverified@example.com", Name: "Unverified Person", EmailVerified: boolPointer(false)}},
+		{name: "unverified normalized email remains untrusted", claims: jwt.Claims{Issuer: issuer, Subject: "broker-unverified-subject", Audience: jwt.Audience{"web-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, key: key, profile: normalizedBrokerProfile{Email: "unverified@example.com", Name: "Unverified Person", Picture: map[string]string{"malformed": "optional claim"}, EmailVerified: boolPointer(false)}},
 		{name: "multiple audiences with authorized party", claims: jwt.Claims{Issuer: issuer, Subject: "user-1", Audience: jwt.Audience{"web-client", "mobile-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, profile: normalizedBrokerProfile{AuthorizedParty: "web-client", Email: "person@example.com", EmailVerified: boolPointer(true)}, key: key},
 		{name: "multiple audiences missing authorized party", claims: jwt.Claims{Issuer: issuer, Subject: "user-1", Audience: jwt.Audience{"web-client", "mobile-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, key: key, wantError: true},
 		{name: "unauthorized authorized party", claims: jwt.Claims{Issuer: issuer, Subject: "user-1", Audience: jwt.Audience{"web-client", "other-client"}, Expiry: jwt.NewNumericDate(now.Add(time.Minute))}, profile: normalizedBrokerProfile{AuthorizedParty: "other-client"}, key: key, wantError: true},
@@ -134,6 +134,12 @@ func TestVerifierValidatesEveryIdentityTokenBoundary(t *testing.T) {
 			}
 			if !test.wantError && (err != nil || claims.Subject != test.claims.Subject) {
 				t.Fatalf("valid token rejected: claims=%+v err=%v", claims, err)
+			}
+			if !test.wantError {
+				expected, _ := test.profile.Picture.(string)
+				if claims.PictureURL != expected {
+					t.Fatalf("picture claim not preserved: %q", claims.PictureURL)
+				}
 			}
 			if !test.wantError && (claims.Issuer != test.claims.Issuer || claims.Email != test.profile.Email || claims.DisplayName != test.profile.Name || claims.EmailVerified != (test.profile.EmailVerified != nil && *test.profile.EmailVerified)) {
 				t.Fatalf("normalized broker claims = %+v, want issuer=%q subject=%q profile=%+v", claims, test.claims.Issuer, test.claims.Subject, test.profile)
@@ -160,6 +166,7 @@ func TestVerifierValidatesEveryIdentityTokenBoundary(t *testing.T) {
 
 type normalizedBrokerProfile struct {
 	Email, Name     string
+	Picture         any
 	EmailVerified   *bool
 	AuthorizedParty string
 	Identities      any
@@ -178,11 +185,12 @@ func signToken(t *testing.T, key *rsa.PrivateKey, claims jwt.Claims, profile nor
 		jwt.Claims
 		Email           string `json:"email,omitempty"`
 		Name            string `json:"name,omitempty"`
+		Picture         any    `json:"picture,omitempty"`
 		EmailVerified   *bool  `json:"email_verified,omitempty"`
 		AuthorizedParty string `json:"azp,omitempty"`
 		Identities      any    `json:"identities,omitempty"`
 		Nonce           string `json:"nonce,omitempty"`
-	}{Claims: claims, Email: profile.Email, Name: profile.Name, EmailVerified: profile.EmailVerified, AuthorizedParty: profile.AuthorizedParty, Identities: profile.Identities, Nonce: profile.Nonce}
+	}{Claims: claims, Email: profile.Email, Name: profile.Name, Picture: profile.Picture, EmailVerified: profile.EmailVerified, AuthorizedParty: profile.AuthorizedParty, Identities: profile.Identities, Nonce: profile.Nonce}
 	serialized, err := jwt.Signed(signer).Claims(payload).Serialize()
 	if err != nil {
 		t.Fatal(err)

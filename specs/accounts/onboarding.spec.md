@@ -39,7 +39,9 @@ successful provider/OIDC sign-in.
 - If the optional `name` or `picture` claim is absent, onboarding must remain
   usable and allow the user to complete or omit the corresponding editable
   profile information according to its ordinary requirements.
-- The user must be able to review the imported data before confirming it.
+- The user must be able to review imported identity text before confirming it.
+  The optional photo task must show the automatically imported picture and
+  provide removal or replacement without another account confirmation.
 - The user must be able to correct editable profile information rather than being
   forced to accept inaccurate provider data.
 - Required profile fields must be complete and valid before onboarding can be

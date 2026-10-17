@@ -93,9 +93,21 @@ func (a App) ActivateOnboarding(ctx context.Context, authorization string, input
 	completed := event(audit.UserOnboardingCompleted)
 	revoked := event(audit.SessionRevoked)
 	created := event(audit.SessionCreated)
+	var pictureSource string
+	if a.ProviderPictures != nil && a.Users != nil {
+		provisional, readErr := a.Users.GetProvisionalUser(ctx, principal.UserID)
+		if readErr == nil && provisional.ID == principal.UserID && provisional.Status == identity.StatusProvisional {
+			pictureSource = provisional.ProviderPictureSource
+		}
+	}
 	token, expiresAt, err := a.OnboardingActivator.ActivateOnboarding(ctx, authorization, activation, now.Add(a.SessionTTL), completed, revoked, created)
 	if err != nil {
 		return Session{}, err
+	}
+	// Activation and credential rotation are already committed. Optional photo
+	// failures must not turn that success into a sign-in error.
+	if pictureSource != "" {
+		a.importProviderPicture(ctx, token, pictureSource)
 	}
 	return Session{Token: token, ExpiresAt: expiresAt}, nil
 }

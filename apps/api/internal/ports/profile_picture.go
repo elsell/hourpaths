@@ -9,3 +9,8 @@ import (
 type ProfilePictureProcessor interface {
 	Process(context.Context, []byte, *profilepicture.Crop) (profilepicture.Prepared, error)
 }
+
+// ProviderPictureRetriever fetches only the verified provider's image bytes.
+type ProviderPictureRetriever interface {
+	Fetch(context.Context, string) ([]byte, error)
+}

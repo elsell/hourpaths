@@ -43,3 +43,29 @@ The [profile specification](../accounts/profile.spec.md) owns user behavior.
 - Development clients may resolve recognized application-picture identifiers
   against their explicitly configured development API origin. Production media
   transport must remain HTTPS.
+
+## Automatic provider-picture import
+
+The owner-approved onboarding default is defined in
+[Onboarding](../accounts/onboarding.spec.md). Import must use the verified OIDC
+picture claim, never a client-supplied download URL. The source must remain
+private onboarding data and must not be served as the public profile picture.
+
+- Retain the source only for the provisional account. Activation must clear that
+  source; account deletion must remove it with the account. Provider tokens and
+  source URLs must not appear in audit records or application logs.
+- After successful activation, make one bounded import attempt using an injected
+  retrieval port and the existing image-processing and audited picture-write
+  boundaries. Failure must leave activation successful and the optional photo
+  step usable. A missing provider picture is an ordinary no-picture result.
+- Retrieval must accept only HTTPS, reject credentials and nonstandard ports,
+  prevent private/local/reserved-address access and DNS-rebinding, and refuse
+  redirects. Enforce response-size and time limits before image decoding.
+- Normalize the fetched image and apply a centered square crop through the same
+  processor used for uploads. Persist only application-encoded picture bytes.
+- Import must write only at the initial picture revision. A replacement or
+  removal committed while import is running must win. Subsequent sign-in must
+  not reimport a picture the person removed or overwrite a replacement.
+- Verify malformed or absent claims, blocked destinations, redirects, oversized
+  responses, failed imports, removal/replacement races, and account boundaries.
+  The returned active session must remain usable when optional import fails.

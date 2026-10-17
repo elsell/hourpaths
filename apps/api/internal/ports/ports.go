@@ -25,6 +25,7 @@ var ErrUnavailable = errors.New("unavailable")
 
 type Claims struct {
 	Issuer, Subject, Email, DisplayName string
+	PictureURL                          string
 	Provider                            identity.Provider
 	Nonce                               string
 	EmailVerified                       bool
