@@ -14,8 +14,9 @@ product containing user-generated content.
 - These resources must be reachable during onboarding, from account settings,
   and through the public support presence used by the application stores.
 - The Privacy Policy must describe collected data, its uses and recipients,
-  account deletion, backup retention, exceptional moderation or legal
-  retention, and how to contact the operator.
+  account deletion, exceptional moderation or legal retention, and how to
+  contact the operator. Public copy must not disclose the operator's private
+  backup strategy or promise backup guarantees, as directed by the owner.
 - The Community Guidelines must describe disallowed content and conduct,
   reporting, blocking, enforcement, and appeals in plain language.
 - Support contact information must provide a monitored route for users to reach

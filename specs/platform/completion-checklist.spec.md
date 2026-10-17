@@ -18,7 +18,43 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Current delivery — October 15
+## Current delivery — October 17
+
+[PR #195](https://github.com/elsell/hourpaths/pull/195) adds private support with
+ULID references and separate recovery credentials, an operator inbox and replies,
+and private administrator notifications for support requests, moderation reports
+and appeals. Platform administration uses an immutable identity, an audited
+persisted grant and SpiceDB authorization; Path or invitation administration does
+not confer it.
+
+All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/38997594822)
+and [main checks](https://github.com/elsell/hourpaths/actions/runs/38998598023) passed.
+[Release v0.62.0](https://github.com/elsell/hourpaths/releases/tag/v0.62.0) published
+scanned, attested images from `b3ca03d9844a04f2d7bb0ab7dd7f0339f44f5ade`.
+GitOps `f6a8ca335e66074bd3cbef46f0ced3eb5fd19698` is applied with exact API/web
+source and image digests, ready pods and Flux Ready/Healthy. Migration 103 is clean.
+The owner-requested platform-admin grant is audited and its SpiceDB outbox delivery
+completed without dead-lettering. No public account identifier is needed in this record.
+
+The public support form renders at the configured support URL. Production
+submission, private recovery, wrong-key rejection and idempotent retry passed;
+the clearly labeled verification request created one owner notification and one
+creation audit event. Unsigned admin support/moderation requests return 401.
+Real PostgreSQL/HTTP tests cover operator access, replies, reports/appeals,
+revocation, expiry and audit rollback. These tests do not substitute for a
+signed-in production UI or physical-device acceptance check.
+
+TestFlight **0.62.0 (564)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
+the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/39000769413)).
+The [release workflow](https://github.com/elsell/hourpaths/actions/runs/38999548247)
+read back its release notes. Google Play internal build **537** committed with
+release notes in successful [run 39000790116](https://github.com/elsell/hourpaths/actions/runs/39000790116).
+The publication receipt satisfies delivery under the owner's October 14 Play
+Console verification waiver. The owner's physical-iPhone admin inbox check
+is pending. Finish this support/moderation/admin delivery before another gap.
+All eleven broader acceptance areas remain open.
+
+## Prior delivery — October 15
 
 [PR #193](https://github.com/elsell/hourpaths/pull/193) fixes two additional native
 Live Activity defects: local publications now change ActivityKit content identity,
@@ -61,9 +97,10 @@ Background goal-period refresh, multi-timer, offline and account-lifecycle behav
 also require device evidence. Onboarding redesign remains on hold. All eleven
 remaining acceptance areas stay open.
 
-The configured Terms, Privacy Policy and support pages still return HTTP 404.
-Approved content or existing destination URLs have been requested from the owner;
-no legal policy is inferred or published from placeholder text.
+At this historical checkpoint the policy and support pages returned HTTP 404.
+The October 17 delivery above replaces the missing support page. Terms, Privacy
+Policy and Community Guidelines publication remain open; placeholder text is not
+legal-policy publication.
 
 ## Prior delivery and remaining work — October 13
 
@@ -186,7 +223,7 @@ it does not close an area merely because a build is available.
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
 | 6 — Native timers | PR #193 is available in TestFlight 0.61.7 (557), with prior runtime fixes, controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
-| 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
+| 8 — Preferences | Publish Terms, Privacy and Community Guidelines; support is deployed in v0.62.0. Signed-device week-start, policy and quiet-period acceptance and approved onboarding redesign remain. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |
