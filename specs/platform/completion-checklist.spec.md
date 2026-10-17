@@ -18,6 +18,38 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
+## Guided onboarding delivery — October 17
+
+[PR #199](https://github.com/elsell/hourpaths/pull/199) replaces the stacked setup
+form with focused identity, preferences and policy-review steps on Studio and
+mobile. Profiles initially select the approved social visibility. Successful
+activation opens an optional local-photo task with a visible Skip action; returning
+accounts proceed directly Home. Provider-photo import remains an open decision.
+
+All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/39007032335)
+and [main checks](https://github.com/elsell/hourpaths/actions/runs/39007971250) passed.
+[Release v0.64.0](https://github.com/elsell/hourpaths/releases/tag/v0.64.0) published
+source `e3766d3702a42f02a1591129ee3b8b846b4b36fe`. GitOps
+`145bd641e62078bd487f09c54a0cfd4fc302290d` is verified with exact API/web
+source and image digests, ready pods, Flux Ready/Healthy, matching retention image,
+and HTTP 200 for onboarding and photo setup routes. A transient cluster failure
+resolved without node changes. HTTP availability does not establish activation.
+
+Controlled-port browser interaction covered retained edits, explicit consent,
+photo handoff, retry and Skip, and English/Spanish layout and heading focus at
+320px. Current native components passed the complete flow on Android at 160%
+system text size. Focused ownership checks cover sign-out and late activation.
+These results do not establish real-provider activation, physical-iPhone,
+VoiceOver or production image-upload acceptance.
+
+TestFlight **0.64.0 (576)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
+the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/39009895501)).
+The [release workflow](https://github.com/elsell/hourpaths/actions/runs/39008687449)
+read back its changelog. Google Play internal build **549** committed in successful
+[run 39009867474](https://github.com/elsell/hourpaths/actions/runs/39009867474).
+The publication receipt satisfies the owner-approved Play Console verification
+waiver; physical-device acceptance and all eleven broader areas remain open.
+
 ## Current policy delivery — October 17
 
 [PR #197](https://github.com/elsell/hourpaths/pull/197) publishes complete Terms,
@@ -253,7 +285,7 @@ it does not close an area merely because a build is available.
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
 | 6 — Native timers | PR #193 is available in TestFlight 0.61.7 (557), with prior runtime fixes, controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
-| 8 — Preferences | Public policy documents and version activation are verified in v0.63.0; support is deployed in v0.62.0. Signed-device week-start, policy and quiet-period acceptance and approved onboarding redesign remain. |
+| 8 — Preferences | Public policy documents and version activation are verified in v0.63.0; support is deployed in v0.62.0. Guided onboarding is implemented and published across clients above; signed-device week-start, policy, quiet-period and onboarding acceptance remain. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |

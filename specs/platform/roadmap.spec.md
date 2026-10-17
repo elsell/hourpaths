@@ -7,27 +7,24 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified API/web release is [v0.63.0](https://github.com/elsell/hourpaths/releases/tag/v0.63.0),
-source `e9289cb`, deployed through GitOps `927fab6`. Terms, Privacy Policy and
-Community Guidelines are public in English and Spanish. After verifying the
-pages, GitOps `0cf28f4` activated revision 2, version `public-2026-10-17`;
-matching durable authority and healthy production rollout are verified.
-Public policy implementation and production delivery are complete. Signed-device
-policy reacceptance remains open; no user's acceptance is inferred or performed.
+The current verified API/web release is [v0.64.0](https://github.com/elsell/hourpaths/releases/tag/v0.64.0),
+source `e3766d3`, deployed through GitOps `145bd64`. PR #199 delivers guided
+onboarding with retained edits, the approved social-profile default and a
+skippable local-photo task after activation. Exact images, healthy Flux and public
+route availability are verified. Native publication is verified on both stores;
+physical-device acceptance and provider-photo import remain open.
 
-Private support, support/moderation administrator notifications and the owner's
-admin activation remain deployed. TestFlight 0.62.0 (564) and Google Play internal
-537 are the latest verified mobile availability evidence recorded here, with
-release notes. The owner's device inbox result remains pending. Native v0.63.0
-distribution is separate from verified public policy delivery. See the checklist
-for exact evidence and remaining acceptance criteria.
+Public Terms, Privacy Policy and Community Guidelines remain available in English
+and Spanish, with policy revision 2 (`public-2026-10-17`) activated. Private support,
+admin support/moderation notifications and the owner's admin activation remain
+deployed. Latest verified native availability is TestFlight 0.64.0 (576) and
+Google Play internal 549, with release notes. The owner's device inbox and policy
+reacceptance results remain pending; no acceptance is inferred from publication.
 
 Prior safety and native timer implementations remain credited. The unresolved
-Live Activity Stop device result is not closed by build availability. Onboarding
-must be redesigned as a polished step-by-step flow with a subtle, skippable photo
-prompt; the owner has already approved that direction, so it is not an unanswered
-product decision. Public policy drafting/publication is delivered. Public-text
-classification uses the owner-approved no-op port for this phase.
+Live Activity Stop device result is not closed by build availability. Public-text
+classification uses the owner-approved no-op port for this phase. See the
+completion checklist for evidence and remaining acceptance criteria.
 
 Only one product implementation slice may be active. Preserve completed
 implementation and use the checklist's concrete acceptance criteria to select
@@ -92,11 +89,12 @@ Only decisions required by the current acceptance outcome block ACCT-01. A
 decision that governs optional later lifecycle maintenance must not expand or
 delay the active successful-account-creation slice.
 
-- The active onboarding slice implements the approved social default and guided
+- The delivered onboarding implementation provides the approved social default and guided
   identity, preferences, consent, and optional photo flow. Web interaction checks
   cover back navigation, retained edits, explicit consent, and photo handoff.
-  Native device acceptance and release remain open; provider-photo import is
-  still a separate unsettled decision.
+  Web production, TestFlight and Google Play publication are verified. Native
+  device acceptance remains open. Provider-photo import is still a separate
+  unsettled decision.
 - Public policy publication and private support are delivered. Physical-device
   policy reacceptance and admin inbox acceptance remain verification work, not
   unresolved product decisions.
