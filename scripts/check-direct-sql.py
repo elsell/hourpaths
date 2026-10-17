@@ -11,6 +11,30 @@ from pathlib import Path
 
 DIRECT_SQL = re.compile(r"\.(?:Raw|Exec)\s*\(")
 REVIEWED_LINES: dict[str, tuple[str, ...]] = {
+    # Private-support append serialization and narrow, audited moderation read;
+    # real PostgreSQL fixtures verify runtime denial and mutation atomicity.
+    'apps/api/internal/adapters/gormstore/support.go': (
+        '\t\tif e := tx.Exec("SELECT pg_advisory_xact_lock(hashtextextended(?,0))", "support:"+id).Error; e != nil {',
+    ),
+    'apps/api/internal/adapters/gormstore/admin_attention.go': (
+        '\tif e := r.DB.WithContext(ctx).Raw("SELECT public.read_admin_attention(?,?::uuid,?)::text", actor, id, at).Scan(&raw).Error; e != nil {',
+    ),
+    'apps/api/internal/adapters/gormstore/support_postgres_test.go': (
+        '\t\tif e = admin.DB.Exec("INSERT INTO user_models(id,status,display_name,created_at,updated_at) VALUES(?,\'active\',\'Support test\',?,?)", id, at, at).Error; e != nil {',
+        '\tif e = admin.DB.Exec("INSERT INTO identity_models(issuer,subject,user_id) VALUES(\'https://support.example\',?,?)", operator, operator).Error; e != nil {',
+        '\tif e = runtime.DB.Exec("SELECT grant_platform_admin(?,\'https://support.example\',?)", operator, operator).Error; e == nil {',
+        '\tif e = admin.DB.Exec("SELECT grant_platform_admin(?,\'https://wrong.example\',?)", operator, operator).Error; e == nil {',
+        '\tif e = admin.DB.Exec("SELECT grant_platform_admin(?,\'https://support.example\',?)", operator, operator).Error; e != nil {',
+        '\tif e = runtime.DB.Exec("INSERT INTO moderation_case_models(id,reporter_id,subject_user_id,target_kind,target_id,reason,explanation,evidence,created_at) VALUES(?,?,?,\'profile\',?,\'something_else\',\'Private report\',\'{}\',?)", caseID, foreign, foreign, foreign, at).Error; e != nil {',
+        '\tif e = admin.DB.Exec("INSERT INTO moderation_enforcement_models(id,case_id,subject_user_id,action,policy_reason,issued_at) VALUES(?,?,?,\'warning\',\'Policy reason\',?)", enforcement, caseID, foreign, at).Error; e != nil {',
+        '\tif e = runtime.DB.Exec("INSERT INTO moderation_appeal_models(enforcement_id,id,explanation,submitted_at) VALUES(?,?,?,?)", enforcement, uuid.NewString(), "Private appeal", at).Error; e != nil {',
+        '\tif e = runtime.DB.Exec("SELECT id FROM moderation_case_models LIMIT 1").Error; e == nil {',
+        '\tif e = runtime.DB.Exec("UPDATE support_audit_models SET actor=\'tampered\'").Error; e == nil {',
+        '\tif e = admin.DB.Exec("REVOKE INSERT ON support_audit_models FROM app").Error; e != nil {',
+        '\tif restore := admin.DB.Exec("GRANT INSERT ON support_audit_models TO app").Error; restore != nil {',
+        '\tif e = admin.DB.Exec("DELETE FROM platform_admin_models WHERE user_id=?", operator).Error; e != nil {',
+    ),
+
     # Exact profile-removal fixtures, restricted reviewer calls and lock-race observations.
     'apps/api/internal/adapters/gormstore/moderation_profile_fields_postgres_test.go': (
         '\t\t\t\tif err := f.migration.DB.Exec(q, args...).Error; err != nil {',

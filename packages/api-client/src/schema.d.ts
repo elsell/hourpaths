@@ -21,6 +21,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/moderation-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list-admin-moderation-notifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/moderation-notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get-admin-moderation-notification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/support": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the platform administrator support inbox */
+        get: operations["list-admin-support"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/support-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read private support notifications */
+        get: operations["list-admin-support-notifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/support/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a support conversation as an administrator */
+        get: operations["get-admin-support"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/support/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reply as support */
+        post: operations["reply-admin-support"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audit-events": {
         parameters: {
             query?: never;
@@ -1976,6 +2076,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/support/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a private support conversation */
+        post: operations["create-support-request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a conversation using its recovery credential */
+        get: operations["get-support-request"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/support/requests/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a private follow-up */
+        post: operations["reply-support-request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2259,6 +2410,35 @@ export interface components {
             data: components["schemas"]["ActivityRevision"][];
             meta: components["schemas"]["MetaStruct"];
         };
+        AdminAttentionNotice: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            /** @enum {string} */
+            kind: "report" | "appeal";
+            read: boolean;
+        };
+        AdminAttentionRecord: {
+            /** Format: date-time */
+            createdAt: string;
+            explanation: string;
+            id: string;
+            /** @enum {string} */
+            kind: "report" | "appeal";
+            reason: string;
+            state: string;
+        };
+        AdminReplyBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AdminReplyBody.json
+             */
+            readonly $schema?: string;
+            /** Format: uuid */
+            id: string;
+            message: string;
+        };
         AppealInputBody: {
             /**
              * Format: uri
@@ -2298,6 +2478,27 @@ export interface components {
             emoji: string;
             /** Format: int64 */
             expectedRevision: number;
+        };
+        AttentionListBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AttentionListBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["AttentionListData"];
+        };
+        AttentionListData: {
+            items: components["schemas"]["AdminAttentionNotice"][];
+        };
+        AttentionRecordBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/AttentionRecordBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["AdminAttentionRecord"];
         };
         AuditEventDTO: {
             action: string;
@@ -2458,6 +2659,26 @@ export interface components {
             text: string;
             /** Format: int64 */
             version: number;
+        };
+        Conversation: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            id: string;
+            messages: components["schemas"]["Message"][];
+            subject: string;
+        };
+        CreateInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/CreateInputBody.json
+             */
+            readonly $schema?: string;
+            id: string;
+            message: string;
+            subject: string;
         };
         DataStruct: {
             /** Format: date-time */
@@ -2922,8 +3143,22 @@ export interface components {
             role: "participant" | "supporter" | "administrator";
             userId: string;
         };
+        Message: {
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            operator: boolean;
+        };
         MetaStruct: {
             nextCursor?: string;
+        };
+        Notice: {
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            read: boolean;
+            requestId: string;
         };
         NoticeOutputBody: {
             /**
@@ -3252,6 +3487,15 @@ export interface components {
              */
             readonly $schema?: string;
             data: components["schemas"]["OnboardingProfileDTO"];
+        };
+        OutputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/OutputBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["Conversation"];
         };
         OverallTarget: {
             /** Format: int64 */
@@ -4185,6 +4429,17 @@ export interface components {
             readonly $schema?: string;
             data: components["schemas"]["RelationshipData"];
         };
+        ReplyInputBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/ReplyInputBody.json
+             */
+            readonly $schema?: string;
+            /** Format: uuid */
+            id: string;
+            message: string;
+        };
         ReportBlockIdentityData: {
             displayName: string;
             userId: string;
@@ -4350,6 +4605,34 @@ export interface components {
             saved: boolean;
             subsecond: boolean;
             timer?: components["schemas"]["Timer"];
+        };
+        SupportListBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SupportListBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["SupportListData"];
+            meta: components["schemas"]["SupportListMeta"];
+        };
+        SupportListData: {
+            items: components["schemas"]["Conversation"][];
+        };
+        SupportListMeta: {
+            nextCursor?: string;
+        };
+        SupportNoticesBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example https://example.com/schemas/SupportNoticesBody.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["SupportNoticesData"];
+        };
+        SupportNoticesData: {
+            items: components["schemas"]["Notice"][];
         };
         TimeZonePreferenceDTO: {
             changed: boolean;
@@ -4522,6 +4805,214 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-admin-moderation-notifications": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttentionListBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-admin-moderation-notification": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttentionRecordBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-admin-support": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportListBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "list-admin-support-notifications": {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                Authorization?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportNoticesBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-admin-support": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "reply-admin-support": {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReplyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputBody"];
+                };
             };
             /** @description Error */
             default: {
@@ -9724,6 +10215,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsOutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "create-support-request": {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Support-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInputBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "get-support-request": {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Support-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputBody"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["APIError"];
+                };
+            };
+        };
+    };
+    "reply-support-request": {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Support-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyInputBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutputBody"];
                 };
             };
             /** @description Error */

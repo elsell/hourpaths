@@ -5,12 +5,15 @@ import (
 	activityroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/activity/routes"
 	moderationroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/moderation"
 	statsroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/stats"
+	supportroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/support"
 	activityapp "github.com/elsell/hour-paths/apps/api/internal/app/activity"
 	moderationapp "github.com/elsell/hour-paths/apps/api/internal/app/moderation"
 	statsapp "github.com/elsell/hour-paths/apps/api/internal/app/stats"
+	supportapp "github.com/elsell/hour-paths/apps/api/internal/app/support"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver"
+	attentionroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/adminattention"
 	pathroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/path/routes"
 	socialroutes "github.com/elsell/hour-paths/apps/api/internal/adapters/httpserver/social/routes"
 	"github.com/elsell/hour-paths/apps/api/internal/app"
@@ -22,6 +25,10 @@ import (
 
 func main() {
 	registrations := generated.Registrations(generated.Dependencies{})
+	registrations = append(registrations, func(api huma.API) {
+		supportroutes.Register(api, &supportapp.Service{})
+		attentionroutes.Register(api, nil)
+	})
 	registrations = append(registrations, func(api huma.API) {
 		moderationroutes.Register(api, moderationapp.New(moderationapp.Dependencies{}))
 		moderationroutes.RegisterEnforcements(api, moderationapp.NewEnforcements(moderationapp.EnforcementDependencies{}))

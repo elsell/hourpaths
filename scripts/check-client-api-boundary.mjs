@@ -93,12 +93,14 @@ const protectedProviderManifest = 'scripts/protected-provider-adapters.sha256';
 const protectedApiClientAdapters = new Set(['packages/api-client/src/index.ts', 'packages/api-client/src/policy-requirement.ts', 'packages/api-client/src/account-restriction.ts']);
 const protectedApiClientManifest = 'scripts/protected-api-client-adapter.sha256';
 const studioHosts = new Set([
+  'apps/web/src/routes/support/+page.svelte',
   'apps/web/src/routes/studio/[...path]/+page.svelte',
   'apps/web/src/routes/onboarding/+page.svelte',
   'apps/web/src/routes/account-recovery/+page.svelte',
   'apps/web/src/routes/callback/+page.svelte',
 ]);
 const protectedClientCapabilityAdapters = new Set([
+  'apps/web/src/lib/studio/support/adapters/browser-recovery.ts',
   'apps/mobile/src/timers/live-activity-refresh-api.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-export.ts',
   'apps/web/src/lib/studio/account/adapters/browser-account-deletion.ts',
@@ -119,6 +121,7 @@ const protectedClientCapabilityAdapters = new Set([
   'apps/web/src/lib/notification-convergence-browser.ts',
 ]);
 const protectedClientCapabilityConstructors = new Map([
+  ['apps/web/src/lib/studio/support/adapters/browser-recovery.ts', new Set(['Uint8Array', 'URLSearchParams'])],
   ['apps/mobile/src/timers/live-activity-refresh-api.ts', new Set(['AbortController'])],
   ['apps/web/src/lib/studio/account/adapters/browser-account-export.ts', new Set(['Blob'])],
   // Only the user-selected file; no network or persistent storage capability.
@@ -128,7 +131,8 @@ const protectedClientCapabilityConstructors = new Map([
   ['apps/web/src/lib/notification-convergence-browser.ts', new Set(['BroadcastChannel'])],
 ]);
 const protectedClientCapabilityCallRoots = new Map([
-  ['apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts', new Set(['window'])],
+  ['apps/web/src/lib/studio/support/adapters/browser-recovery.ts', new Set(['window', 'history'])],
+  ['apps/web/src/lib/studio/offline/adapters/browser-tracking-connectivity.ts', new Set(['window', 'history'])],
   ['apps/web/src/lib/studio/offline/adapters/indexeddb-tracking-store.ts', new Set(['indexedDB'])],
   ['apps/web/src/lib/notification-convergence-browser.ts', new Set(['document'])],
 ]);

@@ -19,3 +19,5 @@ f8a25f8e213007af2baa3ab8064b636be1d94e0444aee86986a2d2ceb914c6dc  apps/web/src/l
 30494bdbc7bc3d5c4ee4f527b94555d2a9021f54da524ba15c9fa7f1ac1ba8ea  apps/web/src/lib/studio/preferences/adapters/browser-picture-file.ts
 1b6a5e404758bbc999989e20edcb5880d45903405fe705bbecabf3527c7787b5  apps/web/src/lib/studio/account/adapters/browser-account-export.ts
 67b1e0e01f002f6a9b2297c989d480bb0acf28491e9cc5d1dbd155aad4eeab91  apps/mobile/src/timers/live-activity-refresh-api.ts
+cb7568e0a8e76e8eb524b7bd191771c6a4696e21f8da0f6a3672578cf5e97de6  apps/web/src/routes/support/+page.svelte
+57052b0c12662386879b99e2c95f5eba9a6e1a30ffbc0ed85a8c35406c8dfef2  apps/web/src/lib/studio/support/adapters/browser-recovery.ts

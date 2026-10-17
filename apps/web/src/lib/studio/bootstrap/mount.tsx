@@ -1,3 +1,7 @@
+import { PublicSupport } from "../presentation/support";
+import { browserSupportRecovery } from "../support/adapters/browser-recovery";
+import { apiAdminAttention } from "@hourpaths/client-core";
+import { apiSupport } from "@hourpaths/client-core";
 import { AccountRestrictionController, apiAccountRestriction } from '@hourpaths/client-core';
 import { apiEnforcement, apiReporting } from '@hourpaths/client-core';
 import { AccountExportController, apiAccountExport } from '@hourpaths/client-core';
@@ -183,6 +187,8 @@ function mountReadyStudio(element: HTMLElement, options: { apiURL: string; local
     },
     reporting: { submit: (draft, key, signal) => apiReporting(options.apiURL, session.token(), credential => session.reject(credential), signal).submit(draft, key) },
     blocking: apiBlockingRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
+    support: apiSupport(options.apiURL, () => session.token()),
+    adminAttention: apiAdminAttention(options.apiURL, () => session.token()),
     notifications: apiNotifications(options.apiURL, () => session.token(), credential => session.reject(credential), i18n),
     ownership: apiOwnershipRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
     nudges: apiNudgesRepository(options.apiURL, () => session.token(), credential => session.reject(credential)),
@@ -207,4 +213,11 @@ export function mountAccountEntry(element: HTMLElement, options: { config: Clien
   const root = createRoot(element);
   root.render(<AccountEntry service={browserEntryService(options.config)} i18n={createTranslator([options.locale])} callback={options.callback} />);
   return () => root.unmount();
+}
+
+export function mountSupport(element:HTMLElement,apiURL:string,locale:SupportedLocale){
+ const recovery=browserSupportRecovery();
+ const root=createRoot(element);
+ root.render(<PublicSupport service={apiSupport(apiURL)} i18n={createTranslator([locale])} recovery={recovery} onReceived={recovery.remember} newID={()=>crypto.randomUUID()}/>);
+ return()=>root.unmount();
 }

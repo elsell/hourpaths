@@ -1,3 +1,5 @@
+import { apiSupport, apiAdminAttention } from "@hourpaths/client-core";
+import { AdminAttentionView } from "../src/ui/admin-attention-view";
 import { createLiveActivityRefreshPort } from '../src/timers/live-activity-refresh-api';
 import { AccountRestrictionController, apiAccountRestriction } from '@hourpaths/client-core';
 import { NativeAccountRestrictionSource } from '../src/ui/account-restriction-presentation';
@@ -942,6 +944,10 @@ export function HomeScreen() {
     destination: null,
     session: null,
   });
+  const administratorServices = useMemo(() => ({
+    support: apiSupport(apiURL, () => notificationLifecycleState.current.session?.token ?? null),
+    moderation: apiAdminAttention(apiURL, () => notificationLifecycleState.current.session?.token ?? null),
+  }), []);
   const [retainedHome, setRetainedHome] = useState<{ profile: Profile; state: TrackingSnapshot } | null>(null);
   const retainedHomeRef = useRef(retainedHome);
   retainedHomeRef.current = retainedHome;
@@ -9638,6 +9644,7 @@ export function HomeScreen() {
       {goalReminderId ? <GoalReminderSheet key={ownedHomeDestination.profile.id} i18n={i18n}
         notificationId={goalReminderId} load={loadGoalReminder} onClose={() => setGoalReminderId(null)}
         onOpenPath={id => { setGoalReminderId(null); openPathDetail(id); }} /> : null}
+      <AdminAttentionView key={ownedHomeDestination.profile.id} support={administratorServices.support} moderation={administratorServices.moderation} i18n={i18n} newID={() => Crypto.randomUUID()} refreshing={notificationsRefreshing}/>
       <NotificationHistoryView
         busy={notificationsBusy}
         canOpen={(notification) => notification.type === 'goal_practice_reminder' || notification.type === 'path_invitation_received'

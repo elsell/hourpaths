@@ -55,3 +55,15 @@ Verification must focus on adapter mapping, real API interactions, account
 isolation, and browser workflows. Visual review must compare rendered pages to
 the approved Studio references at desktop and narrow widths. Structural checks
 must enforce the dependency direction without freezing component source text.
+
+## Private support entry
+
+The public support page uses the Studio design system without requiring an
+account session. Its checksum-reviewed host and browser recovery adapter may
+capture a recovery URL fragment, generate 32 cryptographically random bytes,
+and replace the fragment with private tab-history state so a reload retains
+access. Recovery credentials must not be placed in local storage or cookies. They must not gain arbitrary
+network access. All support and administrator requests use generated API
+operations behind client adapters; their domain types must remain separate from
+wire DTOs. Native administrator notifications use the same client ports with
+native shared sheet, input, and notification components.
