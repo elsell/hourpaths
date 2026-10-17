@@ -51,8 +51,10 @@ read back its release notes. Google Play internal build **537** committed with
 release notes in successful [run 39000790116](https://github.com/elsell/hourpaths/actions/runs/39000790116).
 The publication receipt satisfies delivery under the owner's October 14 Play
 Console verification waiver. The owner's physical-iPhone admin inbox check
-is pending. Finish this support/moderation/admin delivery before another gap.
-All eleven broader acceptance areas remain open.
+is pending. The prioritized support/moderation/admin implementation and release
+are delivered; physical-device acceptance remains explicitly uncredited. Public
+policy pages are the next active implementation slice. All eleven broader
+acceptance areas remain open.
 
 ## Prior delivery — October 15
 

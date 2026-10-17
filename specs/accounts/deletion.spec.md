@@ -81,9 +81,11 @@ personal data and path relationships.
   90 days after the case closes unless a legal obligation requires otherwise.
 - Ordinary profile, Path, activity, social, notification, and preference data
   must not be retained under the moderation exception.
-- The deletion warning and published privacy information must explain the
-  backup schedule and the limited moderation, security, or legally required
-  exceptions plainly.
+- The deletion warning and published privacy information must explain limited
+  moderation, security, or legally required exceptions plainly. Public copy must
+  follow the owner-approved disclosure limits in
+  [User Policies](../safety/user-policies.spec.md); it must not publish the private
+  backup strategy or promise backup guarantees.
 
 ## Path relationships
 

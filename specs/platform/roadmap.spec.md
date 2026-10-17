@@ -12,8 +12,11 @@ source `b3ca03d`, deployed through GitOps `f6a8ca3`. Private support, support an
 moderation administrator notifications, and the owner-requested admin activation
 are deployed. TestFlight 0.62.0 (564) is available internally with verified notes.
 Google Play internal build 537 is published with release notes. Physical-device
-admin inbox acceptance remains pending; finish this before moving to another gap.
-See the checklist for exact evidence.
+admin inbox acceptance remains pending and must not be credited without the owner's
+result. Implementation and release of the prioritized support/admin/moderation
+slice are complete. The next active implementation slice is public policy pages;
+its contact route is the now-delivered private support form. See the checklist
+for exact evidence.
 
 Prior safety and native timer implementations remain credited. The unresolved
 Live Activity Stop device result is not closed by build availability. Onboarding
