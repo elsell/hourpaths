@@ -222,7 +222,7 @@ it does not close an area merely because a build is available.
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
 | 6 — Native timers | PR #193 is available in TestFlight 0.61.7 (557), with prior runtime fixes, controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
-| 8 — Preferences | Publish configured policy/support URLs (currently 404); signed-device week-start, policy and quiet-period acceptance; reconcile genuinely unresolved onboarding defaults. |
+| 8 — Preferences | Publish Terms, Privacy and Community Guidelines; support is deployed in v0.62.0. Signed-device week-start, policy and quiet-period acceptance and approved onboarding redesign remain. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |
