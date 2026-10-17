@@ -18,7 +18,42 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Current delivery — October 15
+## Current delivery — October 17
+
+[PR #195](https://github.com/elsell/hourpaths/pull/195) adds private support with
+ULID references and separate recovery credentials, an operator inbox and replies,
+and private administrator notifications for support requests, moderation reports
+and appeals. Platform administration uses an immutable identity, an audited
+persisted grant and SpiceDB authorization; Path or invitation administration does
+not confer it.
+
+All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/38997594822)
+and [main checks](https://github.com/elsell/hourpaths/actions/runs/38998598023) passed.
+[Release v0.62.0](https://github.com/elsell/hourpaths/releases/tag/v0.62.0) published
+scanned, attested images from `b3ca03d9844a04f2d7bb0ab7dd7f0339f44f5ade`.
+GitOps `f6a8ca335e66074bd3cbef46f0ced3eb5fd19698` is applied with exact API/web
+source and image digests, ready pods and Flux Ready/Healthy. Migration 103 is clean.
+The owner-requested platform-admin grant is audited and its SpiceDB outbox delivery
+completed without dead-lettering. No public account identifier is needed in this record.
+
+The public support form renders at the configured support URL. Production
+submission, private recovery, wrong-key rejection and idempotent retry passed;
+the clearly labeled verification request created one owner notification and one
+creation audit event. Unsigned admin support/moderation requests return 401.
+Real PostgreSQL/HTTP tests cover operator access, replies, reports/appeals,
+revocation, expiry and audit rollback. These tests do not substitute for a
+signed-in production UI or physical-device acceptance check.
+
+TestFlight **0.62.0 (564)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
+the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/39000769413)).
+The [release workflow](https://github.com/elsell/hourpaths/actions/runs/38999548247)
+read back its release notes. Google Play internal publication is in progress in
+[run 39000790116](https://github.com/elsell/hourpaths/actions/runs/39000790116);
+its availability is not yet claimed. The owner's physical-iPhone admin inbox check
+is pending. Finish this support/moderation/admin delivery before another gap.
+All eleven broader acceptance areas remain open.
+
+## Prior delivery — October 15
 
 [PR #193](https://github.com/elsell/hourpaths/pull/193) fixes two additional native
 Live Activity defects: local publications now change ActivityKit content identity,
@@ -61,9 +96,10 @@ Background goal-period refresh, multi-timer, offline and account-lifecycle behav
 also require device evidence. Onboarding redesign remains on hold. All eleven
 remaining acceptance areas stay open.
 
-The configured Terms, Privacy Policy and support pages still return HTTP 404.
-Approved content or existing destination URLs have been requested from the owner;
-no legal policy is inferred or published from placeholder text.
+At this historical checkpoint the policy and support pages returned HTTP 404.
+The October 17 delivery above replaces the missing support page. Terms, Privacy
+Policy and Community Guidelines publication remain open; placeholder text is not
+legal-policy publication.
 
 ## Prior delivery and remaining work — October 13
 

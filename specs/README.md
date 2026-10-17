@@ -103,4 +103,4 @@ Path-name moderation: owner-approved replacement with shared Path data preserved
 
 Profile moderation: owner approved removing offending fields while preserving the profile/history; `SAFE-PROFILE-REMOVAL-01` merged in PR #173 and deployed in v0.59.0; remaining acceptance is tracked in the completion checklist.
 
-- [Private support and administrator notifications](support/private-support.spec.md) — approved; implementation in progress.
+- [Private support and administrator notifications](support/private-support.spec.md) — implemented in v0.62.0; production/iOS availability verified, Android publication and device acceptance pending.

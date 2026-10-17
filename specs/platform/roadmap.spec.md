@@ -7,45 +7,19 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified API/web release is [v0.58.0](https://github.com/elsell/hourpaths/releases/tag/v0.58.0),
-source `1d47699`, deployed through GitOps `32cd8b2`. Exact source/images,
-Ready/Healthy Flux, retention configuration and public readiness passed.
-TestFlight 0.58.0 (494) and Google Play internal 465 are verified available
-with release notes. Store availability and physical-device
-acceptance remain separate requirements.
+The current verified API/web release is [v0.62.0](https://github.com/elsell/hourpaths/releases/tag/v0.62.0),
+source `b3ca03d`, deployed through GitOps `f6a8ca3`. Private support, support and
+moderation administrator notifications, and the owner-requested admin activation
+are deployed. TestFlight 0.62.0 (564) is available internally with verified notes.
+Android publication and physical-device admin inbox acceptance remain pending;
+finish these before moving to another gap. See the checklist for exact evidence.
 
-Safety implementation now includes the in-house trusted-content no-op port
-(PR #164), suspension/ban stopping and saving active timers (PR #165), nudge
-removal (PR #166), feed-event removal preserving source time (PR #167), and
-owner-approved Path-name replacement preserving membership, timers and history
-(PR #170), with private notices and safe appeal restoration. All are released.
-Profile field removal merged in [PR #173](https://github.com/elsell/hourpaths/pull/173)
-as `2b0861a`. Selected display name, description or picture removal preserves the
-profile and history, with private notices and safe appeals. Focused PostgreSQL
-boundary and push-race checks and real Studio notice/appeal acceptance passed;
-the final security review found no P0/P1 blocker. All five candidate/main gates passed.
-
-[v0.59.0](https://github.com/elsell/hourpaths/releases/tag/v0.59.0) is verified in
-production through GitOps `174bbf5`: exact source/images, Flux Ready/Healthy,
-current retention image, Studio HTTP 200 and API readiness 204. TestFlight
-0.59.0 (498) is VALID, nonexpired, IN_BETA_TESTING and assigned to the internal
-group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/38429843875));
-release notes were read back. Google Play internal build 470 committed in
-[run 38426925098](https://github.com/elsell/hourpaths/actions/runs/38426925098).
-The owner waived independent Play Console verification on October 14; the
-successful publication receipt satisfies that delivery requirement.
-Physical-device acceptance remains unverified. Richer Live Activities with
-durable Start/Stop controls merged in PR #175 as `83c7c57`; release availability
-is not yet verified. The active product slice is automatic goal-period refresh
-while the app is suspended. The remaining acceptance areas below remain open.
-
-The other unresolved product inputs are provider-picture import during
-onboarding and approved policy/support content.
-Actual automated text classification remains explicitly deferred for this phase.
-Signed-device acceptance and NAS-level snapshot encryption/expiry evidence also
-remain open. Emulator checks, Kubernetes configuration and isolated restore
-rehearsals do not substitute for those requirements. The checklist retains the
-concrete acceptance criteria and credited earlier delivery evidence.
+Prior safety and native timer implementations remain credited. The unresolved
+Live Activity Stop device result is not closed by build availability. Onboarding
+must be redesigned as a polished step-by-step flow with a subtle, skippable photo
+prompt; the owner has already approved that direction, so it is not an unanswered
+product decision. Public policy drafting/publication remains open. Public-text
+classification uses the owner-approved no-op port for this phase.
 
 Only one product implementation slice may be active. Preserve completed
 implementation and use the checklist's concrete acceptance criteria to select
@@ -110,12 +84,11 @@ Only decisions required by the current acceptance outcome block ACCT-01. A
 decision that governs optional later lifecycle maintenance must not expand or
 delay the active successful-account-creation slice.
 
-- The approved specifications do not choose an initial public/private profile
-  privacy value or state that onboarding asks the user to choose one.
-- Production configures `public-v1` policy versions and URLs for Terms, Privacy,
-  Community Guidelines and Support, but all four URLs returned 404 on October 10.
-  Publication remains incomplete; approved policy content and a monitored support
-  contact must be established before this acceptance item can close.
+- The owner approved a social profile by default. Reconcile onboarding with
+  that decision; choosing the default is not an outstanding product question.
+- Terms, Privacy and Community Guidelines publication remains incomplete.
+  The private support form and administrator notifications are deployed in
+  v0.62.0; support is no longer a missing destination.
 - The specifications require an OIDC profile picture to pre-populate onboarding
   and require accepted images to be safely re-encoded, but do not decide
   whether an untouched provider picture is imported by default, imported only
