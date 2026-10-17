@@ -544,3 +544,18 @@ export function createPathAppearancePort(baseUrl: string, tokenProvider: TokenPr
     },
   };
 }
+
+export function createSupportApiClient(baseURL: string, token: TokenProvider = () => null) {
+ const api=createApiClient(baseURL,token);
+ return {
+  create:(id:string,key:string,subject:string,message:string)=>api.POST('/v1/support/requests',{params:{header:{'X-Support-Key':key}},body:{id,subject,message}}),
+  read:(id:string,key:string)=>api.GET('/v1/support/requests/{id}',{params:{path:{id},header:{'X-Support-Key':key}}}),
+  reply:(id:string,key:string,messageId:string,message:string)=>api.POST('/v1/support/requests/{id}/messages',{params:{path:{id},header:{'X-Support-Key':key}},body:{id:messageId,message}}),
+  inbox:(cursor?:string)=>api.GET('/v1/admin/support',{params:{query:{cursor,limit:25}}}),
+  adminRead:(id:string)=>api.GET('/v1/admin/support/{id}',{params:{path:{id}}}),
+  adminReply:(id:string,messageId:string,message:string)=>api.POST('/v1/admin/support/{id}/messages',{params:{path:{id}},body:{id:messageId,message}}),
+  notices:()=>api.GET('/v1/admin/support-notifications',{}),
+  moderationNotices:()=>api.GET('/v1/admin/moderation-notifications',{}),
+  moderationRead:(id:string)=>api.GET('/v1/admin/moderation-notifications/{id}',{params:{path:{id}}}),
+ };
+}

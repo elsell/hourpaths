@@ -1,3 +1,5 @@
+import { AdminAttention } from "./admin-attention";
+import { AdminSupportNotifications } from "./support";
 import { ReportAction } from './report-composer';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Link, Navigate } from '@tanstack/react-router';
@@ -37,7 +39,7 @@ export function NotificationsPage({ dependencies: d }: { dependencies: StudioDep
   }
   if (destination) return <Destination target={destination} />;
   return <StudioShell page="notifications" i18n={d.i18n}><main className="studio-main studio-notification-main">
-    <header className="studio-header"><div><h1>{d.i18n.t('notification.heading')}</h1>{state.loaded && <p>{d.i18n.t('notification.unreadCount', { count: state.unreadCount })}</p>}</div><div className="studio-form-actions"><button disabled={busy} onClick={() => void service.refresh()}>{d.i18n.t('common.refresh')}</button><button disabled={busy || !state.loaded || !state.unreadCount} onClick={() => void service.mutate({ kind: 'read-all' })}>{d.i18n.t('notification.markAllRead')}</button></div></header>
+    <AdminAttention service={d.adminAttention} i18n={d.i18n}/><AdminSupportNotifications service={d.support} i18n={d.i18n} /><header className="studio-header"><div><h1>{d.i18n.t('notification.heading')}</h1>{state.loaded && <p>{d.i18n.t('notification.unreadCount', { count: state.unreadCount })}</p>}</div><div className="studio-form-actions"><button disabled={busy} onClick={() => void service.refresh()}>{d.i18n.t('common.refresh')}</button><button disabled={busy || !state.loaded || !state.unreadCount} onClick={() => void service.mutate({ kind: 'read-all' })}>{d.i18n.t('notification.markAllRead')}</button></div></header>
     {state.loading && <p role="status">{d.i18n.t('notification.loading')}</p>}
     {state.error && <div role="alert"><p>{d.i18n.t(state.error === 'history' ? 'notification.error' : 'notification.mutationError')}</p>{state.error === 'history' && <button disabled={busy} onClick={() => void service.refresh()}>{d.i18n.t('common.retry')}</button>}</div>}
     {state.loaded && !state.items.length && <section className="studio-settings-card"><h2>{d.i18n.t('notification.empty')}</h2><p>{d.i18n.t('notification.emptyDescription')}</p></section>}

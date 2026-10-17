@@ -928,3 +928,7 @@ export { nativeGoalClock } from './native-goal-clock';
 export { nativeGoalPeriodSchedule } from './native-goal-period';
 
 export * from "./live-activity-refresh";
+
+export { apiSupport, SupportFailure, type SupportPort, type SupportConversation, type SupportMessage, type SupportNotice } from "./support";
+export * from './admin-attention';
+export * from './support-ticket-id';

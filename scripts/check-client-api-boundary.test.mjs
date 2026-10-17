@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process';
 
 const checker = resolve('scripts/check-client-api-boundary.mjs');
 const protectedPaths = [
+  'apps/web/src/routes/support/+page.svelte',
+  'apps/web/src/lib/studio/support/adapters/browser-recovery.ts',
   'apps/mobile/src/ui/tokens.ts',
     'apps/mobile/src/offline/sqlite-native-timer-lease.ts',
     'apps/mobile/src/timers/native-presentation-size.ts',

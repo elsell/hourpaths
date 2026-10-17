@@ -77,3 +77,13 @@
 .studio-picture-crop label{display:grid;gap:6px;}
 .studio-picture-crop input[type=range]{width:100%;}
 .studio-profile-identity dd a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;color:inherit;text-decoration:none}.studio-profile-identity dd a:hover{text-decoration:underline}
+
+.studio-public-support { display: block; min-height: 100dvh; padding: clamp(20px, 5vw, 64px); }
+.studio-support-panel { max-width: 720px; margin-inline: auto; }
+.studio-support-panel form, .studio-support-panel label { display: grid; gap: 12px; }
+.studio-support-panel form { gap: 24px; }
+.studio-support-panel input, .studio-support-panel textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 12px; border-radius: 12px; }
+.studio-support-panel button { min-height: 44px; }
+.studio-support-messages { padding: 0; list-style: none; }
+.studio-support-messages li { padding: 20px 0; border-bottom: 1px solid currentColor; }
+.studio-support-panel time { display: block; font-size: .85em; margin-block: 6px; }

@@ -10,6 +10,8 @@ import unittest
 REPOSITORY = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = REPOSITORY / "scripts/check-client-api-boundary.py"
 FIXTURE_PATHS = (
+    "apps/web/src/routes/support/+page.svelte",
+    "apps/web/src/lib/studio/support/adapters/browser-recovery.ts",
     "apps/mobile/src/offline/sqlite-native-timer-lease.ts",
     "apps/mobile/src/ui/tokens.ts",
     "apps/mobile/src/timers/native-presentation-size.ts",

@@ -589,3 +589,15 @@ on October 15 still return 404 for node-forge 1.4.1, braces 3.0.4 and
 sprintf-js 1.1.4. No additional advisory or package version is accepted. All
 existing full-audit, expiry, authorization, native and merge gates remain
 required. This is bounded risk acceptance, not remediation.
+
+### October 17 owner-approved private-support release renewal
+
+The owner explicitly approved this renewal on October 17, 2026. The same three
+exact advisory/package/version exceptions may remain accepted until 2026-10-24T00:00:00Z. Registry checks on
+October 17 returned 404 for node-forge 1.4.1, braces 3.0.4 and sprintf-js 1.1.4.
+No additional advisory or installed version may be accepted. Complete audit
+output, rejection of unknown findings and malformed responses, expiry checks,
+and all existing authorization, native and merge gates must remain in force.
+This is temporary risk acceptance, not remediation. Remove each exception when
+a reviewed patch becomes available. Any further extension requires renewed
+explicit owner approval.

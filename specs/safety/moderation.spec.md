@@ -489,3 +489,17 @@ published Community Guidelines must be rejected before publication. Rejection
 must be neutral and editable, permitting retry. Classification must not replace
 reporting, blocking, human review or appeals. The classifier must run entirely on
 HourPaths infrastructure.
+
+## Administrator attention (October 17, 2026)
+
+New reports and appeals must create private in-app notifications for active
+platform administrators in the same transaction that accepts the submission.
+Retries must not duplicate notices. Notice text must not include report evidence,
+reporter identity or appeal text. Opening a notice must check current platform
+administration and SpiceDB authorization, audit the read, and mark only that
+administrator's notice read. A revoked or suspended administrator must lose
+access. The private record may display the report reason/explanation or appeal
+explanation and existing decision reason; this does not add enforcement actions
+or change the existing operator review process. Retention of the underlying
+record must remove its notices. See [private support](../support/private-support.spec.md)
+for the shared platform-admin grant.
