@@ -18,14 +18,74 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
+## Current delivery — Live Activity Stop and provider photo
+
+[PR #201](https://github.com/elsell/hourpaths/pull/201) fixes a reproduced native
+Stop rejection: a history or synchronization update could advance the ledger
+revision while the displayed timer remained the same. Stop now reads the current
+ledger under the native SQLite write lock and accepts an older display revision
+only for the exact same owner, Path and running timer. Future revisions,
+replacement timers, unavailable Paths and replay remain rejected; Start retains
+its strict revision requirement. Shared action tests and the real macOS
+SQLite/JavaScriptCore harness cover an intervening history update and its
+preservation. These checks do not establish physical-device button dispatch.
+
+All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/39030990771)
+and [main checks](https://github.com/elsell/hourpaths/actions/runs/39031931089) passed.
+[Release v0.64.1](https://github.com/elsell/hourpaths/releases/tag/v0.64.1) completed
+signed iOS upload and release-note publication in
+[run 39032803137](https://github.com/elsell/hourpaths/actions/runs/39032803137).
+TestFlight **0.64.1 (581)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
+the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/39034012774)).
+Google Play internal **554** committed in successful
+[run 39034005940](https://github.com/elsell/hourpaths/actions/runs/39034005940).
+This receipt satisfies the owner-approved Play Console verification waiver.
+The owner has been asked to verify Stop and saved elapsed time on this exact
+build. No successful device result has been received; area 6 remains open.
+
+[PR #202](https://github.com/elsell/hourpaths/pull/202) implements the approved
+automatic provider-photo import. Verified OIDC picture claims are private
+provisional-account data. A bounded, IP-pinned HTTPS fetch refuses redirects and
+internal destinations; the existing image processor and audited revision-checked
+picture write normalize and save the image. Activation clears the source and
+succeeds even when optional import fails. Later sign-ins preserve removal or
+replacement. The existing optional photo screen exposes both controls.
+
+All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/39032606788)
+and [main checks](https://github.com/elsell/hourpaths/actions/runs/39033446375) passed.
+Signed-claim, real TLS, application and real PostgreSQL tests cover malformed
+claims, unsafe retrieval, activation, source cleanup, image writes, conflicts and
+audit rollback. Browser interaction at 390px and the checksum-identical native
+photo components on Android at 160% text size verified imported-image display,
+removal, replacement preview/save and onboarding completion. These controlled
+checks do not establish real-provider or physical-iPhone acceptance.
+
+[Release v0.65.0](https://github.com/elsell/hourpaths/releases/tag/v0.65.0) published
+API/web source `5aed4b7a9b1311f71cc4f20a69c29bc94eb718ea`. GitOps
+`141f6024f6c64cb2d5b3dc49b7f846357814ae4e` is applied with exact running image
+digests, ready API/web pods, Flux Ready/Healthy, matching retention image and
+public HTTP availability. A read-only production check confirmed clean migration
+104, the validated provisional-only source constraint and enabled lifecycle
+clearing trigger.
+
+TestFlight **0.65.0 (583)** is VALID, nonexpired, IN_BETA_TESTING and assigned to
+the internal group ([Apple verification](https://github.com/elsell/hourpaths/actions/runs/39035546546)).
+The [release workflow](https://github.com/elsell/hourpaths/actions/runs/39034217110)
+completed signed upload and release-note publication. This build also includes
+the Stop correction from PR #201. Android v0.65.0 publication remains pending.
+
+External backup-retention verification remains temporarily deferred by the owner,
+not completed or guaranteed. This delivery does not close any of the eleven
+remaining acceptance areas; the original requirements below remain intact.
+
 ## Guided onboarding delivery — October 17
 
 [PR #199](https://github.com/elsell/hourpaths/pull/199) replaces the stacked setup
 form with focused identity, preferences and policy-review steps on Studio and
 mobile. Profiles initially select the approved social visibility. Successful
 activation opens an optional local-photo task with a visible Skip action; returning
-accounts proceed directly Home. Automatic provider-photo import with remove/replace was approved on October 17
-and remains to be implemented after the active Live Activity Stop fix.
+accounts proceed directly Home. Automatic provider-photo import with remove/replace shipped to the API in PR #202,
+with current evidence above.
 
 All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/39007032335)
 and [main checks](https://github.com/elsell/hourpaths/actions/runs/39007971250) passed.
@@ -281,11 +341,11 @@ it does not close an area merely because a build is available.
 | Area | Work or evidence still needed |
 | --- | --- |
 | 2 — Offline | Signed-device restart, reconnect, account replacement and conflict acceptance; PR #161 publication is verified on both stores. |
-| 3 — Deletion | Physical-device deletion/recovery and applicable external backup inventory/expiry. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
+| 3 — Deletion | Physical-device deletion/recovery. External backup inventory/expiry verification is temporarily deferred by the owner. Encrypted restore and authorization replay already passed; no identifying Grafana ingestion has been established. |
 | 4 — Identities | Real Google/Apple linking, unlinking and dual-provider recovery on signed clients. |
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
-| 6 — Native timers | PR #193 is available in TestFlight 0.61.7 (557), with prior runtime fixes, controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
-| 7 — Profiles | Implement approved automatic provider-picture import with remove/replace; signed-device profile/image/privacy acceptance. |
+| 6 — Native timers | PR #201 is included in current TestFlight 0.65.0 (583), with prior runtime fixes, controls and APNs retained. Verify Stop and saved elapsed time on this build; then Start, background period refresh and signed-device multi-timer/lifecycle behavior. A successful retest has not yet been received. |
+| 7 — Profiles | Automatic provider-picture import with remove/replace is implemented and deployed in PR #202. Real-provider import and signed-device profile/image/privacy acceptance remain. |
 | 8 — Preferences | Public policy documents and version activation are verified in v0.63.0; support is deployed in v0.62.0. Guided onboarding is implemented and published across clients above; signed-device week-start, policy, quiet-period and onboarding acceptance remain. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
@@ -739,8 +799,8 @@ remaining acceptance criteria.
 
 ## October 17 owner follow-up
 
-Live Activity Stop still fails on the owner’s current build; native control
-acceptance remains open and is the active implementation priority. Automatic
-provider-photo import with removal/replacement is now approved. External backup
+The owner reported Live Activity Stop failure. PR #201 is now available for
+retest as described above; native control acceptance remains open. Automatic
+provider-photo import with removal/replacement is implemented in PR #202. External backup
 retention verification is temporarily deferred at the owner’s request; it must
 not be represented as completed. Account deletion and other acceptance stay open.
