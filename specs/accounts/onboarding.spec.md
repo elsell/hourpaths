@@ -60,22 +60,43 @@ successful provider/OIDC sign-in.
 - Successful confirmation must complete application-account creation and take
   the user into the application.
 
-## Native presentation and completion
+## Guided presentation and completion
 
-- Native onboarding must present one compact, scrollable profile-confirmation
-  screen outside the authenticated primary-tab shell.
-- The screen must use a clear task order: a concise introduction, the private
-  provider account reference, editable application-profile information, policy
-  and age review, and one primary completion action. Visual grouping must not
-  combine private account-reference information with public profile fields.
+- Web and native onboarding must use a short, polished step-by-step flow rather
+  than one form containing every field and acknowledgement. Native onboarding
+  must remain outside the authenticated primary-tab shell.
+- The flow must separate profile identity, privacy/preferences, age/policy review,
+  and optional photo into focused tasks. The optional photo task follows
+  successful account confirmation and precedes Home, reusing the active-account
+  image-processing and upload boundary. It must show the current step and
+  provide a clear primary action and a way to return to earlier steps without
+  losing edits. Steps must share presentation primitives and spacing with the
+  rest of their client rather than introduce one-off controls.
+- Profile identity must begin with a concise introduction and editable display
+  name and username. Private provider account information must remain visually
+  separate and subordinate to public profile fields.
+- The photo prompt must appear during initial setup, be clearly optional and
+  provide a visible Skip action. Skipping must not prevent account creation;
+  upload failure must preserve a way to skip or retry without reactivating the
+  account. Back navigation after activation must not return to account creation. The provider-picture
+  import behavior remains an open question below and must not be inferred.
+- Profile visibility must initially select the owner-approved social/public
+  option, explain its meaning and allow the person to choose private before
+  final confirmation. Device-derived time zone and week start remain editable
+  under the existing preference rules.
+- Required acknowledgements must be confined to the final review task and must
+  remain explicit. Merely visiting a step or opening a policy must not accept it.
+  Only final confirmation may activate the account. Back navigation must not
+  mutate the server or clear same-account edits.
 - A provider email must be visibly identified as private, read-only account
   information and must remain visually subordinate to the editable profile
   fields.
 - Editable fields, policy resources, acknowledgements, and the completion action
   must remain text-labeled; required meaning or operation must not depend on an
   icon alone.
-- The native screen must provide an explicit username-review control even when
-  the username was pre-populated. Editing the username must clear that review;
+- Continuing from the profile-identity step must explicitly confirm the visible
+  username, including a pre-populated suggestion, without a separate review
+  toggle. Editing the username must clear that review;
   retryable activation failures and policy refreshes must preserve it for the
   same incomplete account, while sign-out or session replacement must not carry
   it into another account's onboarding draft.
@@ -110,9 +131,10 @@ successful provider/OIDC sign-in.
   must never submit or apply stale onboarding edits against that Home credential.
 - A validation or activation failure must preserve the user's editable values,
   identify an affected field when applicable, and leave a visible retry path.
-- Successful confirmation must replace onboarding directly with the
-  authoritative activated Home destination without briefly exposing signed-out
-  content or authenticated primary tabs beneath onboarding.
+- Successful confirmation must adopt the authoritative activated account before
+  presenting optional photo setup. Completing or skipping that task must open
+  Home without briefly exposing signed-out content or primary tabs beneath
+  setup. It must not repeat account activation.
 
 ## Leaving before confirmation
 
@@ -131,3 +153,31 @@ successful provider/OIDC sign-in.
   unchanged provider profile data on every sign-in.
 - A returning user must be able to edit their application profile separately
   from sign-in.
+
+## Guided-flow acceptance
+
+1. A new user reviews identity and the initially social profile setting, then
+   explicitly completes age/policy review before the single activation request.
+   The user can add a photo or skip directly to Home without another activation.
+2. Back and forward navigation preserve edits. An invalid name or username
+   prevents advancing with field-specific guidance; a server username conflict
+   returns to identity without clearing other completed input.
+3. Policy changes invalidate stale acknowledgements and return to review while
+   preserving identity edits. Sign-out or account replacement discards the prior
+   account's step state and draft.
+4. Keyboard, enlarged text and screen-reader navigation keep every action
+   reachable; optional photo failure does not trap the person in setup.
+5. Activation, Home loading and retry retain the existing session-operation
+   ownership and mutation guards; changing presentation must not bypass them.
+
+The web photo task uses the authenticated `/studio/setup/photo` destination.
+The browser navigation adapter must admit only that fixed internal path; it must
+not accept a caller-supplied redirect URL. Existing-account restoration must
+continue to Home without replaying photo setup.
+
+## Open photo decision
+
+- When OIDC supplies a picture, should it be retained only after an explicit
+  Use this photo choice, or imported by default unless removed? The proposed
+  explicit-choice behavior makes Skip leave no picture. Await the owner's
+  answer before implementing provider-photo persistence.

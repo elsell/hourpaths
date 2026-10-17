@@ -92,8 +92,11 @@ Only decisions required by the current acceptance outcome block ACCT-01. A
 decision that governs optional later lifecycle maintenance must not expand or
 delay the active successful-account-creation slice.
 
-- The owner approved a social profile by default. Reconcile onboarding with
-  that decision; choosing the default is not an outstanding product question.
+- The active onboarding slice implements the approved social default and guided
+  identity, preferences, consent, and optional photo flow. Web interaction checks
+  cover back navigation, retained edits, explicit consent, and photo handoff.
+  Native device acceptance and release remain open; provider-photo import is
+  still a separate unsettled decision.
 - Public policy publication and private support are delivered. Physical-device
   policy reacceptance and admin inbox acceptance remain verification work, not
   unresolved product decisions.

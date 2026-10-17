@@ -197,6 +197,7 @@ import { HomeArrangementView, type HomeArrangementCollection } from '../src/ui/h
 import { organizeHomePaths, pinHomePath, reorderVisibleHomePaths, unpinHomePath, type HomeFilter, type HomePath, type HomePreferences } from '../src/ui/home-organization';
 import { homeIntervalProgress } from '../src/ui/home-path-presentation';
 import { OnboardingForm } from '../src/ui/onboarding-form';
+import { OnboardingPhoto } from '../src/ui/onboarding-photo';
 import { SignedOutScreen } from '../src/ui/signed-out-screen';
 import { ActionButton, mobileShellStyles as styles, NativeSheet, SectionHeading, StatusBanner, ThemedText as Text } from '../src/ui/primitives';
 import { TimerControl } from '../src/ui/timer-control';
@@ -676,8 +677,14 @@ export function HomeScreen() {
   const [activatingOnboarding, setActivatingOnboarding] = useState(false);
   const [onboardingHomeRecovery, setOnboardingHomeRecovery] = useState<OnboardingHomeRecovery | null>(null);
   const [homeRecovery, setHomeRecovery] = useState<HomeRecovery | null>(null);
+  const onboardingPhotoPending = useRef(false);
+  const [onboardingPhotoOwner, setOnboardingPhotoOwner] = useState<string | null>(null);
   const onboardingActivations = useRef(createOnboardingActivationOwner()).current;
-  function invalidateOnboardingActivation() {
+  function invalidateOnboardingActivation(preservePhoto = false) {
+    if (!preservePhoto) {
+      onboardingPhotoPending.current = false;
+      setOnboardingPhotoOwner(null);
+    }
     onboardingActivations.invalidate();
     setActivatingOnboarding(false);
     setOnboardingHomeRecovery(null);
@@ -1826,7 +1833,7 @@ export function HomeScreen() {
         if (onboardingActivations.ownedBy(ticket) || onboardingHomeRecovery?.sessionToken === credential.token) {
           setOnboardingHomeRecovery({ sessionToken: credential.token, status: 'loading' });
         } else {
-          invalidateOnboardingActivation();
+          invalidateOnboardingActivation(retainsOwnedHome);
         }
         if (credential.nextAction === 'home' && !retainsOwnedHome) {
           homeProjectionSessionToken.current = null;
@@ -2005,6 +2012,10 @@ export function HomeScreen() {
       ),
       online: (nextDestination) => {
         if (nextDestination.kind === 'home') {
+          if (onboardingPhotoPending.current) {
+            onboardingPhotoPending.current = false;
+            setOnboardingPhotoOwner(nextDestination.profile.id);
+          }
           setOnboardingHomeRecovery(null);
           homeProjectionSessionToken.current = next.token;
         } else {
@@ -3109,7 +3120,10 @@ export function HomeScreen() {
           await createSessionApiClient(apiURL, () => session.token).activateOnboarding(body),
         ),
         persist: (credential) => serializedSessionStorage.persist(credential, ticket.current),
-        adopt: (credential) => activate(credential, true, ticket, session.token),
+        adopt: (credential) => {
+          if (ticket.current()) onboardingPhotoPending.current = true;
+          return activate(credential, true, ticket, session.token);
+        },
         handleAdoptionFailure: async (cause, credential) => {
           if (!ticket.current()) return false;
           await handleSessionFailure(cause, credential, 'profile', ticket);
@@ -9705,6 +9719,15 @@ export function HomeScreen() {
           translator={i18n}
         /> : null}
     </InvitationRouteSource> : null}
+    {ownedHomeDestination && onboardingPhotoOwner === ownedHomeDestination.profile.id ? <OnboardingPhoto
+      key={socialPresentationKey}
+      i18n={i18n}
+      repository={{ read: () => profilePictureRequest(repo => repo.read()), preview: image => profilePictureRequest(repo => repo.preview(image)), save: (value, key) => profilePictureRequest(repo => repo.save(value, key)) }}
+      pick={pickProfilePicture}
+      operationId={() => Crypto.randomUUID()}
+      isCurrent={() => socialPresentationKey === `${notificationLifecycleState.current.destination?.kind === 'home' ? notificationLifecycleState.current.destination.profile.id : 'unavailable'}:${socialPresentationGeneration.current}`}
+      onFinish={() => setOnboardingPhotoOwner(null)}
+    /> : null}
     {ready && destination?.kind === 'onboarding' ? <OnboardingForm
       busy={activatingOnboarding || onboardingHomeRecovery !== null}
       canSubmit={canCompleteMobileOnboarding(destination.profile) && errorKey !== 'onboarding.usernameUnavailable'}

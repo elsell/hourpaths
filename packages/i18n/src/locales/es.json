@@ -5374,5 +5374,17 @@
   "publicPolicy.guidelines.authenticity.title": "Participa con honestidad",
   "publicPolicy.guidelines.authenticity.body": "No suplantes a otras personas, realices estafas, envíes spam ni manipules el servicio. Comparte solo contenido que tengas derecho a usar. No intentes acceder a cuentas o datos privados ajenos, eludir restricciones ni interrumpir HourPaths.",
   "publicPolicy.guidelines.response.title": "Denuncia, bloquea y apela",
-  "publicPolicy.guidelines.response.body": "Usa los controles de denuncia de la aplicación para denunciar a un usuario o contenido, y los controles de bloqueo para limitar interacciones no deseadas. Si no puedes acceder a ellos, contacta con asistencia privada. Los operadores autorizados revisan las denuncias; denunciar no garantiza un resultado concreto. Podemos eliminar contenido o restringir, suspender o prohibir cuentas. Los usuarios afectados reciben notificaciones privadas de las medidas y pueden usar el proceso de apelación disponible, normalmente dentro de 30 días. No envíes denuncias que sepas que son falsas. Si existe un peligro inmediato, contacta con los servicios de emergencia locales en lugar de esperar una respuesta de la aplicación."
+  "publicPolicy.guidelines.response.body": "Usa los controles de denuncia de la aplicación para denunciar a un usuario o contenido, y los controles de bloqueo para limitar interacciones no deseadas. Si no puedes acceder a ellos, contacta con asistencia privada. Los operadores autorizados revisan las denuncias; denunciar no garantiza un resultado concreto. Podemos eliminar contenido o restringir, suspender o prohibir cuentas. Los usuarios afectados reciben notificaciones privadas de las medidas y pueden usar el proceso de apelación disponible, normalmente dentro de 30 días. No envíes denuncias que sepas que son falsas. Si existe un peligro inmediato, contacta con los servicios de emergencia locales en lugar de esperar una respuesta de la aplicación.",
+  "onboarding.stepProgress": "Paso {{current}} de {{total}}",
+  "onboarding.identityHeading": "Siéntete como en casa",
+  "onboarding.identityBody": "Elige el nombre que verán los demás y tu nombre de usuario único.",
+  "onboarding.photoHeading": "Dale tu toque personal",
+  "onboarding.photoBody": "Una foto ayuda a que te reconozcan. Puedes añadirla o cambiarla más adelante.",
+  "onboarding.preferencesHeading": "Elige cómo conectar",
+  "onboarding.preferencesBody": "Empieza con un perfil social o mantén tu perfil privado. Puedes cambiarlo más adelante.",
+  "onboarding.reviewHeading": "Un último paso",
+  "onboarding.reviewBody": "Revisa las políticas y confirma que tienes la edad necesaria para unirte.",
+  "onboarding.continueAction": "Continuar",
+  "onboarding.skipPhoto": "Omitir por ahora",
+  "onboarding.backAction": "Atrás"
 }

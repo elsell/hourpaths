@@ -153,7 +153,7 @@ async function reviewOnboarding(page) {
   if (response.status() !== 200) {
     throw new Error(`authenticated web onboarding returned ${response.status()}: ${await response.text()}`)
   }
-  await page.getByRole('heading', { name: 'Configura tu perfil', exact: true }).waitFor()
+  await page.getByRole('heading', { name: spanish['onboarding.identityHeading'], exact: true }).waitFor()
   const privateEmail = page.getByRole('textbox', { name: 'Correo del proveedor', exact: true })
   if (await privateEmail.inputValue() !== email) {
     throw new Error('web onboarding did not preserve the private provider email seed')

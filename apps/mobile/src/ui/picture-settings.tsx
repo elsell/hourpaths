@@ -8,8 +8,8 @@ import { NativeButton } from './native-button';
 import { SocialProfileAvatar } from './social-profile-avatar';
 import { mobileTheme } from './tokens';
 
-export function PictureSettings({ repository, pick, operationId, isCurrent, i18n }: {
-  repository: ProfilePictureRepository; pick(): Promise<string | null>; operationId(): string; isCurrent(): boolean; i18n: Translator;
+export function PictureSettings({ repository, pick, operationId, isCurrent, i18n, onSaved }: {
+  repository: ProfilePictureRepository; pick(): Promise<string | null>; operationId(): string; isCurrent(): boolean; i18n: Translator; onSaved?(): void;
 }) {
   const [saved, setSaved] = useState<ProfilePicture | null>(null);
   const [draft, setDraft] = useState<{ image: string; preview: PicturePreview } | null>(null);
@@ -51,7 +51,7 @@ export function PictureSettings({ repository, pick, operationId, isCurrent, i18n
     admission.current = false;
     if (!active()) return;
     setBusy(false);
-    if (result.kind === 'applied') { setSaved(result.picture); setDraft(null); setNotice(remove ? 'removed' : 'saved'); }
+    if (result.kind === 'applied') { setSaved(result.picture); setDraft(null); setNotice(remove ? 'removed' : 'saved'); if (!remove) onSaved?.(); }
     else if (result.kind === 'failed') fail(result.cause);
   }
   return <SettingsSection title={i18n.t('picture.heading')} footer={i18n.t('picture.hint')}><View style={styles.form}>

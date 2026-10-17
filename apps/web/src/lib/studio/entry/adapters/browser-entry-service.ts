@@ -151,10 +151,11 @@ export function browserEntryService(config: ClientRuntimeConfig, now: () => numb
     async begin() { if (disposed) return; try { await beginApplicationSignIn(config); } catch { throw new EntryFailure('signIn'); } },
     async signOut() { const previous = same() ? current : null; cancelTicket(); if (previous) await revokeApplicationSession(config, previous); current = null; },
     current: same, expire,
-    navigate(destination) {
+    navigate(destination, options) {
       if (disposed) return;
       if (destination !== 'entry') authorized();
       if (linkResult && destination === 'home') { replaceProviderSettingsLocation(linkResult); return; }
+      if (destination === 'home' && options?.onboardingPhoto) { replaceApplicationLocation('/studio/setup/photo'); return; }
       replaceApplicationLocation(destination === 'home' || destination === 'entry' ? '/studio' : destination === 'onboarding' ? '/onboarding' : '/account-recovery');
     },
     openPolicy(url) { if (!disposed) openWebPolicyLink(url, () => { throw new EntryFailure('unavailable'); }); },

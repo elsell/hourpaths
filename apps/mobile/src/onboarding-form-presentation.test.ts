@@ -12,15 +12,11 @@ test('onboarding is a compact non-dismissible native sheet with persistent accou
   assert.match(form, /<NativeSheet/);
   assert.match(form, /compact/);
   assert.match(form, /dismissible=\{false\}/);
-  assert.match(form, /title=\{i18n\.t\('onboarding\.heading'\)\}/);
-  assert.match(
-    form,
-    /leadingAction=\{\{\s*disabled: busy && !homeRecoveryStatus,\s*label: i18n\.t\('auth\.signOut'\),\s*onPress: onSignOut,\s*\}\}/,
-  );
-  assert.match(
-    form,
-    /trailingAction=\{\{\s*disabled: busy \|\| !canSubmit,\s*label: i18n\.t\('onboarding\.completeAction'\),\s*onPress: onConfirm,\s*\}\}/,
-  );
+  assert.match(form, /title=\{i18n\.t\(heading\)\}/);
+  assert.match(form, /disabled: busy && !homeRecoveryStatus/);
+  assert.match(form, /onPress: homeRecoveryStatus \? onSignOut : back/);
+  assert.match(form, /disabled: busy \|\| !validStep/);
+  assert.match(form, /onPress: next/);
   assert.doesNotMatch(form, /<ScreenHeader/);
   assert.doesNotMatch(form, /<ActionButton[\s\S]*onPress=\{onConfirm\}/);
 });
@@ -41,7 +37,7 @@ test('onboarding fields keep controlled drafts and move focus in logical order',
   assert.match(form, /accessibilityHint=\{usernameErrorText\}/);
   assert.match(form, /accessibilityRole="alert"[\s\S]*displayNameErrorText/);
   assert.match(form, /accessibilityRole="alert"[\s\S]*usernameErrorText/);
-  assert.match(form, /label=\{i18n\.t\('onboarding\.usernameReview'\)\}[\s\S]*value=\{usernameReviewed\}/);
+  assert.match(form, /if \(step === 'identity'\) onReviewUsername\(true\)/);
 });
 
 test('onboarding remains keyboard and Dynamic Type safe without hiding draft errors', () => {
@@ -50,7 +46,7 @@ test('onboarding remains keyboard and Dynamic Type safe without hiding draft err
   assert.match(primitives, /keyboardShouldPersistTaps="handled"/);
   assert.match(form, /needsCompactVerticalLayout\(width, fontScale\)/);
   assert.match(form, /stackChoices \? styles\.stackedChoices : null/);
-  assert.match(form, /!canSubmit && !busy[\s\S]*onboarding\.requirementsPending/);
+  assert.match(form, /!validStep && !busy[\s\S]*onboarding\.requirementsPending/);
   assert.match(form, /busy \? <StatusBanner text=\{i18n\.t\('onboarding\.confirming'\)\} \/> : null/);
   assert.match(form, /\{errorText \? <StatusBanner text=\{errorText\} tone="error" \/> : null\}/);
   assert.doesNotMatch(primitives, /<Text accessibilityRole="header" numberOfLines=/);

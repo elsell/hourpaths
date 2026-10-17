@@ -932,3 +932,4 @@ export * from "./live-activity-refresh";
 export { apiSupport, SupportFailure, type SupportPort, type SupportConversation, type SupportMessage, type SupportNotice } from "./support";
 export * from './admin-attention';
 export * from './support-ticket-id';
+export { defaultOnboardingVisibility, onboardingSteps, advanceOnboardingStep, previousOnboardingStep, recoverOnboardingStep, type OnboardingStep } from './onboarding-flow';

@@ -11,7 +11,7 @@ export interface EntryService {
   signOut(): Promise<void>;
   current(): boolean;
   expire(): void;
-  navigate(destination: EntryPhase): void;
+  navigate(destination: EntryPhase, options?: { onboardingPhoto: boolean }): void;
   openPolicy(url: string): void;
   dispose(): void;
 }

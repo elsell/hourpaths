@@ -9,7 +9,7 @@ test('onboarding owns its account-exit action instead of inheriting a detached s
 
   assert.match(app, /<OnboardingForm[\s\S]*onSignOut=\{\(\) => void clearSession\(\)\}/);
   assert.match(onboarding, /onSignOut:\s*\(\) => void/);
-  assert.match(onboarding, /leadingAction=\{\{[\s\S]*auth\.signOut[\s\S]*onPress:\s*onSignOut/);
+  assert.match(onboarding, /leadingAction=\{\{[\s\S]*auth\.signOut[\s\S]*onPress:\s*homeRecoveryStatus \? onSignOut : back/);
   assert.doesNotMatch(
     app,
     /destination && destination\.kind !== 'home'[\s\S]*<ActionButton/,

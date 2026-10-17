@@ -1,5 +1,5 @@
 import { createSessionApiClient, generatedResponse, type GeneratedOperationResult, type OnboardingProfile, type SessionPath, type TimerState } from '@hourpaths/api-client';
-import { authenticatedProfileFromAPI, mergePendingInvitationPage, pathArchiveLists, pathsRequiringTimerRestore, sessionFailureFromResponse, validateSessionCredential, type PendingPathInvitation, type PendingPathInvitationState, type SessionExchangeCredential } from '@hourpaths/client-core';
+import { defaultOnboardingVisibility, authenticatedProfileFromAPI, mergePendingInvitationPage, pathArchiveLists, pathsRequiringTimerRestore, sessionFailureFromResponse, validateSessionCredential, type PendingPathInvitation, type PendingPathInvitationState, type SessionExchangeCredential } from '@hourpaths/client-core';
 import { homePreferencesFromAPI, type HomePreferenceSnapshot } from './home-preference-operation';
 import type { HomePath } from './ui/home-organization';
 
@@ -91,7 +91,7 @@ export function createMobileOnboardingDraft(
 ): MobileOnboardingDraft {
   return {
     ...profile,
-    profileVisibility: null,
+    profileVisibility: defaultOnboardingVisibility,
     timeZone: device.timeZone,
     firstDayOfWeek: device.firstDayOfWeek,
     usernameReviewed: false,
