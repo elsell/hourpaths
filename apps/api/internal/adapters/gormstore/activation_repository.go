@@ -135,7 +135,7 @@ func (s *Store) ActivateOnboarding(
 		visibility := activation.ProfileVisibility
 		updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", activation.UserID, identity.StatusProvisional).Updates(map[string]any{
 			"username": username, "display_name": activation.DisplayName, "profile_visibility": visibility,
-			"status": identity.StatusActive, "updated_at": now,
+			"status": identity.StatusActive, "updated_at": now, "provider_picture_source": "",
 		})
 		if updated.Error != nil {
 			if errors.Is(updated.Error, gorm.ErrDuplicatedKey) {

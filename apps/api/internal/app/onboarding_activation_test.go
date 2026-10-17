@@ -75,7 +75,10 @@ func TestActivateOnboardingValidatesTheExactOwnerAndAtomicallyRotatesToApplicati
 	activator := &controlledOnboardingActivator{token: "application-session", actualExpiry: actualExpiry}
 	clock := &advancingActivationClock{now: now}
 	a := App{
-		Auth:                fakeAuth{principal: ports.Principal{UserID: activation.UserID, Scopes: []string{"api:onboarding"}}},
+		Auth:             fakeAuth{principal: ports.Principal{UserID: activation.UserID, Scopes: []string{"api:onboarding"}}},
+		ProviderPictures: controlledProviderPicture{err: ports.ErrUnavailable},
+		Users:            fakeUsers{provisional: identity.User{ID: activation.UserID, Status: identity.StatusProvisional, ProviderPictureSource: "https://provider.example/photo"}},
+		PictureProcessor: controlledPictureProcessor{}, Pictures: &controlledImportPictures{revision: 1},
 		OnboardingActivator: activator, PolicyAuthority: staticPolicyAuthority{policySet: testPolicySet(versions)}, SessionTTL: time.Hour,
 		AuditRateLimiter: fakeAuditRateLimiter{}, Clock: clock,
 		CursorSigningKey: []byte("0123456789abcdef0123456789abcdef"),

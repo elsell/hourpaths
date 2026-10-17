@@ -11,5 +11,5 @@ func identityUserFromModel(user userModel) identity.User {
 	if user.ProfileVisibility != nil {
 		visibility = *user.ProfileVisibility
 	}
-	return identity.User{ID: user.ID, Email: email, DisplayName: user.DisplayName, Status: user.Status, InvitationAdmin: user.InvitationAdmin, ProfileVisibility: visibility, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt}
+	return identity.User{ProviderPictureSource: user.ProviderPictureSource, ID: user.ID, Email: email, DisplayName: user.DisplayName, Status: user.Status, InvitationAdmin: user.InvitationAdmin, ProfileVisibility: visibility, CreatedAt: user.CreatedAt, UpdatedAt: user.UpdatedAt}
 }

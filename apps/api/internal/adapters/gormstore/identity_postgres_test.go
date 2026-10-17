@@ -46,6 +46,7 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 		Subject:         newTestID(),
 		Email:           " First." + newTestID() + "@Example.COM ",
 		DisplayName:     "Provider Seed",
+		PictureURL:      "https://provider.example/photo",
 		EmailVerified:   true,
 		InvitationAdmin: false,
 	}
@@ -64,7 +65,7 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 	if created.Status != identity.StatusProvisional {
 		t.Fatalf("first identity exchange returned status %q, want %q", created.Status, identity.StatusProvisional)
 	}
-	if created.Email != normalizeEmail(claims.Email) || created.DisplayName != claims.DisplayName {
+	if created.ProviderPictureSource != claims.PictureURL || created.Email != normalizeEmail(claims.Email) || created.DisplayName != claims.DisplayName {
 		t.Fatalf("provisional profile did not preserve provider seeds: %+v", created)
 	}
 	var persisted userModel
@@ -79,12 +80,13 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 	refreshedClaims := claims
 	refreshedClaims.Email = " refreshed." + newTestID() + "@Example.COM "
 	refreshedClaims.DisplayName = "Refreshed Provider Seed"
+	refreshedClaims.PictureURL = "https://provider.example/refreshed"
 	refreshedProfile := identityMutationAudit(newTestID(), audit.UserProfileSynchronized, hintID, now.Add(time.Second))
 	refreshed, err := txStore.ResolveOrCreate(ctx, refreshedClaims, provisioned, refreshedProfile, audit.Event{}, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if refreshed.Status != identity.StatusProvisional || refreshed.Email != normalizeEmail(refreshedClaims.Email) || refreshed.DisplayName != refreshedClaims.DisplayName {
+	if refreshed.ProviderPictureSource != refreshedClaims.PictureURL || refreshed.Status != identity.StatusProvisional || refreshed.Email != normalizeEmail(refreshedClaims.Email) || refreshed.DisplayName != refreshedClaims.DisplayName {
 		t.Fatalf("repeat provisional exchange did not refresh provider seeds: %+v", refreshed)
 	}
 	assertIdentityStateCount(t, txStore, claims, userID, 1, 1)
@@ -118,7 +120,7 @@ func TestIdentityExchangeSeedsProvisionalAndPreservesAppOwnedActiveProfile(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	if returned.Status != identity.StatusActive || returned.Email != normalizeEmail(activeClaims.Email) || returned.DisplayName != activation.DisplayName || !returned.InvitationAdmin {
+	if returned.ProviderPictureSource != "" || returned.Status != identity.StatusActive || returned.Email != normalizeEmail(activeClaims.Email) || returned.DisplayName != activation.DisplayName || !returned.InvitationAdmin {
 		t.Fatalf("active profile violated provider/app ownership: %+v", returned)
 	}
 	if err := tx.Where("id = ?", userID).First(&persisted).Error; err != nil {

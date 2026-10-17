@@ -53,10 +53,10 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 			}
 			switch existing.Status {
 			case identity.StatusProvisional:
-				if !providerChanged && existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.DisplayName == claims.DisplayName && existing.InvitationAdmin == claims.InvitationAdmin {
+				if !providerChanged && existing.Email == normalizedEmail && existing.ProviderEmailVerified == providerEmailVerified && existing.DisplayName == claims.DisplayName && existing.ProviderPictureSource == claims.PictureURL && existing.InvitationAdmin == claims.InvitationAdmin {
 					return nil
 				}
-				updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", found.UserID, identity.StatusProvisional).Updates(map[string]any{"email": normalizedEmail, "provider_email_verified": providerEmailVerified, "display_name": claims.DisplayName, "invitation_admin": claims.InvitationAdmin})
+				updated := tx.Model(&userModel{}).Where("id = ? AND status = ?", found.UserID, identity.StatusProvisional).Updates(map[string]any{"email": normalizedEmail, "provider_email_verified": providerEmailVerified, "display_name": claims.DisplayName, "provider_picture_source": claims.PictureURL, "invitation_admin": claims.InvitationAdmin})
 				if updated.Error != nil {
 					return updated.Error
 				}
@@ -103,7 +103,7 @@ func (s *Store) ResolveOrCreate(ctx context.Context, claims ports.Claims, event,
 		profileEvent = auditForResolvedAccount(profileEvent, userID)
 		invitationEvent = auditForResolvedAccount(invitationEvent, userID)
 		providerEmail := trustedProviderEmail(claims)
-		u := userModel{ID: userID, Email: providerEmail, ProviderEmailVerified: providerEmail != "", DisplayName: claims.DisplayName, Status: identity.StatusProvisional, InvitationAdmin: claims.InvitationAdmin}
+		u := userModel{ProviderPictureSource: claims.PictureURL, ID: userID, Email: providerEmail, ProviderEmailVerified: providerEmail != "", DisplayName: claims.DisplayName, Status: identity.StatusProvisional, InvitationAdmin: claims.InvitationAdmin}
 		createdUser := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&u)
 		if createdUser.Error != nil {
 			return createdUser.Error

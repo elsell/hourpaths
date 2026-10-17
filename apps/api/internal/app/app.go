@@ -46,6 +46,7 @@ type App struct {
 	UnavailablePeriods               UnavailablePeriodRepository
 	Pictures                         PictureRepository
 	PictureProcessor                 ports.ProfilePictureProcessor
+	ProviderPictures                 ports.ProviderPictureRetriever
 	PictureRateLimiter               ports.AuditRateLimiter
 	NewPictureID                     func() string
 	PictureLocation                  func(string) string

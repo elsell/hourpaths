@@ -7,6 +7,7 @@ import (
 
 type User struct {
 	ID, Email, DisplayName string
+	ProviderPictureSource  string
 	Status                 Status
 	InvitationAdmin        bool
 	ProfileVisibility      ProfileVisibility

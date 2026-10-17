@@ -106,6 +106,7 @@ func (a *Verifier) Verify(ctx context.Context, serialized string) (ports.Claims,
 	}
 	var raw struct {
 		Email, Name     string
+		Picture         json.RawMessage `json:"picture"`
 		EmailVerified   bool            `json:"email_verified"`
 		AuthorizedParty string          `json:"azp"`
 		Identities      json.RawMessage `json:"identities"`
@@ -125,7 +126,12 @@ func (a *Verifier) Verify(ctx context.Context, serialized string) (ports.Claims,
 	if token.Subject == "" {
 		return ports.Claims{}, errors.New("missing subject")
 	}
-	return ports.Claims{Issuer: token.Issuer, Subject: token.Subject, Email: raw.Email, DisplayName: raw.Name, EmailVerified: raw.EmailVerified, Provider: verifiedProvider(raw.Identities), Nonce: raw.Nonce}, nil
+	var picture string
+	// An absent/malformed optional picture must never invalidate sign-in.
+	if json.Unmarshal(raw.Picture, &picture) != nil || len(picture) > 4096 {
+		picture = ""
+	}
+	return ports.Claims{PictureURL: picture, Issuer: token.Issuer, Subject: token.Subject, Email: raw.Email, DisplayName: raw.Name, EmailVerified: raw.EmailVerified, Provider: verifiedProvider(raw.Identities), Nonce: raw.Nonce}, nil
 }
 func contains(values []string, target string) bool {
 	for _, value := range values {

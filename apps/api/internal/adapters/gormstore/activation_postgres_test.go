@@ -23,6 +23,9 @@ func TestActivateOnboardingCommitsAggregateCredentialRotationAndAuditsAtomically
 	siblingHash := activationHash(2)
 	absoluteExpiry := now.Add(4 * time.Hour)
 	seedProvisionalActivationUser(t, tx, userID, oldHash, siblingHash, now, absoluteExpiry)
+	if err := tx.Model(&userModel{}).Where("id = ?", userID).Update("provider_picture_source", "https://example.com/provider-photo").Error; err != nil {
+		t.Fatal(err)
+	}
 
 	activation := validActivation(userID, "timekeeper", now)
 	newRecord := ports.SessionRecord{TokenHash: activationHash(3), UserID: userID, Scopes: []string{"api:user"}, ExpiresAt: now.Add(8 * time.Hour)}
@@ -37,15 +40,16 @@ func TestActivateOnboardingCommitsAggregateCredentialRotationAndAuditsAtomically
 	}
 
 	var user struct {
-		Status            identity.Status
-		Username          *string
-		DisplayName       string
-		ProfileVisibility *identity.ProfileVisibility
+		Status                identity.Status
+		ProviderPictureSource string
+		Username              *string
+		DisplayName           string
+		ProfileVisibility     *identity.ProfileVisibility
 	}
 	if err := tx.Table("user_models").Where("id = ?", userID).Take(&user).Error; err != nil {
 		t.Fatal(err)
 	}
-	if user.Status != identity.StatusActive || user.Username == nil || *user.Username != activation.Username || user.DisplayName != activation.DisplayName || user.ProfileVisibility == nil || *user.ProfileVisibility != activation.ProfileVisibility {
+	if user.ProviderPictureSource != "" || user.Status != identity.StatusActive || user.Username == nil || *user.Username != activation.Username || user.DisplayName != activation.DisplayName || user.ProfileVisibility == nil || *user.ProfileVisibility != activation.ProfileVisibility {
 		t.Fatalf("activated user = %+v", user)
 	}
 
