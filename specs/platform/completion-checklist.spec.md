@@ -18,7 +18,36 @@ Existing Studio tracking, social/feed/profile viewing, global Stats, settings,
 lifecycle/history, sharing/membership/ownership, blocking and People are credited
 and retained. Release evidence below is historical unless identified as current.
 
-## Current delivery — October 17
+## Current policy delivery — October 17
+
+[PR #197](https://github.com/elsell/hourpaths/pull/197) publishes complete Terms,
+Privacy Policy and Community Guidelines through a shared, localized document
+layout. All five [candidate checks](https://github.com/elsell/hourpaths/actions/runs/39002833917)
+and [main checks](https://github.com/elsell/hourpaths/actions/runs/39003556999) passed.
+[Release v0.63.0](https://github.com/elsell/hourpaths/releases/tag/v0.63.0) published
+scanned, attested API/web images from `e9289cb80760bdbec05fcc211d66f8938a6cfb4b`.
+GitOps `927fab6fb8214dcfc7fc73a028fa6ddb96a80a0a` deployed those exact images;
+ready pods, matching source annotations and healthy Flux were verified.
+
+All three public URLs returned complete documents in English and Spanish before
+activation. Production browser inspection verified the readable Privacy Policy
+layout. Local HTTP checks also covered rendering without JavaScript and unknown
+paths returning 404; narrow-screen browser verification passed. The documents use
+the private support form and do not disclose private backup arrangements.
+
+GitOps `0cf28f47edf3fd834aeda4398ae1083821565de3` then activated policy revision
+**2**, version **public-2026-10-17**. At 05:05 UTC, the publisher init completed,
+the durable policy authority matched the published version and timestamp, all
+six localized public responses passed, and exact API/web images and Flux
+Ready/Healthy were verified. Existing policy reacceptance and timer-stop,
+export and deletion exceptions remain in place. No real user's acceptance was
+performed on their behalf. Signed-device reacceptance remains unverified.
+
+Public policy implementation, publication and activation are complete. Native
+v0.63.0 distribution is tracked separately from this verified web/configuration
+delivery. The eleven broader acceptance areas remain open.
+
+## Support delivery — October 17
 
 [PR #195](https://github.com/elsell/hourpaths/pull/195) adds private support with
 ULID references and separate recovery credentials, an operator inbox and replies,
@@ -53,7 +82,7 @@ The publication receipt satisfies delivery under the owner's October 14 Play
 Console verification waiver. The owner's physical-iPhone admin inbox check
 is pending. The prioritized support/moderation/admin implementation and release
 are delivered; physical-device acceptance remains explicitly uncredited. Public
-policy pages are the next active implementation slice. All eleven broader
+policy pages were the next implementation slice and are delivered above. All eleven broader
 acceptance areas remain open.
 
 ## Prior delivery — October 15
@@ -100,9 +129,8 @@ also require device evidence. Onboarding redesign remains on hold. All eleven
 remaining acceptance areas stay open.
 
 At this historical checkpoint the policy and support pages returned HTTP 404.
-The October 17 delivery above replaces the missing support page. Terms, Privacy
-Policy and Community Guidelines publication remain open; placeholder text is not
-legal-policy publication.
+The October 17 deliveries above replace the missing support and policy pages.
+This historical 404 result no longer describes production.
 
 ## Prior delivery and remaining work — October 13
 
@@ -225,7 +253,7 @@ it does not close an area merely because a build is available.
 | 5 — Notifications | Physical push delivery, foreground/disabled-channel behavior, deduplication and access-loss acceptance. |
 | 6 — Native timers | PR #193 is available in TestFlight 0.61.7 (557), with prior runtime fixes, controls and APNs retained. Retest missing-content and inert-Stop reports on this build; then verify Start, saved elapsed time, background period refresh and signed-device multi-timer/lifecycle behavior. |
 | 7 — Profiles | Settle provider-picture onboarding import behavior; signed-device profile/image/privacy acceptance. |
-| 8 — Preferences | Publish Terms, Privacy and Community Guidelines; support is deployed in v0.62.0. Signed-device week-start, policy and quiet-period acceptance and approved onboarding redesign remain. |
+| 8 — Preferences | Public policy documents and version activation are verified in v0.63.0; support is deployed in v0.62.0. Signed-device week-start, policy and quiet-period acceptance and approved onboarding redesign remain. |
 | 9 — Reminders | Physical reminder/timer-health delivery and final quiet-period suppression acceptance. |
 | 10 — Safety | Signed-device moderation/appeals acceptance remains. Approved Profile field removal shipped in PR #173/v0.59.0, preserving the profile and history; production and TestFlight availability are verified, and Play publication is accepted under the October 14 verification waiver. Path-name removal, account restrictions, comment/nudge/feed removal and the approved no-op port are implemented. |
 | 11 — Analytics | Device/accessibility acceptance for PR #163 (signed mobile distribution verified); production deployment is credited above. |

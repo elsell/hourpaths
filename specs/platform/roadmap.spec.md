@@ -7,22 +7,26 @@ full approved audit scope: **11 of 13 acceptance areas remain open**. Studio
 legacy journeys and the Studio cutover are closed; new cross-client behavior and
 physical-device acceptance remain in their owning areas. Widgets remain excluded.
 
-The current verified API/web release is [v0.62.0](https://github.com/elsell/hourpaths/releases/tag/v0.62.0),
-source `b3ca03d`, deployed through GitOps `f6a8ca3`. Private support, support and
-moderation administrator notifications, and the owner-requested admin activation
-are deployed. TestFlight 0.62.0 (564) is available internally with verified notes.
-Google Play internal build 537 is published with release notes. Physical-device
-admin inbox acceptance remains pending and must not be credited without the owner's
-result. Implementation and release of the prioritized support/admin/moderation
-slice are complete. The next active implementation slice is public policy pages;
-its contact route is the now-delivered private support form. See the checklist
-for exact evidence.
+The current verified API/web release is [v0.63.0](https://github.com/elsell/hourpaths/releases/tag/v0.63.0),
+source `e9289cb`, deployed through GitOps `927fab6`. Terms, Privacy Policy and
+Community Guidelines are public in English and Spanish. After verifying the
+pages, GitOps `0cf28f4` activated revision 2, version `public-2026-10-17`;
+matching durable authority and healthy production rollout are verified.
+Public policy implementation and production delivery are complete. Signed-device
+policy reacceptance remains open; no user's acceptance is inferred or performed.
+
+Private support, support/moderation administrator notifications and the owner's
+admin activation remain deployed. TestFlight 0.62.0 (564) and Google Play internal
+537 are the latest verified mobile availability evidence recorded here, with
+release notes. The owner's device inbox result remains pending. Native v0.63.0
+distribution is separate from verified public policy delivery. See the checklist
+for exact evidence and remaining acceptance criteria.
 
 Prior safety and native timer implementations remain credited. The unresolved
 Live Activity Stop device result is not closed by build availability. Onboarding
 must be redesigned as a polished step-by-step flow with a subtle, skippable photo
 prompt; the owner has already approved that direction, so it is not an unanswered
-product decision. Public policy drafting/publication remains open. Public-text
+product decision. Public policy drafting/publication is delivered. Public-text
 classification uses the owner-approved no-op port for this phase.
 
 Only one product implementation slice may be active. Preserve completed
@@ -90,9 +94,9 @@ delay the active successful-account-creation slice.
 
 - The owner approved a social profile by default. Reconcile onboarding with
   that decision; choosing the default is not an outstanding product question.
-- Terms, Privacy and Community Guidelines publication remains incomplete.
-  The private support form and administrator notifications are deployed in
-  v0.62.0; support is no longer a missing destination.
+- Public policy publication and private support are delivered. Physical-device
+  policy reacceptance and admin inbox acceptance remain verification work, not
+  unresolved product decisions.
 - The specifications require an OIDC profile picture to pre-populate onboarding
   and require accepted images to be safely re-encoded, but do not decide
   whether an untouched provider picture is imported by default, imported only

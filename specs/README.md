@@ -106,4 +106,5 @@ Profile moderation: owner approved removing offending fields while preserving th
 - [Private support and administrator notifications](support/private-support.spec.md) — implemented in v0.62.0; production/iOS/Android delivery verified; device acceptance pending.
 
 Public Terms, Privacy and Community Guidelines: server-rendered English/Spanish
-documents are in implementation; publication/version activation is not yet credited.
+documents are deployed in v0.63.0; revision 2 / `public-2026-10-17` activation
+and public availability are verified. Signed-device reacceptance remains open.
