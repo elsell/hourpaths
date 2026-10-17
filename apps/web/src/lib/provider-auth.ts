@@ -2,7 +2,7 @@ import { consumeAccountDeletionEntry, prepareAccountDeletionSignIn } from './acc
 import { providerSignInScopes, validIdentityLinkIntent, validAccountRecoveryIntent, type AccountRecoveryPorts, type AccountRecoveryIntent, type ProviderIdentityPorts, type IdentityLinkIntent } from '@hourpaths/client-core';
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
 
-export type ApplicationDestination = '/' | '/studio' | '/onboarding' | '/account-recovery';
+export type ApplicationDestination = '/' | '/studio' | '/studio/setup/photo' | '/onboarding' | '/account-recovery';
 
 export function replaceApplicationLocation(destination: ApplicationDestination): void {
   switch (destination) {
@@ -11,6 +11,7 @@ export function replaceApplicationLocation(destination: ApplicationDestination):
       if (consumeAccountDeletionEntry(window.sessionStorage)) window.location.replace('/studio/delete-account');
       else window.location.replace('/studio');
       break;
+    case '/studio/setup/photo': window.location.replace('/studio/setup/photo'); break;
     case '/onboarding': window.location.replace('/onboarding'); break;
     case '/account-recovery': window.location.replace('/account-recovery'); break;
   }

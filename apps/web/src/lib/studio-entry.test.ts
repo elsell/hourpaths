@@ -12,6 +12,7 @@ function fixture() {
   let mode = 'onboarding' as 'onboarding' | 'recovery' | 'home' | 'entry';
   let active = true, reviews = 0, saves = 0, policyChanged = false;
   const navigation: string[] = [];
+  const photoPrompts: boolean[] = [];
   const service: EntryService = {
     recover: async () => {},
     async restore() { return { kind: mode, expiresAt: mode === 'entry' ? undefined : 100 }; },
@@ -24,9 +25,9 @@ function fixture() {
     async decline() { mode = 'onboarding'; return service.restore(); },
     async begin() {}, async signOut() { active = false; mode = 'entry'; },
     current() { return active; }, expire() { active = false; mode = 'entry'; },
-    navigate(destination) { navigation.push(destination); }, openPolicy() {}, dispose() { active = false; },
+    navigate(destination, options) { navigation.push(destination); photoPrompts.push(options?.onboardingPhoto === true); }, openPolicy() {}, dispose() { active = false; },
   };
-  return { service, navigation, setMode(value: typeof mode) { mode = value; }, changePolicy() { policyChanged = true; }, counts() { return { saves, reviews }; } };
+  return { service, navigation, photoPrompts, setMode(value: typeof mode) { mode = value; }, changePolicy() { policyChanged = true; }, counts() { return { saves, reviews }; } };
 }
 test('entry preserves editable onboarding across policy review and requires fresh explicit consent', async () => {
   const f = fixture(); const controller = new EntryController(f.service, () => 0, () => {});
@@ -64,4 +65,30 @@ test('recovery navigates only after the acknowledged onboarding transition', asy
   const controller = new EntryController(f.service, () => 0, () => {});
   await controller.initialize(); await controller.decline();
   assert.deepEqual(f.navigation, ['onboarding']);
+});
+
+
+test('only successful new activation opens photo setup; returning accounts and stale activations do not', async () => {
+  const fresh = fixture();
+  const setup = new EntryController(fresh.service, () => 0, () => {});
+  await setup.initialize();
+  await setup.activate(fields, setup.state.review!.token);
+  assert.deepEqual(fresh.photoPrompts, [true]);
+  await setup.activate(fields, review.token);
+  assert.equal(fresh.counts().saves, 1);
+
+  const returning = fixture(); returning.setMode('home');
+  await new EntryController(returning.service, () => 0, () => {}).initialize();
+  assert.deepEqual(returning.photoPrompts, [false]);
+
+  const stale = fixture();
+  let finish!: (value: { kind: 'home'; expiresAt: number }) => void;
+  stale.service.activate = () => new Promise(resolve => { finish = resolve; });
+  const previous = new EntryController(stale.service, () => 0, () => {});
+  await previous.initialize();
+  const activation = previous.activate(fields, previous.state.review!.token);
+  await previous.signOut();
+  finish({ kind: 'home', expiresAt: 100 }); await activation;
+  assert.deepEqual(stale.photoPrompts, []);
+  assert.equal(previous.state.phase, 'entry');
 });

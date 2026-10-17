@@ -23,10 +23,10 @@ export class EntryController {
       else this.publish({ phase: this.state.phase === 'loading' ? 'entry' : this.state.phase, error: kind });
     } finally { if (active()) this.publish({ busy: false }); }
   }
-  private async accept(context: EntryContext, active: () => boolean) {
+  private async accept(context: EntryContext, active: () => boolean, onboardingPhoto = false) {
     if (!active()) return;
     this.context = context; this.publish({ phase: context.kind });
-    if (context.kind === 'home') { this.service.navigate('home'); return; }
+    if (context.kind === 'home') { this.service.navigate('home', { onboardingPhoto }); return; }
     if (context.kind === 'onboarding') {
       const defaults = this.state.defaults ?? this.service.defaults();
       const review = await this.service.review();
@@ -48,7 +48,7 @@ export class EntryController {
     return this.run(async active => {
       if (!this.state.review || reviewToken !== this.state.review.token) throw new EntryFailure('policy');
       const input = activation(fields, reviewToken);
-      try { await this.accept(await this.service.activate(input), active); }
+      try { await this.accept(await this.service.activate(input), active, true); }
       catch (error) {
         if (!active()) return;
         if (error instanceof EntryFailure && error.kind === 'policy') {

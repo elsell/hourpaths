@@ -31,6 +31,7 @@ import { InvitationInbox } from './invitation-inbox';
 import { SharingPage } from './sharing-page';
 import type { SharingRepository } from '../sharing/ports/sharing-repository';
 import type { AccountSession } from '../session/ports/account-session';
+import { OnboardingPhotoPage } from './onboarding-photo';
 import { SettingsPage } from './settings-page';
 import type { PreferencesRepository } from '../preferences/ports/preferences-repository';
 import { StatisticsPage } from './statistics-page';
@@ -90,6 +91,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { networkMode: 'always', retry: false, staleTime: 30_000, refetchOnWindowFocus: false }, mutations: { networkMode: 'always' } } }));
   const [router] = useState(() => {
     const root = createRootRoute({ component: () => <AccountRestrictionBoundary dependencies={d}><PolicyReviewBoundary dependencies={d}><Outlet /></PolicyReviewBoundary></AccountRestrictionBoundary> });
+    const onboardingPhoto = createRoute({ getParentRoute: () => root, path: '/setup/photo', component: () => <OnboardingPhotoPage dependencies={d} /> });
     const paths = createRoute({ getParentRoute: () => root, path: '/', validateSearch: (search: Record<string, unknown>) => ({ pathLeft: search.pathLeft === true, activityDeleted: search.activityDeleted === true, memberSteppedDown: search.memberSteppedDown === true }), component: () => <PathsPage dependencies={d} /> });
     const ownership = createRoute({ getParentRoute: () => root, path: '/paths/$pathId/ownership', component: () => <OwnershipPage dependencies={d} /> });
     const support = createRoute({ getParentRoute: () => root, path: '/support', validateSearch:(search:Record<string,unknown>)=>({ticket:typeof search.ticket==='string'?search.ticket:undefined}), component: () => <AdminSupportPage dependencies={d} /> });
@@ -111,7 +113,7 @@ export function StudioApp({ dependencies: d }: { dependencies: StudioDependencie
     const statistics = createRoute({ getParentRoute: () => root, path: '/stats', component: () => <StatisticsPage dependencies={d} /> });
     const accountDeletion = createRoute({ getParentRoute: () => root, path: '/delete-account', component: () => <StudioShell page="settings" i18n={d.i18n}><main className="studio-settings-main"><h1>{d.i18n.t('accountDelete.heading')}</h1>{d.deletion && <AccountDeletionSettings service={d.deletion} i18n={d.i18n} />}</main></StudioShell> });
     const settings = createRoute({ getParentRoute: () => root, path: '/settings/$section', component: () => <SettingsPage dependencies={d} /> });
-    return createRouter({ routeTree: root.addChildren([support, paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, followers, followingPeople, statistics, settings, accountDeletion]), basepath: '/studio' });
+    return createRouter({ routeTree: root.addChildren([onboardingPhoto, support, paths, path, visibility, pathPeople, nudgeAudience, inbox, notifications, ownership, sharing, activity, addActivity, editActivity, following, people, profile, followers, followingPeople, statistics, settings, accountDeletion]), basepath: '/studio' });
   });
   useEffect(() => () => { void client.cancelQueries(); client.clear(); }, [client]);
   useEffect(() => d.offline?.subscribe((change = {}) => {

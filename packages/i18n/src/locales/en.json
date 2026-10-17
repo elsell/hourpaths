@@ -5374,5 +5374,17 @@
   "publicPolicy.guidelines.authenticity.title": "Participate honestly",
   "publicPolicy.guidelines.authenticity.body": "Do not impersonate others, run scams, send spam or manipulate the service. Share only content you are entitled to use. Do not attempt to access another person’s account or private data, bypass restrictions, or disrupt HourPaths.",
   "publicPolicy.guidelines.response.title": "Report, block and appeal",
-  "publicPolicy.guidelines.response.body": "Use the in-app reporting controls to report a user or content, and blocking controls to limit unwanted interactions. If you cannot access those controls, contact private support. Reports are reviewed by authorized operators; reporting does not guarantee a particular outcome. We may remove content or restrict, suspend or ban accounts. Affected users receive private enforcement notices and can use the available appeal process, normally within 30 days. Do not submit knowingly false reports. For an immediate danger, contact local emergency services rather than waiting for an app response."
+  "publicPolicy.guidelines.response.body": "Use the in-app reporting controls to report a user or content, and blocking controls to limit unwanted interactions. If you cannot access those controls, contact private support. Reports are reviewed by authorized operators; reporting does not guarantee a particular outcome. We may remove content or restrict, suspend or ban accounts. Affected users receive private enforcement notices and can use the available appeal process, normally within 30 days. Do not submit knowingly false reports. For an immediate danger, contact local emergency services rather than waiting for an app response.",
+  "onboarding.stepProgress": "Step {{current}} of {{total}}",
+  "onboarding.identityHeading": "Make yourself at home",
+  "onboarding.identityBody": "Choose the name people will see and your unique username.",
+  "onboarding.photoHeading": "Add a little personality",
+  "onboarding.photoBody": "A photo helps people recognize you. You can add or change it later.",
+  "onboarding.preferencesHeading": "Choose how you connect",
+  "onboarding.preferencesBody": "Start with a social profile, or keep your profile private. You can change this later.",
+  "onboarding.reviewHeading": "One last thing",
+  "onboarding.reviewBody": "Review the policies below and confirm you’re old enough to join.",
+  "onboarding.continueAction": "Continue",
+  "onboarding.skipPhoto": "Skip for now",
+  "onboarding.backAction": "Back"
 }

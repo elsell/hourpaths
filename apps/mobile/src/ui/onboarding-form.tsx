@@ -1,5 +1,6 @@
 import { getLocales } from 'expo-localization';
-import { useRef, type ElementRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ElementRef, type ReactNode } from 'react';
+import { advanceOnboardingStep, previousOnboardingStep, onboardingSteps, type OnboardingStep } from '@hourpaths/client-core';
 import { StyleSheet, Switch, View, useWindowDimensions } from 'react-native';
 import { createDeviceTranslator } from '../i18n';
 import {
@@ -90,7 +91,6 @@ export function OnboardingForm({
   onSignOut,
   onUpdate,
   profile,
-  usernameReviewed,
   usernameUnavailable,
 }: OnboardingFormProps) {
   const { fontScale, width } = useWindowDimensions();
@@ -105,24 +105,53 @@ export function OnboardingForm({
       ? i18n.t('onboarding.usernameUnavailable')
       : undefined;
 
+  const [step, setStep] = useState<OnboardingStep>('identity');
+  const policyToken = useRef(profile.policyReviewToken);
+  useEffect(() => { if (usernameUnavailable) setStep('identity'); }, [usernameUnavailable]);
+  useEffect(() => {
+    if (policyToken.current !== profile.policyReviewToken) {
+      policyToken.current = profile.policyReviewToken;
+      setStep('review');
+    }
+  }, [profile.policyReviewToken]);
+  const validStep = step === 'identity' ? !displayNameErrorText && !usernameErrorText
+    : step === 'preferences' ? Boolean(profile.profileVisibility && profile.timeZone && profile.firstDayOfWeek)
+    : canSubmit;
+  const heading = step === 'identity' ? 'onboarding.identityHeading'
+    : step === 'preferences' ? 'onboarding.preferencesHeading' : 'onboarding.reviewHeading';
+  const description = step === 'identity' ? 'onboarding.identityBody'
+    : step === 'preferences' ? 'onboarding.preferencesBody' : 'onboarding.reviewBody';
+  function next() {
+    if (busy || !validStep) return;
+    if (step === 'review') { onConfirm(); return; }
+    if (step === 'identity') onReviewUsername(true);
+    setStep(current => advanceOnboardingStep(current, validStep, busy));
+  }
+  function back() {
+    if (step === 'identity') onSignOut();
+    else setStep(current => previousOnboardingStep(current, busy));
+  }
+
   return <NativeSheet
     compact
     dismissible={false}
     leadingAction={{
       disabled: busy && !homeRecoveryStatus,
-      label: i18n.t('auth.signOut'),
-      onPress: onSignOut,
+      label: i18n.t(step === 'identity' || homeRecoveryStatus ? 'auth.signOut' : 'onboarding.backAction'),
+      onPress: homeRecoveryStatus ? onSignOut : back,
     }}
     onRequestClose={onSignOut}
-    title={i18n.t('onboarding.heading')}
+    title={i18n.t(heading)}
     trailingAction={{
-      disabled: busy || !canSubmit,
-      label: i18n.t('onboarding.completeAction'),
-      onPress: onConfirm,
+      disabled: busy || !validStep,
+      label: i18n.t(step === 'review' ? 'onboarding.completeAction' : 'onboarding.continueAction'),
+      onPress: next,
     }}
     visible
   >
-    <ThemedText style={styles.intro}>{i18n.t('onboarding.intro')}</ThemedText>
+    <ThemedText style={styles.supportingText}>{i18n.t('onboarding.stepProgress', { current: onboardingSteps.indexOf(step) + 1, total: onboardingSteps.length })}</ThemedText>
+    <ThemedText style={styles.intro}>{i18n.t(description)}</ThemedText>
+    {step === 'identity' ? <>
 
     <SectionHeading>{i18n.t('onboarding.accountSection')}</SectionHeading>
     <Surface>
@@ -174,12 +203,10 @@ export function OnboardingForm({
         >{usernameErrorText}</ThemedText> : null}
       </Field>
       <ThemedText style={styles.supportingText}>{i18n.t('onboarding.usernameNotice')}</ThemedText>
-      <ToggleRow
-        disabled={busy || Boolean(usernameErrorText)}
-        label={i18n.t('onboarding.usernameReview')}
-        onValueChange={onReviewUsername}
-        value={usernameReviewed}
-      />
+    </Surface>
+    </> : null}
+    {step === 'preferences' ? <>
+    <Surface>
       <Field label={i18n.t('onboarding.visibilityLabel')}>
         {!profile.profileVisibility
           ? <ThemedText style={styles.supportingText}>{i18n.t('onboarding.visibilityChoose')}</ThemedText>
@@ -216,6 +243,8 @@ export function OnboardingForm({
       ? <StatusBanner text={i18n.t('onboarding.timeZoneUnavailable')} tone="error" />
       : null}
 
+    </> : null}
+    {step === 'review' ? <>
     <SectionHeading>{i18n.t('onboarding.privacySection')}</SectionHeading>
     <Surface>
       <ActionButton
@@ -272,7 +301,8 @@ export function OnboardingForm({
       />
     </Surface>
 
-    {!canSubmit && !busy
+    </> : null}
+    {!validStep && !busy
       ? <ThemedText accessibilityLiveRegion="polite" style={styles.supportingText}>
           {i18n.t('onboarding.requirementsPending')}
         </ThemedText>

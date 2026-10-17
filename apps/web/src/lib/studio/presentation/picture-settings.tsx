@@ -7,13 +7,13 @@ import { UnsavedChanges } from './unsaved-changes';
 import { PictureCropEditor } from './picture-crop';
 import { Avatar } from './avatar';
 
-export function PictureSettings({owner,dependencies:d}:{owner:string;dependencies:StudioDependencies}){
+export function PictureSettings({owner,dependencies:d,onSaved}:{owner:string;dependencies:StudioDependencies;onSaved?():void}){
  const query=useQuery({queryKey:[d.accountScope,'preferences','picture'],queryFn:({signal})=>d.preferences.profilePicture(owner,signal)});
  return <section className="studio-settings-card"><h3>{d.i18n.t('picture.heading')}</h3><p>{d.i18n.t('picture.hint')}</p>
-  {query.data?<PictureForm initial={query.data} dependencies={d}/>:query.isError?<div role="alert"><p>{d.i18n.t('picture.unavailable')}</p><button onClick={()=>void query.refetch()}>{d.i18n.t('common.retry')}</button></div>:<p role="status">{d.i18n.t('common.loading')}</p>}
+  {query.data?<PictureForm initial={query.data} dependencies={d} onSaved={onSaved}/>:query.isError?<div role="alert"><p>{d.i18n.t('picture.unavailable')}</p><button onClick={()=>void query.refetch()}>{d.i18n.t('common.retry')}</button></div>:<p role="status">{d.i18n.t('common.loading')}</p>}
  </section>;
 }
-function PictureForm({initial,dependencies:d}:{initial:ProfilePicture;dependencies:StudioDependencies}){
+function PictureForm({initial,dependencies:d,onSaved}:{initial:ProfilePicture;dependencies:StudioDependencies;onSaved?():void}){
  const [saved,setSaved]=useState(initial),[image,setImage]=useState(''),[preview,setPreview]=useState<PicturePreview|null>(null),[crop,setCrop]=useState<PictureCrop|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState<PictureFailure|null>(null),[notice,setNotice]=useState<'saved'|'removed'|'review'|null>(null);
  const [owner]=useState(()=>createPictureOperationOwner(d.operationId));const operation=useOwnedOperation(d),cache=useQueryClient();
@@ -28,7 +28,7 @@ function PictureForm({initial,dependencies:d}:{initial:ProfilePicture;dependenci
  async function save(remove=false){if(admission.current||(!remove&&(!preview||!crop)))return;admission.current=true;setBusy(true);setError(null);setNotice(null);
   const result=await owner.submit({userId:saved.userId,revision:saved.revision,image:remove?'':image,crop:remove?undefined:crop!,remove},(value,key)=>operation.run(signal=>d.preferences.savePicture(value,key,signal)));
   admission.current=false;if(!operation.active())return;setBusy(false);
-  if(result.kind==='applied'){setSaved(result.picture);setImage('');setPreview(null);setCrop(null);setNotice(remove?'removed':'saved');cache.setQueryData([d.accountScope,'preferences','picture'],result.picture);void cache.invalidateQueries({queryKey:[d.accountScope,'social']});}
+  if(result.kind==='applied'){setSaved(result.picture);setImage('');setPreview(null);setCrop(null);setNotice(remove?'removed':'saved');if(!remove)onSaved?.();cache.setQueryData([d.accountScope,'preferences','picture'],result.picture);void cache.invalidateQueries({queryKey:[d.accountScope,'social']});}
   else if(result.kind==='failed')fail(result.cause);
  }
  async function reload(){if(admission.current)return;admission.current=true;setBusy(true);try{const value=await operation.run(signal=>d.preferences.profilePicture(saved.userId,signal));if(operation.active()){owner.cancel();setSaved(value);setError(null);setNotice('review');}}catch(cause){if(operation.active())fail(cause);}finally{admission.current=false;if(operation.active())setBusy(false);}}

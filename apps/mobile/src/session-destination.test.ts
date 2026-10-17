@@ -346,7 +346,7 @@ test('the native onboarding draft combines server policy evidence with editable 
       communityGuidelines: { version: 'guidelines-v4', url: 'https://example.test/guidelines' },
       supportUrl: 'https://example.test/support',
     },
-    profileVisibility: null, timeZone: newYorkTimeZone, firstDayOfWeek: 1,
+    profileVisibility: 'public', timeZone: newYorkTimeZone, firstDayOfWeek: 1,
     usernameReviewed: false,
     atLeast16: false, termsAccepted: false, privacyAcknowledged: false,
     communityGuidelinesAccepted: false,

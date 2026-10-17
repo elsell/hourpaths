@@ -100,6 +100,7 @@ export function NativeSheet({
   children,
   compact = false,
   dismissible = true,
+  presentationStyle = 'pageSheet',
   leadingAction,
   onRequestClose: closeSheet,
   scrollable = true,
@@ -111,6 +112,7 @@ export function NativeSheet({
   children: ReactNode;
   compact?: boolean;
   dismissible?: boolean;
+  presentationStyle?: 'pageSheet' | 'fullScreen';
   leadingAction?: { disabled?: boolean; label: string; onPress: () => void; systemImage?: string };
   onRequestClose: () => void;
   scrollable?: boolean;
@@ -123,7 +125,7 @@ export function NativeSheet({
     allowSwipeDismissal={dismissible}
     animationType={animationType}
     onRequestClose={dismissible ? closeSheet : undefined}
-    presentationStyle="pageSheet"
+    presentationStyle={presentationStyle}
     visible={visible}
   >
     <NativeSheetFrame title={title} leadingAction={leadingAction} trailingAction={trailingAction}>
