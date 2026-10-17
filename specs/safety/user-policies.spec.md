@@ -22,6 +22,48 @@ product containing user-generated content.
 - Support contact information must provide a monitored route for users to reach
   a person or support process.
 
+## Public document delivery
+
+- The public Terms, Privacy Policy and Community Guidelines must be available at
+  `/legal/terms`, `/legal/privacy` and `/community-guidelines`, respectively.
+  They must render complete readable documents without authentication or
+  JavaScript, and without relying on an API or identity-provider response.
+- Each page must identify HourPaths and JSK Ventures LLC (North Carolina,
+  United States), show its policy version and effective date, and link to the
+  other policies and `/support`. The private support form is the contact route;
+  public copy must not invent an email address or physical mailing address.
+- The pages must use one shared document layout, the shared design tokens and
+  English/Spanish locale catalogs. Headings, keyboard navigation, narrow screens
+  and enlarged text must remain readable. Text must not be inserted as raw HTML.
+- Terms must explain eligibility, account responsibility, ownership and permitted
+  use of user content, prohibited misuse, enforcement, deletion, service changes
+  and contact. They must not invent payment obligations, arbitration, a liability
+  cap, a service-level guarantee or a waiver of mandatory consumer rights.
+- Privacy disclosures must match implemented data flows: provider identity and
+  private email, editable profile/image, Path/timer/activity/social data,
+  preferences, device notification registrations, support conversations and
+  security/audit records. Explain purpose, visibility, operational providers,
+  account controls, deletion and limited legal/security/moderation retention.
+  Do not promise unverified deletion deadlines, encryption or backup guarantees.
+- Guidelines must explain prohibited harassment, threats, hateful or exploitative
+  content, privacy violations, impersonation, spam and unlawful content; reporting,
+  blocking, operator review, enforcement and private appeals must be discoverable.
+  Do not claim automated moderation that the trusted-content adapter does not do.
+- The first published documents must use a new policy version rather than reuse
+  acceptance attached to missing placeholder pages. Publication must make the
+  documents available before activating that version in the policy service.
+  Existing reacceptance behavior and its timer-stop/export/deletion exceptions
+  remain authoritative; this slice must not introduce a second acceptance flow.
+
+### Public document acceptance
+
+1. A signed-out request to each configured policy URL returns the full localized
+   document, version, effective date and working support/policy links.
+2. With JavaScript disabled or the API unavailable, each document remains readable.
+3. Unknown policy paths return 404, never another document under the wrong URL.
+4. A new published version matches the rendered documents and is offered through
+   existing onboarding/settings and renewed-acceptance links.
+
 ## Acceptance
 
 - Before completing account creation, a user must explicitly accept the current
