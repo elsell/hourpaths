@@ -6,7 +6,7 @@ RUN go mod download
 COPY apps/api .
 RUN CGO_ENABLED=0 go build -o /out/ ./cmd/server ./cmd/schema ./cmd/migrate ./cmd/spicedb-runtime-proxy ./cmd/audit-retention ./cmd/account-deletion-records ./cmd/policy-publish ./cmd/account-enforce
 RUN mkdir -p /out/deletion-journal && chmod 0700 /out/deletion-journal
-FROM registry.access.redhat.com/hi/static:latest-1788855983@sha256:20f419d12511f96524d9b9bb092ef5066d6bacee7ed45d7c528bef62f6d48f74
+FROM registry.access.redhat.com/hi/static:latest-1792647314@sha256:c51e17de4a96e3bd68361830ec54f3c43ffcf398b82765a1ce250bd4a0d99d1f
 COPY --from=build --chown=65532:65532 /out/deletion-journal /var/lib/hourpaths-deletion
 COPY --from=build /out/server /app
 COPY --from=build /out/schema /schema
