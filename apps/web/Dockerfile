@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
-FROM registry.access.redhat.com/hi/nodejs:24.18.1-builder-1790203435@sha256:1cba44643685f640a135576a0100bb8a066545c629d99f9eac5a94db3a7eb232 AS build
+FROM registry.access.redhat.com/hi/nodejs:26.13.1-builder-1794592837@sha256:8dd0c730a05feb7e7419833775bf20cab39ce70a3dbc156faa2c6160f8297e12 AS build
 ENV NPM_CONFIG_PREFIX=/tmp/npm-global PATH=/tmp/npm-global/bin:$PATH
 WORKDIR /app
 RUN npm install --global pnpm@11.0.7
@@ -18,7 +18,7 @@ COPY --chown=65532:0 packages/i18n packages/i18n
 RUN pnpm --dir apps/web build
 RUN pnpm --filter @hourpaths/web deploy --legacy --prod /app/prod
 
-FROM registry.access.redhat.com/hi/nodejs:24.18.1-1790203435@sha256:5c2430ca1a1253f680fb9b654c18071bf52c94b336c4a60f5f779dedd9b743b7
+FROM registry.access.redhat.com/hi/nodejs:26.13.1-fips-builder-1794592837@sha256:06bd282688af0539000a9856620d959cc98a81cb6441be2da3dde5480620eced
 ENV NODE_ENV=production HOURPATHS_APP_ENV=production HOST=0.0.0.0 PORT=3000
 WORKDIR /app
 USER 0
